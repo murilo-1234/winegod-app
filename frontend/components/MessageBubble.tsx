@@ -1,7 +1,10 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import type { Message } from "@/lib/types";
+import { WineCard } from "./wine/WineCard";
+import { WineComparison } from "./wine/WineComparison";
+import { QuickButtons } from "./wine/QuickButtons";
+import type { Message, WineData } from "@/lib/types";
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString("pt-BR", {
@@ -10,12 +13,64 @@ function formatTime(date: Date): string {
   });
 }
 
-interface MessageBubbleProps {
-  message: Message;
+type ContentSegment =
+  | { type: "text"; content: string }
+  | { type: "wine_card"; wine: WineData }
+  | { type: "wine_comparison"; wines: WineData[] };
+
+function parseContent(content: string): ContentSegment[] {
+  const segments: ContentSegment[] = [];
+  const regex =
+    /<wine-card>([\s\S]*?)<\/wine-card>|<wine-comparison>([\s\S]*?)<\/wine-comparison>/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const text = content.slice(lastIndex, match.index).trim();
+      if (text) segments.push({ type: "text", content: text });
+    }
+
+    try {
+      if (match[1] !== undefined) {
+        const data = JSON.parse(match[1]);
+        segments.push({ type: "wine_card", wine: data.wine ?? data });
+      } else if (match[2] !== undefined) {
+        const data = JSON.parse(match[2]);
+        segments.push({
+          type: "wine_comparison",
+          wines: data.wines ?? data,
+        });
+      }
+    } catch {
+      segments.push({ type: "text", content: match[0] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    const text = content.slice(lastIndex).trim();
+    if (text) segments.push({ type: "text", content: text });
+  }
+
+  return segments;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+interface MessageBubbleProps {
+  message: Message;
+  onSend?: (text: string) => void;
+}
+
+export function MessageBubble({ message, onSend }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const segments = !isUser ? parseContent(message.content) : [];
+  const hasInlineWines = segments.some(
+    (s) => s.type === "wine_card" || s.type === "wine_comparison"
+  );
+
+  const metaWines = message.wines ?? [];
+  const showQuickButtons = (hasInlineWines || metaWines.length > 0) && onSend;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -30,7 +85,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         )}
 
-        <div>
+        <div className="min-w-0">
           <div
             className={`px-4 py-3 rounded-2xl ${
               isUser
@@ -43,11 +98,56 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 {message.content}
               </p>
             ) : (
-              <div className="text-wine-text text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
+              <div className="flex flex-col gap-3">
+                {segments.map((seg, i) => {
+                  if (seg.type === "text") {
+                    return (
+                      <div
+                        key={i}
+                        className="text-wine-text text-sm leading-relaxed prose prose-invert prose-sm max-w-none"
+                      >
+                        <ReactMarkdown>{seg.content}</ReactMarkdown>
+                      </div>
+                    );
+                  }
+                  if (seg.type === "wine_card") {
+                    return (
+                      <WineCard key={i} wine={seg.wine} onAction={onSend} />
+                    );
+                  }
+                  if (seg.type === "wine_comparison") {
+                    return (
+                      <WineComparison
+                        key={i}
+                        wines={seg.wines}
+                        onAction={onSend}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+
+                {metaWines.map((embed, i) =>
+                  embed.type === "wine_comparison" ? (
+                    <WineComparison
+                      key={`meta-${i}`}
+                      wines={embed.wines}
+                      onAction={onSend}
+                    />
+                  ) : (
+                    <WineCard
+                      key={`meta-${i}`}
+                      wine={embed.wine}
+                      onAction={onSend}
+                    />
+                  )
+                )}
               </div>
             )}
           </div>
+
+          {showQuickButtons && <QuickButtons onAction={onSend!} />}
+
           <p
             className={`text-[11px] text-wine-muted mt-1 ${
               isUser ? "text-right" : "text-left"

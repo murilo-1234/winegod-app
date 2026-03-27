@@ -75,7 +75,7 @@ export default function Home() {
       {messages.length === 0 && !isTyping ? (
         <WelcomeScreen onSuggestionClick={handleSend} />
       ) : (
-        <ChatWindow messages={messages} isTyping={isTyping} />
+        <ChatWindow messages={messages} isTyping={isTyping} onSend={handleSend} />
       )}
       <ChatInput onSend={handleSend} disabled={isTyping} />
     </main>

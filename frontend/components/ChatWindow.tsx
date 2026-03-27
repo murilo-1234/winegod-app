@@ -8,9 +8,10 @@ import type { Message } from "@/lib/types";
 interface ChatWindowProps {
   messages: Message[];
   isTyping: boolean;
+  onSend?: (text: string) => void;
 }
 
-export function ChatWindow({ messages, isTyping }: ChatWindowProps) {
+export function ChatWindow({ messages, isTyping, onSend }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function ChatWindow({ messages, isTyping }: ChatWindowProps) {
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="flex flex-col">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} onSend={onSend} />
         ))}
         {isTyping && <TypingIndicator />}
         <div ref={bottomRef} />
