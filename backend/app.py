@@ -5,6 +5,9 @@ from flask_cors import CORS
 from config import Config
 from routes.chat import chat_bp
 from routes.health import health_bp
+from routes.auth import auth_bp
+from routes.credits import credits_bp
+from routes.sharing import sharing_bp
 
 
 def create_app():
@@ -19,6 +22,9 @@ def create_app():
 
     flask_app.register_blueprint(chat_bp, url_prefix='/api')
     flask_app.register_blueprint(health_bp)
+    flask_app.register_blueprint(auth_bp, url_prefix='/api')
+    flask_app.register_blueprint(credits_bp, url_prefix='/api')
+    flask_app.register_blueprint(sharing_bp, url_prefix='/api')
 
     return flask_app
 

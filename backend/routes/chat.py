@@ -4,6 +4,7 @@ import uuid
 from flask import Blueprint, request, jsonify, Response
 from services.baco import get_baco_response, stream_baco_response, MODEL
 from tools.media import process_image
+from routes.credits import require_credits
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -49,6 +50,7 @@ def _process_image_context(data, message):
 
 
 @chat_bp.route('/chat', methods=['POST'])
+@require_credits
 def chat():
     """POST /api/chat — Envia mensagem e recebe resposta completa do Baco."""
     data = request.get_json()
@@ -79,6 +81,7 @@ def chat():
 
 
 @chat_bp.route('/chat/stream', methods=['POST'])
+@require_credits
 def chat_stream():
     """POST /api/chat/stream — SSE streaming da resposta do Baco."""
     data = request.get_json()
