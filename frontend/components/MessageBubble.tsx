@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { WineCard } from "./wine/WineCard";
 import { WineComparison } from "./wine/WineComparison";
 import { QuickButtons } from "./wine/QuickButtons";
+import { ShareButton } from "./ShareButton";
 import type { Message, WineData } from "@/lib/types";
 
 function formatTime(date: Date): string {
@@ -71,6 +72,22 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
 
   const metaWines = message.wines ?? [];
   const showQuickButtons = (hasInlineWines || metaWines.length > 0) && onSend;
+
+  // Coletar wine_ids para o ShareButton
+  const allWineIds: number[] = [];
+  for (const seg of segments) {
+    if (seg.type === "wine_card" && seg.wine.id) allWineIds.push(seg.wine.id);
+    if (seg.type === "wine_comparison") {
+      for (const w of seg.wines) { if (w.id) allWineIds.push(w.id); }
+    }
+  }
+  for (const embed of metaWines) {
+    if (embed.type === "wine_card" && embed.wine.id) allWineIds.push(embed.wine.id);
+    if (embed.type === "wine_comparison") {
+      for (const w of embed.wines) { if (w.id) allWineIds.push(w.id); }
+    }
+  }
+  const hasWines = allWineIds.length > 0;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -146,7 +163,12 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
             )}
           </div>
 
-          {showQuickButtons && <QuickButtons onAction={onSend!} />}
+          {showQuickButtons && (
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <QuickButtons onAction={onSend!} />
+              {hasWines && <ShareButton wine_ids={allWineIds} />}
+            </div>
+          )}
 
           <p
             className={`text-[11px] text-wine-muted mt-1 ${
