@@ -13,13 +13,13 @@ export default function Home() {
   const doneCalledRef = useRef(false);
 
   const handleSend = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isTyping) return;
+    async (text: string, image?: string) => {
+      if ((!text.trim() && !image) || isTyping) return;
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content: text.trim(),
+        content: text.trim() || "O que voce pode me dizer sobre este vinho?",
         timestamp: new Date(),
       };
 
@@ -35,37 +35,41 @@ export default function Home() {
       setIsTyping(true);
       doneCalledRef.current = false;
 
-      await sendMessageStream(text.trim(), {
-        onChunk: (chunk) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === bacoId
-                ? { ...msg, content: msg.content + chunk }
-                : msg
-            )
-          );
+      await sendMessageStream(
+        text.trim() || "O que voce pode me dizer sobre este vinho?",
+        {
+          onChunk: (chunk) => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === bacoId
+                  ? { ...msg, content: msg.content + chunk }
+                  : msg
+              )
+            );
+          },
+          onDone: () => {
+            if (doneCalledRef.current) return;
+            doneCalledRef.current = true;
+            setIsTyping(false);
+          },
+          onError: (error) => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === bacoId
+                  ? {
+                      ...msg,
+                      content:
+                        msg.content ||
+                        `Ops, algo deu errado: ${error}. Tente novamente!`,
+                    }
+                  : msg
+              )
+            );
+            setIsTyping(false);
+          },
         },
-        onDone: () => {
-          if (doneCalledRef.current) return;
-          doneCalledRef.current = true;
-          setIsTyping(false);
-        },
-        onError: (error) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === bacoId
-                ? {
-                    ...msg,
-                    content:
-                      msg.content ||
-                      `Ops, algo deu errado: ${error}. Tente novamente!`,
-                  }
-                : msg
-            )
-          );
-          setIsTyping(false);
-        },
-      });
+        image
+      );
     },
     [isTyping]
   );

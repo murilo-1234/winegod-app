@@ -3,6 +3,7 @@ import time
 import uuid
 from flask import Blueprint, request, jsonify, Response
 from services.baco import get_baco_response, stream_baco_response, MODEL
+from tools.media import process_image
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -30,6 +31,23 @@ def _get_session(session_id):
     return session
 
 
+def _process_image_context(data, message):
+    """Se houver campo image no request, roda OCR e prepend contexto ao message."""
+    image_base64 = data.get("image")
+    if not image_base64:
+        return message
+
+    ocr = process_image(image_base64)
+    if ocr.get("status") == "success":
+        return (
+            f"[O usuario enviou foto de um rotulo. OCR identificou: {ocr['search_text']}. "
+            f"Use search_wine para buscar este vinho e responda sobre ele.]\n\n{message}"
+        )
+    return (
+        f"[O usuario tentou enviar uma foto mas nao foi possivel identificar o vinho.]\n\n{message}"
+    )
+
+
 @chat_bp.route('/chat', methods=['POST'])
 def chat():
     """POST /api/chat — Envia mensagem e recebe resposta completa do Baco."""
@@ -39,6 +57,7 @@ def chat():
 
     message = data["message"]
     session_id = data.get("session_id", str(uuid.uuid4()))
+    message = _process_image_context(data, message)
 
     session = _get_session(session_id)
     history = session["messages"][-MAX_HISTORY:]
@@ -68,6 +87,7 @@ def chat_stream():
 
     message = data["message"]
     session_id = data.get("session_id", str(uuid.uuid4()))
+    message = _process_image_context(data, message)
 
     session = _get_session(session_id)
     history = session["messages"][-MAX_HISTORY:]

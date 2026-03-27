@@ -17,18 +17,24 @@ export interface StreamCallbacks {
 
 export async function sendMessageStream(
   message: string,
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  image?: string
 ): Promise<void> {
   const { onChunk, onDone, onError } = callbacks;
 
   try {
+    const body: Record<string, string> = {
+      message,
+      session_id: getSessionId(),
+    };
+    if (image) {
+      body.image = image;
+    }
+
     const response = await fetch(`${API_URL}/api/chat/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message,
-        session_id: getSessionId(),
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
