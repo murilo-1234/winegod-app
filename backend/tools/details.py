@@ -1,10 +1,16 @@
 """Tools de detalhes: get_wine_details, get_wine_history."""
 
 from db.connection import get_connection, release_connection
+from services.cache import cache_get, cache_set, cache_key, TTL_DETAILS
 
 
 def get_wine_details(wine_id):
     """Retorna todos os dados de um vinho especifico."""
+    key = cache_key("details", wine_id=wine_id)
+    cached = cache_get(key)
+    if cached:
+        return cached
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -22,6 +28,7 @@ def get_wine_details(wine_id):
                 elif hasattr(v, 'isoformat'):
                     result[k] = v.isoformat()
 
+            cache_set(key, result, TTL_DETAILS)
             return result
     finally:
         release_connection(conn)

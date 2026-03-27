@@ -1,10 +1,16 @@
 """Tools de busca: search_wine, get_similar_wines."""
 
 from db.connection import get_connection, release_connection
+from services.cache import cache_get, cache_set, cache_key, TTL_SEARCH
 
 
 def search_wine(query, limit=5):
     """Busca vinhos por nome usando pg_trgm (fuzzy match)."""
+    key = cache_key("search", query=query.lower(), limit=limit)
+    cached = cache_get(key)
+    if cached:
+        return cached
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -44,13 +50,20 @@ def search_wine(query, limit=5):
                     if hasattr(v, 'as_integer_ratio'):
                         r[k] = float(v)
 
-            return {"wines": results, "total": len(results)}
+            result = {"wines": results, "total": len(results)}
+            cache_set(key, result, TTL_SEARCH)
+            return result
     finally:
         release_connection(conn)
 
 
 def get_similar_wines(wine_id, limit=5):
     """Encontra vinhos similares por tipo, pais, regiao e faixa de preco."""
+    key = cache_key("similar", wine_id=wine_id, limit=limit)
+    cached = cache_get(key)
+    if cached:
+        return cached
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -136,6 +149,8 @@ def get_similar_wines(wine_id, limit=5):
                             r[k] = float(v)
                 results.extend(extra)
 
-            return {"wines": results, "total": len(results)}
+            result = {"wines": results, "total": len(results)}
+            cache_set(key, result, TTL_SEARCH)
+            return result
     finally:
         release_connection(conn)

@@ -1,10 +1,16 @@
 """Tools de preco: get_prices, get_store_wines."""
 
 from db.connection import get_connection, release_connection
+from services.cache import cache_get, cache_set, cache_key, TTL_PRICES
 
 
 def get_prices(wine_id, country=None):
     """Retorna precos de um vinho nas lojas."""
+    key = cache_key("prices", wine_id=wine_id, country=country)
+    cached = cache_get(key)
+    if cached:
+        return cached
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -59,7 +65,9 @@ def get_prices(wine_id, country=None):
                     }
                 return {"error": "Vinho nao encontrado"}
 
-            return {"prices": results, "total": len(results)}
+            result = {"prices": results, "total": len(results)}
+            cache_set(key, result, TTL_PRICES)
+            return result
     finally:
         release_connection(conn)
 

@@ -1,6 +1,7 @@
 """Tools de comparacao e recomendacao: compare_wines, get_recommendations."""
 
 from db.connection import get_connection, release_connection
+from services.cache import cache_get, cache_set, cache_key, TTL_RECOMMENDATIONS
 
 
 def compare_wines(wine_ids):
@@ -38,6 +39,12 @@ def compare_wines(wine_ids):
 def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
                         preco_min=None, preco_max=None, limit=5):
     """Retorna top N vinhos por score/rating com filtros."""
+    key = cache_key("recs", tipo=tipo, pais=pais, regiao=regiao, uva=uva,
+                    preco_min=preco_min, preco_max=preco_max, limit=limit)
+    cached = cache_get(key)
+    if cached:
+        return cached
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -85,6 +92,8 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
                     if hasattr(v, 'as_integer_ratio'):
                         r[k] = float(v)
 
-            return {"wines": results, "total": len(results)}
+            result = {"wines": results, "total": len(results)}
+            cache_set(key, result, TTL_RECOMMENDATIONS)
+            return result
     finally:
         release_connection(conn)
