@@ -8,6 +8,7 @@ from tools.compare import compare_wines, get_recommendations
 from tools.media import process_image, process_video, process_pdf, process_voice
 from tools.location import get_nearby_stores
 from tools.share import share_results
+from tools.stats import get_wine_stats
 
 # Mapa de tools disponiveis
 TOOL_MAP = {
@@ -25,6 +26,7 @@ TOOL_MAP = {
     "get_wine_history": get_wine_history,
     "get_nearby_stores": get_nearby_stores,
     "share_results": share_results,
+    "get_wine_stats": get_wine_stats,
 }
 
 

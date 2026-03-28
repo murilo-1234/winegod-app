@@ -299,4 +299,97 @@ TOOLS = [
             "required": ["wine_ids"],
         },
     },
+    {
+        "name": "get_wine_stats",
+        "description": (
+            "Retorna estatisticas e contagens sobre vinhos no banco de dados. "
+            "Use quando o usuario perguntar QUANTOS vinhos, vinicolas, produtores, regioes, paises existem, "
+            "ou pedir medias de nota, preco, rankings, top N, distribuicoes, ou qualquer pergunta sobre numeros e estatisticas. "
+            "Exemplos: 'quantas vinicolas tem na Argentina?', 'qual pais tem mais vinhos?', "
+            "'nota media dos tintos chilenos', 'top 5 regioes por nota', 'quantos vinhos acima de 4.5?'"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "metric": {
+                    "type": "string",
+                    "description": (
+                        "Tipo de metrica: "
+                        "'count' (quantidade de vinhos), "
+                        "'count_producers' (quantidade de produtores/vinicolas), "
+                        "'count_regions' (quantidade de regioes), "
+                        "'count_countries' (quantidade de paises), "
+                        "'count_stores' (quantidade de lojas), "
+                        "'avg_rating' (nota media WCF), "
+                        "'avg_price' (preco medio), "
+                        "'avg_score' (score medio custo-beneficio), "
+                        "'min_price' (menor preco), "
+                        "'max_price' (maior preco), "
+                        "'min_vintage' (safra mais antiga), "
+                        "'max_vintage' (safra mais recente), "
+                        "'max_reviews' (mais reviews)"
+                    ),
+                    "default": "count",
+                },
+                "group_by": {
+                    "type": "string",
+                    "description": (
+                        "Agrupar resultado por: 'pais', 'regiao', 'tipo', 'produtor', 'safra', 'moeda'. "
+                        "Se informado, retorna ranking/lista em vez de valor unico."
+                    ),
+                },
+                "filter_pais": {
+                    "type": "string",
+                    "description": "Filtrar por pais (ex: 'Argentina', 'France')",
+                },
+                "filter_tipo": {
+                    "type": "string",
+                    "description": "Filtrar por tipo (ex: 'Red', 'White', 'Sparkling', 'Rose')",
+                },
+                "filter_regiao": {
+                    "type": "string",
+                    "description": "Filtrar por regiao (ex: 'Mendoza', 'Bordeaux', 'Toscana')",
+                },
+                "filter_produtor": {
+                    "type": "string",
+                    "description": "Filtrar por produtor/vinicola (ex: 'Catena Zapata')",
+                },
+                "filter_nota_min": {
+                    "type": "number",
+                    "description": "Nota WCF minima (ex: 4.0)",
+                },
+                "filter_nota_max": {
+                    "type": "number",
+                    "description": "Nota WCF maxima",
+                },
+                "filter_preco_min": {
+                    "type": "number",
+                    "description": "Preco minimo",
+                },
+                "filter_preco_max": {
+                    "type": "number",
+                    "description": "Preco maximo",
+                },
+                "filter_safra_min": {
+                    "type": "integer",
+                    "description": "Safra minima (ex: 2015)",
+                },
+                "filter_safra_max": {
+                    "type": "integer",
+                    "description": "Safra maxima (ex: 2022)",
+                },
+                "order": {
+                    "type": "string",
+                    "description": "Ordem: 'desc' (maior primeiro, default) ou 'asc' (menor primeiro)",
+                    "default": "desc",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximo de resultados quando agrupado (default 10)",
+                    "default": 10,
+                },
+            },
+            "required": [],
+        },
+    },
 ]
