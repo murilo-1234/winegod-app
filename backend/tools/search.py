@@ -17,7 +17,7 @@ def search_wine(query, limit=5):
             # Tenta busca fuzzy com pg_trgm primeiro
             sql = """
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
+                       vivino_rating, preco_min, preco_max, moeda,
                        winegod_score, winegod_score_type, nota_wcf,
                        similarity(nome_normalizado, %s) as sim
                 FROM wines
@@ -32,7 +32,7 @@ def search_wine(query, limit=5):
                 conn.rollback()
                 sql = """
                     SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                           vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
+                           vivino_rating, preco_min, preco_max, moeda,
                            winegod_score, winegod_score_type, nota_wcf
                     FROM wines
                     WHERE nome_normalizado ILIKE %s

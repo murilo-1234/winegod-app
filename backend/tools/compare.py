@@ -14,7 +14,7 @@ def compare_wines(wine_ids):
         with conn.cursor() as cur:
             sql = """
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao, uvas,
-                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
+                       vivino_rating, preco_min, preco_max, moeda,
                        winegod_score, winegod_score_type, nota_wcf
                 FROM wines
                 WHERE id = ANY(%s)
