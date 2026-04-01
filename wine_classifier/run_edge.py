@@ -39,7 +39,7 @@ BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 TAB_CONFIG = [
     ("qwen", QwenDriver, 4),
     ("chatgpt", ChatGPTDriver, 4),
-    ("glm", GLMDriver, 4),
+    ("glm", GLMDriver, 3),  # GLM so aceita 3 abas
 ]
 TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 12
 

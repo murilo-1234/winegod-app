@@ -188,55 +188,120 @@ class GLMDriver(BaseDriver):
         return False
 
     def _evitar_deepthink(self, page):
-        """Desativa DeepThink se estiver ativo. GLM deve rodar no modo normal."""
+        """Desativa DeepThink (toggle on/off). Sempre clicar se estiver ligado."""
         try:
-            # Procurar toggle/botao de DeepThink e desativar
-            deepthink = page.evaluate("""() => {
-                const all = document.querySelectorAll('button, [role="switch"], [role="checkbox"], [class*="toggle"]');
+            # Estrategia 1: procurar qualquer elemento com texto deepthink e clicar se ativo
+            result = page.evaluate("""() => {
+                // Procurar TUDO que tenha deepthink no texto, classe, aria, etc.
+                const all = document.querySelectorAll('*');
+                const candidates = [];
+
                 for (const el of all) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) continue;
+
                     const text = (el.textContent || '').trim().toLowerCase();
                     const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
-                    if (text.includes('deepthink') || text.includes('deep think') ||
-                        ariaLabel.includes('deepthink') || ariaLabel.includes('deep think')) {
-                        // Verificar se esta ativo
-                        const isActive = el.classList.contains('active') ||
-                                        el.getAttribute('aria-checked') === 'true' ||
-                                        el.getAttribute('data-state') === 'checked' ||
-                                        el.classList.contains('on');
+                    const className = (el.className || '').toString().toLowerCase();
+                    const id = (el.id || '').toLowerCase();
+
+                    const isDeepThink = text.includes('deepthink') || text.includes('deep think') ||
+                                       ariaLabel.includes('deepthink') || ariaLabel.includes('deep think') ||
+                                       className.includes('deepthink') || className.includes('deep-think') ||
+                                       id.includes('deepthink') || id.includes('deep-think');
+
+                    if (!isDeepThink) continue;
+                    if (el.tagName === 'BODY' || el.tagName === 'HTML') continue;
+                    if (text.length > 100) continue;
+
+                    candidates.push({
+                        tag: el.tagName,
+                        text: text.substring(0, 50),
+                        class: className.substring(0, 60),
+                        w: Math.round(rect.width),
+                        h: Math.round(rect.height),
+                    });
+
+                    // Checar se e um toggle/switch/checkbox
+                    const isToggle = el.getAttribute('role') === 'switch' ||
+                                    el.getAttribute('role') === 'checkbox' ||
+                                    el.tagName === 'INPUT' && el.type === 'checkbox' ||
+                                    className.includes('toggle') || className.includes('switch');
+
+                    const isActive = el.classList.contains('active') ||
+                                    el.getAttribute('aria-checked') === 'true' ||
+                                    el.getAttribute('data-state') === 'checked' ||
+                                    el.getAttribute('data-state') === 'on' ||
+                                    el.classList.contains('on') ||
+                                    el.classList.contains('checked') ||
+                                    el.checked === true ||
+                                    className.includes('active') ||
+                                    className.includes('checked') ||
+                                    className.includes('selected');
+
+                    if (isToggle) {
                         if (isActive) {
                             el.click();
-                            return 'desativado';
+                            return 'desativado_toggle: ' + el.tagName + ' ' + text.substring(0, 30);
                         }
-                        return 'ja_normal';
+                        return 'toggle_ja_off';
                     }
                 }
-                // Tentar por texto visivel
-                const spans = document.querySelectorAll('span, div, label');
-                for (const el of spans) {
+
+                // Estrategia 2: procurar o switch mais proximo do texto "DeepThink"
+                for (const el of all) {
                     const text = (el.textContent || '').trim().toLowerCase();
                     if (text === 'deepthink' || text === 'deep think') {
-                        const parent = el.closest('button, [role="switch"], label');
-                        if (parent) {
+                        // Procurar switch/toggle proximo (irmao, pai, vizinho)
+                        const parent = el.parentElement;
+                        if (!parent) continue;
+
+                        const siblings = parent.querySelectorAll('[role="switch"], [role="checkbox"], input[type="checkbox"], [class*="toggle"], [class*="switch"]');
+                        for (const sib of siblings) {
+                            const isActive = sib.getAttribute('aria-checked') === 'true' ||
+                                            sib.getAttribute('data-state') === 'checked' ||
+                                            sib.classList.contains('active') ||
+                                            sib.classList.contains('on') ||
+                                            sib.checked === true;
+                            if (isActive) {
+                                sib.click();
+                                return 'desativado_sibling';
+                            }
+                            return 'sibling_ja_off';
+                        }
+
+                        // Se nao achou toggle, clicar no proprio parent (pode ser o toggle)
+                        const parentClass = (parent.className || '').toString().toLowerCase();
+                        if (parentClass.includes('toggle') || parentClass.includes('switch') ||
+                            parent.getAttribute('role') === 'switch') {
                             const isActive = parent.classList.contains('active') ||
                                             parent.getAttribute('aria-checked') === 'true';
                             if (isActive) {
                                 parent.click();
-                                return 'desativado_via_parent';
+                                return 'desativado_parent';
                             }
-                            return 'ja_normal';
+                            return 'parent_ja_off';
                         }
                     }
+                }
+
+                if (candidates.length > 0) {
+                    return 'encontrou_mas_nao_toggle: ' + JSON.stringify(candidates.slice(0, 3));
                 }
                 return 'nao_encontrado';
             }""")
 
-            if deepthink and 'desativado' in deepthink:
+            log(f"[{self.name}] DeepThink check: {result}")
+
+            if result and 'desativado' in result:
                 time.sleep(1)
-                log(f"[{self.name}] DeepThink desativado")
-            elif deepthink == 'ja_normal':
-                log(f"[{self.name}] Modo normal ja ativo")
+                log(f"[{self.name}] DeepThink DESLIGADO com sucesso")
+            elif result and ('ja_off' in result or 'toggle_ja_off' in result):
+                log(f"[{self.name}] DeepThink ja estava desligado")
+            elif result and 'nao_encontrado' in result:
+                log(f"[{self.name}] Toggle DeepThink nao encontrado na pagina")
             else:
-                log(f"[{self.name}] Toggle DeepThink nao encontrado — assumindo modo normal")
+                log(f"[{self.name}] [AVISO] DeepThink status incerto: {result}")
         except Exception as e:
             log(f"[{self.name}] [AVISO] Erro ao verificar DeepThink: {e}")
 
