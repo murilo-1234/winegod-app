@@ -728,24 +728,89 @@ Todas as 7 IAs foram testadas com o mesmo lote de 1000 itens. 30 vinhos aleatori
 
 **Todas as 7 IAs entregam qualidade suficiente (100% match nas amostras).**
 
-**Formato ampliado em teste (mais campos pra enriquecer):**
+#### Wine Classifier — Sistema Automatizado (EM EXECUCAO)
+
+Apos os testes manuais, o processo foi **automatizado com Playwright** no PC local do fundador. O sistema abre browsers reais, cola prompts com 1000 vinhos em cada aba de IA, espera a resposta, parseia e salva no banco automaticamente. Roda 24/7 sem intervencao.
+
+**Codigo:** `C:\winegod-app\wine_classifier\`
+
 ```
-W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|Classificacao|Corpo|Harmonizacao|Docura|OrgNat
+wine_classifier/
+  drivers/              # Drivers por IA (seletores CSS, colar/enviar/poll)
+    base_driver.py      # Classe base: clipboard Windows, paste, send, poll
+    mistral.py          # Mistral Le Chat (modo Rapido)
+    grok.py             # Grok (modo Expert via dropdown)
+    glm.py              # GLM/ChatGLM (DeepThink off, Search on, modelo GLM-4.7)
+    claude.py           # Claude.ai (Opus 4.5 via "Mais modelos")
+    chatgpt.py          # ChatGPT (modelo padrao GPT-4o)
+    gemini_rapido.py    # Gemini (modo Rapido)
+    qwen.py             # Qwen (removido, instavel)
+  run_mistral.py        # Chrome separado, 5 abas Mistral
+  run_edge.py           # Edge, 4 Grok + 3 GLM + 4 Claude Opus 4.5
+  run_chrome.py         # Chrome 3o browser, 4 ChatGPT + 4 Gemini
+  run_*.bat             # Duplo-clique pra rodar cada browser
+  _debug_responses/     # Respostas brutas salvas pra debug
+  browser_state_*/      # Estado persistente de cada browser (cookies/sessoes)
 ```
 
-Campos novos: uva principal, regiao, sub-regiao, safra, classificacao legal (DOC/AOC/Grand Cru), corpo (leve/medio/encorpado), harmonizacao (pratos), docura (seco/brut/doce), organico/natural.
+**Como funciona cada rodada:**
+1. `fetch_next_batch()` busca N vinhos da `wines_clean` que NAO existem em `y2_results` (LEFT JOIN)
+2. Divide em lotes de 1000, um por aba
+3. Abre novo chat em cada aba (via driver da IA)
+4. Cola o prompt (header + 1000 vinhos numerados) via clipboard Windows
+5. Envia e faz polling ate resposta estabilizar (texto parou de mudar)
+6. Parseia resposta: W (vinho), X (nao-vinho), S (destilado), =N (duplicata do item N)
+7. Insere no `y2_results` com `ON CONFLICT DO NOTHING` (UNIQUE no clean_id)
+8. Registra no `y2_lotes_log` (lote, ia, enviados, recebidos, faltantes, duracao)
+9. Fecha abas e inicia proxima rodada
 
-**Arquivos de teste:**
-- `scripts/lotes_llm/prompt_100_seguro.txt` — prompt com campos confiaveis (14 campos)
-- `scripts/lotes_llm/prompt_100_risco.txt` — prompt com campos arriscados (sabores, acidez, tanino, ABV, nota)
-- `scripts/lotes_llm/lotegrok.txt` a `lotemistral.txt` — respostas das 7 IAs
+**Divisao por faixas de letras (evitar conflitos entre browsers):**
 
-**Estrategia de escala:**
-1. Dividir os 3.21M restantes em lotes de 1000
-2. Colar em IAs pelo navegador (Grok, ChatGPT, Gemini, etc.) — assinatura fixa
-3. Salvar respostas e processar com `validar_30cada.py`
-4. Match Vivino via pg_trgm no texto_busca (97% precisao comprovada)
-5. Possibilidade de automatizar com Selenium/Playwright (tipo Discovery)
+Cada browser processa uma faixa exclusiva de letras iniciais do nome do vinho. Assim nenhum browser tenta inserir o mesmo clean_id que outro.
+
+| Browser | IAs | Abas | Faixa | Timeout | Pendentes |
+|---|---|---|---|---|---|
+| Chrome 1 | Mistral x5 | 5 | 0-9, A-L | 3 min | ~1.4M |
+| Chrome 3 | ChatGPT x4 + Gemini x4 | 8 | M-N | 20 min | ~240K |
+| Edge | Grok x4 + GLM x3 + Claude x4 | 11 | O,P,Q,R,S,W,Y | 7 min | ~656K |
+| Codex (externo) | codex_gpt54mini | - | T,U,V,X,Z | - | ~399K |
+
+**Codex** e um job externo (Codex da OpenAI) que roda separado e insere na mesma tabela `y2_results`.
+
+**Progresso atual (01/04/2026):**
+
+| Fonte | Classificados | % do total |
+|---|---|---|
+| Gemini API (antigo, pausado) | 754K | 19% |
+| Mistral (automatizado) | 118K | 3% |
+| Codex GPT-5.4-mini | 128K | 3% |
+| Grok | 28K | 0.7% |
+| GLM | 14K | 0.4% |
+| Claude Opus 4.5 | 7.5K | 0.2% |
+| Outros (Qwen, ChatGPT) | 3.5K | 0.1% |
+| **TOTAL** | **~1.05M** | **27%** |
+| **Pendente** | **~2.9M** | **73%** |
+
+**Velocidade estimada:** Mistral e o mais rapido (~5000/rodada de 3 min). Edge e Chrome 3 fazem ~7000-11000/rodada de 7-20 min. Codex faz bursts de 10K+. No total, ~30-50K/hora com tudo rodando.
+
+**Parser — formato das respostas:**
+```
+W|chateau montrose|montrose|fr|r|cabernet sauvignon|bordeaux|saint-estephe|2016|13.5|AOC|encorpado|carne|seco
+=1                          ← duplicata do item 1 deste lote
+X                           ← nao e vinho
+S|jack daniels|whiskey|us   ← destilado
+```
+
+Mistral responde sem numeracao (inner_text do markdown nao inclui `<ol>`). O parser usa modo sequencial: atribui 1, 2, 3... pela ordem das linhas que comecam com W|, X, S ou =.
+
+**Problemas conhecidos e resolvidos:**
+- Parser nao capturava `=` (duplicatas) — corrigido (commit `322b4cd`)
+- `run_chrome.py` nao tinha filtro de letras (pegava qualquer letra, conflitava com Mistral) — corrigido
+- `setup_tables()` fazia ALTER TABLE que travava quando outro browser estava inserindo — corrigido (usa `information_schema` pra checar antes)
+- Edge restaurava abas da sessao anterior (abas fantasma) — corrigido com flags e cleanup
+- Contador `inserted += 1` nao detecta ON CONFLICT DO NOTHING (conta como sucesso mesmo quando descarta) — **nao corrigido, aceito como limitacao**
+
+**Dashboard:** `python scripts/pipeline_y2.py` (http://localhost:8050/) — mostra barras de progresso geral + por wine_classifier, atualiza a cada 3s
 
 #### Decisoes pra tabela separada (analise futura)
 
@@ -827,15 +892,15 @@ Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_
 ```
 [CONCLUIDO]    Chat W: 3,955,624 vinhos limpos ✅
 [CONCLUIDO]    Correcao precos fonte: 1.35M registros ✅
-[CONCLUIDO]    Chat X: 2,942,304 vinhos unicos (10 abas paralelas + merge) ✅
+[CONCLUIDO]    Chat X: 2,942,304 vinhos unicos (10 abas paralelas + merge) ✅ (descartado)
 [CONCLUIDO]    Chat Y v1: Match Vivino por strings — FALHOU (precisao 12-87%)
 [CONCLUIDO]    Chat Y v2: Formato validado — LLM + pg_trgm texto_busca = 97% match (testes)
-[EM ANDAMENTO] Chat Y v2: Gemini 2.5 Flash API — 19% feito (748K/3.96M), PAUSADO por custo
-[Agora]        Chat Y v2: Continuar com IAs diversas pelo navegador (custo fixo)
+[CONCLUIDO]    Chat Y v2 Gemini API: 748K/3.96M (19%) — PAUSADO por custo ($200 pra 19%)
+[CONCLUIDO]    Wine Classifier: sistema automatizado com Playwright (3 browsers + Codex)
+[EM ANDAMENTO] Classificacao: 1.05M feito (27%), ~2.9M pendente, rodando 24/7
 [Depois]       Duplicatas e nao-vinhos → tabela separada pra analise
 [Apos Y]       Chat Z: Importar pro Render (~1-2h)
 [Paralelo]     Fundador faz: DNS, Google OAuth, Upstash
-[Futuro]       Agente/API com dashboard pra automatizar esse processo
 ```
 
 ---
@@ -1205,7 +1270,7 @@ ALTER TABLE y2_results ADD COLUMN fonte_llm VARCHAR(20) DEFAULT 'gemini';
 | Tabela | Status | Registros |
 |---|---|---|
 | wines_clean | ATIVA — base de input | 3,962,334 |
-| y2_results | ATIVA — resultados Gemini + novos | 748,110 (Gemini) + novos |
+| y2_results | ATIVA — resultados todas as IAs | ~1.05M (Gemini 754K + Mistral 118K + Codex 128K + Grok 28K + GLM 14K + Claude 7.5K) |
 | y2_lotes_log | ATIVA — log de cada lote processado | cresce a cada rodada |
 | vivino_match | ATIVA — referencia Vivino | 1,727,058 |
 | wines_final | OBSOLETA (do pipeline Y v1) | Nao usar |
@@ -1216,11 +1281,11 @@ ALTER TABLE y2_results ADD COLUMN fonte_llm VARCHAR(20) DEFAULT 'gemini';
 | Metrica | Valor |
 |---|---|
 | Total wines_clean | 3,962,334 |
-| Ja processado (Gemini API) | 748,110 |
-| Restante | 3,214,224 |
-| Lotes de 1000 | ~3,215 |
-| Com 16 abas (~3 min cada) | ~603 rodadas |
-| **Tempo estimado** | **~30 horas** |
+| Ja processado (todas as IAs) | ~1,056,000 |
+| Restante | ~2,906,000 |
+| Lotes de 1000 | ~2,906 |
+| Com 24 abas em 3 browsers + Codex (~30-50K/hora) | ~58-97 horas |
+| **Roda 24/7** — sem intervencao manual |
 
 ### Geracao dos Lotes
 
