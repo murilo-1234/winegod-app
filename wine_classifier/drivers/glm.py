@@ -86,8 +86,63 @@ class GLMDriver(BaseDriver):
         # 1. Desligar DeepThink
         self._desligar_deepthink(page)
 
-        log(f"[{self.name}] Chat pronto (sem DeepThink)")
+        # 2. Ligar Search (globo)
+        self._ligar_search(page)
+
+        log(f"[{self.name}] Chat pronto (Search ON, DeepThink OFF)")
         return True
+
+    def _ligar_search(self, page):
+        """Liga o botao de Search (globo) se estiver desligado."""
+        try:
+            # O botao de search e o que tem o icone de globo (viewBox 0 0 15 15)
+            # Fica dentro de um <button> com aria-describedby, antes do DeepThink
+            # Quando ativo, fica com bg azul/highlight; quando inativo, transparente
+            result = page.evaluate("""() => {
+                // Procurar o botao tooltip-trigger que contem o SVG do globo
+                const triggers = document.querySelectorAll('button[data-tooltip-trigger]');
+                for (const trigger of triggers) {
+                    const svg = trigger.querySelector('svg[viewBox="0 0 15 15"]');
+                    if (svg) {
+                        // Encontrou o botao do globo - verificar o botao real dentro dele
+                        const innerBtn = trigger.querySelector('button');
+                        if (innerBtn) {
+                            // Checar se esta ativo (tem classes de destaque)
+                            const cls = innerBtn.className || '';
+                            // Quando INATIVO: bg-transparent, text-gray
+                            // Quando ATIVO: tem bg colorido
+                            if (cls.includes('bg-transparent') || !cls.includes('bg-')) {
+                                innerBtn.click();
+                                return 'ligado';
+                            }
+                            return 'ja_ligado';
+                        }
+                        // Clicar no proprio trigger
+                        trigger.click();
+                        return 'ligado_trigger';
+                    }
+                }
+                // Fallback: procurar qualquer botao com SVG viewBox 15x15 (globo)
+                const btns = document.querySelectorAll('button');
+                for (const btn of btns) {
+                    const svg = btn.querySelector('svg[viewBox="0 0 15 15"]');
+                    if (svg) {
+                        btn.click();
+                        return 'ligado_fallback';
+                    }
+                }
+                return 'nao_encontrado';
+            }""")
+
+            if result and 'ligado' in result:
+                time.sleep(0.5)
+                log(f"[{self.name}] Search LIGADO ({result})")
+            elif result == 'ja_ligado':
+                log(f"[{self.name}] Search ja estava ligado")
+            else:
+                log(f"[{self.name}] [AVISO] Botao Search: {result}")
+        except Exception as e:
+            log(f"[{self.name}] [AVISO] Erro Search: {e}")
 
     def _desligar_deepthink(self, page):
         """Desliga DeepThink via atributo data-autothink do botao."""
