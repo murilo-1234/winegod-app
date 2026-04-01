@@ -1,7 +1,7 @@
 """
-Wine Classifier — Chrome (8 abas).
-4 Gemini Rapido + 4 Grok Expert.
-(Mistral roda em browser separado via run_mistral.py)
+Wine Classifier — Chrome 3o browser (8 abas).
+4 ChatGPT + 4 Gemini Rapido.
+Faixa: M-N apenas (Mistral=0-L, Edge=OPQRSWY, Codex=TUVXZ).
 
 Uso:
   python wine_classifier/run_chrome.py
@@ -21,7 +21,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from wine_classifier.drivers import GeminiRapidoDriver, GrokDriver
+from wine_classifier.drivers import ChatGPTDriver, GeminiRapidoDriver
 
 # === CONFIG ===
 DB_HOST = "localhost"
@@ -33,13 +33,14 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_chrome")
 
-# Layout: Gemini + Grok (Mistral roda em browser separado)
+# Layout: ChatGPT + Gemini (timeout 20 min)
 TAB_CONFIG = [
+    ("chatgpt", ChatGPTDriver, 4),
     ("gemini", GeminiRapidoDriver, 4),
-    ("grok", GrokDriver, 4),
 ]
 TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 8
 
+MAX_TIMEOUT_SEC = 1200  # 20 min (override dos drivers)
 STABLE_SEC = 30
 CHECK_SEC = 3
 
@@ -128,8 +129,11 @@ def setup_tables():
     log("Tabelas verificadas")
 
 
+# Chrome (3o browser) pega M-N apenas
+FAIXA_LETRAS = "mn"
+
 def fetch_next_batch(total_items):
-    """Busca proximos N itens da wines_clean nao processados."""
+    """Busca proximos N itens da wines_clean nao processados (faixa M-N)."""
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
@@ -139,9 +143,10 @@ def fetch_next_batch(total_items):
         WHERE yr.id IS NULL
           AND wc.nome_normalizado IS NOT NULL
           AND LENGTH(TRIM(wc.nome_normalizado)) > 3
+          AND LOWER(LEFT(wc.nome_normalizado, 1)) = ANY(%s)
         ORDER BY wc.nome_normalizado
         LIMIT %s
-    """, (total_items,))
+    """, (list(FAIXA_LETRAS), total_items,))
     rows = cur.fetchall()
     conn.close()
     return [{"clean_id": r[0], "loja_nome": r[1] or ""} for r in rows]
@@ -168,7 +173,7 @@ def parse_response(text, items, ia_name):
             num = int(match.group(1))
             content = match.group(2).strip()
             lines_parsed[num] = content
-        elif line.startswith(("W|", "X", "S")):
+        elif line.startswith(("W|", "X", "S", "=")):
             sequential_num += 1
             lines_parsed[sequential_num] = line
 
@@ -203,6 +208,19 @@ def parse_response(text, items, ia_name):
         if not llm:
             # Item sem resposta — NAO adicionar ao results (faltante)
             continue
+
+        # Duplicata pura: "=N" (sem W| na frente)
+        if llm.startswith("="):
+            try:
+                dup_ref_num = int(llm[1:].strip())
+                if 1 <= dup_ref_num <= len(items):
+                    result["classificacao"] = "W"
+                    result["duplicata_de"] = items[dup_ref_num - 1]["clean_id"]
+                    result["status"] = "duplicate"
+                    results.append(result)
+                    continue
+            except (ValueError, IndexError):
+                pass
 
         if llm.startswith("X"):
             result["classificacao"] = "X"
@@ -347,7 +365,7 @@ def _processar_sessao(key, sess):
 
 def main():
     log("=" * 60)
-    log("  WINE CLASSIFIER — Chrome (Gemini + Grok)")
+    log("  WINE CLASSIFIER — Chrome 3o browser (ChatGPT + Gemini) [M-N]")
     log(f"  {TOTAL_TABS} abas x {BATCH_SIZE} itens = {TOTAL_TABS * BATCH_SIZE} itens/rodada")
     log("=" * 60)
 
@@ -401,14 +419,20 @@ def main():
             ],
         )
 
+        # Fechar abas residuais da sessao anterior
+        for old_page in context.pages:
+            try:
+                old_page.close()
+            except Exception:
+                pass
+
         # Keepalive tab
         keepalive = context.new_page()
         keepalive.goto("about:blank")
 
         rodada = 0
 
-        # Montar lista de abas intercalada: mistral_1, gemini_1, grok_1, mistral_2, gemini_2, grok_2...
-        # Assim abre uma de cada IA por vez, dando tempo pra cada uma trabalhar
+        # Montar lista intercalada: chatgpt_1, gemini_1, chatgpt_2, gemini_2...
         tab_order = []
         max_tabs = max(n for _, _, n in TAB_CONFIG)
         for tab_num in range(max_tabs):
@@ -502,8 +526,8 @@ def main():
                         driver = sess["driver"]
                         page = sess["page"]
 
-                        # Timeout
-                        if elapsed > driver.TIMEOUT_SEC:
+                        # Timeout (max 20 min, override do driver)
+                        if elapsed > MAX_TIMEOUT_SEC:
                             log(f"  [{key}] TIMEOUT ({int(elapsed)}s)")
                             sess["status"] = "timeout"
                             try:
@@ -575,7 +599,7 @@ def main():
 
     log("")
     log("=" * 60)
-    log("  FINALIZADO — Chrome")
+    log("  FINALIZADO — Chrome 3o browser (ChatGPT + Gemini) [M-N]")
     log("=" * 60)
 
 

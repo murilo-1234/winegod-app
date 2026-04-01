@@ -1,6 +1,6 @@
 """
-Wine Classifier — Edge (12 abas).
-3 Gemini + 3 Grok + 3 ChatGPT + 3 GLM.
+Wine Classifier — Edge (11 abas).
+4 Grok + 3 GLM + 4 Claude Opus 4.5.
 
 Uso:
   python wine_classifier/run_edge.py
@@ -20,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from wine_classifier.drivers import GrokDriver, GLMDriver
+from wine_classifier.drivers import GrokDriver, GLMDriver, ClaudeDriver
 
 # === CONFIG ===
 DB_HOST = "localhost"
@@ -32,12 +32,13 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 
-# Layout: Grok + GLM
+# Layout: Grok + GLM + Claude Opus 4.5
 TAB_CONFIG = [
     ("grok", GrokDriver, 4),
     ("glm", GLMDriver, 3),
+    ("claude", ClaudeDriver, 4),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 7
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 11
 
 TIMEOUT_SEC = 420       # 7 min max
 STABLE_SEC = 30
@@ -129,8 +130,8 @@ def setup_tables():
     log("Tabelas verificadas")
 
 
-# Edge pega M-Z (42% dos vinhos)
-FAIXA_LETRAS = "mnopqrstuvwxyz"
+# Edge pega O-S + W + Y (Codex=TUVXZ, 3o browser=MN, Mistral=0-L)
+FAIXA_LETRAS = "opqrswy"
 
 def fetch_next_batch(total_items):
     """Busca proximos N itens da wines_clean nao processados (faixa M-Z)."""
@@ -365,7 +366,7 @@ def _processar_sessao(key, sess):
 
 def main():
     log("=" * 60)
-    log("  WINE CLASSIFIER — Edge (Qwen + ChatGPT + GLM)")
+    log("  WINE CLASSIFIER — Edge (Grok + GLM + Claude Opus 4.5) [M-Z]")
     log(f"  {TOTAL_TABS} abas x {BATCH_SIZE} itens = {TOTAL_TABS * BATCH_SIZE} itens/rodada")
     log("=" * 60)
 
@@ -418,6 +419,13 @@ def main():
                 "--no-sandbox",
             ],
         )
+
+        # Fechar abas residuais da sessao anterior
+        for old_page in context.pages:
+            try:
+                old_page.close()
+            except Exception:
+                pass
 
         # Keepalive tab
         keepalive = context.new_page()

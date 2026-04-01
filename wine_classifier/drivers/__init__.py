@@ -4,3 +4,4 @@ from .grok import GrokDriver
 from .qwen import QwenDriver
 from .chatgpt import ChatGPTDriver
 from .glm import GLMDriver
+from .claude import ClaudeDriver
