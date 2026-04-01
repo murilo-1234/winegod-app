@@ -97,66 +97,45 @@ class GrokDriver(BaseDriver):
         return True
 
     def _selecionar_expert(self, page):
-        """Seleciona modo Expert via #model-select-trigger."""
+        """Seleciona modo Expert via #model-select-trigger + dropdown menuitem."""
         try:
-            # Passo 1: ler modo atual do botao #model-select-trigger
-            current = page.evaluate("""() => {
-                const btn = document.querySelector('#model-select-trigger');
-                if (!btn) return null;
-                const span = btn.querySelector('.truncate');
-                if (span) return span.textContent.trim().toLowerCase();
-                return btn.textContent.trim().toLowerCase();
-            }""")
+            # Passo 1: ler modo atual
+            trigger = page.locator("#model-select-trigger")
+            if trigger.count() == 0:
+                log(f"[{self.name}] [AVISO] #model-select-trigger nao encontrado")
+                return False
 
+            current = trigger.first.locator(".truncate").first.inner_text(timeout=3000).strip().lower()
             log(f"[{self.name}] Modo detectado: {current}")
 
-            if current and current == 'expert':
+            if current == "expert":
                 log(f"[{self.name}] Modo Expert ja ativo")
                 return True
 
-            if not current:
-                log(f"[{self.name}] [AVISO] Botao #model-select-trigger nao encontrado")
-                return False
-
-            # Passo 2: clicar no botao pra abrir dropdown
-            page.evaluate("""() => {
-                const btn = document.querySelector('#model-select-trigger');
-                if (btn) btn.click();
-            }""")
+            # Passo 2: clicar no trigger pra abrir dropdown
+            trigger.first.click()
             time.sleep(2)
 
-            # Passo 3: clicar em Expert no dropdown
-            expert_clicked = page.evaluate("""() => {
-                // Procurar em menuitem/option
-                const items = document.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], [data-state]');
-                for (const item of items) {
-                    const text = item.textContent.trim().toLowerCase();
-                    if (text.includes('expert')) {
-                        item.click();
-                        return 'menuitem: ' + text;
-                    }
-                }
-                // Fallback: qualquer elemento visivel com texto "Expert"
-                const all = document.querySelectorAll('*');
-                for (const el of all) {
-                    const rect = el.getBoundingClientRect();
-                    if (rect.width === 0 || rect.height === 0) continue;
-                    const text = el.textContent.trim();
-                    if (text === 'Expert' && el.tagName !== 'BODY' && el.tagName !== 'HTML' && el.tagName !== 'SPAN') {
-                        el.click();
-                        return 'fallback: ' + el.tagName;
-                    }
-                }
-                return false;
-            }""")
+            # Passo 3: procurar "Expert" nos menuitems do dropdown
+            items = page.locator('[role="menuitem"]')
+            count = items.count()
+            log(f"[{self.name}] Dropdown aberto: {count} itens")
 
-            if expert_clicked:
-                time.sleep(1)
-                log(f"[{self.name}] Modo Expert selecionado ({expert_clicked})")
-                return True
-            else:
-                page.keyboard.press("Escape")
-                log(f"[{self.name}] [AVISO] Expert nao encontrado no dropdown")
+            for i in range(count):
+                item = items.nth(i)
+                # Pegar o texto do span.font-semibold dentro do menuitem
+                label = item.locator("span.font-semibold")
+                if label.count() > 0:
+                    text = label.first.inner_text(timeout=2000).strip()
+                    log(f"[{self.name}]   Item {i}: '{text}'")
+                    if text.lower() == "expert":
+                        item.click()
+                        time.sleep(1)
+                        log(f"[{self.name}] Modo Expert selecionado!")
+                        return True
+
+            page.keyboard.press("Escape")
+            log(f"[{self.name}] [AVISO] Expert nao encontrado nos {count} itens")
 
         except Exception as e:
             log(f"[{self.name}] [AVISO] Erro ao selecionar Expert: {e}")
