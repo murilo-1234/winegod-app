@@ -134,7 +134,7 @@ R1: NUNCA scraping Vivino | R2: NUNCA ManyChat | R3: NUNCA nota sem aviso | R4: 
 
 ---
 
-## ESTADO ATUAL DO PROJETO (28/03/2026 ~14h30)
+## ESTADO ATUAL DO PROJETO (29/03/2026 ~noite)
 
 ### HISTORICO COMPLETO DE CHATS (A-S)
 
@@ -304,9 +304,10 @@ DEPLOY.md                  # Passo a passo deploy Render + Vercel
 
 ---
 
-## O QUE FALTA FAZER (28/03/2026 ~17h)
+## O QUE FALTA FAZER (30/03/2026)
 
 ### JA CONCLUIDO ✅
+
 - Todos os chats A-S + L+N concluidos e pushados
 - Deploy Render (backend live em winegod-app.onrender.com) ✅
 - Deploy Vercel (frontend live em winegod-app.vercel.app) ✅
@@ -316,169 +317,491 @@ DEPLOY.md                  # Passo a passo deploy Render + Vercel
 - Chat W CONCLUIDO: 3,955,624 vinhos limpos em wines_clean ✅
 - Correcao de precos nas fontes CONCLUIDO: 1.35M registros corrigidos ✅
 
-### PIPELINE IMPORTACAO VINHOS DE LOJAS (Chats W-X-Y-Z)
-Sequencial: W → X → Y → Z. Cada fase salva resultado em tabela, proximo chat le de la.
+### FASE X (DEDUP SPLINK) — DESCARTADA ❌
 
-| Chat | Fase | Tarefa | Prompt | Status |
-|---|---|---|---|---|
-| **W** | 1 - Limpar | Limpar 4.17M vinhos → `wines_clean` (3,955,624) | `PROMPT_CHAT_W_CLEAN.md` | **CONCLUIDO** ✅ |
-| **X1-X10** | 2 - Dedup | Deduplicar ~3.96M → `wines_unique` (~800K-1.5M) | 10 prompts paralelos | **PROXIMO** |
-| **Y** | 3 - Match | Cruzar unicos com 1.72M Vivino → `wines_matched` | `PROMPT_CHAT_Y_MATCH_VIVINO.md` | PENDENTE (depende X) |
-| **Z** | 4 - Import | Importar pro Render (wine_sources + vinhos novos) | `PROMPT_CHAT_Z_IMPORT_RENDER.md` | PENDENTE (depende Y) |
+O Chat X foi executado e produziu `wines_unique` (2,942,304 registros) usando Splink. **Porem, a decisao do fundador em 30/03/2026 foi DESCARTAR o X e trabalhar direto da wines_clean.** Motivos:
 
----
+1. **A dedup entre lojas e desnecessaria** — se 3 lojas vendem "Barefoot Pinot Grigio", os 3 registros vao casar com o MESMO vivino_id no match. No Render viram 3 wine_sources apontando pro mesmo vinho. A dedup acontece naturalmente.
+2. **O X perdeu ~1M registros** — juntou duplicatas que poderiam ser fontes diferentes (lojas diferentes, precos diferentes).
+3. **O novo pipeline (3 passes) e mais inteligente** — filtra nao-vinhos com vocabulario de 50 paises, confirma vinhos por indicadores multiplos, e so entao tenta match.
 
-### DETALHES DA FASE W — POR QUE DEMOROU (licoes aprendidas)
-
-A Fase W (limpeza) levou **5 passes** em vez de 1 porque os dados das lojas eram muito mais sujos do que o esperado. Isso e importante pra entender e pra nao repetir o erro na Fase X.
-
-**O que encontramos nos 4.17M registros originais:**
-- Encoding quebrado em milhares de nomes (Vi~a, Ch~teau, cuv~e)
-- HTML entities nao decodificados (&quot;, &amp;, &#8211;)
-- Precos dentro do nome do vinho ("Chateau X 15EUR", "Vinho Y R$89")
-- Volumes colados no nome ("Merlot 750ml", "Cabernet 1.5L")
-- Safras duplicadas ("Reserva 2018 2018")
-- ~100K produtos que NAO sao vinho (frango, detergente, roupas, joias) de lojas como StarQuik (supermercado indiano), Rustans (loja de departamento filipina), ShopSuki (mercearia)
-- ~7K grappas/destilados/aguardentes misturados com vinhos
-- ~40K spirits/whiskys/vodkas (Maker's Mark, Jim Beam, Grey Goose, etc.)
-- Produtores falsos extraidos ("Gift", "Magnum", "Chablis" = palavras genericas, nao vinicolas)
-- Nomes inuteis (so um ano "2022", so uma uva "Chardonnay", fragmentos "petr")
-- Precos em centavos (lojas BR com Magento mandando 12900 em vez de R$129.00)
-- Moedas erradas em 31 paises (USD no lugar de moeda local)
-- Placeholders de preco (1.00, 99999) em ~12K registros
-- URLs duplicadas (mesma URL de loja contada como 80K produtos)
-
-**O processo que funcionou:**
-1. Pass 1: Script `clean_wines.py` — limpeza massiva (encoding, HTML, volume, preco, filtro nao-vinho)
-2. Auditoria 1 (22 checks): REPROVADO — 5 falhas
-3. Pass 2: Correcoes no script, re-execucao — REPROVADO — mesmos 5 com numeros menores
-4. Pass 3: `fix_wines_clean_final.py` — fix cirurgico nos 5 checks (UPDATE/DELETE pontual)
-5. Auditoria 2: REPROVADO — 1 falha (1 registro NULL)
-6. Pass 4: Fix do NULL + limpeza de alertas (spirits, grappa, fragmentos, uvas-so)
-7. Pass 5: Round 2 spirits via nome_normalizado (sem apostrofos)
-8. Verificacao final: **3,955,624 vinhos limpos, todos os 22 checks OK**
-
-**Em paralelo (outra aba):** Correcao de precos nas tabelas fonte — 1,349,653 registros corrigidos (moedas, centavos, placeholders, lojas nao-vinho marcadas).
-
-**Licao pra Fase X:** NAO confiar que uma unica passada resolve. Rodar auditoria automatica apos cada etapa. Usar ferramentas comprovadas (Splink) em vez de regex caseiro.
+**A tabela wines_unique ainda existe no banco local mas NAO sera usada.** O pipeline novo parte da `wines_clean`.
 
 ---
 
-### DECISAO TECNICA — FASE X: ABORDAGEM HIBRIDA COM SPLINK
+### PIPELINE NOVO — 3 PASSES (substitui W→X→Y→Z)
 
-O CTO pesquisou as melhores ferramentas de entity resolution do mercado e decidiu, com aprovacao do fundador, usar **abordagem hibrida** (deterministica + probabilistica). Essa e a mesma abordagem usada pelo Censo UK 2021, NHS England, e US Defense Health Agency.
+**Documento completo da metodologia:** `C:\winegod-app\prompts\DOC_MATCH_VIVINO_METODOLOGIA.md`
 
-**Por que NAO usar so regex/regras manuais (abordagem original):**
-- Os dados da Fase W mostraram 15% de problemas — regras fixas nao pegam tudo
-- Comparacao "sim/nao" perde duplicatas com typos, formatos diferentes, campos faltando
-- Fuzzy match caseiro (similarity > 0.85) nao tem base estatistica pra definir threshold
-- Comparar todos os pares de 4M registros = 16 trilhoes de comparacoes (impossivel)
+```
+wines_clean (3.96M — pos-Chat W, limpeza mecanica valida)
+    │
+    ├── PASS 1: Eliminar nao-vinhos (rapido, sem banco)
+    │   ├── D: NOT_WINE → ELIMINA
+    │   │   - ~200 palavras proibidas (comida, objeto, cosmetico)
+    │   │   - Padroes de peso ("500g", "1kg", "16oz")
+    │   │   - Wine-likeness = 0
+    │   ├── E: SPIRITS → ARQUIVO SEPARADO
+    │   │   - ~40 termos de destilado (whisky, gin, rum...)
+    │   └── Resultado: ~3.1M limpos
+    │
+    ├── PASS 2: Confirmar vinhos (rapido, 1 query por vinho)
+    │   │ Wine-likeness score (0-7):
+    │   │   +1 tipo reconhecido (Tinto/Branco/Rose/Espumante/Fortificado)
+    │   │   +1 safra valida (1900-2026)
+    │   │   +1 regiao preenchida
+    │   │   +1 nome contem uva (~150 uvas, 50 paises, sinonimos validados)
+    │   │   +1 nome contem termo de vinho (~140 termos, 8 linguas)
+    │   │   +2 produtor existe no Vivino
+    │   │
+    │   ├── wl >= 3: VINHO CONFIRMADO → PASS 3
+    │   ├── wl = 2: INCERTO → C2 (quarentena baixa prioridade)
+    │   └── wl = 1: INCERTO → C2
+    │   Resultado: ~2.0M confirmados + ~1.1M incertos
+    │
+    ├── PASS 3: Match contra Vivino (pesado, so confirmados)
+    │   │ 4 estrategias em cascata:
+    │   │   1. Busca por produtor (ILIKE, 0.03s)
+    │   │   2. Busca por palavra-chave (ILIKE, 0.05s)
+    │   │   3. pg_trgm no nome (~2s)
+    │   │   4. pg_trgm combinado (~17s)
+    │   │
+    │   │ Scoring (0.0 a 1.0):
+    │   │   Token overlap distintivo: 0.35
+    │   │   Token overlap completo: 0.10
+    │   │   Reverse overlap: 0.10
+    │   │   Match de produtor: 0.25 (penalidade -0.10 se nao bate)
+    │   │   Safra: 0.12 | Tipo: 0.08
+    │   │
+    │   │ Threshold duplo:
+    │   │   Produtor bate: >= 0.45
+    │   │   Produtor NAO bate: >= 0.70
+    │   │
+    │   ├── A: MATCHED → SOBE PRO RENDER (wine_sources)
+    │   ├── B: WINE_NEW → ARQUIVO (vinho real, Vivino nao tem)
+    │   └── C1: QUARENTENA_PROVAVEL (match duvidoso)
+    │
+    └── Render recebe (Chat Z):
+        → Destino A como wine_sources (agrupados por vivino_id)
+        → Dedup automatica: 3 lojas com mesmo vinho = 3 fontes, 1 vinho
+```
 
-**Ferramenta escolhida: Splink (UK Ministry of Justice)**
-- Open source, Python, instala com pip
-- Usado em producao: Censo UK 2021, NHS England, US Defense Health Agency (200M registros), Harvard Medical School (8.1M), Australian Bureau of Statistics
-- 7M registros deduplicados em 2 minutos (benchmark publicado com DuckDB)
-- ~50x mais rapido que fastLink (estudo U. Miami 2024)
-- Ganhou Civil Service Awards 2025 (Innovation) + OpenUK Awards 2025
-- 2,000+ stars GitHub, commit mais recente: 27/03/2026
-- Fontes: github.com/moj-analytical-services/splink, dataingovernment.blog.gov.uk
+**Por que wines_clean e nao vinhos_{pais} (4.17M cru):**
+O Chat W fez limpeza mecanica que e valida e custosa de refazer: encoding (Vi~a→Viña), HTML (&amp;), volumes (750ml), precos colados, safras duplicadas. Essa limpeza nao muda com estrategia.
 
-**Alternativas descartadas:**
-- dedupe.io — empresa fechou jan/2023, nao escala acima de 2M registros
-- RecordLinkage (Python) — nao projetado pra escala
-- Zingg — Java/Scala, complexidade desnecessaria
-- Regex caseiro — insuficiente pra dados sujos (comprovado na Fase W)
+**Preparacao ja feita:**
+- `vivino_match`: 1,727,058 vinhos Vivino importados localmente com indexes GIN pg_trgm
+- Script de import: `C:\winegod-app\scripts\import_vivino_local.py`
 
-**Algoritmo hibrido de 3 niveis para o Chat X:**
+**Vocabulario de indicadores (curadoria v2):**
+- **~150 uvas** (internacionais + sinonimos + locais de 15 paises) — validadas contra ambas bases
+- **~140 termos de vinho** em 8 linguas (alemao, escandinavo, holandes, polones, hungaro, romeno, turco + classificacoes legais)
+- **~19 abreviacoes multi-palavra** (cab sauv, tinta roriz, skin contact, etc.)
+- **13 candidatos eliminados** por falso positivo (cot, rolle, steen, wein, bor, etc.)
+- Pesquisa feita com 3 IAs (Gemini, Kimi, ChatGPT) + validacao contra wines_unique e vivino_match
 
-| Nivel | Metodo | Certeza | O que pega |
-|---|---|---|---|
-| 1 - Deterministico | hash_dedup identico OU ean_gtin identico | 100% | ~28% dos vinhos (que tem hash) |
-| 2 - Deterministico | nome_normalizado + safra + pais identicos | 99% | Maioria das duplicatas restantes |
-| 3 - Probabilistico (Splink) | Modelo treinado com 7 campos (nome, produtor, safra, tipo, pais, regiao, uvas) | 50-99% | Duplicatas com typos, formatos diferentes, campos faltando |
+**Decisao do fundador:** Subir APENAS destino A (matched Vivino) pro Render. Zero risco. Vinhos B, C1, C2 ficam em arquivos pra analise futura.
 
-**Campos usados pelo Splink (7 colunas da wines_clean):**
+### Testes ja realizados
 
-| Campo | Tipo de comparacao | Peso |
+| Teste | Base | Resultado |
 |---|---|---|
-| nome_normalizado | Fuzzy (Jaro-Winkler ou Levenshtein) | Alto |
-| produtor_normalizado | Fuzzy | Alto |
-| safra | Exato | Alto |
-| tipo (tinto/branco/rose) | Exato | Medio |
-| pais | Blocking rule (so compara dentro do mesmo pais) | Blocking |
-| regiao | Fuzzy | Baixo |
-| uvas | Fuzzy | Baixo |
+| v1 (100 vinhos filtrados) | wines_unique | 96% match bruto |
+| v2 (200 aleatorios) | wines_unique | 65% match, ~34% precisao real |
+| v3 (2000 por letra, pre-curadoria) | wines_unique | 22.9% destino A, 24% eliminados |
+| **v4 (pendente — pos-curadoria)** | **wines_clean** | **A rodar com indicadores v2** |
 
-**Protecoes de qualidade:**
-- Coluna `match_type` em wines_unique: "hash" / "ean" / "exact_name" / "splink_high" / "splink_medium"
-- Tabela `dedup_quarantine`: matches Splink com probabilidade 50-80% ficam de lado pra revisao
-- Validacoes: tipo deve bater (tinto != branco), preco nao pode variar >10x no grupo
-- Nomes curtos (<15 chars) exigem threshold mais alto
-- Blocking obrigatorio por pais + tipo (evita O(n^2))
-- Relatorio com 50 amostras de cada tipo de match pra conferir
-- Prompt de auditoria X (como fizemos AUDIT_W) pra validar resultado
+**Resultado do teste v3 (2000, pre-curadoria):**
 
-**Resultado esperado:**
-- Input: 3,955,624 vinhos em wines_clean
-- Output: ~800K-1.5M vinhos unicos em wines_unique + tabela quarantine
-- Cada vinho unico tem: melhor nome, melhor rating, faixa de preco, total de copias, lista de IDs originais, tipo de match
+| Destino | Qtd | % |
+|---|---|---|
+| A (matched) | 458 | 22.9% |
+| B (vinho novo) | 48 | 2.4% |
+| C1 (quarentena provavel) | 319 | 16.0% |
+| C2 (quarentena incerto) | 695 | 34.8% |
+| D (nao-vinho) | 446 | 22.3% |
+| E (destilado) | 34 | 1.7% |
+
+**Resultado do teste v4 (2000, pos-curadoria completa — 30/03/2026):**
+
+| Destino | v3 | v4 | Mudanca |
+|---|---|---|---|
+| A (matched Vivino) | 458 (22.9%) | **488 (24.4%)** | +30 |
+| B (vinho novo) | 48 (2.4%) | **67 (3.4%)** | +19 |
+| C1 (quarentena provavel) | 319 (16.0%) | **403 (20.2%)** | +84 |
+| C2 (quarentena incerto) | 695 (34.8%) | **504 (25.2%)** | **-191** |
+| D (nao-vinho) | 446 (22.3%) | **504 (25.2%)** | +58 |
+| E (destilado) | 34 (1.7%) | **34 (1.7%)** | = |
+
+Melhorias entre v3 e v4: zona incerta (C2) caiu de 35% pra 25%. Mais vinhos reconhecidos (+30 A, +19 B, +84 C1) e mais lixo eliminado (+58 D). Validado por 3 IAs externas (Gemini, Kimi, ChatGPT).
+
+**Resultado do teste v5 (2000, regra nome overlap — 30/03/2026):**
+
+| Destino | v4 | v5 | Mudanca |
+|---|---|---|---|
+| A (match Vivino) | 488 (24.4%) | **1049 (52.4%)** | **+561** |
+| B (vinho novo) | 67 (3.4%) | **149 (7.4%)** | +82 |
+| C1 (quarentena) | 403 (20.2%) | **0 (0%)** | eliminado |
+| C2 (incerto) | 504 (25.2%) | **266 (13.3%)** | -238 |
+| D+E (eliminado) | 538 (26.9%) | **536 (26.8%)** | = |
+
+Melhoria principal: regra "nome overlap >= 50% + (tipo OU safra OU produtor parcial bate) → promove pra A". Validada contra banco real: 80% dos C1 promovidos corretamente. Match com Vivino mais que dobrou (24% → 52%). C1 eliminado como categoria. Total vinho confirmado (A+B) = 60%.
+
+### Scripts do pipeline novo
+
+| Script | O que faz |
+|---|---|
+| `C:\winegod-app\scripts\import_vivino_local.py` | Importa Vivino do Render pro local |
+| `C:\winegod-app\scripts\analise_letra.py` | Script principal — 3 passes com classificacao A-E (atualizado com curadoria v2) |
+| `C:\winegod-app\scripts\match_vivino.py` | Match em escala (8 grupos por pais — precisa ser atualizado com curadoria v2) |
+| `C:\winegod-app\scripts\analise_2000_por_score.md` | 2000 vinhos consolidados ordenados por score |
+| `C:\winegod-app\scripts\analise_2000_por_score.pdf` | Idem em PDF (61 paginas) |
+| `C:\winegod-app\prompts\DOC_MATCH_VIVINO_METODOLOGIA.md` | Documento completo da metodologia |
+| `C:\winegod-app\prompts\BRIEFING_CTO_Y_METRICAS_2000.md` | Briefing original da analise |
+| `C:\winegod-app\prompts\PROMPT_PESQUISA_UVAS_GLOBAL.md` | Prompt usado pra pesquisa de uvas em 3 IAs |
+
+### Tabelas no banco local (winegod_db)
+
+| Tabela | Status | Conteudo |
+|---|---|---|
+| `wines_final` | **ATIVA — base de trabalho** | 3,059,537 vinhos (A+B+C2, sem nao-vinhos nem destilados) |
+| `vivino_match` | **ATIVA — referencia** | 1,727,058 vinhos Vivino com indexes trgm |
+| `match_results_final` | **ATIVA — resultados do pipeline** | 3,962,334 registros com destino A/B/C2/D/E |
+| `wines_clean` | Backup (pos-Chat W + recuperados) | 3,962,334 — base completa antes da filtragem |
+| `wines_unique` | OBSOLETA (pos-Chat X) | 2,942,304 — nao usar |
+| `match_results_g2` | OBSOLETA | 196K resultados do teste Y antigo |
+
+### Proximos passos
+
+1. ~~Re-rodar amostra de 2000~~ ✅ FEITO (v3, v4, v5)
+2. ~~Fundador verifica visualmente~~ ✅ FEITO (3 IAs validaram A e B)
+3. ~~Rodar em escala~~ ✅ FEITO (3.96M processados, 0 erros, 3.1h)
+4. ~~Criar tabela final~~ ✅ FEITO (`wines_final` = 3,059,537 vinhos sem D/E)
+5. ~~Verificacao C2~~ ✅ FEITO (3 IAs analisaram 1504 C2, encontraram ~42-53% nao-vinho, 13 termos novos adicionados a blacklist)
+6. **Pendente:** Re-rodar pipeline com blacklist atualizada (+~11K nao-vinhos extras) OU seguir pro Chat Z
+
+### ⚠️ PONTO CRITICO — ONDE PARAMOS (30/03/2026 noite)
+
+**O que aconteceu:** O pipeline rodou em escala (3.96M) e gerou os resultados na `match_results_final` e `wines_final`. Porem, uma analise aprofundada dos resultados revelou **problemas serios de qualidade** nos matches.
+
+**Documento que descreve os problemas:** `C:\winegod-app\prompts\RELATORIO_MATCH_FINAL.md`
+
+**O novo CTO deve:**
+1. Ler `C:\winegod-app\prompts\DOC_MATCH_VIVINO_METODOLOGIA.md` — **DOCUMENTO CENTRAL** com toda a metodologia de limpeza, match, scoring, blacklists, uvas, termos, testes e resultados
+2. Ler `C:\winegod-app\prompts\RELATORIO_MATCH_FINAL.md` — problemas encontrados nos resultados
+3. Analisar os problemas descritos (falsos positivos em massa, precisao baixa em faixas medias, matches por palavra em comum)
+4. Dar um parecer ao fundador sobre o que recomenda fazer antes de subir pro Render (Chat Z)
+
+**O fundador precisa decidir:** O que subir pro Render e com qual nivel de confianca. O relatorio tem recomendacoes mas o fundador quer a opiniao do novo CTO antes de agir.
 
 ---
 
-### EXECUCAO PARALELA — 10 ABAS SIMULTANEAS
+### SOLUCAO ENCONTRADA — Chat Y v2: LLM + pg_trgm texto_busca (31/03/2026)
 
-**Por que paralelizar:**
-A Fase W (limpeza) mostrou que uma unica aba leva horas quando precisa processar 4M registros sequencialmente. A deduplicacao e computacionalmente mais pesada que a limpeza (precisa comparar pares de vinhos). Rodar tudo em 1 aba poderia levar 2-4h.
+#### O problema do pipeline anterior (Y v1)
+O pipeline anterior usava comparacao de strings (token overlap + scoring) pra casar vinhos de loja com Vivino. Resultado: precisao de 12-87% dependendo da faixa de score. Problemas: falsos positivos em massa (nomes genericos), matches errados por palavra em comum, precisao baixa em faixas medias.
 
-**Por que funciona dividir por paises:**
-O dedup compara vinhos DENTRO do mesmo pais (nao faz cross-country). Isso significa que o grupo "US" nunca precisa olhar vinhos do grupo "BR". Zero dependencia entre grupos = paralelismo perfeito.
+#### A nova abordagem: LLM classifica + banco verifica
 
-**Por que nao dividir dentro de um pais:**
-Se dividirmos os 784K vinhos dos US em 2 metades, um vinho na metade A nao seria comparado com sua duplicata na metade B. Perderiamos duplicatas. Entao a unidade minima e o pais inteiro.
+**Conceito:** Usar Gemini Flash pra classificar/extrair dados e pg_trgm no campo `texto_busca` do vivino_match pra encontrar o match.
 
-**Distribuicao dos 10 grupos (balanceada por volume):**
+**Pipeline em 2 etapas:**
 
-| Grupo | Paises | Vinhos | Prompt |
+```
+ETAPA 1 — Gemini 2.5 Flash (batch=20)
+  Input:  nome da loja ("dave phinney orin swift locations e7 red blend")
+  Output: W|ProdBanco|VinhoBanco|Pais|Cor  ou  X (nao-vinho)  ou  S (destilado)
+          + =M se duplicata do item M
+
+  O LLM faz 3 coisas:
+    1. Classifica: e vinho, nao-vinho, ou destilado?
+    2. Extrai: produtor e vinho normalizados (minusculo, sem acento)
+    3. Dedup: marca duplicatas no lote (=M)
+
+ETAPA 2 — pg_trgm no banco local (gratis, sem LLM)
+  Busca: texto_busca % "{prodbanco} {vinhobanco}"
+  texto_busca = campo do vivino_match que contem produtor+nome juntos
+
+  Se similarity >= 0.30 → match Vivino confirmado → sobe com vivino_id
+  Se nao acha → sobe como vinho novo sem vivino_id
+  Duplicatas e nao-vinhos → tabela separada pra analise
+```
+
+#### Como chegamos a esse formato (testes realizados)
+
+**13+ testes com ~300 itens cada, totalizando ~4000 itens processados.**
+
+Testes de formato do LLM:
+| Teste | Resultado | Conclusao |
+|---|---|---|
+| Pedir Vivino ID | 0% (sempre 0) | LLM nao sabe IDs |
+| Pedir Vivino Link | 29% inventados, 0% corretos | LLM alucina URLs |
+| Pedir nota Vivino | Maioria nao tem reviews | Inviavel |
+| Pedir regiao Vivino | 99.8% preenchido no banco | Funciona como extra |
+| Pedir NomeCorrigido | ALUCINA nomes errados | PERIGOSO — tirar do prompt |
+| **Pedir so ProdBanco+VinhoBanco** | **Funciona** | **Formato final** |
+
+Testes de busca no banco:
+| Teste | Match | Conclusao |
+|---|---|---|
+| ILIKE no produtor | 32-59% | Fraco — normalizacao quebra |
+| pg_trgm no produtor | 83-92% | Bom mas perde abreviacoes |
+| **pg_trgm no texto_busca** | **97%** | **Melhor — resolve abreviacoes** |
+| Sol 5: ProdReal do LLM | 36% | LLM nao sabe produtor real de vinhos obscuros |
+| Sol 8: 2 passos LLM | 43% | Segundo passo nao ajuda |
+
+Testes de modelo:
+| Modelo | Batch | Completude | Problema |
 |---|---|---|---|
-| **X1** | US | 784,300 | `PROMPT_CHAT_X1.md` |
-| **X2** | BR, AU | 394,442 | `PROMPT_CHAT_X2.md` |
-| **X3** | GB, IT | 301,317 | `PROMPT_CHAT_X3.md` |
-| **X4** | DE, NL, DK | 366,720 | `PROMPT_CHAT_X4.md` |
-| **X5** | AR, HK, MX | 324,578 | `PROMPT_CHAT_X5.md` |
-| **X6** | PT, FR, NZ, ES | 361,515 | `PROMPT_CHAT_X6.md` |
-| **X7** | SG, CA, PH, AT, IE | 374,052 | `PROMPT_CHAT_X7.md` |
-| **X8** | PE, BE, CH, PL, UY | 317,625 | `PROMPT_CHAT_X8.md` |
-| **X9** | ZA, GR, RO, CL, SE, MD, IN | 340,745 | `PROMPT_CHAT_X9.md` |
-| **X10** | CO, FI, HU, JP, LU, BG, RU, IL, GE, CZ, CN, AE, KR, NO, HR, TW, TR, TH | 326,330 | `PROMPT_CHAT_X10.md` |
-| | **TOTAL** | **3,955,624** | |
+| Gemini 2.5 Flash-Lite batch=100 | 100% | Sem dedup, sem correcao |
+| Gemini 2.5 Flash-Lite batch=150 | 100% | Idem |
+| Gemini 2.5 Flash batch=100 | 0-20% | Thinking tokens truncam |
+| Gemini 2.5 Flash batch=50 | 50% | Idem |
+| **Gemini 2.5 Flash batch=20** | **90-97%** | **Funciona com dedup** |
 
-**Gargalo:** US (784K) e o grupo mais pesado. Os outros 9 terminam antes. Tempo total = tempo do US.
+**IMPORTANTE: o prompt deve dizer "Sem markdown" e o formato deve ser "1. W|..." (nao "N. W|..."). O Gemini retorna markdown por default e interpreta "N." literalmente.**
 
-**Como funciona:**
-1. Fundador abre 10 abas do Claude Code
-2. Cada aba recebe seu prompt (X1 a X10)
-3. Cada aba le de `wines_clean WHERE pais_tabela IN (...)` (so seus paises)
-4. Cada aba escreve em sua propria tabela: `wines_unique_g1` ate `wines_unique_g10`
-5. Cada aba tambem escreve quarantine: `dedup_quarantine_g1` ate `dedup_quarantine_g10`
-6. Quando TODAS terminam, um prompt final (X_MERGE) junta as 10 tabelas em `wines_unique`
+#### Resultado final validado (177 vinhos unicos, lote dav-del)
 
-**Cada prompt X individual faz:**
-1. `pip install splink duckdb` (se necessario)
-2. Cria tabela `wines_unique_gN` e `dedup_quarantine_gN`
-3. Le vinhos do grupo do `wines_clean`
-4. Nivel 1: agrupa por hash_dedup (deterministico)
-5. Nivel 2: agrupa por nome_normalizado + safra (deterministico)
-6. Nivel 3: Splink probabilistico nos restantes
-7. Merge de cada grupo → insere em `wines_unique_gN`
-8. Quarantine → insere em `dedup_quarantine_gN`
-9. Imprime relatorio com estatisticas e amostras
+| Metrica | Valor |
+|---|---|
+| Itens enviados | 300 |
+| Respondidos | 283 (94%) |
+| Vinhos (W) | 231 |
+| Nao-vinhos (X) | 48 |
+| Destilados (S) | 1 |
+| Duplicatas | 54 |
+| **Vinhos unicos** | **177** |
+| **Match Vivino correto** | **172 (97%)** |
+| Match errado | 2 (1%) |
+| Vinhos novos (sem Vivino) | 3 (2%) |
 
-**Prompt X_MERGE (pos-conclusao):**
-1. Cria tabela `wines_unique` final
-2. INSERT INTO wines_unique SELECT * FROM wines_unique_g1 UNION ALL ... g10
-3. Mesma coisa pra `dedup_quarantine`
-4. Roda auditoria (contagens, amostras, distribuicao)
-5. DROP tabelas temporarias
+Verificacao da dedup: 36/52 corretas (69%). 31% erradas — maioria por referencia a item fora do lote ou mistura de produtores diferentes. **Duplicatas e nao-vinhos vao pra tabela separada pra analise posterior.**
+
+Verificacao dos nao-vinhos: ~35/41 corretos (85%). ~6 vinhos classificados errado como X.
+
+#### Prompt final (copiar exatamente)
+
+```
+Exemplos do nosso banco:
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+
+TODOS os itens. Uma linha por item. Sem markdown.
+
+Formato:
+1. X
+2. S
+3. W|ProdBanco|VinhoBanco|Pais|Cor
+4. W|ProdBanco|VinhoBanco|Pais|Cor|=3
+
+ProdBanco/VinhoBanco = minusculo, sem acento, l' junto, saint junto.
+=M=duplicata. X=nao vinho. S=destilado. ??=nao sabe. NAO invente.
+```
+
+#### Configuracao de producao
+
+| Config | Valor |
+|---|---|
+| Modelo | Gemini 2.5 Flash (NAO Lite) |
+| API Key | GEMINI_API_KEY no projeto automacao-natura |
+| Batch | 20 itens por request |
+| Ordem | Alfabetica (facilita dedup) |
+| max_output_tokens | 4096 |
+| temperature | 0.1 |
+| Retry | Ate 5x se completude < 70% |
+| Pausa entre requests | 1.5s |
+| Busca Vivino | pg_trgm no campo texto_busca, threshold >= 0.30 |
+| Normalizacao no script | Remover acentos, apostrofos, hifens. Juntar l', d', saint |
+| Custo estimado 3.3M | ~$15 (real-time) ou ~$7.50 (Batch API) |
+| Tempo estimado | ~4.5h com 50 tabs paralelas |
+| RPM disponivel | 4,000 (sobra muito) |
+| TPM disponivel | 4,000,000 |
+
+#### Scripts de teste (referencia)
+
+| Script | O que faz |
+|---|---|
+| `scripts/teste_llm_classificacao.py` | Primeiro teste — 2 formatos (A simples, B com Vivino) |
+| `scripts/teste_vivino_id.py` | Teste vivino_id (falhou — LLM nao sabe) |
+| `scripts/teste_vivino_id_v2.py` | Teste vivino_id com dados novos (confirmou falha) |
+| `scripts/teste_link_vivino.py` | Teste link Vivino (29% alucinacao) |
+| `scripts/teste_match_final.py` | Teste match com produtor limpo |
+| `scripts/teste_final_v2.py` | Teste com scoring rigoroso |
+| `scripts/teste_final_v3.py` | Teste com normalizacao no prompt |
+| `scripts/teste_5_abordagens.py` | Comparacao: pg_trgm vs uva+denom vs few-shot |
+| `scripts/teste_combo_4.py` | Combinacoes das 3 tecnicas |
+| `scripts/teste_definitivo.py` | 4 combos em lotes diferentes |
+| `scripts/teste_ab_corrigido.py` | Few-shot + pg_trgm + correcao nome |
+| `scripts/teste_robusto.py` | Teste batch=100 com retry |
+| `scripts/teste_flash_final.py` | Flash-Lite com prompt corrigido |
+| `scripts/teste_lite_final.py` | Flash-Lite 3 lotes validacao |
+| `scripts/teste_limpo.py` | Sem NomeCorrigido, threshold 0.45 |
+| `scripts/teste_limpo2.py` | Idem batch=20 Flash |
+| `scripts/teste_3solucoes.py` | Sol 3 (texto_busca) vs Sol 5 (ProdReal) vs Sol 8 (2 passos) |
+| `scripts/verificar_176.py` | Verificacao 1-por-1 dos 177 unicos |
+| `scripts/teste_500_flash_nolite.py` | 500 itens Flash batch=20 |
+
+#### Execucao em escala — Gemini API (PAUSADO)
+
+**O que aconteceu:** O pipeline foi executado via API do Gemini 2.5 Flash com dashboard local (`scripts/pipeline_y2.py`). Processou 748K de 3.96M itens (19%) mas foi **PAUSADO por custo inesperado**.
+
+**Resultado ate parar (748K itens / 19%):**
+
+| Metrica | Valor |
+|---|---|
+| Processados | 748,110 / 3,962,334 (19%) |
+| Vinhos (W) | 552,295 (74%) |
+| Match Vivino | 30,899 (6% — Fase 2 em background, so comecou) |
+| Pendente Match | 485,942 (88% dos W) |
+| Duplicatas | 33,137 (6%) |
+| Nao-Vinho (X) | 153,410 (21%) |
+| Destilados (S) | 41,215 (6%) |
+| Erros | 3,507 (0.5%) |
+| Velocidade | 54 itens/seg |
+
+**Problema de custo: Gemini 2.5 Flash cobra "thinking tokens" a $3.50/M** — nao documentado claramente no pricing. O custo real foi ~$200 pra 19% da base, projetando ~$1,050 pro total. A estimativa inicial de $15 estava errada porque nao incluia thinking tokens.
+
+- Gemini 2.5 Flash-Lite ($0.10/$0.40) nao tem thinking mas perde qualidade (sem dedup, respostas truncadas)
+- Gemini 2.5 Flash ($0.15/$0.60 + $3.50 thinking) e caro demais pra 3.96M itens
+
+**Resultados salvos:** Tabela `y2_results` no banco local com 748K registros. Status: matched, pending_match, new, not_wine, spirit, duplicate, error.
+
+**Match Vivino (Fase 2) — CONCLUIDO em 37 min:**
+Apos o pipeline Gemini parar, o match Vivino foi executado em memoria (`scripts/trgm_fast.py`). Carrega todos os 1.7M produtores do Vivino em memoria e faz match por produtor exato + overlap de vinho. **2000x mais rapido** que pg_trgm puro (264/seg vs 0.2/seg).
+
+| Status | Quantidade | % |
+|---|---|---|
+| **Matched Vivino** | **488,959** | **65%** |
+| Nao-vinho (X) | 153,410 | 21% |
+| Destilados (S) | 41,215 | 6% |
+| Duplicatas | 33,137 | 4% |
+| Pendente match (sem produtor) | 25,766 | 3% |
+| Vinhos novos (sem Vivino) | 2,116 | 0.3% |
+| Erros | 3,507 | 0.5% |
+
+**Script de match:** `trgm_fast.py` — carrega produtores Vivino em memoria (~200K unicos, ~50MB RAM), busca exata por produtor, scoring por overlap de palavras do vinho. Muito mais rapido que pg_trgm puro (264/seg vs 0.2/seg).
+
+**⚠️ ALERTA — MATCH PRECISA VALIDACAO:**
+A primeira execucao do `trgm_fast.py` reportou 99.6% match mas a verificacao manual revelou que **48% dos matches apontavam pra vivino_id 82876 (registro com produtor e nome VAZIOS)**. Esses 155K matches falsos foram revertidos. O bug era: o script nao filtrava registros vazios do Vivino.
+
+Apos correcao (filtrar `WHERE produtor_normalizado IS NOT NULL AND != ''`), o match real caiu pra ~38% dos pendentes. Os outros 62% caem como "new" (vinho sem match).
+
+**Estado atual PAUSADO (31/03/2026):**
+
+| Status | Quantidade | % |
+|---|---|---|
+| Matched Vivino | 347,823 | 46% |
+| Nao-vinho (X) | 153,410 | 21% |
+| Pendente match | 141,343 | 19% |
+| Destilados (S) | 41,215 | 6% |
+| Duplicatas | 33,137 | 4% |
+| Vinhos novos (sem Vivino) | 27,675 | 4% |
+| Erros | 3,507 | 0.5% |
+
+**O QUE FALTA ANTES DE CONFIAR NOS DADOS:**
+1. **Validar amostra dos 347K matched** — pegar 50 aleatorios e conferir se produtor+vinho batem com o registro Vivino
+2. **Investigar os 141K pendentes** — sao vinhos com produtor mas que o match exato nao achou. Podem precisar de pg_trgm (lento) ou match parcial mais inteligente
+3. **Investigar os 27K "new"** — confirmar que realmente nao existem no Vivino
+4. **O script `trgm_fast.py` NAO deve ser executado como esta** — precisa de validacao e ajuste nas estrategias 2 e 3 (match parcial de produtor) que sao muito frouxas
+
+**Dashboard:** `scripts/pipeline_y2.py` com `scripts/PIPELINE_Y2.bat` — funcional mas PAUSADO.
+
+#### Nova estrategia: IAs pelo navegador (custo fixo)
+
+**Decisao do fundador (31/03/2026):** Usar assinaturas pagas de IAs (Grok, ChatGPT, Gemini, Claude, Mistral, Qwen, Kimi) pelo navegador em vez da API. Custo fixo mensal, sem surpresas.
+
+**Teste com 7 IAs (1000 itens cada):**
+
+Todas as 7 IAs foram testadas com o mesmo lote de 1000 itens. 30 vinhos aleatorios de cada foram validados contra vivino_match.
+
+| IA | W total | Match Vivino (30 aleatorios) |
+|---|---|---|
+| ChatGPT | 643 | **100%** |
+| Claude 4.5 | 652 | **100%** |
+| Gemini | 1048 | **100%** |
+| Gemini+Dedup | 646 | **100%** |
+| Grok | 801 | **100%** |
+| Mistral | 713 | **100%** |
+| Qwen | 728 | **100%** |
+
+**Todas as 7 IAs entregam qualidade suficiente (100% match nas amostras).**
+
+**Formato ampliado em teste (mais campos pra enriquecer):**
+```
+W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|Classificacao|Corpo|Harmonizacao|Docura|OrgNat
+```
+
+Campos novos: uva principal, regiao, sub-regiao, safra, classificacao legal (DOC/AOC/Grand Cru), corpo (leve/medio/encorpado), harmonizacao (pratos), docura (seco/brut/doce), organico/natural.
+
+**Arquivos de teste:**
+- `scripts/lotes_llm/prompt_100_seguro.txt` — prompt com campos confiaveis (14 campos)
+- `scripts/lotes_llm/prompt_100_risco.txt` — prompt com campos arriscados (sabores, acidez, tanino, ABV, nota)
+- `scripts/lotes_llm/lotegrok.txt` a `lotemistral.txt` — respostas das 7 IAs
+
+**Estrategia de escala:**
+1. Dividir os 3.21M restantes em lotes de 1000
+2. Colar em IAs pelo navegador (Grok, ChatGPT, Gemini, etc.) — assinatura fixa
+3. Salvar respostas e processar com `validar_30cada.py`
+4. Match Vivino via pg_trgm no texto_busca (97% precisao comprovada)
+5. Possibilidade de automatizar com Selenium/Playwright (tipo Discovery)
+
+#### Decisoes pra tabela separada (analise futura)
+
+1. **Duplicatas erradas (31%)** — itens marcados =M pelo LLM que nao sao realmente duplicatas. Analisar se sao vinhos diferentes e devem voltar como unicos.
+2. **Nao-vinhos duvidosos (~15%)** — itens marcados X que podem ser vinhos ("david bruce winery", "david cuvee"). Analisar se devem ser reclassificados.
+3. **Vinhos sem match** — vinhos confirmados (W) que nao existem no Vivino. Subir como vinhos novos sem vivino_id.
+
+**Referencia pra segunda etapa:** O documento `C:\winegod-app\prompts\DOC_MATCH_VIVINO_METODOLOGIA.md` contem o metodo antigo (Y v1) com scoring por token overlap, wine-likeness, blacklists de 200+ palavras, lista de 150+ uvas, 140+ termos de vinho em 8 linguas, e regras de filtro. Esse metodo falhou como match principal (precisao 12-87%) mas as **blacklists, listas de uvas e termos podem ser reutilizados** na segunda etapa pra reclassificar duplicatas erradas e nao-vinhos duvidosos via regras determinísticas (sem LLM).
+
+### Tabelas disponiveis no banco local
+
+| Tabela | Status | Registros | Descricao |
+|---|---|---|---|
+| `wines_final` | **ATIVA** | 3,059,537 | A (2.35M) + B (256K) + C2 (453K) sem D/E |
+| `match_results_final` | **ATIVA** | 3,962,334 | Todos os resultados com destinos |
+| `vivino_match` | **ATIVA** | 1,727,058 | Vivino importado localmente com indexes trgm |
+| `wines_clean` | Backup | 3,962,334 | Base completa antes da filtragem |
+| `wines_unique` | OBSOLETA | 2,942,304 | Nao usar |
+
+### Documentos de referencia
+
+| Documento | Conteudo |
+|---|---|
+| `C:\winegod-app\prompts\PROMPT_CTO_WINEGOD_V2.md` | ESTE documento — estado completo do projeto |
+| `C:\winegod-app\prompts\DOC_MATCH_VIVINO_METODOLOGIA.md` | Metodologia completa do match (algoritmo, scoring, curadoria, testes) |
+| `C:\winegod-app\prompts\RELATORIO_MATCH_FINAL.md` | **LER PRIMEIRO** — problemas encontrados nos resultados |
+| `C:\winegod-app\scripts\analise_letra.py` | Script principal com todas as melhorias (filtros, uvas, termos, GARANTIA_VINHO) |
+
+---
+
+### DETALHES DA FASE W — LIMPEZA MECANICA (valida, mantida)
+
+A Fase W fez limpeza mecanica dos 4.17M registros originais de 50 tabelas `vinhos_{pais}` → tabela unica `wines_clean`. Essa limpeza e valida independente da estrategia de match e por isso foi mantida.
+
+**O que a Fase W corrigiu:**
+- Encoding quebrado (Vi~a→Viña, Ch~teau→Château)
+- HTML entities (&quot;, &amp;, &#8211;)
+- Precos colados no nome ("Chateau X 15EUR")
+- Volumes no nome ("Merlot 750ml", "Cabernet 1.5L")
+- Safras duplicadas ("Reserva 2018 2018")
+- Filtro basico de nao-vinhos (~100K removidos — insuficiente, o pipeline novo melhora)
+- Spirits/destilados removidos (~47K)
+- Total: **3,955,624 vinhos em wines_clean** (22 checks de auditoria OK)
+
+Scripts: `clean_wines.py`, `fix_wines_clean_final.py`, `fix_wines_clean_alerts.py`, `run_audit_wines_clean.py`
+
+---
+
+### HISTORICO: FASE X (DESCARTADA) — Referencia apenas
+
+A Fase X usou Splink pra deduplicar wines_clean (3.96M → 2.94M em wines_unique). Foi executada em 10 abas paralelas e concluida (commit `374cae9`). **Porem foi descartada** porque:
+- A dedup e desnecessaria — o match contra Vivino ja agrupa naturalmente
+- Perdeu ~1M registros que poderiam ser fontes diferentes
+- O pipeline novo (3 passes) e mais eficiente
+
+Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_X_MERGE.md) mas nao devem ser usados.
 
 ---
 
@@ -504,13 +827,15 @@ Se dividirmos os 784K vinhos dos US em 2 metades, um vinho na metade A nao seria
 ```
 [CONCLUIDO]    Chat W: 3,955,624 vinhos limpos ✅
 [CONCLUIDO]    Correcao precos fonte: 1.35M registros ✅
-[Agora]        CTO gera 10 prompts X1-X10 + X_MERGE (abordagem hibrida Splink)
-[Proximo]      Fundador abre 10 abas, roda X1-X10 em paralelo (~15-30min)
-[Apos X1-X10]  Fundador roda X_MERGE (junta 10 tabelas, ~5min)
-[Apos merge]   Chat Y: Match Vivino (~2-3h)
+[CONCLUIDO]    Chat X: 2,942,304 vinhos unicos (10 abas paralelas + merge) ✅
+[CONCLUIDO]    Chat Y v1: Match Vivino por strings — FALHOU (precisao 12-87%)
+[CONCLUIDO]    Chat Y v2: Formato validado — LLM + pg_trgm texto_busca = 97% match (testes)
+[EM ANDAMENTO] Chat Y v2: Gemini 2.5 Flash API — 19% feito (748K/3.96M), PAUSADO por custo
+[Agora]        Chat Y v2: Continuar com IAs diversas pelo navegador (custo fixo)
+[Depois]       Duplicatas e nao-vinhos → tabela separada pra analise
 [Apos Y]       Chat Z: Importar pro Render (~1-2h)
 [Paralelo]     Fundador faz: DNS, Google OAuth, Upstash
-[Apos Z]       Testes manuais + 700 perguntas (7 IAs)
+[Futuro]       Agente/API com dashboard pra automatizar esse processo
 ```
 
 ---
@@ -673,3 +998,265 @@ Proximo passo: [qual passo do plano revisado e o proximo]
 Quer que eu continue de onde o CTO anterior parou?"
 
 Depois leia os 4 documentos fundamentais para ter contexto completo.
+
+---
+
+## CHAT Y v3: CLASSIFICACAO MULTI-IA VIA BROWSER (01/04/2026)
+
+### Contexto
+
+O Chat Y v2 via API do Gemini Flash processou 748K itens (19%) mas foi PAUSADO por custo inesperado (~$200 para 19%, projecao $1,050 total por thinking tokens). A nova estrategia usa IAs pelo navegador com assinatura fixa.
+
+### Prompt Final: B v2
+
+Apos 13+ testes com formatos diferentes, o prompt escolhido foi o **B v2** com 14 campos. Arquivo: `C:\winegod-app\scripts\lotes_llm\prompt_B_v2.txt`
+
+**Formato de resposta:**
+```
+W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+X
+S
+=M (duplicata do item M)
+```
+
+**Por que este prompt e nao outro:**
+
+| Versao testada | Campos | Resultado | Decisao |
+|---|---|---|---|
+| Seguro original | 14 (sem ABV) | 58% correto, 36% parcial, 6% errado | Base boa |
+| Risco original | 10 (com ABV, sabores) | ABV 95% acerto, sabores genericos | ABV vale, sabores nao |
+| A (enxuto, 9 campos) | 9 | Classificacao ok mas MUITOS ?? e dedup pessima (25%) | Rejeitado |
+| B (completo, 14 campos) | 14 | Equilibrado. Dedup 75%. Sem alucinacao | Base do final |
+| C (maximo, 18 campos) | 18 | Alucinacao em vinhos obscuros (Kutatas→Hungria). Sabores template | Rejeitado |
+| **B v2 (final)** | **14** | **97% classif, 90% ABV, dedup melhor, Gaja test passou** | **ESCOLHIDO** |
+
+**Melhorias do B v2 vs versoes anteriores:**
+1. Removeu "Prefira ?? a chutar" — ABV subiu de 18% → 98% preenchido sem aumentar erros
+2. 10 exemplos no cabecalho (vs 3 original) incluindo Gaja, Michele Chiarlo, Felton Road
+3. Instrucao explicita "produtor e quem FAZ o vinho" com 5 exemplos
+4. Secao FORTIFICADOS com 3 exemplos (manzanilla, porto, marsala = W cor f)
+5. Vinhos asiaticos: sake, yakju = W. Soju, baijiu = S
+6. ABV: "Estimar pelo estilo" com exemplos por tipo
+7. Dedup fuzzy com exemplos do que E e NAO e duplicata
+
+### Testes de Validacao Realizados
+
+**Teste 1: 100 vinhos de referencia (3 prompts A/B/C)**
+- 97% classificacao W/X/S correta
+- ABV: 95% acerto dentro de ±1% (20 vinhos verificados contra fontes reais)
+- Campos core (pais, cor, safra) nao degradam com mais campos
+- Prompt C (18 campos) causou alucinacao em vinho obscuro — descartado
+
+**Teste 2: Lote 1000 + Lote 2000 (dados reais da wines_clean)**
+- Lote 1000: 754/1000 (truncou por lixo nos dados, nao por limite)
+- Lote 2000: 2000/2000 completou 100%
+- Qualidade NAO caiu com volume (2000 = mesma qualidade que 1000)
+- 50 vinhos validados por lote com web searches
+
+**Teste 3: 3x lotes de 1000 com Prompt B v2 (Mistral)**
+- 3/3 completaram 100%
+- Classificacao W/X/S: 100% na amostra de 50
+- ABV: 90% dentro de ±2%, 60% exato
+- Gaja test PASSOU: produtor=gaja, vinho=gaia & rey
+- Confirmou: lote de 1000 e o tamanho ideal
+
+**Teste 4: Comparacao 6 IAs (mesmo lote de 1000)**
+- Mistral, Gemini rapido, Gemini thinking, Grok fast, Grok expert, Qwen thinking
+- Todas testadas com o mesmo prompt B v2
+- Nenhuma IA "mente" — diferenca e so completude
+
+### Comparacao das IAs
+
+| IA | Produtor | Vinho | ABV preenchido | Uvas | Inventa? | Veredicto |
+|---|---|---|---|---|---|---|
+| **Mistral** | ~85% | ~90% | ~30% | ~70% | Nao | **Usar** ✅ |
+| **Gemini rapido** | ~90% | ~95% | **~95%** | **~85%** | Raramente | **Usar** ✅ |
+| **Grok expert** | ~85% | ~90% | ~10% | ~40% | Nao | **Usar** ✅ |
+| **Qwen thinking** | ~80% | ~90% | ~85% | ~65% | Nao | **Usar** ✅ |
+| Gemini thinking | ~90% | ~95% | ~95% | ~85% | Raramente | Redundante com rapido |
+| Grok fast | ~85% | ~90% | ~0% | ~40% | Nao | Muito incompleto |
+
+**Decisao: usar 4 IAs em paralelo (Mistral + Gemini + Grok expert + Qwen).** Cada IA pega lotes DIFERENTES pra maximizar volume. Todas sao confiaveis nos campos criticos pro match Vivino (produtor + vinho).
+
+### Configuracao de Producao
+
+| Config | Valor |
+|---|---|
+| Tamanho do lote | **1000 itens** (testado: 3/3 completaram. 2000 trunca ~50%) |
+| Prompt | `C:\winegod-app\scripts\lotes_llm\prompt_B_v2.txt` |
+| IAs | Mistral (4 abas) + Gemini (4 abas) + Grok expert (4 abas) + Qwen (4 abas) |
+| Total abas | 16 simultaneas |
+| Tempo por rodada | ~2-3 min |
+| Itens por rodada | ~16.000 |
+| Ordem | Alfabetica (facilita dedup) |
+| Validacao | Salvar TUDO que a IA respondeu (mesmo que seja 200 de 1000). Sem retry. Faltantes vao pra lotes futuros |
+| Browser | Chrome perfil 2 (Mistral), Chrome perfil 1 (Gemini), Edge (Grok), Firefox (Qwen) |
+
+### Automacao via Playwright
+
+Outra aba do Claude Code esta construindo automacao com Playwright que:
+1. Abre 4 abas por browser/IA
+2. Cola o lote (prompt + 1000 vinhos)
+3. Espera resposta (~2-3 min, timeout 5 min)
+4. Salva resposta em arquivo
+5. Parseia e insere no banco (y2_results) — salva TUDO que veio, mesmo que incompleto
+6. Registra na tabela y2_lotes_log (lote, ia, enviados, recebidos, faltantes, timestamp)
+7. Segue pro proximo lote — sem retry, sem trava. Faltantes viram lotes novos no futuro
+
+### Regra de Completude — Salvar Sempre, Sem Retry (decisao 01/04/2026)
+
+**Regra anterior (DESCARTADA):** se IA respondeu < 70%, descarta tudo e retenta ate 5x.
+
+**Regra nova:** Salvar TUDO que a IA respondeu, mesmo que incompleto. Sem retry, sem "failed", sem trava.
+
+- IA respondeu 1000/1000 → salva 1000, segue
+- IA respondeu 650/1000 → salva 650, segue. Os 350 faltantes ficam sem linha na y2_results
+- IA respondeu 200/1000 → salva 200, segue
+- IA respondeu 0/1000 → nao salva nada, segue
+
+**Faltantes nunca se perdem.** Eles existem na wines_clean mas nao tem linha na y2_results. Query pra achar:
+```sql
+SELECT clean_id, nome FROM wines_clean
+WHERE clean_id NOT IN (SELECT clean_id FROM y2_results)
+```
+
+No final, gera novos lotes so com os faltantes e roda de novo. Ciclo repete ate zerar.
+
+### Tabela y2_lotes_log — Log Completo de Processamento
+
+Toda rodada de lote e registrada nesta tabela:
+
+```sql
+CREATE TABLE y2_lotes_log (
+    id SERIAL PRIMARY KEY,
+    lote INTEGER NOT NULL,
+    ia VARCHAR(20) NOT NULL,
+    enviados INTEGER NOT NULL,
+    recebidos INTEGER NOT NULL,
+    faltantes INTEGER NOT NULL,
+    processado_em TIMESTAMP NOT NULL,
+    duracao_seg INTEGER,
+    observacao TEXT
+);
+```
+
+**Exemplo:**
+
+| lote | ia | enviados | recebidos | faltantes | processado_em |
+|---|---|---|---|---|---|
+| 1 | mistral | 1000 | 750 | 250 | 30/03 10:52 |
+| 2 | mistral | 1000 | 550 | 450 | 30/03 10:59 |
+| 3 | gemini | 1000 | 1000 | 0 | 30/03 11:02 |
+| 4 | grok | 1000 | 980 | 20 | 30/03 11:03 |
+
+**Queries uteis:**
+```sql
+-- total processados
+SELECT SUM(recebidos) FROM y2_lotes_log;
+
+-- total faltantes pra reprocessar
+SELECT SUM(faltantes) FROM y2_lotes_log;
+
+-- desempenho por IA
+SELECT ia, AVG(recebidos) as media, COUNT(*) as lotes FROM y2_lotes_log GROUP BY ia;
+
+-- lotes de um dia
+SELECT * FROM y2_lotes_log WHERE processado_em::date = '2026-03-30';
+```
+
+### Banco de Dados — Colunas Novas
+
+O prompt B v2 retorna campos que y2_results nao tinha. Colunas a criar:
+
+```sql
+ALTER TABLE y2_results ADD COLUMN uva TEXT;
+ALTER TABLE y2_results ADD COLUMN regiao TEXT;
+ALTER TABLE y2_results ADD COLUMN subregiao TEXT;
+ALTER TABLE y2_results ADD COLUMN safra VARCHAR(10);
+ALTER TABLE y2_results ADD COLUMN abv VARCHAR(10);
+ALTER TABLE y2_results ADD COLUMN denominacao TEXT;       -- DOC/DOCG/AOC (nao "classificacao" que ja existe como W/X/S)
+ALTER TABLE y2_results ADD COLUMN corpo VARCHAR(20);
+ALTER TABLE y2_results ADD COLUMN harmonizacao TEXT;
+ALTER TABLE y2_results ADD COLUMN docura VARCHAR(20);
+ALTER TABLE y2_results ADD COLUMN fonte_llm VARCHAR(20) DEFAULT 'gemini';
+```
+
+**Mapeamento resposta → banco:**
+
+| Posicao | Campo IA | Coluna y2_results |
+|---|---|---|
+| 0 | W/X/S | classificacao |
+| 1 | Produtor | prod_banco |
+| 2 | Vinho | vinho_banco |
+| 3 | Pais | pais |
+| 4 | Cor | cor |
+| 5 | Uva | uva (NOVO) |
+| 6 | Regiao | regiao (NOVO) |
+| 7 | SubRegiao | subregiao (NOVO) |
+| 8 | Safra | safra (NOVO) |
+| 9 | ABV | abv (NOVO) |
+| 10 | Classificacao legal | denominacao (NOVO) |
+| 11 | Corpo | corpo (NOVO) |
+| 12 | Harmonizacao | harmonizacao (NOVO) |
+| 13 | Docura | docura (NOVO) |
+
+### Tabelas no Banco Local (estado 01/04/2026)
+
+| Tabela | Status | Registros |
+|---|---|---|
+| wines_clean | ATIVA — base de input | 3,962,334 |
+| y2_results | ATIVA — resultados Gemini + novos | 748,110 (Gemini) + novos |
+| y2_lotes_log | ATIVA — log de cada lote processado | cresce a cada rodada |
+| vivino_match | ATIVA — referencia Vivino | 1,727,058 |
+| wines_final | OBSOLETA (do pipeline Y v1) | Nao usar |
+| match_results_final | OBSOLETA | Nao usar |
+
+### Numeros Restantes
+
+| Metrica | Valor |
+|---|---|
+| Total wines_clean | 3,962,334 |
+| Ja processado (Gemini API) | 748,110 |
+| Restante | 3,214,224 |
+| Lotes de 1000 | ~3,215 |
+| Com 16 abas (~3 min cada) | ~603 rodadas |
+| **Tempo estimado** | **~30 horas** |
+
+### Geracao dos Lotes
+
+Script: `C:\winegod-app\scripts\gerar_lotes_teste.py` (adaptar pra gerar todos os ~3215 lotes)
+
+Cada lote gera 2 arquivos:
+- `lote_NNNN.txt` — prompt B v2 + 1000 nomes da wines_clean
+- `lote_NNNN_ids.txt` — 1000 clean_ids (mesma ordem, pra vincular resposta ao banco)
+
+Lotes em ordem alfabetica, excluindo os 748K ja em y2_results.
+
+### Pasta dos lotes
+
+```
+C:\winegod-app\mistral_batches\     (ou scripts\lotes_llm\)
+  prompt_B_v2.txt                   — template do prompt (fixo)
+  lote_0001.txt                     — prompt + 1000 vinhos
+  lote_0001_ids.txt                 — 1000 clean_ids
+  ...
+  lote_3215.txt
+```
+
+Controle de status fica no banco (tabela `y2_lotes_log`), nao em arquivo JSON.
+
+### Match Vivino (Fase 2)
+
+Apos a classificacao, o `trgm_fast.py` roda nos registros com status='pending_match':
+1. Carrega 200K produtores do Vivino em memoria
+2. Busca por produtor exato + overlap de palavras do vinho
+3. Match rate esperado: ~65% (comprovado nos 748K do Gemini)
+4. Roda separado, em paralelo ou apos cada rodada de lotes
+
+### Os 748K do Gemini — NAO reprocessar
+
+Os 748K ja processados pelo Gemini API ficam como estao. Motivos:
+- 389K ja matched com Vivino
+- Campos novos (uva, regiao, etc.) serao NULL pra esses registros
+- Quando o match existe, os dados vem do Vivino mesmo
+- Reprocessar gastaria ~750 rodadas sem necessidade
