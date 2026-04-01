@@ -106,8 +106,8 @@ class GrokDriver(BaseDriver):
                     for (const btn of btns) {
                         const text = btn.textContent.trim().toLowerCase();
                         if (text === 'expert' || text.includes('grok 3') || text.includes('grok3')) return 'expert';
-                        if (text === 'auto' || text === 'mini' || text.includes('grok 2') ||
-                            text === 'think' || text === 'default') return text;
+                        if (text === 'auto' || text === 'mini' || text === 'fast' ||
+                            text.includes('grok 2') || text === 'think' || text === 'default') return text;
                     }
                     // Tentar por aria-label ou data attributes
                     const modelBtns = document.querySelectorAll('[data-testid*="model"], [aria-label*="model" i], [aria-label*="Model" i]');
@@ -132,8 +132,8 @@ class GrokDriver(BaseDriver):
                     const btns = document.querySelectorAll('button');
                     for (const btn of btns) {
                         const text = btn.textContent.trim().toLowerCase();
-                        if (text === 'auto' || text === 'mini' || text === 'think' ||
-                            text === 'default' || text.includes('grok')) {
+                        if (text === 'auto' || text === 'mini' || text === 'fast' ||
+                            text === 'think' || text === 'default' || text.includes('grok')) {
                             btn.click();
                             return true;
                         }
