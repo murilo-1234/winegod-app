@@ -526,6 +526,19 @@ DASHBOARD_HTML = """
   </div>
 </div>
 
+<div class="section-title" style="margin-top:10px;">Wine Classifier (3 Browsers — Mistral + Chrome + Edge)</div>
+<div class="progress-container" style="border-color:#8B1A4A;">
+  <div class="progress-bar-bg">
+    <div id="progressBar2" class="progress-bar-fill low" style="width:0%">0%</div>
+  </div>
+  <div class="progress-stats">
+    <span id="prog2Processed">0 / 0 itens</span>
+    <span id="prog2Lotes">0 lotes</span>
+    <span id="prog2Speed">0 itens/seg</span>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;" id="iaBreakdown"></div>
+</div>
+
 <div class="section-title">Resultado</div>
 <div class="cards">
   <div class="card wine"><div class="card-label">Vinhos (W)</div><div class="card-value" id="cWines">0</div><div class="card-pct" id="cWinesPct"></div></div>
@@ -589,11 +602,43 @@ function updateDashboard() {
   });
 }
 
+function updateBrowserBar() {
+  fetch('/api/browser_status').then(r=>r.json()).then(d => {
+    if (d.error) return;
+    const total = d.restante_total || 1;
+    const done = d.browser_total || 0;
+    const p = Math.round(done*100/total);
+    const bar2 = document.getElementById('progressBar2');
+    bar2.style.width = Math.max(p, 1) + '%';
+    bar2.textContent = p + '%';
+    bar2.className = 'progress-bar-fill ' + (p < 33 ? 'low' : p < 66 ? 'mid' : 'high');
+
+    document.getElementById('prog2Processed').textContent = fmt(done) + ' / ' + fmt(total) + ' itens';
+    document.getElementById('prog2Lotes').textContent = fmt(d.total_lotes) + ' lotes';
+    document.getElementById('prog2Speed').textContent = d.speed + ' itens/seg' + (d.eta_minutes > 0 ? ' (ETA: ' + fmt(d.eta_minutes) + ' min)' : '');
+
+    // Breakdown por IA
+    const container = document.getElementById('iaBreakdown');
+    const colors = {mistral:'#8B1A4A',gemini:'#4285F4',grok:'#FF6B00',qwen:'#7C3AED',chatgpt:'#10A37F',glm:'#E53935'};
+    let html = '';
+    for (const [ia, stats] of Object.entries(d.ias || {})) {
+      const color = colors[ia] || '#666';
+      html += '<div style="background:#1A1A2E;border:1px solid '+color+';border-radius:8px;padding:8px 12px;font-size:12px;">' +
+        '<span style="color:'+color+';font-weight:bold;text-transform:uppercase;">'+ia+'</span> ' +
+        '<span style="color:#E0E0E0;">'+fmt(stats.total)+'</span> ' +
+        '<span style="color:#888;">(W='+fmt(stats.W)+' X='+fmt(stats.X)+' S='+fmt(stats.S)+')</span></div>';
+    }
+    container.innerHTML = html;
+  });
+}
+
 function startPipeline() { fetch('/api/start', {method:'POST'}).then(()=>updateDashboard()); }
 function stopPipeline() { fetch('/api/stop', {method:'POST'}).then(()=>updateDashboard()); }
 
 setInterval(updateDashboard, 2000);
+setInterval(updateBrowserBar, 3000);
 updateDashboard();
+updateBrowserBar();
 </script>
 </body>
 </html>
@@ -672,6 +717,73 @@ def api_status():
         })
     except Exception:
         return jsonify(state)
+
+@app.route("/api/browser_status")
+def api_browser_status():
+    """Stats do wine_classifier (3 browsers). Exclui Gemini API antigo."""
+    try:
+        conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+                                user=DB_USER, password=DB_PASS,
+                                options="-c client_encoding=UTF8")
+        cur = conn.cursor()
+
+        # Total que o wine_classifier precisa fazer (tudo menos Gemini API)
+        cur.execute("SELECT COUNT(*) FROM y2_results WHERE fonte_llm = 'gemini' AND uva IS NULL")
+        gemini_api = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM wines_clean")
+        total_wc = cur.fetchone()[0]
+        restante_total = total_wc - gemini_api  # o que o wine_classifier precisa cobrir
+
+        # Total feito pelo wine_classifier
+        cur.execute("""
+            SELECT fonte_llm, COUNT(*) as total,
+                   SUM(CASE WHEN classificacao='W' THEN 1 ELSE 0 END) as W,
+                   SUM(CASE WHEN classificacao='X' THEN 1 ELSE 0 END) as X,
+                   SUM(CASE WHEN classificacao='S' THEN 1 ELSE 0 END) as S
+            FROM y2_results
+            WHERE NOT (fonte_llm = 'gemini' AND uva IS NULL)
+            GROUP BY fonte_llm ORDER BY total DESC
+        """)
+        ias = {}
+        browser_total = 0
+        for r in cur.fetchall():
+            ias[r[0]] = {"total": r[1], "W": r[2], "X": r[3], "S": r[4]}
+            browser_total += r[1]
+
+        # Lotes e velocidade do wine_classifier (ultimos 5 min)
+        cur.execute("SELECT COUNT(*), SUM(recebidos) FROM y2_lotes_log")
+        log_row = cur.fetchone()
+        total_lotes = log_row[0] or 0
+
+        speed = 0
+        cur.execute("""
+            SELECT SUM(recebidos), EXTRACT(EPOCH FROM MAX(processado_em) - MIN(processado_em))
+            FROM y2_lotes_log
+            WHERE processado_em > NOW() - INTERVAL '5 minutes' AND recebidos > 0
+        """)
+        speed_row = cur.fetchone()
+        if speed_row[0] and speed_row[1] and speed_row[1] > 0:
+            speed = round(speed_row[0] / speed_row[1], 1)
+
+        conn.close()
+
+        eta = 0
+        pendente = restante_total - browser_total
+        if speed > 0 and pendente > 0:
+            eta = round(pendente / speed / 60)
+
+        return jsonify({
+            "restante_total": restante_total,
+            "browser_total": browser_total,
+            "pendente": pendente,
+            "total_lotes": total_lotes,
+            "speed": speed,
+            "eta_minutes": eta,
+            "ias": ias,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 @app.route("/api/start", methods=["POST"])
 def api_start():
