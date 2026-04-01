@@ -327,6 +327,17 @@ def _processar_sessao(key, sess):
         log(f"  [{key}] Sem resposta")
         return
 
+    # DEBUG: salvar resposta bruta dos primeiros 3 lotes pra analise
+    debug_dir = os.path.join(SCRIPT_DIR, "_debug_responses")
+    os.makedirs(debug_dir, exist_ok=True)
+    debug_file = os.path.join(debug_dir, f"lote_{lote_num}_{ia_name}.txt")
+    try:
+        with open(debug_file, "w", encoding="utf-8") as f:
+            f.write(response)
+        log(f"  [{key}] Debug salvo: {debug_file}")
+    except Exception:
+        pass
+
     results, lines_out = parse_response(response, items, ia_name)
 
     if results:
