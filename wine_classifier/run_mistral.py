@@ -82,17 +82,23 @@ def get_db():
 
 
 def setup_tables():
-    """Verifica tabelas (rapido, sem lock exclusivo)."""
+    """Verifica tabelas. Checa colunas via information_schema (sem lock)."""
     conn = get_db()
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS y2_lotes_log (id SERIAL PRIMARY KEY, lote INTEGER NOT NULL, ia VARCHAR(20) NOT NULL, enviados INTEGER NOT NULL, recebidos INTEGER NOT NULL, faltantes INTEGER NOT NULL, processado_em TIMESTAMP NOT NULL DEFAULT NOW(), duracao_seg INTEGER, observacao TEXT)")
     conn.commit()
-    for col_name, col_type in [("uva","TEXT"),("regiao","TEXT"),("subregiao","TEXT"),("safra","VARCHAR(10)"),("abv","VARCHAR(10)"),("denominacao","TEXT"),("corpo","VARCHAR(20)"),("harmonizacao","TEXT"),("docura","VARCHAR(20)"),("fonte_llm","VARCHAR(20) DEFAULT 'gemini'")]:
-        try:
-            cur.execute(f"ALTER TABLE y2_results ADD COLUMN IF NOT EXISTS {col_name} {col_type}")
-            conn.commit()
-        except Exception:
-            conn.rollback()
+    cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'y2_results'")
+    existing = {r[0] for r in cur.fetchall()}
+    needed = [("uva","TEXT"),("regiao","TEXT"),("subregiao","TEXT"),("safra","VARCHAR(10)"),("abv","VARCHAR(10)"),("denominacao","TEXT"),("corpo","VARCHAR(20)"),("harmonizacao","TEXT"),("docura","VARCHAR(20)"),("fonte_llm","VARCHAR(20) DEFAULT 'gemini'")]
+    missing = [(c, t) for c, t in needed if c not in existing]
+    if missing:
+        for col_name, col_type in missing:
+            try:
+                cur.execute(f"ALTER TABLE y2_results ADD COLUMN IF NOT EXISTS {col_name} {col_type}")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        log(f"Colunas adicionadas: {[c for c,_ in missing]}")
     conn.close()
     log("Tabelas verificadas")
 
