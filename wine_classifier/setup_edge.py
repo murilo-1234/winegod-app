@@ -18,7 +18,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 
 IAS = [
-    ("Qwen", "https://chat.qwen.ai"),
+    ("Gemini", "https://gemini.google.com/app"),
+    ("Grok", "https://grok.com"),
     ("ChatGPT", "https://chatgpt.com"),
     ("GLM 5", "https://chat.z.ai"),
 ]

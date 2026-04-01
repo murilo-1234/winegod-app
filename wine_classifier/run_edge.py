@@ -1,9 +1,6 @@
 """
 Wine Classifier — Edge (12 abas).
-4 Qwen + 4 ChatGPT + 4 GLM 5.
-
-Baseado no mistral_classifier.py (testado e funcionando).
-Usa drivers do Discovery adaptados.
+3 Gemini + 3 Grok + 3 ChatGPT + 3 GLM.
 
 Uso:
   python wine_classifier/run_edge.py
@@ -23,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from wine_classifier.drivers import QwenDriver, ChatGPTDriver, GLMDriver
+from wine_classifier.drivers import GeminiRapidoDriver, GrokDriver, ChatGPTDriver, GLMDriver
 
 # === CONFIG ===
 DB_HOST = "localhost"
@@ -35,12 +32,14 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 
-# Layout: ChatGPT + GLM (Qwen removido — instavel)
+# Layout: 3 abas de cada IA
 TAB_CONFIG = [
-    ("chatgpt", ChatGPTDriver, 4),
-    ("glm", GLMDriver, 3),  # GLM so aceita 3 abas
+    ("gemini", GeminiRapidoDriver, 3),
+    ("grok", GrokDriver, 3),
+    ("chatgpt", ChatGPTDriver, 3),
+    ("glm", GLMDriver, 3),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 7
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 12
 
 TIMEOUT_SEC = 420       # 7 min max
 STABLE_SEC = 30
