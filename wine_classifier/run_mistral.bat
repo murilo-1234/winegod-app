@@ -1,9 +1,9 @@
 @echo off
-title Wine Classifier — Mistral (5 abas, Chrome separado)
+title MISTRAL [0-L] 5 abas
 cd /d "C:\winegod-app"
 
 echo ============================================================
-echo  WINE CLASSIFIER — Mistral (5 abas, 30s entre cada)
+echo  MISTRAL [0-L] 5 abas - Chrome separado
 echo ============================================================
 
 python wine_classifier\run_mistral.py
