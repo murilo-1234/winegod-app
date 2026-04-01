@@ -95,11 +95,97 @@ class GLMDriver(BaseDriver):
             except Exception:
                 continue
 
-        # Garantir que NAO esta em DeepThink
+        # 1. Selecionar modelo GLM-4.7
+        self._selecionar_glm47(page)
+
+        # 2. Garantir DeepThink DESLIGADO
         self._evitar_deepthink(page)
 
-        log(f"[{self.name}] Chat pronto")
+        log(f"[{self.name}] Chat pronto (GLM-4.7, sem DeepThink)")
         return True
+
+    def _selecionar_glm47(self, page):
+        """Seleciona modelo GLM-4.7 no seletor de modelo."""
+        try:
+            result = page.evaluate("""() => {
+                // Procurar botao/seletor de modelo
+                const all = document.querySelectorAll('button, [role="combobox"], [class*="model"], [class*="select"]');
+                for (const el of all) {
+                    const text = (el.textContent || '').trim().toLowerCase();
+                    // Ja esta em GLM-4.7?
+                    if (text.includes('glm-4.7') || text.includes('glm4.7')) {
+                        return 'ja_selecionado';
+                    }
+                    // Encontrou seletor de modelo (mostra outro modelo)
+                    if (text.includes('glm') && el.tagName === 'BUTTON') {
+                        el.click();
+                        return 'dropdown_aberto: ' + text;
+                    }
+                }
+                // Tentar por aria-label
+                const btns = document.querySelectorAll('button[aria-label*="model" i], button[aria-label*="modelo" i]');
+                for (const btn of btns) {
+                    btn.click();
+                    return 'dropdown_aberto_aria';
+                }
+                // Tentar qualquer dropdown/select visivel na area do input
+                const selects = document.querySelectorAll('[class*="dropdown"], [class*="selector"], [class*="picker"]');
+                for (const sel of selects) {
+                    const rect = sel.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0) {
+                        sel.click();
+                        return 'dropdown_generico';
+                    }
+                }
+                return 'nao_encontrado';
+            }""")
+
+            if result == 'ja_selecionado':
+                log(f"[{self.name}] GLM-4.7 ja selecionado")
+                return True
+
+            if result and result.startswith('dropdown'):
+                log(f"[{self.name}] Seletor aberto ({result}), procurando GLM-4.7...")
+                time.sleep(1)
+
+                # Clicar em GLM-4.7 no dropdown
+                selected = page.evaluate("""() => {
+                    const all = document.querySelectorAll('*');
+                    for (const el of all) {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) continue;
+                        const text = (el.textContent || '').trim().toLowerCase();
+                        if ((text.includes('glm-4.7') || text.includes('glm4.7') || text === '4.7') &&
+                            text.length < 30) {
+                            el.click();
+                            return 'selecionado: ' + text;
+                        }
+                    }
+                    // Fallback: procurar por "4.7" em qualquer item de lista
+                    const items = document.querySelectorAll('[role="option"], [role="menuitem"], li');
+                    for (const item of items) {
+                        const text = (item.textContent || '').trim();
+                        if (text.includes('4.7')) {
+                            item.click();
+                            return 'selecionado_lista: ' + text;
+                        }
+                    }
+                    return false;
+                }""")
+
+                if selected:
+                    time.sleep(1)
+                    log(f"[{self.name}] GLM-4.7 selecionado ({selected})")
+                    return True
+                else:
+                    page.keyboard.press("Escape")
+                    log(f"[{self.name}] [AVISO] GLM-4.7 nao encontrado no dropdown")
+            else:
+                log(f"[{self.name}] [AVISO] Seletor de modelo nao encontrado")
+
+        except Exception as e:
+            log(f"[{self.name}] [AVISO] Erro ao selecionar GLM-4.7: {e}")
+        return False
 
     def _evitar_deepthink(self, page):
         """Desativa DeepThink se estiver ativo. GLM deve rodar no modo normal."""
