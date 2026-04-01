@@ -11,10 +11,7 @@ class GrokDriver(BaseDriver):
     name = "grok"
     url = "https://grok.com"
 
-    # Grok Expert pode demorar (thinking)
-    TIMEOUT_SEC = 420
-    STABLE_SEC = 30
-    MIN_WAIT_SEC = 180
+    # Herda TIMEOUT_SEC = 1200 (20 min) do BaseDriver
 
     INPUT_SELECTORS = [
         "textarea",

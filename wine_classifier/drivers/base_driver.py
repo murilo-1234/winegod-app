@@ -70,7 +70,7 @@ class BaseDriver:
     LOGIN_INDICATORS = []
 
     # --- Timeouts ---
-    TIMEOUT_SEC = 420       # 7 min max
+    TIMEOUT_SEC = 1200      # 20 min max (Mistral override pra 10 min)
     STABLE_SEC = 30         # texto estavel = completo
     MIN_WAIT_SEC = 180      # esperar minimo antes de checar estabilidade
     CHECK_SEC = 3

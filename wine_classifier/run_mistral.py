@@ -1,10 +1,9 @@
 """
-Wine Classifier — Chrome (8 abas).
-4 Gemini Rapido + 4 Grok Expert.
-(Mistral roda em browser separado via run_mistral.py)
+Wine Classifier — Mistral (Chrome separado, 4 abas).
+Browser proprio pra nao competir com Gemini/Grok.
 
 Uso:
-  python wine_classifier/run_chrome.py
+  python wine_classifier/run_mistral.py
 """
 
 import sys
@@ -21,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from wine_classifier.drivers import GeminiRapidoDriver, GrokDriver
+from wine_classifier.drivers import MistralDriver
 
 # === CONFIG ===
 DB_HOST = "localhost"
@@ -31,14 +30,13 @@ DB_USER = "postgres"
 DB_PASS = "postgres123"
 
 BATCH_SIZE = 1000
-BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_chrome")
+BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_mistral")
 
-# Layout: Gemini + Grok (Mistral roda em browser separado)
+# Layout: so Mistral
 TAB_CONFIG = [
-    ("gemini", GeminiRapidoDriver, 4),
-    ("grok", GrokDriver, 4),
+    ("mistral", MistralDriver, 4),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 8
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 4
 
 STABLE_SEC = 30
 CHECK_SEC = 3
@@ -347,7 +345,7 @@ def _processar_sessao(key, sess):
 
 def main():
     log("=" * 60)
-    log("  WINE CLASSIFIER — Chrome (Gemini + Grok)")
+    log("  WINE CLASSIFIER — Mistral (Chrome separado)")
     log(f"  {TOTAL_TABS} abas x {BATCH_SIZE} itens = {TOTAL_TABS * BATCH_SIZE} itens/rodada")
     log("=" * 60)
 
@@ -575,7 +573,7 @@ def main():
 
     log("")
     log("=" * 60)
-    log("  FINALIZADO — Chrome")
+    log("  FINALIZADO — Mistral")
     log("=" * 60)
 
 

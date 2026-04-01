@@ -1,12 +1,12 @@
 @echo off
-title Wine Classifier — Chrome (Gemini + Grok)
+title Wine Classifier — Mistral (Chrome separado)
 cd /d "C:\winegod-app"
 
 echo ============================================================
-echo  WINE CLASSIFIER — Chrome (4 Gemini + 4 Grok)
+echo  WINE CLASSIFIER — Mistral (4 abas, Chrome separado)
 echo ============================================================
 
-python wine_classifier\run_chrome.py
+python wine_classifier\run_mistral.py
 
 echo.
 echo Finalizado!
