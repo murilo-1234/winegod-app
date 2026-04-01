@@ -127,8 +127,11 @@ def setup_tables():
     log("Tabelas verificadas")
 
 
+# Mistral pega 0-L (58% dos vinhos)
+FAIXA_LETRAS = "0123456789abcdefghijkl"
+
 def fetch_next_batch(total_items):
-    """Busca proximos N itens da wines_clean nao processados."""
+    """Busca proximos N itens da wines_clean nao processados (faixa 0-L)."""
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
@@ -138,9 +141,10 @@ def fetch_next_batch(total_items):
         WHERE yr.id IS NULL
           AND wc.nome_normalizado IS NOT NULL
           AND LENGTH(TRIM(wc.nome_normalizado)) > 3
+          AND LOWER(LEFT(wc.nome_normalizado, 1)) = ANY(%s)
         ORDER BY wc.nome_normalizado
         LIMIT %s
-    """, (total_items,))
+    """, (list(FAIXA_LETRAS), total_items,))
     rows = cur.fetchall()
     conn.close()
     return [{"clean_id": r[0], "loja_nome": r[1] or ""} for r in rows]
