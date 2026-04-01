@@ -30,15 +30,15 @@ DB_NAME = "winegod_db"
 DB_USER = "postgres"
 DB_PASS = "postgres123"
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_chrome")
 
-# Layout: ChatGPT + Gemini (timeout 20 min)
+# Layout: ChatGPT + Gemini (5 abas cada, lotes de 500)
 TAB_CONFIG = [
-    ("chatgpt", ChatGPTDriver, 4),
-    ("gemini", GeminiRapidoDriver, 4),
+    ("chatgpt", ChatGPTDriver, 5),
+    ("gemini", GeminiRapidoDriver, 5),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 8
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 10
 
 MAX_TIMEOUT_SEC = 1200  # 20 min (override dos drivers)
 STABLE_SEC = 30
