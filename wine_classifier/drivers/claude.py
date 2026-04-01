@@ -78,53 +78,64 @@ class ClaudeDriver(BaseDriver):
         return True
 
     def _selecionar_opus(self, page):
-        """Seleciona modelo Opus 4.5 no dropdown."""
+        """Seleciona modelo Opus 4.5 no dropdown (esta dentro de 'Mais modelos')."""
         try:
-            # Clicar no seletor de modelo
-            model_selectors = [
-                "button[data-testid='model-selector-dropdown']",
-                "button[data-testid='model-selector']",
-                "button:has-text('Sonnet')",
-                "button:has-text('Opus')",
-                "button:has-text('Claude')",
-                "[aria-label*='model' i]",
-            ]
-            for sel in model_selectors:
-                try:
-                    btn = page.locator(sel)
-                    if btn.count() > 0 and btn.first.is_visible(timeout=3000):
-                        btn.first.click()
-                        time.sleep(1)
-                        break
-                except Exception:
-                    continue
-            else:
+            # 1) Abrir dropdown do modelo
+            btn = page.locator("button[data-testid='model-selector-dropdown']")
+            if btn.count() == 0 or not btn.first.is_visible(timeout=3000):
                 log(f"[{self.name}] Seletor de modelo nao encontrado — usando padrao")
                 return
+            btn.first.click()
+            time.sleep(1)
 
-            # Selecionar Opus
-            opus_selectors = [
-                "div:has-text('Opus'):not(:has(div))",
-                "[data-testid='model-option-opus']",
-                "button:has-text('Opus')",
-                "li:has-text('Opus')",
-                "[role='option']:has-text('Opus')",
-                "[role='menuitem']:has-text('Opus')",
-            ]
-            for sel in opus_selectors:
-                try:
-                    opt = page.locator(sel)
-                    if opt.count() > 0:
-                        opt.first.click()
-                        time.sleep(1)
-                        log(f"[{self.name}] Modelo Opus 4.5 selecionado")
-                        return
-                except Exception:
-                    continue
+            # 2) Verificar se Opus 4.5 esta visivel direto no menu
+            opus45 = page.locator("[role='menuitem'] .font-ui:text-is('Opus 4.5')")
+            if opus45.count() > 0 and opus45.first.is_visible(timeout=2000):
+                opus45.first.click()
+                time.sleep(1)
+                log(f"[{self.name}] Modelo Opus 4.5 selecionado (direto)")
+                return
 
-            log(f"[{self.name}] [AVISO] Nao conseguiu selecionar Opus — verificar manualmente")
+            # 3) Opus 4.5 esta dentro de "Mais modelos" — clicar pra expandir
+            mais = page.locator("[role='menuitem'][aria-haspopup='menu']")
+            if mais.count() > 0:
+                mais.first.click()
+                time.sleep(1)
+                log(f"[{self.name}] Submenu 'Mais modelos' aberto")
+
+                # 4) Agora selecionar Opus 4.5 no submenu
+                opus45_sub = page.locator("[role='menuitem'] .font-ui:text-is('Opus 4.5')")
+                if opus45_sub.count() > 0 and opus45_sub.first.is_visible(timeout=3000):
+                    opus45_sub.first.click()
+                    time.sleep(1)
+                    log(f"[{self.name}] Modelo Opus 4.5 selecionado (via Mais modelos)")
+                    return
+
+                # Fallback: JS click em qualquer elemento com texto exato "Opus 4.5"
+                clicked = page.evaluate("""() => {
+                    const els = document.querySelectorAll('.font-ui');
+                    for (const el of els) {
+                        if (el.textContent.trim() === 'Opus 4.5') {
+                            el.closest('[role="menuitem"]')?.click() || el.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                }""")
+                if clicked:
+                    time.sleep(1)
+                    log(f"[{self.name}] Modelo Opus 4.5 selecionado (via JS)")
+                    return
+
+            # 5) Nada funcionou — fechar menu e avisar
+            page.keyboard.press("Escape")
+            log(f"[{self.name}] [AVISO] Nao conseguiu selecionar Opus 4.5 — verificar manualmente")
         except Exception as e:
             log(f"[{self.name}] [AVISO] Erro ao selecionar modelo: {e}")
+            try:
+                page.keyboard.press("Escape")
+            except Exception:
+                pass
 
     def colar_mensagem(self, page, texto):
         """Claude.ai: colar via JS focus + execCommand para textos grandes.
