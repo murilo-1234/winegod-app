@@ -85,47 +85,18 @@ def get_db():
 
 
 def setup_tables():
-    """Cria tabela y2_lotes_log e adiciona colunas novas na y2_results."""
+    """Verifica tabelas (rapido, sem lock exclusivo)."""
     conn = get_db()
     cur = conn.cursor()
-
-    # y2_lotes_log
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS y2_lotes_log (
-            id SERIAL PRIMARY KEY,
-            lote INTEGER NOT NULL,
-            ia VARCHAR(20) NOT NULL,
-            enviados INTEGER NOT NULL,
-            recebidos INTEGER NOT NULL,
-            faltantes INTEGER NOT NULL,
-            processado_em TIMESTAMP NOT NULL DEFAULT NOW(),
-            duracao_seg INTEGER,
-            observacao TEXT
-        )
-    """)
+    cur.execute("CREATE TABLE IF NOT EXISTS y2_lotes_log (id SERIAL PRIMARY KEY, lote INTEGER NOT NULL, ia VARCHAR(20) NOT NULL, enviados INTEGER NOT NULL, recebidos INTEGER NOT NULL, faltantes INTEGER NOT NULL, processado_em TIMESTAMP NOT NULL DEFAULT NOW(), duracao_seg INTEGER, observacao TEXT)")
     conn.commit()
-
-    # Colunas novas na y2_results
-    new_cols = [
-        ("uva", "TEXT"),
-        ("regiao", "TEXT"),
-        ("subregiao", "TEXT"),
-        ("safra", "VARCHAR(10)"),
-        ("abv", "VARCHAR(10)"),
-        ("denominacao", "TEXT"),
-        ("corpo", "VARCHAR(20)"),
-        ("harmonizacao", "TEXT"),
-        ("docura", "VARCHAR(20)"),
-        ("fonte_llm", "VARCHAR(20) DEFAULT 'gemini'"),
-    ]
-    for col_name, col_type in new_cols:
+    # ADD COLUMN IF NOT EXISTS — nao trava esperando lock como ALTER TABLE normal
+    for col_name, col_type in [("uva","TEXT"),("regiao","TEXT"),("subregiao","TEXT"),("safra","VARCHAR(10)"),("abv","VARCHAR(10)"),("denominacao","TEXT"),("corpo","VARCHAR(20)"),("harmonizacao","TEXT"),("docura","VARCHAR(20)"),("fonte_llm","VARCHAR(20) DEFAULT 'gemini'")]:
         try:
-            cur.execute(f"ALTER TABLE y2_results ADD COLUMN {col_name} {col_type}")
-        except psycopg2.errors.DuplicateColumn:
-            conn.rollback()
+            cur.execute(f"ALTER TABLE y2_results ADD COLUMN IF NOT EXISTS {col_name} {col_type}")
+            conn.commit()
         except Exception:
             conn.rollback()
-    conn.commit()
     conn.close()
     log("Tabelas verificadas")
 
