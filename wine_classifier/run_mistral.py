@@ -1,5 +1,5 @@
 """
-Wine Classifier — Mistral (Chrome separado, 4 abas).
+Wine Classifier — Mistral (Chrome separado, 5 abas, 30s entre cada).
 Browser proprio pra nao competir com Gemini/Grok.
 
 Uso:
@@ -32,11 +32,12 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_mistral")
 
-# Layout: so Mistral
+# Layout: so Mistral (5 abas, 30s entre cada)
 TAB_CONFIG = [
-    ("mistral", MistralDriver, 4),
+    ("mistral", MistralDriver, 5),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 4
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 5
+PAUSA_ENTRE_ABAS = 30  # segundos entre abrir cada aba
 
 STABLE_SEC = 30
 CHECK_SEC = 3
@@ -487,8 +488,8 @@ def main():
                         log(f"  [{key}] FALHA: {e}")
                         log_lote(lote_num, ia_name, len(items), 0, 0, f"erro: {str(e)[:100]}")
 
-                    # Pausa curta entre abas (dar tempo pro browser)
-                    time.sleep(2)
+                    # Pausa entre abas (dar tempo pro Mistral comecar a processar)
+                    time.sleep(PAUSA_ENTRE_ABAS)
 
                 log(f"  {len(sessions)} abas disparadas, polling...")
 
