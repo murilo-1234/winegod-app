@@ -20,7 +20,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from wine_classifier.drivers import GeminiRapidoDriver, GrokDriver, ChatGPTDriver, GLMDriver
+from wine_classifier.drivers import GrokDriver, GLMDriver
 
 # === CONFIG ===
 DB_HOST = "localhost"
@@ -32,14 +32,12 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 
-# Layout: 3 abas de cada IA
+# Layout: Grok + GLM
 TAB_CONFIG = [
-    ("gemini", GeminiRapidoDriver, 3),
-    ("grok", GrokDriver, 3),
-    ("chatgpt", ChatGPTDriver, 3),
+    ("grok", GrokDriver, 4),
     ("glm", GLMDriver, 3),
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 12
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 7
 
 TIMEOUT_SEC = 420       # 7 min max
 STABLE_SEC = 30

@@ -12,7 +12,9 @@ class GLMDriver(BaseDriver):
     name = "glm"
     url = "https://chat.z.ai"
 
-    # Herda TIMEOUT_SEC = 1200 (20 min) do BaseDriver
+    TIMEOUT_SEC = 420      # 7 min
+    STABLE_SEC = 20
+    MIN_WAIT_SEC = 90      # 1.5 min
 
     # --- SELETORES CONFIRMADOS ---
 

@@ -11,7 +11,9 @@ class GrokDriver(BaseDriver):
     name = "grok"
     url = "https://grok.com"
 
-    # Herda TIMEOUT_SEC = 1200 (20 min) do BaseDriver
+    TIMEOUT_SEC = 420      # 7 min
+    STABLE_SEC = 20
+    MIN_WAIT_SEC = 90      # 1.5 min
 
     INPUT_SELECTORS = [
         "textarea",
