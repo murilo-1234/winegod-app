@@ -392,20 +392,23 @@ def main():
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
+                "--disable-session-crashed-bubble",
+                "--hide-crash-restore-bubble",
             ],
         )
 
-        # Fechar abas residuais da sessao anterior
-        time.sleep(3)  # esperar browser restaurar abas
-        old_pages = list(context.pages)
-        if old_pages:
-            log(f"Fechando {len(old_pages)} abas residuais...")
+        # Fechar TODAS as abas que o browser restaurou
+        for attempt in range(3):
+            old_pages = [p for p in context.pages if p.url != "about:blank"]
+            if not old_pages:
+                break
+            log(f"Fechando {len(old_pages)} abas fantasma (tentativa {attempt+1})...")
             for old_page in old_pages:
                 try:
                     old_page.close()
                 except Exception:
                     pass
-            time.sleep(1)
+            time.sleep(2)
 
         # Keepalive tab
         keepalive = context.new_page()
