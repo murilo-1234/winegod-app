@@ -61,8 +61,51 @@ class MistralDriver(BaseDriver):
             log(f"[{self.name}] Sessao expirada - pulando")
             return False
 
-        log(f"[{self.name}] Chat pronto")
+        self._selecionar_rapido(page)
+
+        log(f"[{self.name}] Chat pronto (Rapido)")
         return True
+
+    def _selecionar_rapido(self, page):
+        """Garante que Mistral esta no modo Rapido (nao Pesquisa nem Refletir)."""
+        try:
+            mode = page.evaluate("""() => {
+                const btns = document.querySelectorAll('button[type="button"]');
+                for (const btn of btns) {
+                    const text = btn.innerText.trim();
+                    if (['Rápido', 'Rapido', 'Fast', 'Pesquisa', 'Search', 'Refletir', 'Reflect'].includes(text)) {
+                        return text;
+                    }
+                }
+                return null;
+            }""")
+
+            if mode and mode in ('Rápido', 'Rapido', 'Fast'):
+                log(f"[{self.name}] Modo Rapido ja ativo")
+                return True
+
+            if mode:
+                # Esta em outro modo (Pesquisa/Refletir) — clicar pra trocar
+                log(f"[{self.name}] Modo atual: {mode} — trocando pra Rapido")
+                page.evaluate("""() => {
+                    const btns = document.querySelectorAll('button[type="button"]');
+                    for (const btn of btns) {
+                        const text = btn.innerText.trim();
+                        if (['Rápido', 'Rapido', 'Fast'].includes(text)) {
+                            btn.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                }""")
+                time.sleep(1)
+                log(f"[{self.name}] Modo Rapido selecionado")
+                return True
+
+            log(f"[{self.name}] Modo nao identificado — usando padrao")
+        except Exception as e:
+            log(f"[{self.name}] [AVISO] Erro ao verificar modo: {e}")
+        return False
 
     def colar_mensagem(self, page, texto):
         """Mistral: colar via JS focus + clipboard."""

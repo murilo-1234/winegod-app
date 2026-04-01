@@ -91,12 +91,68 @@ class GLMDriver(BaseDriver):
                     btn.first.click()
                     time.sleep(2)
                     log(f"[{self.name}] Novo chat via botao")
-                    return True
+                    break
             except Exception:
                 continue
 
+        # Garantir que NAO esta em DeepThink
+        self._evitar_deepthink(page)
+
         log(f"[{self.name}] Chat pronto")
         return True
+
+    def _evitar_deepthink(self, page):
+        """Desativa DeepThink se estiver ativo. GLM deve rodar no modo normal."""
+        try:
+            # Procurar toggle/botao de DeepThink e desativar
+            deepthink = page.evaluate("""() => {
+                const all = document.querySelectorAll('button, [role="switch"], [role="checkbox"], [class*="toggle"]');
+                for (const el of all) {
+                    const text = (el.textContent || '').trim().toLowerCase();
+                    const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+                    if (text.includes('deepthink') || text.includes('deep think') ||
+                        ariaLabel.includes('deepthink') || ariaLabel.includes('deep think')) {
+                        // Verificar se esta ativo
+                        const isActive = el.classList.contains('active') ||
+                                        el.getAttribute('aria-checked') === 'true' ||
+                                        el.getAttribute('data-state') === 'checked' ||
+                                        el.classList.contains('on');
+                        if (isActive) {
+                            el.click();
+                            return 'desativado';
+                        }
+                        return 'ja_normal';
+                    }
+                }
+                // Tentar por texto visivel
+                const spans = document.querySelectorAll('span, div, label');
+                for (const el of spans) {
+                    const text = (el.textContent || '').trim().toLowerCase();
+                    if (text === 'deepthink' || text === 'deep think') {
+                        const parent = el.closest('button, [role="switch"], label');
+                        if (parent) {
+                            const isActive = parent.classList.contains('active') ||
+                                            parent.getAttribute('aria-checked') === 'true';
+                            if (isActive) {
+                                parent.click();
+                                return 'desativado_via_parent';
+                            }
+                            return 'ja_normal';
+                        }
+                    }
+                }
+                return 'nao_encontrado';
+            }""")
+
+            if deepthink and 'desativado' in deepthink:
+                time.sleep(1)
+                log(f"[{self.name}] DeepThink desativado")
+            elif deepthink == 'ja_normal':
+                log(f"[{self.name}] Modo normal ja ativo")
+            else:
+                log(f"[{self.name}] Toggle DeepThink nao encontrado — assumindo modo normal")
+        except Exception as e:
+            log(f"[{self.name}] [AVISO] Erro ao verificar DeepThink: {e}")
 
     def enviar_mensagem(self, page):
         time.sleep(0.5)
