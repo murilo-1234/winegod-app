@@ -421,11 +421,16 @@ def main():
         )
 
         # Fechar abas residuais da sessao anterior
-        for old_page in context.pages:
-            try:
-                old_page.close()
-            except Exception:
-                pass
+        time.sleep(3)  # esperar browser restaurar abas
+        old_pages = list(context.pages)
+        if old_pages:
+            log(f"Fechando {len(old_pages)} abas residuais...")
+            for old_page in old_pages:
+                try:
+                    old_page.close()
+                except Exception:
+                    pass
+            time.sleep(1)
 
         # Keepalive tab
         keepalive = context.new_page()
