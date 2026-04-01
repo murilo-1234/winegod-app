@@ -11,6 +11,10 @@ class ChatGPTDriver(BaseDriver):
     name = "chatgpt"
     url = "https://chatgpt.com"
 
+    TIMEOUT_SEC = 2700     # 45 min (ChatGPT demora ~35 min)
+    STABLE_SEC = 30
+    MIN_WAIT_SEC = 300     # 5 min
+
     INPUT_SELECTORS = [
         "#prompt-textarea",
         "div#prompt-textarea",

@@ -11,6 +11,10 @@ class GeminiRapidoDriver(BaseDriver):
     name = "gemini"
     url = "https://gemini.google.com/app"
 
+    TIMEOUT_SEC = 1800     # 30 min
+    STABLE_SEC = 30
+    MIN_WAIT_SEC = 180     # 3 min
+
     INPUT_SELECTORS = [
         ".ql-editor[contenteditable='true']",
         "rich-textarea div[contenteditable='true']",
