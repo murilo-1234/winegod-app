@@ -171,7 +171,7 @@ def parse_response(text, items, ia_name):
             num = int(match.group(1))
             content = match.group(2).strip()
             lines_parsed[num] = content
-        elif line.startswith(("W|", "X", "S")):
+        elif line.startswith(("W|", "X", "S", "=")):
             sequential_num += 1
             lines_parsed[sequential_num] = line
 
