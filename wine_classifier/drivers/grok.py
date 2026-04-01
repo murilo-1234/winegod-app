@@ -98,63 +98,83 @@ class GrokDriver(BaseDriver):
         return True
 
     def _selecionar_expert(self, page):
-        """Seleciona modo Expert (Grok 3)."""
+        """Seleciona modo Expert (Grok 3). Procura variações de nome."""
         try:
+            # Passo 1: detectar modo atual
             current = page.evaluate("""
                 () => {
                     const btns = document.querySelectorAll('button');
                     for (const btn of btns) {
-                        const text = btn.textContent.trim();
-                        if (text === 'Expert') return 'expert';
-                        if (text === 'Auto' || text === 'Mini') return text.toLowerCase();
+                        const text = btn.textContent.trim().toLowerCase();
+                        if (text === 'expert' || text.includes('grok 3') || text.includes('grok3')) return 'expert';
+                        if (text === 'auto' || text === 'mini' || text.includes('grok 2') ||
+                            text === 'think' || text === 'default') return text;
+                    }
+                    // Tentar por aria-label ou data attributes
+                    const modelBtns = document.querySelectorAll('[data-testid*="model"], [aria-label*="model" i], [aria-label*="Model" i]');
+                    for (const btn of modelBtns) {
+                        const text = btn.textContent.trim().toLowerCase();
+                        if (text.includes('expert') || text.includes('grok 3')) return 'expert';
+                        return 'modelo: ' + text;
                     }
                     return null;
                 }
             """)
 
+            log(f"[{self.name}] Modo detectado: {current}")
+
             if current == 'expert':
                 log(f"[{self.name}] Modo Expert ja ativo")
                 return True
 
-            if not current:
-                log(f"[{self.name}] [AVISO] Botao de modelo nao encontrado")
-                return False
-
-            # Clicar no botao de modelo pra abrir dropdown
+            # Passo 2: clicar no seletor de modelo pra abrir dropdown
             page.evaluate("""
                 () => {
                     const btns = document.querySelectorAll('button');
                     for (const btn of btns) {
-                        const text = btn.textContent.trim();
-                        if (text === 'Auto' || text === 'Mini') {
+                        const text = btn.textContent.trim().toLowerCase();
+                        if (text === 'auto' || text === 'mini' || text === 'think' ||
+                            text === 'default' || text.includes('grok')) {
                             btn.click();
-                            return;
+                            return true;
                         }
                     }
+                    // Fallback: botao de modelo por atributos
+                    const modelBtns = document.querySelectorAll('[data-testid*="model"], [aria-label*="model" i]');
+                    for (const btn of modelBtns) {
+                        btn.click();
+                        return true;
+                    }
+                    return false;
                 }
             """)
             time.sleep(2)
 
-            # Clicar em Expert
+            # Passo 3: clicar em Expert no dropdown
             expert_clicked = page.evaluate("""
                 () => {
+                    // Match exato primeiro
                     const all = document.querySelectorAll('*');
                     for (const el of all) {
                         const rect = el.getBoundingClientRect();
                         if (rect.width === 0 || rect.height === 0) continue;
                         const text = el.textContent.trim();
-                        if (text === 'Expert') {
-                            el.click();
-                            return 'clicked';
+                        const textLower = text.toLowerCase();
+                        if (text === 'Expert' || textLower === 'expert' ||
+                            textLower.includes('grok 3') || textLower.includes('grok3')) {
+                            if (text.length < 30 && el.tagName !== 'BODY' && el.tagName !== 'HTML') {
+                                el.click();
+                                return 'clicked: ' + text;
+                            }
                         }
                     }
-                    for (const el of all) {
-                        const rect = el.getBoundingClientRect();
-                        if (rect.width === 0 || rect.height === 0) continue;
-                        const text = el.textContent.trim();
-                        if (text.includes('Expert') && text.length < 30 && el.tagName !== 'BODY') {
-                            el.click();
-                            return 'clicked_partial: ' + text;
+                    // Fallback: items de menu/opcoes
+                    const items = document.querySelectorAll('[role="option"], [role="menuitem"], [role="menuitemradio"], li');
+                    for (const item of items) {
+                        const text = item.textContent.trim().toLowerCase();
+                        if (text.includes('expert') || text.includes('grok 3')) {
+                            item.click();
+                            return 'clicked_item: ' + text;
                         }
                     }
                     return false;
@@ -163,11 +183,11 @@ class GrokDriver(BaseDriver):
 
             if expert_clicked:
                 time.sleep(1)
-                log(f"[{self.name}] Modo Expert selecionado")
+                log(f"[{self.name}] Modo Expert selecionado ({expert_clicked})")
                 return True
             else:
                 page.keyboard.press("Escape")
-                log(f"[{self.name}] [AVISO] Opcao Expert nao encontrada")
+                log(f"[{self.name}] [AVISO] Opcao Expert nao encontrada no dropdown")
 
         except Exception as e:
             log(f"[{self.name}] [AVISO] Erro ao selecionar Expert: {e}")
