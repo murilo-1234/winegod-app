@@ -404,9 +404,12 @@ def main():
             ],
         )
 
-        # Keepalive tab
-        keepalive = context.new_page()
-        keepalive.goto("about:blank")
+        # Fechar aba padrao que o browser cria ao iniciar
+        if context.pages:
+            try:
+                context.pages[0].goto("about:blank")
+            except Exception:
+                pass
 
         rodada = 0
 
@@ -491,6 +494,10 @@ def main():
                     except Exception as e:
                         log(f"  [{key}] FALHA: {e}")
                         log_lote(lote_num, ia_name, len(items), 0, 0, f"erro: {str(e)[:100]}")
+                        try:
+                            page.close()
+                        except Exception:
+                            pass
 
                     # Pausa entre abas (dar tempo pro Mistral comecar a processar)
                     time.sleep(PAUSA_ENTRE_ABAS)
