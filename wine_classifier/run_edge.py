@@ -316,6 +316,38 @@ def log_lote(lote_num, ia_name, enviados, recebidos, duracao_seg, obs=""):
     conn.close()
 
 
+def _processar_sessao(key, sess):
+    """Parseia resposta e salva no banco. Chamado assim que a aba termina."""
+    items = sess["items"]
+    ia_name = sess["ia_name"]
+    lote_num = sess["lote_num"]
+    response = sess.get("response", "")
+    duracao = int(time.time() - sess["start_time"])
+
+    if not response:
+        log_lote(lote_num, ia_name, len(items), 0, duracao, sess.get("status", "sem_resposta"))
+        log(f"  [{key}] Sem resposta")
+        return
+
+    results, lines_out = parse_response(response, items, ia_name)
+
+    if results:
+        inserted = insert_results(results)
+        wines = sum(1 for r in results if r["classificacao"] == "W")
+        not_wine = sum(1 for r in results if r["classificacao"] == "X")
+        spirits = sum(1 for r in results if r["classificacao"] == "S")
+
+        log(f"  [{key}] Lote #{lote_num}: {lines_out} linhas, "
+            f"W={wines} X={not_wine} S={spirits} | "
+            f"Inseridos={inserted} ({duracao}s)")
+
+        log_lote(lote_num, ia_name, len(items), len(results),
+                 duracao, f"W={wines} X={not_wine} S={spirits}")
+    else:
+        log(f"  [{key}] Lote #{lote_num}: 0 linhas parseadas ({duracao}s)")
+        log_lote(lote_num, ia_name, len(items), 0, duracao, "sem_linhas")
+
+
 # === MAIN ===
 
 def main():
@@ -380,6 +412,16 @@ def main():
 
         rodada = 0
 
+        # Montar lista de abas intercalada: qwen_1, chatgpt_1, glm_1, qwen_2, chatgpt_2, glm_2...
+        tab_order = []
+        max_tabs = max(n for _, _, n in TAB_CONFIG)
+        for tab_num in range(max_tabs):
+            for ia_name, DriverClass, n_tabs in TAB_CONFIG:
+                if tab_num < n_tabs:
+                    tab_order.append((ia_name, DriverClass, tab_num + 1))
+
+        log(f"Ordem das abas: {' → '.join(f'{ia}_{n}' for ia, _, n in tab_order)}")
+
         try:
             while True:
                 rodada += 1
@@ -404,61 +446,59 @@ def main():
                 if not lotes:
                     break
 
-                # Criar sessions: atribuir lotes a abas com drivers
+                # === ABRIR UMA ABA POR VEZ (sequencial) ===
                 sessions = {}
-                lote_idx = 0
-                for ia_name, DriverClass, n_tabs in TAB_CONFIG:
-                    for tab_num in range(n_tabs):
-                        if lote_idx >= len(lotes):
-                            break
+                for lote_idx, (ia_name, DriverClass, tab_num) in enumerate(tab_order):
+                    if lote_idx >= len(lotes):
+                        break
 
-                        items = lotes[lote_idx]
-                        lote_counter += 1
-                        lote_num = lote_counter
-                        lote_idx += 1
+                    items = lotes[lote_idx]
+                    lote_counter += 1
+                    lote_num = lote_counter
+                    key = f"{ia_name}_{tab_num}"
+                    prompt = build_prompt(items, prompt_header)
 
-                        key = f"{ia_name}_{tab_num+1}"
-                        prompt = build_prompt(items, prompt_header)
+                    log(f"  [{key}] Abrindo... Lote #{lote_num}: {len(items)} itens")
 
-                        log(f"  [{key}] Lote #{lote_num}: {len(items)} itens, {len(prompt)} chars")
+                    try:
+                        driver = DriverClass()
+                        page = context.new_page()
+                        page.set_default_timeout(60000)
 
-                        try:
-                            driver = DriverClass()
-                            page = context.new_page()
-                            page.set_default_timeout(60000)
+                        chat_ok = driver.abrir_novo_chat(page)
+                        if not chat_ok:
+                            log(f"  [{key}] Falha ao abrir chat, pulando")
+                            page.close()
+                            log_lote(lote_num, ia_name, len(items), 0, 0, "falha_abrir_chat")
+                            continue
 
-                            chat_ok = driver.abrir_novo_chat(page)
-                            if not chat_ok:
-                                log(f"  [{key}] Falha ao abrir chat, pulando")
-                                page.close()
-                                log_lote(lote_num, ia_name, len(items), 0, 0, "falha_abrir_chat")
-                                continue
+                        driver.colar_mensagem(page, prompt)
+                        time.sleep(0.3)
+                        driver.enviar_mensagem(page)
 
-                            driver.colar_mensagem(page, prompt)
-                            time.sleep(0.3)
-                            driver.enviar_mensagem(page)
-                            time.sleep(2)
+                        sessions[key] = {
+                            "driver": driver,
+                            "page": page,
+                            "items": items,
+                            "ia_name": ia_name,
+                            "lote_num": lote_num,
+                            "status": "waiting",
+                            "last_text": "",
+                            "stable_since": time.time(),
+                            "start_time": time.time(),
+                        }
+                        log(f"  [{key}] Enviado! Abrindo proxima aba...")
 
-                            sessions[key] = {
-                                "driver": driver,
-                                "page": page,
-                                "items": items,
-                                "ia_name": ia_name,
-                                "lote_num": lote_num,
-                                "status": "waiting",
-                                "last_text": "",
-                                "stable_since": time.time(),
-                                "start_time": time.time(),
-                            }
-                            log(f"  [{key}] Prompt enviado")
+                    except Exception as e:
+                        log(f"  [{key}] FALHA: {e}")
+                        log_lote(lote_num, ia_name, len(items), 0, 0, f"erro: {str(e)[:100]}")
 
-                        except Exception as e:
-                            log(f"  [{key}] FALHA: {e}")
-                            log_lote(lote_num, ia_name, len(items), 0, 0, f"erro: {str(e)[:100]}")
+                    # Pausa curta entre abas (dar tempo pro browser)
+                    time.sleep(2)
 
-                log(f"  {len(sessions)} abas ativas, polling...")
+                log(f"  {len(sessions)} abas disparadas, polling...")
 
-                # === POLLING ===
+                # === POLLING (todas ao mesmo tempo) ===
                 waiting = {k: s for k, s in sessions.items() if s["status"] == "waiting"}
                 while waiting:
                     for key, sess in list(waiting.items()):
@@ -470,7 +510,6 @@ def main():
                         if elapsed > driver.TIMEOUT_SEC:
                             log(f"  [{key}] TIMEOUT ({int(elapsed)}s)")
                             sess["status"] = "timeout"
-                            # Tentar salvar o que tem
                             try:
                                 sess["response"] = driver._get_response_text(page)
                             except Exception:
@@ -496,6 +535,9 @@ def main():
                             sess["status"] = "done"
                             sess["response"] = current
                             del waiting[key]
+
+                            # Processar IMEDIATAMENTE ao terminar
+                            _processar_sessao(key, sess)
                             continue
 
                         # Log progresso a cada ~30s
@@ -506,37 +548,13 @@ def main():
 
                     time.sleep(CHECK_SEC)
 
-                # === PROCESSAR RESULTADOS ===
+                # Processar timeouts que sobraram
                 for key, sess in sessions.items():
-                    items = sess["items"]
-                    ia_name = sess["ia_name"]
-                    lote_num = sess["lote_num"]
-                    response = sess.get("response", "")
-                    duracao = int(time.time() - sess["start_time"])
+                    if sess["status"] == "timeout":
+                        _processar_sessao(key, sess)
 
-                    if not response or sess["status"] in ("fail",):
-                        log_lote(lote_num, ia_name, len(items), 0, duracao, sess["status"])
-                        log(f"  [{key}] Sem resposta")
-                    else:
-                        results, lines_out = parse_response(response, items, ia_name)
-
-                        if results:
-                            inserted = insert_results(results)
-                            wines = sum(1 for r in results if r["classificacao"] == "W")
-                            not_wine = sum(1 for r in results if r["classificacao"] == "X")
-                            spirits = sum(1 for r in results if r["classificacao"] == "S")
-
-                            log(f"  [{key}] Lote #{lote_num}: {lines_out} linhas, "
-                                f"W={wines} X={not_wine} S={spirits} | "
-                                f"Inseridos={inserted} ({duracao}s)")
-
-                            log_lote(lote_num, ia_name, len(items), len(results),
-                                     duracao, f"W={wines} X={not_wine} S={spirits}")
-                        else:
-                            log(f"  [{key}] Lote #{lote_num}: 0 linhas parseadas ({duracao}s)")
-                            log_lote(lote_num, ia_name, len(items), 0, duracao, "sem_linhas")
-
-                    # Fechar aba
+                # Fechar todas as abas
+                for key, sess in sessions.items():
                     if "page" in sess:
                         try:
                             sess["page"].close()
@@ -551,7 +569,6 @@ def main():
                 conn.close()
                 log(f"  Rodada {rodada} concluida. Total processado: {total_done:,}")
 
-                # Pausa entre rodadas
                 time.sleep(3)
 
         finally:
