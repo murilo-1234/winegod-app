@@ -35,13 +35,12 @@ DB_PASS = "postgres123"
 BATCH_SIZE = 1000
 BROWSER_STATE = os.path.join(SCRIPT_DIR, "browser_state_edge")
 
-# Layout: 4 abas por IA
+# Layout: ChatGPT + GLM (Qwen removido — instavel)
 TAB_CONFIG = [
-    ("qwen", QwenDriver, 4),
     ("chatgpt", ChatGPTDriver, 4),
     ("glm", GLMDriver, 3),  # GLM so aceita 3 abas
 ]
-TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 12
+TOTAL_TABS = sum(n for _, _, n in TAB_CONFIG)  # 7
 
 TIMEOUT_SEC = 420       # 7 min max
 STABLE_SEC = 30
