@@ -13,7 +13,7 @@ class MistralDriver(BaseDriver):
 
     TIMEOUT_SEC = 600      # 10 min (Mistral e rapido)
     STABLE_SEC = 30
-    MIN_WAIT_SEC = 180      # 3 min
+    MIN_WAIT_SEC = 90       # 1.5 min (Mistral termina em ~2 min)
 
     INPUT_SELECTORS = [
         "div.ProseMirror[contenteditable='true']",
