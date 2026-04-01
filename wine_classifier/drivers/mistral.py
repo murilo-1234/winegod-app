@@ -11,9 +11,9 @@ class MistralDriver(BaseDriver):
     name = "mistral"
     url = "https://chat.mistral.ai/chat"
 
-    TIMEOUT_SEC = 600      # 10 min (Mistral e rapido)
-    STABLE_SEC = 30
-    MIN_WAIT_SEC = 90       # 1.5 min (Mistral termina em ~2 min)
+    TIMEOUT_SEC = 300      # 5 min max (sobra pra 3.5 min)
+    STABLE_SEC = 15        # texto estavel 15s = completo
+    MIN_WAIT_SEC = 60      # 1 min minimo (Mistral termina em ~1.5-2 min)
 
     INPUT_SELECTORS = [
         "div.ProseMirror[contenteditable='true']",
