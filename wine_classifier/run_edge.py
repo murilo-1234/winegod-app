@@ -209,6 +209,19 @@ def parse_response(text, items, ia_name):
             # Item sem resposta — NAO adicionar ao results (faltante)
             continue
 
+        # Duplicata pura: "=N" (sem W| na frente)
+        if llm.startswith("="):
+            try:
+                dup_ref_num = int(llm[1:].strip())
+                if 1 <= dup_ref_num <= len(items):
+                    result["classificacao"] = "W"
+                    result["duplicata_de"] = items[dup_ref_num - 1]["clean_id"]
+                    result["status"] = "duplicate"
+                    results.append(result)
+                    continue
+            except (ValueError, IndexError):
+                pass
+
         if llm.startswith("X"):
             result["classificacao"] = "X"
             result["status"] = "not_wine"
