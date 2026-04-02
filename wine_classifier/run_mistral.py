@@ -103,8 +103,8 @@ def setup_tables():
     log("Tabelas verificadas")
 
 
-# Mistral pega 0-L (58% dos vinhos)
-FAIXA_LETRAS = "0123456789abcdefghijkl"
+# Mistral pega so C (reservado, Codex nao toca)
+FAIXA_LETRAS = "c"
 
 def fetch_next_batch(total_items):
     """Busca proximos N itens da wines_clean nao processados (faixa 0-L)."""
