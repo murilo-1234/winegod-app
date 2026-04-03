@@ -47,6 +47,8 @@ state = {
     "last_batch_time": 0,
 }
 stop_event = threading.Event()
+trgm_stop_event = threading.Event()
+trgm_state = {"status": "stopped", "matched": 0, "processed": 0}  # status: stopped, running
 worker_lock = threading.Lock()
 
 # === PROMPT ===
@@ -452,6 +454,179 @@ def run_vivino_match():
     conn.close()
 
 
+def run_trgm_standalone():
+    """Match Vivino RAPIDO — tudo em memoria (baseado no trgm_fast.py).
+    Carrega ~200K produtores Vivino em RAM, faz match em Python puro.
+    ~250-300 itens/seg vs ~40/seg da versao SQL com threads.
+    """
+    trgm_state["status"] = "running"
+    trgm_state["matched"] = 0
+    trgm_state["processed"] = 0
+    BATCH = 1000
+    STOPWORDS = {"de","du","la","le","les","des","del","di","the","and","et"}
+
+    try:
+        conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+                                user=DB_USER, password=DB_PASS,
+                                options="-c client_encoding=UTF8")
+        conn.autocommit = False
+        cur = conn.cursor()
+        cur2 = conn.cursor()
+
+        # Contar pendentes
+        cur.execute("SELECT COUNT(*) FROM y2_results WHERE status='pending_match' AND prod_banco IS NOT NULL AND prod_banco != '' AND prod_banco != '??'")
+        total = cur.fetchone()[0]
+        print(f"[TRGM FAST] Pendentes: {total}")
+
+        if total == 0:
+            print("[TRGM FAST] Nada a processar.")
+            conn.close()
+            trgm_state["status"] = "stopped"
+            return
+
+        # Carregar TODOS os produtores do Vivino em memoria
+        print("[TRGM FAST] Carregando produtores do Vivino em memoria...", flush=True)
+        cur.execute("SELECT id, produtor_normalizado, nome_normalizado FROM vivino_match WHERE produtor_normalizado IS NOT NULL AND produtor_normalizado != ''")
+        vivino_by_prod = {}
+        for vid, vprod, vnome in cur:
+            if vprod not in vivino_by_prod:
+                vivino_by_prod[vprod] = []
+            vivino_by_prod[vprod].append((vid, vnome))
+        print(f"[TRGM FAST] {len(vivino_by_prod)} produtores unicos carregados")
+
+        # Indexar por palavras-chave do produtor (match parcial)
+        prod_word_index = {}
+        for prod in vivino_by_prod:
+            for word in prod.split():
+                if len(word) >= 4:
+                    if word not in prod_word_index:
+                        prod_word_index[word] = set()
+                    prod_word_index[word].add(prod)
+        print(f"[TRGM FAST] {len(prod_word_index)} palavras indexadas. Iniciando match...")
+
+        start_time = time.time()
+
+        while not trgm_stop_event.is_set():
+            cur2.execute("""
+                SELECT id, prod_banco, vinho_banco
+                FROM y2_results
+                WHERE status = 'pending_match'
+                AND prod_banco IS NOT NULL AND prod_banco != '' AND prod_banco != '??'
+                LIMIT %s
+            """, (BATCH,))
+            rows = cur2.fetchall()
+
+            if not rows:
+                # Marcar orfaos sem produtor como 'new'
+                cur2.execute("""
+                    UPDATE y2_results SET status = 'new'
+                    WHERE status = 'pending_match'
+                    AND (prod_banco IS NULL OR prod_banco = '' OR prod_banco = '??')
+                """)
+                orphans = cur2.rowcount
+                conn.commit()
+                if orphans:
+                    trgm_state["processed"] += orphans
+                    print(f"[TRGM FAST] {orphans} itens sem produtor marcados 'new'")
+                break
+
+            updates_matched = []
+            updates_new = []
+
+            for row_id, prod, vin in rows:
+                if trgm_stop_event.is_set():
+                    break
+                if not vin:
+                    vin = ""
+
+                best_vid = None
+                best_score = 0
+                best_prod = ""
+                best_nome = ""
+
+                # Estrategia 1: produtor exato
+                candidates = vivino_by_prod.get(prod, [])
+
+                # Estrategia 2: produtor contem ou esta contido
+                if not candidates:
+                    for vp in vivino_by_prod:
+                        if prod in vp or vp in prod:
+                            candidates.extend(vivino_by_prod[vp])
+                            if len(candidates) > 50:
+                                break
+
+                # Estrategia 3: palavra mais longa do produtor
+                if not candidates:
+                    prod_words = [w for w in prod.split() if len(w) >= 4]
+                    if prod_words:
+                        longest = max(prod_words, key=len)
+                        matching_prods = prod_word_index.get(longest, set())
+                        for mp in list(matching_prods)[:20]:
+                            candidates.extend(vivino_by_prod[mp])
+
+                if not candidates:
+                    updates_new.append((row_id,))
+                    continue
+
+                # Scoring: overlap de palavras do vinho
+                vin_words = set(vin.split()) - STOPWORDS
+                vin_words = {w for w in vin_words if len(w) >= 3}
+
+                for vid, vnome in candidates:
+                    vnome_words = set(vnome.split()) - STOPWORDS
+                    vnome_words = {w for w in vnome_words if len(w) >= 3}
+
+                    if vin_words and vnome_words:
+                        overlap = len(vin_words & vnome_words)
+                        total_w = max(len(vin_words), len(vnome_words))
+                        score = overlap / total_w if total_w > 0 else 0
+                    elif vin in vnome or vnome in vin:
+                        score = 0.5
+                    else:
+                        score = 0
+
+                    # Bonus: produtor exato
+                    if prod in vivino_by_prod and candidates == vivino_by_prod[prod]:
+                        score += 0.3
+
+                    if score > best_score:
+                        best_score = score
+                        best_vid = vid
+                        best_prod = prod
+                        best_nome = vnome
+
+                if best_vid and best_score >= 0.2:
+                    updates_matched.append((best_vid, best_prod, best_nome, round(best_score, 3), row_id))
+                else:
+                    updates_new.append((row_id,))
+
+            # Batch UPDATE
+            if updates_matched:
+                cur2.executemany("""UPDATE y2_results SET vivino_id=%s, vivino_produtor=%s, vivino_nome=%s,
+                                  match_score=%s, status='matched' WHERE id=%s""", updates_matched)
+            if updates_new:
+                cur2.executemany("UPDATE y2_results SET status='new' WHERE id=%s", updates_new)
+            conn.commit()
+
+            trgm_state["matched"] += len(updates_matched)
+            trgm_state["processed"] += len(rows)
+
+            elapsed = time.time() - start_time
+            speed = trgm_state["processed"] / elapsed if elapsed > 0 else 0
+            remaining = (total - trgm_state["processed"]) / speed / 60 if speed > 0 else 0
+            print(f"[TRGM FAST] {trgm_state['processed']:>7}/{total} | match={trgm_state['matched']} new={len(updates_new)} | {speed:.0f}/seg | ETA {remaining:.0f}min", flush=True)
+
+        conn.close()
+
+    except Exception as e:
+        print(f"[TRGM FAST] ERRO fatal: {e}")
+        import traceback
+        traceback.print_exc()
+
+    trgm_state["status"] = "stopped"
+    print("[TRGM FAST] Finalizado.")
+
+
 # === DASHBOARD ===
 
 DASHBOARD_HTML = """
@@ -523,6 +698,24 @@ DASHBOARD_HTML = """
     <span id="progressProcessed">0 / 0 itens</span>
     <span id="progressBatches">0 / 0 batches</span>
     <span id="progressSpeed">0 itens/seg</span>
+  </div>
+</div>
+
+<div class="section-title" style="margin-top:10px;">Match Vivino (trgm)</div>
+<div class="progress-container" style="border-color:#2E7D32;">
+  <div style="display:flex;align-items:center;gap:15px;margin-bottom:10px;">
+    <span id="trgmBadge" class="status-badge status-stopped">PARADO</span>
+    <button class="btn btn-start" onclick="fetch('/api/trgm/start',{method:'POST'})">START TRGM</button>
+    <button class="btn btn-stop" onclick="fetch('/api/trgm/stop',{method:'POST'})">STOP TRGM</button>
+    <span style="color:#888;font-size:13px;" id="trgmInfo"></span>
+  </div>
+  <div class="progress-bar-bg">
+    <div id="trgmBar" class="progress-bar-fill high" style="width:0%">0%</div>
+  </div>
+  <div class="progress-stats">
+    <span id="trgmPending">Pendente: 0</span>
+    <span id="trgmMatched">Matched: 0</span>
+    <span id="trgmSession">Sessao: 0 matched / 0 processados</span>
   </div>
 </div>
 
@@ -637,6 +830,23 @@ function stopPipeline() { fetch('/api/stop', {method:'POST'}).then(()=>updateDas
 
 setInterval(updateDashboard, 2000);
 setInterval(updateBrowserBar, 3000);
+
+function updateTrgm() {
+  fetch('/api/trgm/status').then(r=>r.json()).then(d => {
+    const badge = document.getElementById('trgmBadge');
+    badge.className = 'status-badge status-' + (d.status === 'running' ? 'running' : 'stopped');
+    badge.textContent = d.status === 'running' ? 'RODANDO' : 'PARADO';
+    document.getElementById('trgmPending').textContent = 'Pendente: ' + fmt(d.pending);
+    document.getElementById('trgmMatched').textContent = 'Matched total: ' + fmt(d.matched_total);
+    document.getElementById('trgmSession').textContent = 'Sessao: ' + fmt(d.matched_session) + ' matched / ' + fmt(d.processed_session) + ' processados';
+    const total = d.pending + d.matched_total;
+    const pctVal = total > 0 ? Math.round(d.matched_total * 100 / total) : 0;
+    document.getElementById('trgmBar').style.width = pctVal + '%';
+    document.getElementById('trgmBar').textContent = pctVal + '%';
+  }).catch(e => {});
+}
+setInterval(updateTrgm, 3000);
+updateTrgm();
 updateDashboard();
 updateBrowserBar();
 </script>
@@ -802,6 +1012,43 @@ def api_stop():
     stop_event.set()
     state["status"] = "stopped"
     return jsonify({"ok": True})
+
+
+@app.route("/api/trgm/start", methods=["POST"])
+def api_trgm_start():
+    if trgm_state["status"] == "running":
+        return jsonify({"error": "trgm ja rodando"})
+    trgm_stop_event.clear()
+    t = threading.Thread(target=run_trgm_standalone, daemon=True)
+    t.start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/trgm/stop", methods=["POST"])
+def api_trgm_stop():
+    trgm_stop_event.set()
+    trgm_state["status"] = "stopped"
+    return jsonify({"ok": True})
+
+
+@app.route("/api/trgm/status")
+def api_trgm_status():
+    conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+                            user=DB_USER, password=DB_PASS,
+                            options="-c client_encoding=UTF8")
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM y2_results WHERE status = 'pending_match' AND prod_banco IS NOT NULL AND prod_banco != ''")
+    pending = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM y2_results WHERE status = 'matched'")
+    matched = cur.fetchone()[0]
+    conn.close()
+    return jsonify({
+        "status": trgm_state["status"],
+        "matched_session": trgm_state["matched"],
+        "processed_session": trgm_state["processed"],
+        "pending": pending,
+        "matched_total": matched,
+    })
 
 
 if __name__ == "__main__":
