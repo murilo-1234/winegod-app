@@ -705,7 +705,7 @@ DASHBOARD_HTML = """
 <div class="progress-container" style="border-color:#2E7D32;">
   <div style="display:flex;align-items:center;gap:15px;margin-bottom:10px;">
     <span id="trgmBadge" class="status-badge status-stopped">PARADO</span>
-    <button class="btn btn-start" onclick="fetch('/api/trgm/start',{method:'POST'})">START TRGM</button>
+    <button class="btn btn-start" id="btnTrgmStart" onclick="startTrgm()">START TRGM</button>
     <button class="btn btn-stop" onclick="fetch('/api/trgm/stop',{method:'POST'})">STOP TRGM</button>
     <span style="color:#888;font-size:13px;" id="trgmInfo"></span>
   </div>
@@ -831,14 +831,73 @@ function stopPipeline() { fetch('/api/stop', {method:'POST'}).then(()=>updateDas
 setInterval(updateDashboard, 2000);
 setInterval(updateBrowserBar, 3000);
 
+let trgmLastProcessed = 0;
+let trgmLastTime = 0;
+
+function startTrgm() {
+  const badge = document.getElementById('trgmBadge');
+  const btn = document.getElementById('btnTrgmStart');
+  badge.className = 'status-badge status-running';
+  badge.textContent = 'CARREGANDO VIVINO...';
+  badge.style.animation = 'pulse 1.5s infinite';
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  document.getElementById('trgmInfo').textContent = 'Carregando ~200K produtores em memoria...';
+  fetch('/api/trgm/start', {method:'POST'}).then(r=>r.json()).then(d => {
+    if (d.error) {
+      badge.textContent = 'JA RODANDO';
+      badge.style.animation = '';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  });
+  trgmLastProcessed = 0;
+  trgmLastTime = Date.now();
+}
+
 function updateTrgm() {
   fetch('/api/trgm/status').then(r=>r.json()).then(d => {
     const badge = document.getElementById('trgmBadge');
+    const btn = document.getElementById('btnTrgmStart');
+    const info = document.getElementById('trgmInfo');
+
+    if (d.status === 'running') {
+      if (d.processed_session > 0) {
+        badge.textContent = 'RODANDO';
+        badge.style.animation = '';
+        info.textContent = '';
+      }
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    } else {
+      badge.textContent = 'PARADO';
+      badge.style.animation = '';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      if (d.processed_session > 0) {
+        info.textContent = 'Finalizado: ' + fmt(d.matched_session) + ' matched de ' + fmt(d.processed_session);
+      }
+    }
     badge.className = 'status-badge status-' + (d.status === 'running' ? 'running' : 'stopped');
-    badge.textContent = d.status === 'running' ? 'RODANDO' : 'PARADO';
+
+    // Velocidade
+    const now = Date.now();
+    let speedText = '';
+    if (d.status === 'running' && d.processed_session > 0) {
+      const deltaProc = d.processed_session - trgmLastProcessed;
+      const deltaSec = (now - trgmLastTime) / 1000;
+      if (deltaSec > 0 && deltaProc > 0) {
+        const speed = Math.round(deltaProc / deltaSec);
+        const remaining = d.pending > 0 && speed > 0 ? Math.round(d.pending / speed / 60) : 0;
+        speedText = ' | ' + speed + '/seg | ETA ' + remaining + 'min';
+      }
+    }
+    trgmLastProcessed = d.processed_session;
+    trgmLastTime = now;
+
     document.getElementById('trgmPending').textContent = 'Pendente: ' + fmt(d.pending);
     document.getElementById('trgmMatched').textContent = 'Matched total: ' + fmt(d.matched_total);
-    document.getElementById('trgmSession').textContent = 'Sessao: ' + fmt(d.matched_session) + ' matched / ' + fmt(d.processed_session) + ' processados';
+    document.getElementById('trgmSession').textContent = 'Sessao: ' + fmt(d.matched_session) + ' matched / ' + fmt(d.processed_session) + ' processados' + speedText;
     const total = d.pending + d.matched_total;
     const pctVal = total > 0 ? Math.round(d.matched_total * 100 / total) : 0;
     document.getElementById('trgmBar').style.width = pctVal + '%';
