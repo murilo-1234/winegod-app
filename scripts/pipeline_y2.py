@@ -455,46 +455,47 @@ def run_vivino_match():
 
 
 def run_trgm_standalone():
-    """Match Vivino RAPIDO — tudo em memoria (baseado no trgm_fast.py).
-    Carrega ~200K produtores Vivino em RAM, faz match em Python puro.
-    ~250-300 itens/seg vs ~40/seg da versao SQL com threads.
+    """Match Vivino RAPIDO — tudo em memoria, 4 workers paralelos.
+    Pre-computa word sets do Vivino. 4 threads com DB connections separadas.
     """
     trgm_state["status"] = "running"
     trgm_state["matched"] = 0
     trgm_state["processed"] = 0
-    BATCH = 1000
     STOPWORDS = {"de","du","la","le","les","des","del","di","the","and","et"}
+    NUM_WORKERS = 4
+    BATCH_PER_WORKER = 2000
+
+    def make_word_set(text):
+        return frozenset(w for w in text.split() if len(w) >= 3 and w not in STOPWORDS)
 
     try:
         conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
                                 user=DB_USER, password=DB_PASS,
                                 options="-c client_encoding=UTF8")
-        conn.autocommit = False
         cur = conn.cursor()
-        cur2 = conn.cursor()
 
         # Contar pendentes
         cur.execute("SELECT COUNT(*) FROM y2_results WHERE status='pending_match' AND prod_banco IS NOT NULL AND prod_banco != '' AND prod_banco != '??'")
         total = cur.fetchone()[0]
-        print(f"[TRGM FAST] Pendentes: {total}")
+        print(f"[TRGM] Pendentes: {total}")
 
         if total == 0:
-            print("[TRGM FAST] Nada a processar.")
             conn.close()
             trgm_state["status"] = "stopped"
             return
 
-        # Carregar TODOS os produtores do Vivino em memoria
-        print("[TRGM FAST] Carregando produtores do Vivino em memoria...", flush=True)
+        # Carregar Vivino com word sets pre-computados
+        print("[TRGM] Carregando Vivino + pre-computando word sets...", flush=True)
         cur.execute("SELECT id, produtor_normalizado, nome_normalizado FROM vivino_match WHERE produtor_normalizado IS NOT NULL AND produtor_normalizado != ''")
         vivino_by_prod = {}
         for vid, vprod, vnome in cur:
+            ws = make_word_set(vnome) if vnome else frozenset()
             if vprod not in vivino_by_prod:
                 vivino_by_prod[vprod] = []
-            vivino_by_prod[vprod].append((vid, vnome))
-        print(f"[TRGM FAST] {len(vivino_by_prod)} produtores unicos carregados")
+            vivino_by_prod[vprod].append((vid, vnome, ws))
+        print(f"[TRGM] {len(vivino_by_prod)} produtores carregados")
 
-        # Indexar por palavras-chave do produtor (match parcial)
+        # Indice de palavras do produtor
         prod_word_index = {}
         for prod in vivino_by_prod:
             for word in prod.split():
@@ -502,125 +503,143 @@ def run_trgm_standalone():
                     if word not in prod_word_index:
                         prod_word_index[word] = set()
                     prod_word_index[word].add(prod)
-        print(f"[TRGM FAST] {len(prod_word_index)} palavras indexadas. Iniciando match...")
+        print(f"[TRGM] {len(prod_word_index)} palavras indexadas")
+        conn.close()
 
-        start_time = time.time()
+        # Funcao de match para 1 item (puro Python, sem DB)
+        def match_one(prod, vin):
+            # Estrategia 1: produtor exato
+            candidates = vivino_by_prod.get(prod)
+            is_exact = candidates is not None
+            prod_words = [w for w in prod.split() if len(w) >= 4]
 
-        while not trgm_stop_event.is_set():
-            cur2.execute("""
-                SELECT id, prod_banco, vinho_banco
-                FROM y2_results
-                WHERE status = 'pending_match'
-                AND prod_banco IS NOT NULL AND prod_banco != '' AND prod_banco != '??'
-                LIMIT %s
-            """, (BATCH,))
-            rows = cur2.fetchall()
+            # Estrategia 2: intersecao de palavras do produtor
+            if not candidates and prod_words:
+                sets = [prod_word_index.get(w) for w in prod_words]
+                sets = [s for s in sets if s]
+                if sets:
+                    common = sets[0].intersection(*sets[1:]) if len(sets) > 1 else sets[0]
+                    candidates = []
+                    for mp in list(common)[:15]:
+                        candidates.extend(vivino_by_prod[mp])
 
-            if not rows:
-                # Marcar orfaos sem produtor como 'new'
-                cur2.execute("""
+            # Estrategia 3: palavra mais longa
+            if not candidates and prod_words:
+                longest = max(prod_words, key=len)
+                matching_prods = prod_word_index.get(longest)
+                if matching_prods:
+                    candidates = []
+                    for mp in list(matching_prods)[:15]:
+                        candidates.extend(vivino_by_prod[mp])
+
+            if not candidates:
+                return None
+
+            vin_words = make_word_set(vin) if vin else frozenset()
+            best = None
+            best_score = 0
+
+            for vid, vnome, vnome_words in candidates:
+                if vin_words and vnome_words:
+                    overlap = len(vin_words & vnome_words)
+                    total_w = max(len(vin_words), len(vnome_words))
+                    score = overlap / total_w if total_w > 0 else 0
+                else:
+                    score = 0
+
+                if is_exact:
+                    score += 0.3
+
+                if score > best_score:
+                    best_score = score
+                    best = (vid, prod, vnome, round(score, 3))
+
+            if best and best_score >= 0.2:
+                return best
+            return None
+
+        # Worker: busca batch do DB, faz match em Python, salva resultado
+        def trgm_worker(worker_id):
+            wconn = psycopg2.connect(host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+                                     user=DB_USER, password=DB_PASS,
+                                     options="-c client_encoding=UTF8")
+            wconn.autocommit = False
+            wcur = wconn.cursor()
+
+            while not trgm_stop_event.is_set():
+                wcur.execute("""
+                    SELECT id, prod_banco, vinho_banco
+                    FROM y2_results
+                    WHERE status = 'pending_match'
+                    AND prod_banco IS NOT NULL AND prod_banco != '' AND prod_banco != '??'
+                    LIMIT %s
+                """, (BATCH_PER_WORKER,))
+                rows = wcur.fetchall()
+
+                if not rows:
+                    break
+
+                updates_matched = []
+                updates_new = []
+
+                for row_id, prod, vin in rows:
+                    if trgm_stop_event.is_set():
+                        break
+                    result = match_one(prod, vin or "")
+                    if result:
+                        updates_matched.append((*result, row_id))
+                    else:
+                        updates_new.append((row_id,))
+
+                if updates_matched:
+                    wcur.executemany("""UPDATE y2_results SET vivino_id=%s, vivino_produtor=%s, vivino_nome=%s,
+                                      match_score=%s, status='matched' WHERE id=%s""", updates_matched)
+                if updates_new:
+                    wcur.executemany("UPDATE y2_results SET status='new' WHERE id=%s", updates_new)
+                wconn.commit()
+
+                trgm_state["matched"] += len(updates_matched)
+                trgm_state["processed"] += len(rows)
+
+            # Ao sair, marcar orfaos (so 1 worker faz)
+            if worker_id == 0:
+                wcur.execute("""
                     UPDATE y2_results SET status = 'new'
                     WHERE status = 'pending_match'
                     AND (prod_banco IS NULL OR prod_banco = '' OR prod_banco = '??')
                 """)
-                orphans = cur2.rowcount
-                conn.commit()
+                orphans = wcur.rowcount
+                wconn.commit()
                 if orphans:
                     trgm_state["processed"] += orphans
-                    print(f"[TRGM FAST] {orphans} itens sem produtor marcados 'new'")
+                    print(f"[TRGM] {orphans} orfaos marcados 'new'")
+
+            wconn.close()
+
+        # Iniciar workers
+        print(f"[TRGM] Iniciando {NUM_WORKERS} workers...", flush=True)
+        start_time = time.time()
+        workers = []
+        for i in range(NUM_WORKERS):
+            t = threading.Thread(target=trgm_worker, args=(i,), daemon=True)
+            t.start()
+            workers.append(t)
+
+        # Monitor de progresso
+        while any(t.is_alive() for t in workers):
+            time.sleep(3)
+            if trgm_stop_event.is_set():
                 break
-
-            updates_matched = []
-            updates_new = []
-
-            for row_id, prod, vin in rows:
-                if trgm_stop_event.is_set():
-                    break
-                if not vin:
-                    vin = ""
-
-                best_vid = None
-                best_score = 0
-                best_prod = ""
-                best_nome = ""
-
-                # Estrategia 1: produtor exato
-                candidates = vivino_by_prod.get(prod, [])
-                prod_words = [w for w in prod.split() if len(w) >= 4]
-
-                # Estrategia 2: busca por todas as palavras do produtor (via indice)
-                if not candidates and prod_words:
-                        # Interseccao: produtores que contem TODAS as palavras
-                        sets = [prod_word_index.get(w, set()) for w in prod_words]
-                        sets = [s for s in sets if s]
-                        if sets:
-                            common = sets[0].intersection(*sets[1:]) if len(sets) > 1 else sets[0]
-                            for mp in list(common)[:20]:
-                                candidates.extend(vivino_by_prod[mp])
-
-                # Estrategia 3: palavra mais longa do produtor (fallback)
-                if not candidates and prod_words:
-                    longest = max(prod_words, key=len)
-                    matching_prods = prod_word_index.get(longest, set())
-                    for mp in list(matching_prods)[:20]:
-                        candidates.extend(vivino_by_prod[mp])
-
-                if not candidates:
-                    updates_new.append((row_id,))
-                    continue
-
-                # Scoring: overlap de palavras do vinho
-                vin_words = set(vin.split()) - STOPWORDS
-                vin_words = {w for w in vin_words if len(w) >= 3}
-
-                for vid, vnome in candidates:
-                    vnome_words = set(vnome.split()) - STOPWORDS
-                    vnome_words = {w for w in vnome_words if len(w) >= 3}
-
-                    if vin_words and vnome_words:
-                        overlap = len(vin_words & vnome_words)
-                        total_w = max(len(vin_words), len(vnome_words))
-                        score = overlap / total_w if total_w > 0 else 0
-                    elif vin in vnome or vnome in vin:
-                        score = 0.5
-                    else:
-                        score = 0
-
-                    # Bonus: produtor exato
-                    if prod in vivino_by_prod and candidates == vivino_by_prod[prod]:
-                        score += 0.3
-
-                    if score > best_score:
-                        best_score = score
-                        best_vid = vid
-                        best_prod = prod
-                        best_nome = vnome
-
-                if best_vid and best_score >= 0.2:
-                    updates_matched.append((best_vid, best_prod, best_nome, round(best_score, 3), row_id))
-                else:
-                    updates_new.append((row_id,))
-
-            # Batch UPDATE
-            if updates_matched:
-                cur2.executemany("""UPDATE y2_results SET vivino_id=%s, vivino_produtor=%s, vivino_nome=%s,
-                                  match_score=%s, status='matched' WHERE id=%s""", updates_matched)
-            if updates_new:
-                cur2.executemany("UPDATE y2_results SET status='new' WHERE id=%s", updates_new)
-            conn.commit()
-
-            trgm_state["matched"] += len(updates_matched)
-            trgm_state["processed"] += len(rows)
-
             elapsed = time.time() - start_time
             speed = trgm_state["processed"] / elapsed if elapsed > 0 else 0
             remaining = (total - trgm_state["processed"]) / speed / 60 if speed > 0 else 0
-            print(f"[TRGM FAST] {trgm_state['processed']:>7}/{total} | match={trgm_state['matched']} new={len(updates_new)} | {speed:.0f}/seg | ETA {remaining:.0f}min", flush=True)
+            print(f"[TRGM] {trgm_state['processed']:>7}/{total} | match={trgm_state['matched']} | {speed:.0f}/seg | ETA {remaining:.0f}min", flush=True)
 
-        conn.close()
+        for t in workers:
+            t.join(timeout=10)
 
     except Exception as e:
-        print(f"[TRGM FAST] ERRO fatal: {e}")
+        print(f"[TRGM] ERRO fatal: {e}")
         import traceback
         traceback.print_exc()
 
