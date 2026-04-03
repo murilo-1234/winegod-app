@@ -111,7 +111,7 @@ export default function Home() {
     <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
         <div className="flex items-center gap-2">
-          <img src="/icon.png" alt="WineGod" className="w-7 h-7" />
+          <img src="/icon.png" alt="WineGod" className="w-14 h-14" />
           <span className="text-wine-text text-sm font-medium tracking-wide">
             winegod.ai
           </span>
