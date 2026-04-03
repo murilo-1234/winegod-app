@@ -108,7 +108,7 @@ export default function Home() {
   );
 
   return (
-    <main className="flex flex-col h-dvh max-w-3xl mx-auto">
+    <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
         <span className="text-wine-text text-sm font-medium tracking-wide">
           winegod.ai

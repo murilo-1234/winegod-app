@@ -9,8 +9,8 @@ from db.models_auth import (
 
 credits_bp = Blueprint('credits', __name__)
 
-GUEST_LIMIT = 5
-USER_LIMIT = 15
+GUEST_LIMIT = 9999
+USER_LIMIT = 9999
 
 
 def check_credits(req):

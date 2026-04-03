@@ -23,7 +23,7 @@ export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
         </p>
       </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-3">
+      <div className="w-full max-w-sm grid grid-cols-2 gap-3">
         {SUGGESTIONS.map((suggestion) => (
           <button
             key={suggestion}
