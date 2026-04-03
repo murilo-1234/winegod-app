@@ -110,9 +110,12 @@ export default function Home() {
   return (
     <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
-        <span className="text-wine-text text-sm font-medium tracking-wide">
-          winegod.ai
-        </span>
+        <div className="flex items-center gap-2">
+          <img src="/icon.png" alt="WineGod" className="w-7 h-7" />
+          <span className="text-wine-text text-sm font-medium tracking-wide">
+            winegod.ai
+          </span>
+        </div>
         {user ? (
           <UserMenu
             user={user}

@@ -90,28 +90,28 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
   const hasWines = allWineIds.length > 0;
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-6`}>
       <div
-        className={`flex items-start gap-2 max-w-[85%] ${
-          isUser ? "flex-row-reverse" : "flex-row"
+        className={`flex items-start gap-3 ${
+          isUser ? "flex-row-reverse max-w-[75%]" : "flex-row w-full max-w-[85%]"
         }`}
       >
         {!isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-wine-accent flex items-center justify-center text-sm mt-1">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-wine-accent flex items-center justify-center text-sm mt-1 text-white font-semibold">
             B
           </div>
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div
-            className={`px-4 py-3 rounded-2xl ${
+            className={
               isUser
-                ? "bg-wine-user rounded-br-md"
-                : "bg-wine-surface rounded-bl-md"
-            }`}
+                ? "px-4 py-2.5 rounded-2xl bg-wine-user text-wine-text"
+                : "py-1"
+            }
           >
             {isUser ? (
-              <p className="text-wine-text text-sm leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {message.content}
               </p>
             ) : (
@@ -121,7 +121,7 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
                     return (
                       <div
                         key={i}
-                        className="text-wine-text text-sm leading-relaxed prose prose-invert prose-sm max-w-none"
+                        className="text-wine-text text-sm leading-relaxed prose prose-sm max-w-none"
                       >
                         <ReactMarkdown>{seg.content}</ReactMarkdown>
                       </div>

@@ -115,7 +115,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   );
 
   return (
-    <div className="flex-shrink-0 border-t border-wine-border bg-wine-bg px-4 py-3">
+    <div className="flex-shrink-0 border-t border-wine-border bg-white px-4 py-3">
       {imagePreview && (
         <div className="mb-2 relative inline-block">
           <img
@@ -147,7 +147,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          className="flex-shrink-0 w-10 h-10 rounded-full bg-wine-input border border-wine-border flex items-center justify-center text-wine-muted hover:text-wine-accent hover:border-wine-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-shrink-0 w-10 h-10 rounded-full bg-wine-input border border-wine-border flex items-center justify-center text-wine-muted hover:text-wine-accent hover:border-wine-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-wine-text"
           title="Enviar foto de rotulo"
         >
           <svg
@@ -175,7 +175,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled}
           placeholder="Pergunte ao Baco sobre vinhos..."
           rows={1}
-          className="flex-1 bg-wine-input border border-wine-border rounded-xl px-4 py-2.5 text-sm text-wine-text placeholder-wine-muted resize-none focus:outline-none focus:border-wine-accent transition-colors disabled:opacity-50"
+          className="flex-1 bg-wine-input border border-wine-border rounded-2xl px-4 py-2.5 text-sm text-wine-text placeholder-wine-muted resize-none focus:outline-none focus:border-wine-accent transition-colors disabled:opacity-50"
         />
 
         <button

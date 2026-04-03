@@ -9,14 +9,14 @@ const config: Config = {
     extend: {
       colors: {
         wine: {
-          bg: "#0D0D0D",
-          surface: "#1A1A2E",
-          user: "#4A1942",
+          bg: "#ffffff",
+          surface: "#f7f7f8",
+          user: "#f4f4f4",
           accent: "#8B1A4A",
-          input: "#1A1A1A",
-          border: "#333333",
-          text: "#E0E0E0",
-          muted: "#888888",
+          input: "#f4f4f5",
+          border: "#e5e5e5",
+          text: "#111827",
+          muted: "#6b7280",
         },
       },
     },
