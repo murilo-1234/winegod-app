@@ -546,23 +546,24 @@ def run_trgm_standalone():
 
                 # Estrategia 1: produtor exato
                 candidates = vivino_by_prod.get(prod, [])
+                prod_words = [w for w in prod.split() if len(w) >= 4]
 
-                # Estrategia 2: produtor contem ou esta contido
-                if not candidates:
-                    for vp in vivino_by_prod:
-                        if prod in vp or vp in prod:
-                            candidates.extend(vivino_by_prod[vp])
-                            if len(candidates) > 50:
-                                break
+                # Estrategia 2: busca por todas as palavras do produtor (via indice)
+                if not candidates and prod_words:
+                        # Interseccao: produtores que contem TODAS as palavras
+                        sets = [prod_word_index.get(w, set()) for w in prod_words]
+                        sets = [s for s in sets if s]
+                        if sets:
+                            common = sets[0].intersection(*sets[1:]) if len(sets) > 1 else sets[0]
+                            for mp in list(common)[:20]:
+                                candidates.extend(vivino_by_prod[mp])
 
-                # Estrategia 3: palavra mais longa do produtor
-                if not candidates:
-                    prod_words = [w for w in prod.split() if len(w) >= 4]
-                    if prod_words:
-                        longest = max(prod_words, key=len)
-                        matching_prods = prod_word_index.get(longest, set())
-                        for mp in list(matching_prods)[:20]:
-                            candidates.extend(vivino_by_prod[mp])
+                # Estrategia 3: palavra mais longa do produtor (fallback)
+                if not candidates and prod_words:
+                    longest = max(prod_words, key=len)
+                    matching_prods = prod_word_index.get(longest, set())
+                    for mp in list(matching_prods)[:20]:
+                        candidates.extend(vivino_by_prod[mp])
 
                 if not candidates:
                     updates_new.append((row_id,))
