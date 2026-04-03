@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. weingut winter kalkstein riesling vdportswein
+2. weingut winter kalkstein riesling
+3. weingut winter kalkstein riesling
+4. weingut winter kalkstein 2023
+5. weingut winter grauer burgunder 2021
+6. weingut winter geiersberg gg 2021
+7. weingut winter dittelsheim chardonnay reserve 2015
+8. weingut winter dittelsheim aus erste lagen riesling
+9. weingut winter chardonnay reserve 2015
+10. weingut windisch dornfelder wormser liebfrauenmorgen su 2024
+11. weingut windisch dornfelder wormser liebfrauenmorgen su 2023
+12. weingut windisch dornfelder heimersheimer su 2022
+13. weingut willi schaefer riesling kabinett graacher himmelreich 2020
+14. weingut willi schaefer riesling kabinett graacher domprobst 2020
+15. weingut willi schaefer riesling 2020 mosel germany
+16. weingut willi schaefer graacher himmelreich riesling kabinett mosel germany
+17. weingut willi schaefer graacher domprobst riesling spatlese 5 mosel germany 2018
+18. weingut willi schaefer graacher domprobst riesling kabinett mosel germany 2022
+19. weingut willi schaefer graacher domprobst riesling kabinett mosel germany 2021
+20. weingut willi haag gutswein riesling trocken 2022
+21. weingut willi haag brauneberger juffer riesling kabinett 2022
+22. weingut willi haag brauneberger juffer riesling auslese 2022
+23. weingut wieninger wiener trilogie 2021
+24. weingut wieninger wiener trilogie 2018
+25. weingut wieninger wiener riesling 2024
+26. weingut wieninger wiener gruner veltliner 2024
+27. weingut wieninger wiener gruner veltliner 2022
+28. weingut wieninger wiener gruner veltliner 2015
+29. weingut wieninger wiener gruner veltliner
+30. weingut wieninger wiener gemischter satz 2017
+31. weingut wieninger wiener gemischter satz
+32. weingut wieninger ried ulm nussberg wiener gemischter satz 2023
+33. weingut wieninger ried ulm am nussberg wiener gemischter satz
+34. weingut wieninger ried rosengartl wiener gemischter satz 2024
+35. weingut wieninger pinot noir select 2016
+36. weingut wieninger nussberg riesling 2022
+37. weingut wieninger nussberg riesling 2022
+38. weingut wieninger herenholz gruner veltliner 2015
+39. weingut wieninger bisamberg wiener gemischter satz 2023
+40. weingut weszeli riesling ried loiserberg 1otw kamptal dac 2021
+41. weingut weszeli riesling loiserberg 2018
+42. weingut weszeli riesling loiserberg
+43. weingut weszeli langenlois kamptal gruner veltliner 2024
+44. weingut weszeli gruner veltliner langenlois kamptal dac 2023
+45. weingut weszeli gruner veltliner langenlois 2022
+46. weingut weszeli gruner veltliner langenlois
+47. weingut weszeli gruner veltliner felix
+48. weingut weszeli gruner veltliner 2023
+49. weingut weszeli felix gruner veltliner kamptal spezial 2018
+50. weingut weszeli eden rose austria
+51. weingut weszeli caractere gruner veltliner 2022
+52. weingut wess zweigeltst laurent rose 2022
+53. weingut wess kremstal riesling 2024
+54. weingut wess kremstal gruner veltliner 2023
+55. weingut wess krems alte reben gruner veltliner 2022
+56. weingut wess gemischter satz 2022
+57. weingut weskrems alte reben riesling 2022
+58. weingut werlitsch welschriesling vom opok 2023
+59. weingut werlitsch welschriesling vom opok 2021
+60. weingut werlitsch welschriesling vom opok 2020
+61. weingut werlitsch welschriesling vom opok
+62. weingut werlitsch welschriesling 2023
+63. weingut werlitsch sauvignon blanc vom opok
+64. weingut werlitsch sauvignon blanc 2023
+65. weingut werlitsch sauvignon blanc 2021
+66. weingut werlitsch sauvignon blanc 2021
+67. weingut werlitsch opok welschriesling 2019
+68. weingut werlitsch opok morillon 2019
+69. weingut werlitsch morillon vom opok 2021
+70. weingut werlitsch morillon vom opok 2020
+71. weingut werlitsch morillon 2021
+72. weingut werlitsch gluck 2022
+73. weingut werlitsch gluck 2021
+74. weingut werlitsch gluck 2020
+75. weingut werlitsch gluck
+76. weingut werlitsch gluck
+77. weingut werlitsch freude 2021
+78. weingut werlitsch freude 2021
+79. weingut werlitsch freude 2020
+80. weingut werlitsch freude 2019 2020
+81. weingut werlitsch freude
+82. weingut werlitsch exvero iii 2019
+83. weingut werlitsch exvero ii s 2017 sekt
+84. weingut werlitsch ex vero iii 2021
+85. weingut werlitsch ex vero iii 2020
+86. weingut werlitsch ex vero iii 2020
+87. weingut werlitsch ex vero iii
+88. weingut werlitsch ex vero ii s 2021
+89. weingut werlitsch ex vero ii s 2021
+90. weingut werlitsch ex vero ii 2020
+91. weingut werlitsch ex vero ii 2020
+92. weingut werlitsch ex vero ii 2019 2021
+93. weingut werlitsch ex vero ii
+94. weingut werlitsch ex vero i s 2021
+95. weingut werlitsch ex vero i s 2021
+96. weingut werlitsch ex vero i s 2021
+97. weingut werlitsch ex vero i 2022
+98. weingut werlitsch ex vero i 2021
+99. weingut werlitsch ex vero i 2020
+100. weingut werlitsch dreigenerationwein 2022
+101. weingut werlitsch dreigenerationenwein 2021
+102. weingut werlitsch dreigenerationenwein
+103. weingut wenzel wolf and sheep burgenland austria
+104. weingut wenzel wild free 2023 burgenland austria
+105. weingut wenzel blaufrankisch aus dem kalk burgenland austria
+106. weingut weninger szurke feher kek 2023
+107. weingut weninger stein furmint 2021
+108. weingut weninger rozsa petsovits 2023 europaischer wein
+109. weingut weninger rozsa petsovits
+110. weingut weninger rozsa petsovits
+111. weingut weninger ponzichter red blend nv
+112. weingut weninger ponzichter europaischer wein
+113. weingut weninger kirch blaufrankisch landwein 2023
+114. weingut weninger kekfrankos steiner sopron 2018
+115. weingut weninger hochacker blaufrankisch burgenland 2021
+116. weingut weninger furmint vom kalk 2023
+117. weingut weninger feherburgundi bio 2021 white
+118. weingut weninger feherburgundi 2022
+119. weingut weninger blaufrankisch mittelburgenland
+120. weingut weninger blaufrankisch landwein 2020
+121. weingut wendelin
+122. weingut weiss hysteriefree burgenland gols 6 er bioweissweintrockenkennenlernkiste 075 liter
+123. weingut weiserkunstler auslese 2017 hvidvin
+124. weingut weinrieder chardonnay 2019 ried bockgarten
+125. weingut wegeler riesling declassified kabinett cellar release 2008
+126. weingut wegeler bernkasteler doctor spatlese 2010 sonderabfullung 110 jahre wegeler magnum
+127. weingut weegmuller herrenletten riesling alte reben pfalz 2020
+128. weingut wechsler westhofen riesling trocken
+129. weingut wechsler riesling trocken 2023
+130. weingut wechsler riesling trocken
+131. weingut wechsler kirchspiel riesling trocken
+132. weingut wechsler
+133. weingut wechsler
+134. weingut wasenhaus weissburgunder mohlin magnum 2020 oc3 bundle p2406175oc3bundle
+135. weingut wasenhaus weissburgunder mohlin 2021
+136. weingut wasenhaus weissburgunder am kreuz magnum 2020 oc3 bundle p2406174oc3bundle
+137. weingut wasenhaus weissburgunder am kreutz 2020
+138. weingut wasenhaus weissburgunder 2023
+139. weingut wasenhaus weissburgunder 2022 oc12 bundle p2409057oc12bundle
+140. weingut wasenhaus weissburgunder 2022
+141. weingut wasenhaus weissburgunder 2022
+142. weingut wasenhaus vulkan spatburgunder 2023
+143. weingut wasenhaus spatburgunder vulkan 2023
+144. weingut wasenhaus spatburgunder mohlin 2022
+145. weingut wasenhaus spatburgunder kanzel 2022
+146. weingut wasenhaus spatburgunder kalk 2023
+147. weingut wasenhaus spatburgunder kalk 2022
+148. weingut wasenhaus spatburgunder hohlen 2022
+149. weingut wasenhaus spatburgunder grand ordinaire 2022
+150. weingut wasenhaus spatburgunder bellen 2023
+151. weingut wasenhaus spatburgunder 2023 baden germany
+152. weingut wasenhaus spatburgunder 2023
+153. weingut wasenhaus spatburgunder 2023
+154. weingut wasenhaus spatburgunder 2022 oc12 bundle p2409050oc12bundle
+155. weingut wasenhaus spatburgunder 2022
+156. weingut wasenhaus spatburgunder 2022
+157. weingut wasenhaus sekt brut nature magnum disgorgement 2024 nv
+158. weingut wasenhaus sekt brut nature disgorgement 2024 nv
+159. weingut wasenhaus riesling 2020
+160. weingut wasenhaus mohlin weissburgunder magnum 2023
+161. weingut wasenhaus mohlin weissburgunder magnum 2022 oc3 bundle p2409060oc3bundle
+162. weingut wasenhaus mohlin weissburgunder magnum 2022
+163. weingut wasenhaus mohlin weissburgunder magnum 2020
+164. weingut wasenhaus mohlin weissburgunder 2023
+165. weingut wasenhaus mohlin weissburgunder 2022 oc12 bundle p2409059oc12bundle
+166. weingut wasenhaus mohlin weissburgunder 2022
+167. weingut wasenhaus mohlin spatburgunder magnum 2023
+168. weingut wasenhaus mohlin spatburgunder magnum 2022
+169. weingut wasenhaus mohlin spatburgunder 2023
+170. weingut wasenhaus mohlin spatburgunder 2022 oc12 bundle p2409054oc12bundle
+171. weingut wasenhaus mohlin spatburgunder 2022
+172. weingut wasenhaus kanzel spatburgunder 2023
+173. weingut wasenhaus kanzel spatburgunder 2022 oc12 bundle p2409053oc12bundle
+174. weingut wasenhaus kanzel spatburgunder 2022
+175. weingut wasenhaus kalk spatburgunder magnum 2022 oc3 bundle p2409052oc3bundle
+176. weingut wasenhaus kalk spatburgunder magnum 2022
+177. weingut wasenhaus kalk spatburgunder 2023
+178. weingut wasenhaus kalk spatburgunder 2022 oc12 bundle p2409051oc12bundle
+179. weingut wasenhaus kalk spatburgunder 2022
+180. weingut wasenhaus kalk 2022
+181. weingut wasenhaus kalk 2022
+182. weingut wasenhaus hohlen spatburgunder 2023
+183. weingut wasenhaus hohlen chardonnay 2023
+184. weingut wasenhaus gutedel magnum 2022 oc3 bundle p2406171oc3bundle
+185. weingut wasenhaus gutedel magnum 2022
+186. weingut wasenhaus gutedel 2022 oc6 bundle p2406170oc6bundle
+187. weingut wasenhaus gutedel 2022
+188. weingut wasenhaus grand ordinaire spatburgunder 2024
+189. weingut wasenhaus filzen chardonnay 2023
+190. weingut wasenhaus chardonnay 2023
+191. weingut wasenhaus chardonnay 2023
+192. weingut wasenhaus chardonnay 2022 oc12 bundle p2409058oc12bundle
+193. weingut wasenhaus chardonnay 2022
+194. weingut wasenhaus chardonnay 2022
+195. weingut wasenhaus burgunder sekt brut nature baden germany
+196. weingut wasenhaus bellen weissburgunder magnum 2023
+197. weingut wasenhaus bellen weissburgunder 2023
+198. weingut wasenhaus bellen spatburgunder magnum 2023
+199. weingut wasenhaus bellen spatburgunder 2023
+200. weingut wasenhaus baden nouveau grand ordinaire spatburgunder 2023 oc12 bundle p2409056oc12bundle
+201. weingut wasenhaus baden nouveau grand ordinaire spatburgunder 2023
+202. weingut wasenhaus baden nouveau grand ordinaire 2023
+203. weingut wasenhaus am kreuz weissburgunder magnum 2020
+204. weingut wasenhaus am kreuz weissburgunder 2020 oc6 bundle p2406173oc6bundle
+205. weingut wasenhaus am kreuz weissburgunder 2020
+206. weingut wasenhaus 2023
+207. weingut wargahack riesling quarzit 2019
+208. weingut walter glatzer st laurent niederosterreich austria 2020
+209. weingut walter glatzer gruner veltliner carnuntum austria 2021 case
+210. weingut walter glatzer blaufrankisch carnuntum austria 2020 case
+211. weingut wallner eisenberg blaufrankisch
+212. weingut waldschutz weissburgunder kamptal austria magnum
+213. weingut wagner stempel pinot blanc rheinhessen germany 2022
+214. weingut wagner stempel gutswein sauvignon blanc vdp 2020
+215. weingut wagentristl pinot noir
+216. weingut wagentristl leithaberg blaufrankisch 2022 burgenland strig
+217. weingut wagentristl 2021 blaufrankisch
+218. weingut von winning spatburgunder pinot noir rose 2017
+219. weingut von winning sauvignon blanc
+220. weingut von winning kirchenstuck riesling grosses gewachs 2017
+221. weingut von winning deidesheimer riesling
+222. weingut von winning
+223. weingut von racknitz riesling schlobockelheimer konigsfels 2012
+224. weingut von racknitz riesling rosenheck 2004
+225. weingut von racknitz riesling oberhauser kieselberg 2011
+226. weingut von othegraven kanzemer altenberg versteigerungswein kabinett 2019
+227. weingut von hovelgefen hashalomsaar riesling 2015
+228. weingut von hovel scharzhofberger riesling spatlese 2018
+229. weingut von hovel scharzhofberger riesling grosses gewachs 2023
+230. weingut von hovel saar riesling trocken 2018
+231. weingut von hovel saar riesling kabinett 2019
+232. weingut von hovel riesling kabinett saar germany 2021
+233. weingut von hovel riesling kabinett saar 2023
+234. weingut von hovel oberemmeler hutte riesling kabinett 2019
+235. weingut von hovel kanzemer horecker riesling auslese goldkapsel
+236. weingut von der mark engertstein pinot noir
+237. weingut von buhl spatburgunder rose brut
+238. weingut von buhl sekt reserve brut
+239. weingut von buhl riesling brut
+240. weingut vollenweider tschiel brut nature 125 075
+241. weingut vollenweider
+242. weingut vollenweider
+243. weingut volker klein
+244. weingut villa gutenberg johannisberger erntebringer riesling kabinett rheingau 2024
+245. weingut veydermalberg wosendorfer hochrain gruner veltliner 2019
+246. weingut veydermalberg weitenberg gruner vetliner 2014
+247. weingut veydermalberg wachauer liebedich gruner veltliner 2022
+248. weingut veydermalberg wachauer libedich 2021
+249. weingut veydermalberg ried weitenberg gruner veltliner 2018
+250. weingut veydermalberg elsarner brandstatt riesling 2016
+251. weingut veydermalberg buschenberg riesling 2012
+252. weingut veydermalberg alternative gruner veltliner skin ferment 2021
+253. weingut vereinigte hospitien riesling scharzhofberger spatlese alte reben 2020
+254. weingut veit zweigelt landwein rotwein wein trocken osterreich
+255. weingut veit zweigelt landwein rotwein wein trocken osterreich
+256. weingut veit zweigelt landwein rotwein wein trocken osterreich
+257. weingut veit zweigelt classic rotwein wein trocken osterreich
+258. weingut veit zweigelt classic rotwein wein trocken osterreich
+259. weingut veit zweigelt classic rotwein wein trocken osterreich
+260. weingut veit veitliner gruner veltliner weiwein wein trocken osterreich
+261. weingut veit veitliner gruner veltliner weiwein wein trocken osterreich
+262. weingut veit veitliner gruner veltliner weiwein wein trocken osterreich
+263. weingut veit veitliner gruner veltliner weiwein wein trocken osterreich
+264. weingut veit pinot blanc weiwein wein trocken osterreich
+265. weingut veit pinot blanc weiwein wein trocken osterreich
+266. weingut veit pinot blanc weiwein wein trocken osterreich
+267. weingut veit gruner veltliner landwein weiwein wein trocken osterreich
+268. weingut veit gruner veltliner landwein weiwein wein trocken osterreich
+269. weingut veit gruner veltliner landwein weiwein wein trocken osterreich
+270. weingut van volxem weissburgunder trocken
+271. weingut van volxem riesling trocken
+272. weingut van volxem
+273. weingut urbanihof roter veltliner qualitatswein wagram
+274. weingut urbanihof gruner veltliner classic qualitatswein wagram
+275. weingut urbanihof gruner veltliner classic
+276. weingut untermoserhof st magdalener
+277. weingut untermoserhof alto adige lagrein 2019
+278. weingut unterlind trittenheimer altarchen weierbach riesling auslese mosel germany
+279. weingut unterlind trittenheimer altarchen weierbach riesling auslese mosel germany
+280. weingut ulrich langguth 50 piesporter gunterslay riesling auslese weiwein wein su
+281. weingut ulrich langguth 50 piesporter gunterslay riesling auslese weiwein wein su
+282. weingut ulrich langguth 50 piesporter gunterslay riesling auslese weiwein wein su
+283. weingut ulrich langguth 36 traben gaispfad riesling weiwein wein trocken
+284. weingut ulrich langguth 36 traben gaispfad riesling weiwein wein trocken
+285. weingut ulrich langguth 36 traben gaispfad riesling weiwein wein trocken
+286. weingut ulrich langguth 12 gourmet riesling weiwein wein trocken
+287. weingut ulrich langguth 12 gourmet riesling weiwein wein trocken
+288. weingut ulrich langguth 12 gourmet riesling weiwein wein trocken
+289. weingut ullrichs kennenlernpakete
+290. weingut ullrich biokaminpaket
+291. weingut uli metzger weiburgunder trocken wei deutschland 6 x 0
+292. weingut uli metzger weiburgunder trocken wei deutschland 3 x 0
+293. weingut uli metzger weiburgunder trocken wei deutschland 12 x 0
+294. weingut uli metzger weiburgunder trocken wei deutschland 1 x 0
+295. weingut uli metzger wechselspiel scheurebe riesling restsu wei deutschland 6 x 0
+296. weingut uli metzger wechselspiel scheurebe riesling restsu wei deutschland 3 x 0
+297. weingut uli metzger wechselspiel scheurebe riesling restsu wei deutschland 12 x 0
+298. weingut uli metzger wechselspiel scheurebe riesling restsu wei deutschland 1 x 0
+299. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 6 x 0
+300. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 6 x 0
+301. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 3 x 0
+302. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 3 x 0
+303. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 12 x 0
+304. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 12 x 0
+305. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 1 x 0
+306. weingut uli metzger vom kalkstein spatburgunder trocken rot deutschland 1 x 0
+307. weingut uli metzger vom kalkstein riesling trocken wei deutschland 6 x 0
+308. weingut uli metzger vom kalkstein riesling trocken wei deutschland 6 x 0
+309. weingut uli metzger vom kalkstein riesling trocken wei deutschland 3 x 0
+310. weingut uli metzger vom kalkstein riesling trocken wei deutschland 3 x 0
+311. weingut uli metzger vom kalkstein riesling trocken wei deutschland 12 x 0
+312. weingut uli metzger vom kalkstein riesling trocken wei deutschland 12 x 0
+313. weingut uli metzger vom kalkstein riesling trocken wei deutschland 1 x 0
+314. weingut uli metzger vom kalkstein riesling trocken wei deutschland 1 x 0
+315. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 6 x 0
+316. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 6 x 0
+317. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 3 x 0
+318. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 3 x 0
+319. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 12 x 0
+320. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 12 x 0
+321. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 1 x 0
+322. weingut uli metzger vom kalkstein chardonnay trocken wei deutschland 1 x 0
+323. weingut uli metzger urbulle trocken rot deutschland 6x0
+324. weingut uli metzger urbulle trocken rot deutschland 3x0
+325. weingut uli metzger urbulle trocken rot deutschland 1x0
+326. weingut uli metzger urbulle trocken rot deutschland 12x0
+327. weingut uli metzger tempranillo trocken rot deutschland 6x0
+328. weingut uli metzger tempranillo trocken rot deutschland 3x0
+329. weingut uli metzger tempranillo trocken rot deutschland 1x0
+330. weingut uli metzger tempranillo trocken rot deutschland 12x0
+331. weingut uli metzger ststephan trocken chardonnay schaumwein wei deutschland 6 x 0
+332. weingut uli metzger ststephan trocken chardonnay schaumwein wei deutschland 3 x 0
+333. weingut uli metzger ststephan trocken chardonnay schaumwein wei deutschland 12 x 0
+334. weingut uli metzger ststephan trocken chardonnay schaumwein wei deutschland 1 x 0
+335. weingut uli metzger spatburgunder rose feinherb rose deutschland 6 x 0
+336. weingut uli metzger spatburgunder rose feinherb rose deutschland 3 x 0
+337. weingut uli metzger spatburgunder rose feinherb rose deutschland 12 x 0
+338. weingut uli metzger spatburgunder rose feinherb rose deutschland 1 x 0
+339. weingut uli metzger sonnenberg riesling kabinett trocken schaumwein wei deutschland 6 x 0
+340. weingut uli metzger sonnenberg riesling kabinett trocken schaumwein wei deutschland 3 x 0
+341. weingut uli metzger sonnenberg riesling kabinett trocken schaumwein wei deutschland 12 x 0
+342. weingut uli metzger sonnenberg riesling kabinett trocken schaumwein wei deutschland 1 x 0
+343. weingut uli metzger sonnenberg riesling halbstuck trocken schaumwein wei deutschland 6 x 0
+344. weingut uli metzger sonnenberg riesling halbstuck trocken schaumwein wei deutschland 3 x 0
+345. weingut uli metzger sonnenberg riesling halbstuck trocken schaumwein wei deutschland 12 x 0
+346. weingut uli metzger sonnenberg riesling halbstuck trocken schaumwein wei deutschland 1 x 0
+347. weingut uli metzger scheurebe trocken wei deutschland 6 x 0
+348. weingut uli metzger scheurebe trocken wei deutschland 3 x 0
+349. weingut uli metzger scheurebe trocken wei deutschland 12 x 0
+350. weingut uli metzger scheurebe trocken wei deutschland 1 x 0
+351. weingut uli metzger sauvignon blanc trocken wei deutschland 6 x 0
+352. weingut uli metzger sauvignon blanc trocken wei deutschland 3 x 0
+353. weingut uli metzger sauvignon blanc trocken wei deutschland 12 x 0
+354. weingut uli metzger sauvignon blanc trocken wei deutschland 1 x 0
+355. weingut uli metzger saumagen riesling trocken schaumwein wei deutschland 6 x 0
+356. weingut uli metzger saumagen riesling trocken schaumwein wei deutschland 3 x 0
+357. weingut uli metzger saumagen riesling trocken schaumwein wei deutschland 12 x 0
+358. weingut uli metzger saumagen riesling trocken schaumwein wei deutschland 1 x 0
+359. weingut uli metzger rivaner trocken wei deutschland
+360. weingut uli metzger rivaner trocken wei deutschland
+361. weingut uli metzger rivaner trocken wei deutschland
+362. weingut uli metzger rivaner trocken wei deutschland
+363. weingut uli metzger riesling well done trocken wei deutschland 6 x 0
+364. weingut uli metzger riesling well done trocken wei deutschland 3 x 0
+365. weingut uli metzger riesling well done trocken wei deutschland 12 x 0
+366. weingut uli metzger riesling well done trocken wei deutschland 1 x 0
+367. weingut uli metzger riesling trocken wei deutschland
+368. weingut uli metzger riesling trocken wei deutschland
+369. weingut uli metzger riesling trocken wei deutschland
+370. weingut uli metzger riesling trocken wei deutschland
+371. weingut uli metzger riesling special cut trocken schaumwein wei deutschland 6 x 0
+372. weingut uli metzger riesling special cut trocken schaumwein wei deutschland 3 x 0
+373. weingut uli metzger riesling special cut trocken schaumwein wei deutschland 12 x 0
+374. weingut uli metzger riesling special cut trocken schaumwein wei deutschland 1 x 0
+375. weingut uli metzger riesling sekt trocken deutschland 6 x 0
+376. weingut uli metzger riesling sekt trocken deutschland 3 x 0
+377. weingut uli metzger riesling sekt trocken deutschland 12 x 0
+378. weingut uli metzger riesling sekt trocken deutschland 1 x 0
+379. weingut uli metzger riesling sekt brut deutschland 6 x 0
+380. weingut uli metzger riesling sekt brut deutschland 3 x 0
+381. weingut uli metzger riesling sekt brut deutschland 12 x 0
+382. weingut uli metzger riesling sekt brut deutschland 1 x 0
+383. weingut uli metzger riesling alte reben trocken schaumwein wei deutschland 6 x 0
+384. weingut uli metzger riesling alte reben trocken schaumwein wei deutschland 3 x 0
+385. weingut uli metzger riesling alte reben trocken schaumwein wei deutschland 12 x 0
+386. weingut uli metzger riesling alte reben trocken schaumwein wei deutschland 1 x 0
+387. weingut uli metzger prago pinot noir trocken rot deutschland 6 x 0
+388. weingut uli metzger prago pinot noir trocken rot deutschland 3 x 0
+389. weingut uli metzger prago pinot noir trocken rot deutschland 12 x 0
+390. weingut uli metzger prago pinot noir trocken rot deutschland 1 x 0
+391. weingut uli metzger pinot noir trocken rot deutschland 6x0
+392. weingut uli metzger pinot noir trocken rot deutschland 3x0
+393. weingut uli metzger pinot noir trocken rot deutschland 1x0
+394. weingut uli metzger pinot noir trocken rot deutschland 12x0
+395. weingut uli metzger pink rose trocken rose deutschland 6 x 0
+396. weingut uli metzger pink rose trocken rose deutschland 3 x 0
+397. weingut uli metzger pink rose trocken rose deutschland 12 x 0
+398. weingut uli metzger pink rose trocken rose deutschland 1 x 0
+399. weingut uli metzger petit rose trocken rose deutschland 6 x 0
+400. weingut uli metzger petit rose trocken rose deutschland 3 x 0
+401. weingut uli metzger petit rose trocken rose deutschland 12 x 0
+402. weingut uli metzger petit rose trocken rose deutschland 1 x 0
+403. weingut uli metzger petit noir trocken rot deutschland 6 x 0
+404. weingut uli metzger petit noir trocken rot deutschland 3 x 0
+405. weingut uli metzger petit noir trocken rot deutschland 12 x 0
+406. weingut uli metzger petit noir trocken rot deutschland 1 x 0
+407. weingut uli metzger petit blanc trocken wei deutschland 6 x 0
+408. weingut uli metzger petit blanc trocken wei deutschland 3 x 0
+409. weingut uli metzger petit blanc trocken wei deutschland 12 x 0
+410. weingut uli metzger petit blanc trocken wei deutschland 1 x 0
+411. weingut uli metzger metzger rot trocken rot deutschland 6 x 0
+412. weingut uli metzger metzger rot trocken rot deutschland 3 x 0
+413. weingut uli metzger metzger rot trocken rot deutschland 12 x 0
+414. weingut uli metzger metzger rot trocken rot deutschland 1 x 0
+415. weingut uli metzger melandor pinot noir trocken rot deutschland 6 x 0
+416. weingut uli metzger melandor pinot noir trocken rot deutschland 3 x 0
+417. weingut uli metzger melandor pinot noir trocken rot deutschland 12 x 0
+418. weingut uli metzger melandor pinot noir trocken rot deutschland 1 x 0
+419. weingut uli metzger im langental trocken chardonnay weisswein wei deutschland 12 x 0
+420. weingut uli metzger im langental trocken chardonnay schaumwein wei deutschland 6 x 0
+421. weingut uli metzger im langental trocken chardonnay schaumwein wei deutschland 3 x 0
+422. weingut uli metzger im langental trocken chardonnay schaumwein wei deutschland 1 x 0
+423. weingut uli metzger hausmarke wei mild wei deutschland
+424. weingut uli metzger hausmarke wei mild wei deutschland
+425. weingut uli metzger hausmarke wei mild wei deutschland
+426. weingut uli metzger hausmarke wei mild wei deutschland
+427. weingut uli metzger hausmarke rot feinherb rot deutschland
+428. weingut uli metzger hausmarke rot feinherb rot deutschland
+429. weingut uli metzger hausmarke rot feinherb rot deutschland
+430. weingut uli metzger hausmarke rot feinherb rot deutschland
+431. weingut uli metzger hausmarke rose mild rose deutschland
+432. weingut uli metzger hausmarke rose mild rose deutschland
+433. weingut uli metzger hausmarke rose mild rose deutschland
+434. weingut uli metzger hausmarke rose mild rose deutschland
+435. weingut uli metzger grauburgunder trocken wei deutschland 6 x 0
+436. weingut uli metzger grauburgunder trocken wei deutschland 3 x 0
+437. weingut uli metzger grauburgunder trocken wei deutschland 12 x 0
+438. weingut uli metzger grauburgunder trocken wei deutschland 1 x 0
+439. weingut uli metzger grande reserve trocken chardonnay schaumwein wei deutschland 6 x 0
+440. weingut uli metzger grande reserve trocken chardonnay schaumwein wei deutschland 3 x 0
+441. weingut uli metzger grande reserve trocken chardonnay schaumwein wei deutschland 12 x 0
+442. weingut uli metzger grande reserve trocken chardonnay schaumwein wei deutschland 1 x 0
+443. weingut uli metzger grand hog trocken rose deutschland 6x0
+444. weingut uli metzger grand hog trocken rose deutschland 3x0
+445. weingut uli metzger grand hog trocken rose deutschland 1x0
+446. weingut uli metzger grand hog trocken rose deutschland 12x0
+447. weingut uli metzger goldberg auslese trocken schaumwein wei deutschland 6 x 0
+448. weingut uli metzger goldberg auslese trocken schaumwein wei deutschland 3 x 0
+449. weingut uli metzger goldberg auslese trocken schaumwein wei deutschland 12 x 0
+450. weingut uli metzger goldberg auslese trocken schaumwein wei deutschland 1 x 0
+451. weingut uli metzger gluhvieh wei gluhwein wei su deutschland
+452. weingut uli metzger gluhvieh wei gluhwein wei su deutschland
+453. weingut uli metzger gluhvieh wei gluhwein wei su deutschland
+454. weingut uli metzger gluhvieh wei gluhwein wei su deutschland
+455. weingut uli metzger gluhvieh rot gluhwein rot su deutschland
+456. weingut uli metzger gluhvieh rot gluhwein rot su deutschland
+457. weingut uli metzger gluhvieh rot gluhwein rot su deutschland
+458. weingut uli metzger gluhvieh rot gluhwein rot su deutschland
+459. weingut uli metzger gluhvieh rose gluhwein rose su deutschland
+460. weingut uli metzger gluhvieh rose gluhwein rose su deutschland
+461. weingut uli metzger gluhvieh rose gluhwein rose su deutschland
+462. weingut uli metzger gluhvieh rose gluhwein rose su deutschland
+463. weingut uli metzger gewurztraminer trocken wei deutschland 6 x 0
+464. weingut uli metzger gewurztraminer trocken wei deutschland 3 x 0
+465. weingut uli metzger gewurztraminer trocken wei deutschland 12 x 0
+466. weingut uli metzger gewurztraminer trocken wei deutschland 1 x 0
+467. weingut uli metzger gelber muskateller trocken wei deutschland 6 x 0
+468. weingut uli metzger gelber muskateller trocken wei deutschland 3 x 0
+469. weingut uli metzger gelber muskateller trocken wei deutschland 12 x 0
+470. weingut uli metzger gelber muskateller trocken wei deutschland 1 x 0
+471. weingut uli metzger flying pig wei perlwein deutschland 6 x 0
+472. weingut uli metzger flying pig wei perlwein deutschland 3 x 0
+473. weingut uli metzger flying pig wei perlwein deutschland 12 x 0
+474. weingut uli metzger flying pig wei perlwein deutschland 1 x 0
+475. weingut uli metzger flying pig rose perlwein deutschland 6 x 0
+476. weingut uli metzger flying pig rose perlwein deutschland 3 x 0
+477. weingut uli metzger flying pig rose perlwein deutschland 12 x 0
+478. weingut uli metzger flying pig rose perlwein deutschland 1 x 0
+479. weingut uli metzger fleur de rose pinot noir sekt brut nature deutschland 6 x 0
+480. weingut uli metzger fleur de rose pinot noir sekt brut nature deutschland 3 x 0
+481. weingut uli metzger fleur de rose pinot noir sekt brut nature deutschland 12 x 0
+482. weingut uli metzger fleur de rose pinot noir sekt brut nature deutschland 1 x 0
+483. weingut uli metzger fleckvieh mild rot deutschland 6 x 0
+484. weingut uli metzger fleckvieh mild rot deutschland 3 x 0
+485. weingut uli metzger fleckvieh mild rot deutschland 12 x 0
+486. weingut uli metzger fleckvieh mild rot deutschland 1 x 0
+487. weingut uli metzger filet noir trocken rot deutschland 6x0
+488. weingut uli metzger filet noir trocken rot deutschland 3x0
+489. weingut uli metzger filet noir trocken rot deutschland 1x0
+490. weingut uli metzger filet noir trocken rot deutschland 12x0
+491. weingut uli metzger filet blanc trocken chardonnay weiburgunder schaumwein wei deutschland 6 x 0
+492. weingut uli metzger filet blanc trocken chardonnay weiburgunder schaumwein wei deutschland 3 x 0
+493. weingut uli metzger filet blanc trocken chardonnay weiburgunder schaumwein wei deutschland 12 x 0
+494. weingut uli metzger filet blanc trocken chardonnay weiburgunder schaumwein wei deutschland 1 x 0
+495. weingut uli metzger dry aged trocken rot deutschland 6x0
+496. weingut uli metzger dry aged trocken rot deutschland 3x0
+497. weingut uli metzger dry aged trocken rot deutschland 1x0
+498. weingut uli metzger dry aged trocken rot deutschland 12x0
+499. weingut uli metzger dry aged reserve trocken rot deutschland 6x0
+500. weingut uli metzger dry aged reserve trocken rot deutschland 3x0
+501. weingut uli metzger dry aged reserve trocken rot deutschland 1x0
+502. weingut uli metzger dry aged reserve trocken rot deutschland 12x0
+503. weingut uli metzger chardonnay trocken wei deutschland 6 x 0
+504. weingut uli metzger chardonnay trocken wei deutschland 3 x 0
+505. weingut uli metzger chardonnay trocken wei deutschland 12 x 0
+506. weingut uli metzger chardonnay trocken wei deutschland 1 x 0
+507. weingut uli metzger chardonnay purus trocken chardonnay schaumwein wei deutschland 6 x 0
+508. weingut uli metzger chardonnay purus trocken chardonnay schaumwein wei deutschland 3 x 0
+509. weingut uli metzger chardonnay purus trocken chardonnay schaumwein wei deutschland 12 x 0
+510. weingut uli metzger chardonnay purus trocken chardonnay schaumwein wei deutschland 1 x 0
+511. weingut uli metzger blanc de noir trocken weiwein deutschland 6 x 0
+512. weingut uli metzger blanc de noir trocken weiwein deutschland 3 x 0
+513. weingut uli metzger blanc de noir trocken weiwein deutschland 12 x 0
+514. weingut uli metzger blanc de noir trocken weiwein deutschland 1 x 0
+515. weingut uli metzger blanc de blancs sekt brut deutschland 6 x 0
+516. weingut uli metzger blanc de blancs sekt brut deutschland 3 x 0
+517. weingut uli metzger blanc de blancs sekt brut deutschland 12 x 0
+518. weingut uli metzger blanc de blancs sekt brut deutschland 1 x 0
+519. weingut uli metzger arthos pinot noir trocken rot deutschland 6 x 0
+520. weingut uli metzger arthos pinot noir trocken rot deutschland 3 x 0
+521. weingut uli metzger arthos pinot noir trocken rot deutschland 12 x 0
+522. weingut uli metzger arthos pinot noir trocken rot deutschland 1 x 0
+523. weingut uli metzger am hesselbrunnen riesling trocken schaumwein wei deutschland 6 x 0
+524. weingut uli metzger am hesselbrunnen riesling trocken schaumwein wei deutschland 3 x 0
+525. weingut uli metzger am hesselbrunnen riesling trocken schaumwein wei deutschland 12 x 0
+526. weingut uli metzger am hesselbrunnen riesling trocken schaumwein wei deutschland 1 x 0
+527. weingut uli metzger abyssus pinot noir trocken rot deutschland 6x 0
+528. weingut uli metzger abyssus pinot noir trocken rot deutschland 3 x 0
+529. weingut uli metzger abyssus pinot noir trocken rot deutschland 12 x 0
+530. weingut uli metzger abyssus pinot noir trocken rot deutschland 1 x 0
+531. weingut uli metzger abyssus chardonnay trocken rot deutschland 6 x 0
+532. weingut uli metzger abyssus chardonnay trocken rot deutschland 3 x 0
+533. weingut uli metzger abyssus chardonnay trocken rot deutschland 12 x 0
+534. weingut uli metzger abyssus chardonnay trocken rot deutschland 1 x 0
+535. weingut turk blauer zweigelt eiswein 2018
+536. weingut tschida spatlese 2023
+537. weingut tschida merlot spatlese 2022
+538. weingut tschida eiswein goldmuskateller 2023
+539. weingut tschida eiswein gelber muskateller 2020
+540. weingut tschida cuvee auslese 2024
+541. weingut tschida ba white 0375
+542. weingut tschida auslese muskat ottonel 2022
+543. weingut tscherne strauss
+544. weingut tscherne strauss
+545. weingut trummer vom kolk rose
+546. weingut triebaumer zweigelt rust
+547. weingut triebaumer zweigelt rust
+548. weingut triebaumer zweigelt 2021
+549. weingut triebaumer sauvignon blanc rust
+550. weingut triebaumer sauvignon blanc rust
+551. weingut triebaumer ruster dac zweigelt
+552. weingut triebaumer ruster dac zweigelt
+553. weingut triebaumer ruster dac traminer spatlese
+554. weingut triebaumer ruster dac traminer spatlese
+555. weingut triebaumer ruster dac sauvignon blanc 2023
+556. weingut triebaumer ruster dac sauvignon blanc
+557. weingut triebaumer ruster dac sauvignon blanc
+558. weingut triebaumer ruster dac ried gillesberg cabernet franc
+559. weingut triebaumer ruster dac ried gillesberg cabernet franc
+560. weingut triebaumer ruster dac le petit man sang 2022
+561. weingut triebaumer ruster dac le petit man sang
+562. weingut triebaumer ruster dac le petit man sang
+563. weingut triebaumer ruster dac furmint 2023
+564. weingut triebaumer ruster dac furmint 2023
+565. weingut triebaumer ruster dac furmint
+566. weingut triebaumer ruster dac blaufrnkisch reserve
+567. weingut triebaumer ruster dac blaufrnkisch
+568. weingut triebaumer ruster dac blaufrankisch reserve
+569. weingut triebaumer ruster dac blaufrankisch 2022
+570. weingut triebaumer ruster dac blaufrankisch
+571. weingut triebaumer ruster ausbruch dac leithaberg dac ried oberer wald blaufrankisch 2019
+572. weingut triebaumer ruster ausbruch dac leithaberg dac ried oberer wald blaufrankisch
+573. weingut triebaumer ruster ausbruch dac leithaberg dac ried oberer wald blaufrankisch
+574. weingut triebaumer furmint rust
+575. weingut triebaumer furmint rust
+576. weingut triebaumer blaufrankisch rust
+577. weingut triebaumer blaufrankisch rust
+578. weingut triebaumer blaufrankisch reserve
+579. weingut triebaumer blaufrankisch reserve
+580. weingut trenz trensecco
+581. weingut trenz riesling spatlese trocken 2020
+582. weingut trenz riesling kabinett trocken 2020
+583. weingut trenz riesling basic trocken 2020
+584. weingut topf sauvignon blanc ried hasel
+585. weingut topf gruner veltliner strassertal
+586. weingut topf gruner veltiner
+587. weingut topf chardonnay hasel 2019
+588. weingut topf brut blanc reserve
+589. weingut tinhof tinhof rose
+590. weingut tinhof tinhof noir zweigelt co
+591. weingut tinhof leithaberg weissburgunder
+592. weingut tinhof leithaberg neuburger
+593. weingut tinhof leithaberg neuburger
+594. weingut tinhof leithaberg blaufrankisch
+595. weingut tinhof leithaberg blaufrankisch
+596. weingut tinhof gruner veltliner
+597. weingut tinhof golden erd weissburgunder
+598. weingut thorle wijnpakket zes lekkere wijnen van weingut thorle zitten in dit prettig geprijsde wijnpakket lees meer van voor per pakket
+599. weingut thorle weissburgunder
+600. weingut thorle spatburgunder
+601. weingut thorle scheurebe trocken
+602. weingut thorle saulheimer spatburgunder kalkstein 2023 aangename spatburgunder intens en complex geurend mooi vol en krachtig van smaak heerlijk bij spinazietaart met ricotta lees meer van voor
+603. weingut thorle saulheimer silvaner kalkstein 2024 gastronomische witte wijn intens en complex geurend mooi droog en mondvullend van smaak met veel finesse en fruit geweldig bij gebakken
+604. weingut thorle saulheim silvaner kalkstein
+605. weingut thorle riesling sur lie 2024 fraai geurend naar rijp fruit mooi fris droog rond en zacht van smaak met fijne mineralen en geurig fruit met voldoende vulling maar ook met veel elegantie
+606. weingut thorle riesling 2021
+607. weingut thorle natural grauburgunder
+608. weingut thorle kalk und kreide
+609. weingut thorle holle spatburgunder
+610. weingut thorle grauburgunder 2024 verfijnde grauburgunder met een delicaat aroma dat verleidelijk geurt naar rijp fruit lekker mild droog van smaak met veel fruit en voldoende frisheid prachtig
+611. weingut thorle grauburgunder
+612. weingut theo minges scheurebe
+613. weingut theo minges
+614. weingut thanisch rose de noir brut methode traditionelle mosel nm
+615. weingut tesch unplugged riesling
+616. weingut tesch tline weissburgunder
+617. weingut tesch tesch trocken unplugged riesling 2021 case only
+618. weingut tesch tesch trocken unplugged riesling 2015 case only
+619. weingut tesch tesch krone riesling 2016 case only
+620. weingut tesch tesch karthauser riesling 2019 case only
+621. weingut tesch st remigiusberg riesling 2024
+622. weingut tesch riesling queen of whites 2024
+623. weingut tesch riesling lohrer berg
+624. weingut tesch riesling krone 2023
+625. weingut tesch mixedsixpack 6 x 0 einzellagen riesling
+626. weingut tesch lohrer berg riesling
+627. weingut tesch konigsschild riesling
+628. weingut tesch karthauser riesling 2024
+629. weingut tesch 2020
+630. weingut tesch 2019
+631. weingut terlan winkl sauvignon blanc weisswein trocken 2025 italien
+632. weingut terlan quarz sauvignon blanc weisswein trocken 2023 italien
+633. weingut terlan pinot grigio weisswein trocken 2023 italien
+634. weingut terlan kreuth chardonnay weisswein trocken 2023 italien
+635. weingut terlan chardonnay weisswein trocken 2024 sudtirol italien
+636. weingut tenuta peter zemmer sauvignon blanc 2024
+637. weingut tenuta peter zemmer rieslieng 2024
+638. weingut tenuta peter zemmer pinot grigio 2024
+639. weingut tenuta peter zemmer gewurtztraminer 2024
+640. weingut tenuta peter zemmer chardonnay 2024
+641. weingut tement zieregg ried sauvignon blanc 2019
+642. weingut tement welschriesling ottenberg 2021
+643. weingut tement welschriesling ottenberg 2020
+644. weingut tement territory welschriesling opok 2023
+645. weingut tement territory weissburgunder ton mergel 2023
+646. weingut tement territory sauvignon blanc privat kalk kreide 2023
+647. weingut tement territory sauvignon blanc kalk kreide 2024
+648. weingut tement territory sauvignon blanc kalk kreide 2023
+649. weingut tement territory muskateller sand schiefer 2023
+650. weingut tement territory morillon muschelkalk 2023
+651. weingut tement sudsteiermark sauvignon blanc kalk kriede
+652. weingut tement sudsteiermark sauvignon blanc kalk kriede
+653. weingut tement sudsteiermark gelber muskateller sand schiefer 2020
+654. weingut tement sud steiermark sauvignon blanc kalk kreide 2022
+655. weingut tement sauvingon blanc
+656. weingut tement sauvignon blanc zieregg kar 2020
+657. weingut tement sauvignon blanc zieregg kapelle 2020
+658. weingut tement sauvignon blanc zieregg 2020
+659. weingut tement sauvignon blanc zieregg 2019
+660. weingut tement sauvignon blanc ried sernau konig 2020
+661. weingut tement sauvignon blanc ried grassnitzberg riff 2021
+662. weingut tement sauvignon blanc ried grassnitzberg riff 2020
+663. weingut tement sauvignon blanc kalk kredie 2023
+664. weingut tement morillon zieregg steilriegel 2020
+665. weingut tement morillon ried sulz 2020
+666. weingut tement morillon ried rossberg 2021
+667. weingut tement morillon ried rossberg 2020
+668. weingut tement morillon muschelkalk 2020
+669. weingut tement morillon chardonnay sudsteiermark muschelkalk 2023
+670. weingut tement kalk kreide sauvignon blanc sudsteiermark dac 2022
+671. weingut tement grassnitzberg riff 1st lage sudsteiermark sauvignon blanc 2022
+672. weingut tement gelber muskateller sand schiefer sudstiermark 2024
+673. weingut tegernseerhof riesling smaragd steinertal
+674. weingut tegernseerhof gruner veltliner superin federspiel
+675. weingut tegernseerhof gruner veltliner federspiel durnstein
+676. weingut tegernseerhof federspiel gruner veltliner frauenweingarten
+677. weingut tauss weissburgunder vom opok 2020
+678. weingut tauss sauvignon vom opok 2021
+679. weingut tauss sauvignon blanc opok osterreichischer landwein 2018
+680. weingut tauss sauvignon blanc h 2013
+681. weingut tauss rose vom opok rose 2023
+682. weingut tauss chardonnay vom opok 2021
+683. weingut tauss chardonnay vom opok 2020
+684. weingut tauss chardonnay 2012
+685. weingut tauss blaufrankisch opok osterreichischer landwein 2015
+686. weingut taubenschuss gruner veltliner ried neidharden weinviertel reserve austria
+687. weingut tagwerker
+688. weingut sybille kuntz riesling spatlese trocken bio demeter label
+689. weingut sybille kuntz riesling spatlese trocken 2017
+690. weingut sybille kuntz riesling skin contact 2021
+691. weingut sybille kuntz riesling qualitatswein trocken demeter label
+692. weingut sybille kuntz riesling qualitatswein 2023
+693. weingut sybille kuntz riesling kabinett trocken bio demeter label
+694. weingut sybille kuntz riesling auslese feinherb 2015
+695. weingut sunnehalde pinot gris weinfelden aoc 2023
+696. weingut sturm riesling trocken vom schiefer bio
+697. weingut sturm riesling spatlese trocken steinbruch reserve bio
+698. weingut sturm riesling spatlese trocken steinbruch bio
+699. weingut sturm riesling kabinett trocken bio
+700. weingut sturm pinot noir trocken reserve bio
+701. weingut sturm pinot noir trocken bio
+702. weingut strohmeier tlz wein der stille no 10 2017
+703. weingut strohmeier tlz sonne no 9 2020
+704. weingut strohmeier tlz shine no 1 2020
+705. weingut strohmeier tlz rot no 11 2020
+706. weingut strohmeier tlz lysegrn no 9 2021
+707. weingut strohmeier tlz indigo no 3 2017
+708. weingut strohmeier tlz gratitude no 1 2020
+709. weingut strohmeier tlz gelb no 8 2021
+710. weingut strohmeier the spiral no 1 brut nature 2014
+711. weingut strohmeier schiller frizzante 2024
+712. weingut strohmeier lysrd no 34 2023
+713. weingut strohmeier catsilver no 5 2023
+714. weingut strohmeier blanc dorange no 4 2022
+715. weingut strohmeier blanc de blancs no 1 2023
+716. weingut stroblhof chardonnay schwarzhaus 2020
+717. weingut stroblhof blauburgunder pigeno 2022
+718. weingut streng 1997
+719. weingut strehn wunderland sauvignon blanc
+720. weingut strehn wunderland rosler
+721. weingut strehn weisser schotter
+722. weingut strehn sushi rose
+723. weingut strehn shiki miki rose brut
+724. weingut strehn seerose
+725. weingut strehn roter schotter
+726. weingut strehn pandur
+727. weingut strehn love story sur commande
+728. weingut strehn irrgarten
+729. weingut strehn der elefant im porzellanladen
+730. weingut strehn chardonnay miss waikiki
+731. weingut strehn blaufrankisch rose
+732. weingut storrlein krenig silvaner sonnenstuhl erste lage franken 2019
+733. weingut storrlein krenig silvaner mineral pur franken 2019
+734. weingut stigler winklerberg ihringen spatburgunder gg pagode vdp 2016
+735. weingut stigler winklerberg ihringen spatburgunder gg pagode vdp 2016
+736. weingut stigler winklerberg ihringen spatburgunder gg pagode vdp 2013
+737. weingut stigler winklerberg ihringen spatburgunder gg pagode vdp 2013
+738. weingut stigler vorderer winklerberg ihringen spatburgunder gg backofele vdp 2017
+739. weingut stigler vorderer winklerberg ihringen spatburgunder gg backofele vdp 2017
+740. weingut stigler rl riesling 2024
+741. weingut stigler rl riesling 2024
+742. weingut stigler rl riesling 2023
+743. weingut stigler rl riesling 2023
+744. weingut stigler pinot noir 2018
+745. weingut stigler pinot noir 2018
+746. weingut stigler max pinot noir 2016
+747. weingut stigler max pinot noir 2016
+748. weingut stigler m grauburgunder 2020
+749. weingut stigler m grauburgunder 2020
+750. weingut stigler ihringer winklerberg spatburgunder trocken vdp erste lage 2016
+751. weingut stigler ihringer winklerberg spatburgunder trocken vdp erste lage 2016
+752. weingut stigler ihringen winklerberg silvaner trocken 1g vdp 2020
+753. weingut stigler ihringen winklerberg silvaner trocken 1g vdp 2020
+754. weingut stigler ihringen winklerberg riesling kabinett vdp erste lage 2022
+755. weingut stigler ihringen winklerberg riesling kabinett vdp erste lage 2022
+756. weingut stigler ihringen winklen riesling f 36 gg vdp 2020
+757. weingut stigler ihringen winklen riesling f 36 gg vdp 2020
+758. weingut stigler ihringen weissburgunder gg pagode vdp 2018
+759. weingut stigler ihringen weissburgunder gg pagode vdp 2018
+760. weingut stigler ihringen pagode chardonnay gg 2020
+761. weingut stigler ihringen pagode chardonnay gg 2020
+762. weingut stigler freiburg schlossberg spatburgunder gg vdp 2017
+763. weingut stigler freiburg schlossberg spatburgunder gg vdp 2017
+764. weingut stigler freiburg schlossberg chardonnay gg vdp 2019
+765. weingut stigler freiburg schlossberg chardonnay gg vdp 2019
+766. weingut stigler eichberg oberrotweil spatburgunder gg vdp 2017
+767. weingut stigler eichberg oberrotweil spatburgunder gg vdp 2017
+768. weingut stiftung st nikolaushospital riesling spatlese
+769. weingut stift klosterneuburg zierfandlerrotgipler
+770. weingut stift klosterneuburg st laurent reid stiftbreite
+771. weingut stift klosterneuburg grunerveltliner brut sparkling
+772. weingut stift gottweig gruner veltliner messwein
+773. weingut stern st laurent trocken 2019
+774. weingut stern spatburgunder trocken 2019
+775. weingut stern spatburgunder rotwein lieblich 2018
+776. weingut stern potpourri rotwein trocken 2019
+777. weingut stern hochstadter rotwein feinherb 2020
+778. weingut stern dornfelder feinherb 2019
+779. weingut stephan steinmetz weissburgunder trocken 2024
+780. weingut stephan steinmetz liaison cremant brut mosel germany
+781. weingut steitz weissburgunder achat 2024
+782. weingut steitz weissburgunder 2024
+783. weingut steitz sauvignon blanc 2024
+784. weingut steitz riesling 2024
+785. weingut steitz herkunftspaket 2023
+786. weingut steitz heerkretz riesling 2021
+787. weingut steitz gruner silvaner 2024
+788. weingut steitz grauburgunder vulkanstein weiwein wein trocken deutschland
+789. weingut steitz grauburgunder vulkanstein weiwein wein trocken deutschland
+790. weingut steitz grauburgunder vulkanstein weiwein wein trocken deutschland
+791. weingut steitz grauburgunder achat 2024
+792. weingut steitz finn steitz porphyr riesling 2023
+793. weingut steitz finn steitz alte reben wonsheim chardonnay 2023
+794. weingut steintal groheubach alte reben 2020
+795. weingut steintal buntsandstein spatburgunder 2020
+796. weingut steintal
+797. weingut steinmuhle weisserburgunder bio
+798. weingut steinmuhle weissburgunder reserve trocken
+799. weingut steinmuhle sauvignon blanc
+800. weingut steinmuhle riesling trocken
+801. weingut steinmuhle riesling feinherb
+802. weingut steinmuhle pinot noir
+803. weingut steinmuhle grauburgunder
+804. weingut steinmuhle dittelsheim riesling trocken 2023
+805. weingut steinmuhle auf dem schnapp riesling trocken
+806. weingut steinmuhle 8 grad ost weiss trocken
+807. weingut steinmuhle 8 grad ost rot trocken
+808. weingut steininger riesling ried steinhaus kamptal dac reserve 1otw 2023
+809. weingut steininger riesling ried seeberg kamptal dac reserve 1otw 2023
+810. weingut steininger riesling ried kogelberg kamptal dac reserve 1otw 2022
+811. weingut steininger riesling ried heiligenstein kamptal dac reserve 1otw 2023
+812. weingut steininger loisiumweingarten steven holl gruner veltliner reserve 2021
+813. weingut steininger langenlois gruner veltliner 2023 austria
+814. weingut steininger langenlois gruner veltliner
+815. weingut steininger gruner veltliner ried kogelberg kamptal dac reserve 1otw 2023
+816. weingut steininger gruner veltliner ried kittmannsberg kamptal dac reserve 1otw
+817. weingut steininger gruner veltliner loisium reserve 2020
+818. weingut steininger grand cru gruner veltliner 2019
+819. weingut steininger gemischter satz 2024
+820. weingut steininger 2002
+821. weingut steininger
+822. weingut steinhaus windhund 2020
+823. weingut steinhaus sauvignon 2021
+824. weingut stein stein alfer holle riesling qualitatswein trocken 2022
+825. weingut stein palmbergterrassen riesling kabinett 2022
+826. weingut stein himmelreich riesling kabinett 2021
+827. weingut stein alfer holle riesling trocken 2021
+828. weingut stein 1900 alfer holle 2022
+829. weingut stein 1900 alfer holle 2021
+830. weingut steffens riesling reiler goldlay 2013
+831. weingut stefan rinklin spatburgunder qualitatswein
+832. weingut stefan rinklin pinot gris qualitatswein alemanha branco 2007
+833. weingut stefan rinklin pinot blanc qualitatswein alemanha branco 2007
+834. weingut stefan muller riesling trocken 2023
+835. weingut stefan muller riesling spatlese euchariusbergalte reben 1944 2024
+836. weingut stefan muller riesling kabinett altenberg 2024
+837. weingut stefan muller riesling feinherb herrenberg 2023
+838. weingut stefan muller riesling feinherb 2023
+839. weingut stefan muller riesling alte reben niedermenniger sonnenberg kabinett saar 2023
+840. weingut stefan meyer syrah rhodter klosterpfad 2022
+841. weingut stefan meyer spatburgunder pinot noir 2023
+842. weingut stefan meyer silvaner
+843. weingut stauffer weisser burgunder 2022
+844. weingut stauffer spatburgunder 2021
+845. weingut stauffer spatburgunder
+846. weingut stauffer riesling feuerberg
+847. weingut stauffer riesling eppelsheim
+848. weingut stauffer grauer burgunder 2022
+849. weingut stauffer
+850. weingut staffelterhof mosel allemagne 2019 magnus
+851. weingut stadt krems wachtberg gruner veltliner erste otw lage reserve 2022
+852. weingut stadt krems stein gruner veltliner reserve 2022
+853. weingut stadt krems stein gruner veltliner 2019
+854. weingut stadt krems riesling steinterrassen kremstal dac austria 0
+855. weingut stadt krems ried grillenparz riesling kremstal 2022
+856. weingut stadt krems lossterrassen gruner veltliner 2022
+857. weingut stadt krems lossterrassen gruner veltliner
+858. weingut stadt krems kremstal riesling
+859. weingut stadt krems kremstal gruner veltliner wachtberg 1otw 2022
+860. weingut stadt krems gruner veltliner weinzierlberg kremstal dac austria 0
+861. weingut stadt krems gruner veltliner lossterrassen austria case 6 x
+862. weingut stadt krems gruner veltliner lossterrassen austria 0
+863. weingut stadt krems gruner veltliner lossterrassen austria
+864. weingut stadt krems gruner veltliner kremstal austria 2024
+865. weingut stadt krems gruner veltliner kremstal austria 2024
+866. weingut stadt krems grillenparz riesling erste otw lage reserve 2022
+867. weingut stadlmann zierfandler anninger 2018
+868. weingut stadlmann weisser burgunder 2018
+869. weingut stadlmann pinot noir blauburgunder 2018
+870. weingut stadlmann niederosterreich rotgipfler anning 2021
+871. weingut stadlmann mandelhoh zierfandler 2019
+872. weingut stadlmann gruner veltliner 2023
+873. weingut stadlmann gruner veltliner 2022
+874. weingut st urbanshof nik weis ockfener bockstein riesling grosses gewachs 2017
+875. weingut spreitzer rosengarten gg rheingau germany riesling trocken 2021
+876. weingut spreitzer riesling rosengarten grosses gewachs 2021
+877. weingut spreitzer riesling oestricher lenchen kabinett 2023
+878. weingut spreitzer riesling oestricher klosterberg alte reben erste lagen trocken 2023
+879. weingut spreitzer riesling alte reben trocken 2023
+880. weingut spreitzer riesling 101 2022
+881. weingut spreitzer riesling 101 2022
+882. weingut spreitzer riesling
+883. weingut spreitzer klosterberg trocken 2023
+884. weingut spreitzer 101 pinot noir mosel
+885. weingut spiess grauburgunder der graue trocken 2024
+886. weingut speitzer 2021 charta rheingau
+887. weingut spaterveit riesling feinherb 2021
+888. weingut soellner marie petillant
+889. weingut soellner gemischter satz
+890. weingut soellner dani rose 2024 wagram austria
+891. weingut soellner dani rose 2023
+892. weingut sin spatburgunder s windesheim
+893. weingut sin scheurebe feinherb
+894. weingut sin riesling
+895. weingut sin grauburgunder
+896. weingut simon gattinger nomis gruner veltliner 2023
+897. weingut simon gattinger nomis gruner veltliner 2023
+898. weingut siener spatburgunder 2017 trocken
+899. weingut siegloch muskateller
+900. weingut setzer wiener symphoniker roter veltliner niederosterreich austria 2016 case
+901. weingut setzer roter veltliner 2021 austria symphoniker
+902. weingut setzer golden gruner veltliner 2024 weinviertel
+903. weingut setzer austria gruner veltliner 2021 ausstich
+904. weingut setzer ausstich gruner veltliner weinviertel dac austria 2018 case
+905. weingut sermann sekt blanc de noir brut
+906. weingut sermann sauvignon blanc ahr 2020
+907. weingut sermann recher herrenberg riesling kabinett ahr 2021
+908. weingut sermann ortswein mayschoss spatburgunder 2022
+909. weingut sermann ortswein gypsy one spatburgunder rose de noir
+910. weingut sermann ortswein altenahr riesling von den terrassen
+911. weingut sermann marienthaler fruhburgunder ahr 2022
+912. weingut sermann marienthaler fruhburgunder ahr 2021
+913. weingut sermann lagenwein weissburgunder auf graben
+914. weingut sermann hardtberg riesling wald kabinett feinherb ahr 2022
+915. weingut sermann gypsy two spatburgunder rose ahr 2021
+916. weingut sermann gypsy one spatburgunder rose ahr 2022
+917. weingut sermann gutswein spatburgunder 2024
+918. weingut sermann bellabianca spatburgunder blanc de noir ahr 2021
+919. weingut sermann altenahrer weissburgunder ahr 2021
+920. weingut sermann altenahrer riesling von den terrassen ahr 2021
+921. weingut sermann altenahrer riesling von den terrassen ahr 2020
+922. weingut sermann ahrtal paket
+923. weingut sepp muster opok steirerland austria
+924. weingut sepp moser riesling von den terrassen
+925. weingut sepp moser ried schnabel gruner veltliner kremstal reserve
+926. weingut sepp moser ried ganstreiberin riesling kremstal reserve
+927. weingut sepp moser classic zweigelt organic
+928. weingut segger chardonnay rr 2020 baden tyskland
+929. weingut seehof westhofener kirchspiel riesling trocken
+930. weingut seehof westhofen morstein alte reben 2020
+931. weingut seehof weisser burgunder qualitatswein gutswein 6 bottle case
+932. weingut seehof weissburgunder trocken rheinhessen germany 2022 case
+933. weingut seehof weissburgunder
+934. weingut seehof steingrube riesling trocken qualitatswein lagenweine 6 bottle case
+935. weingut seehof steingrube riesling trocken
+936. weingut seehof steingrube chardonnay trocken r qualitatswein lagenweine 6 bottle case
+937. weingut seehof sauvignon blanc 6 bottle case
+938. weingut seehof sauvignon blanc 2023
+939. weingut seehof sauvignon blanc
+940. weingut seehof same same but different rheinhessen germany
+941. weingut seehof same same but different 2023 rheinhessen germany
+942. weingut seehof riesling trocken rheinhessen germany 2022 case
+943. weingut seehof riesling trocken qualitatswein gutswein 6 bottle case
+944. weingut seehof riesling trocken qualitatswein gutswein 2024
+945. weingut seehof riesling trocken 2024
+946. weingut seehof riesling trocken 2024
+947. weingut seehof riesling trocken 2023 case
+948. weingut seehof riesling trocken
+949. weingut seehof riesling feinherb rheinhessen germany 2022 case
+950. weingut seehof pinot noir rose trocken qualitatswein gutswein 6 bottle case
+951. weingut seehof morstein weisser burgunder trocken r qualitatswein lagenweine 6 bottle case
+952. weingut seehof morstein weissburgunder
+953. weingut seehof morstein alte reben riesling trocken 2019
+954. weingut seehof kirchspiel riesling trocken qualitatswein lagenweine 6 bottle case
+955. weingut seehof elektrisch riesling kabinett germany
+956. weingut seehof elektrisch riesling kabinett germany
+957. weingut seehof elektrisch kabinett riesling 2024
+958. weingut seehof deutscher qualitatswein sauvignon blanc rheinhessen germany
+959. weingut seehof chardonnay r steingrube 2023
+960. weingut seeger weisser riesling philipp georg erste lage 2020 baden tyskland
+961. weingut seeger weisser riesling anna marie erste lage 2020 baden tyskland
+962. weingut seeger weisser burgunder
+963. weingut seeger sauvignon blanc s erste lage 2020 baden tyskland
+964. weingut seeger grauer burgunder as erste lage 2020 baden tyskland
+965. weingut seeger grauer burgunder 2020 baden tyskland
+966. weingut seeger chardonnay sekt brut
+967. weingut seeger blauer spatburgunder heidelberger herrenberg
+968. weingut seeger blauer spatburgunder
+969. weingut seeger auxerrois as erste lage 2020 baden tyskland
+970. weingut seeger
+971. weingut seckinger weissburgunder vom kalkstein
+972. weingut seckinger weissburgunder paradiesgarten 2021
+973. weingut seckinger weissburgunder paradiesgarten 2019
+974. weingut seckinger weissburgunder deidesheimer paradiesgarten 2021
+975. weingut seckinger weissburgunder deidesheimer paradiesgarten 2021
+976. weingut seckinger weiburgunder vom kalkstein 2024
+977. weingut seckinger weiburgunder vom kalkstein 2023
+978. weingut seckinger suff grauburgunder vom kalkstein
+979. weingut seckinger stufe 2 jahrgang 2016
+980. weingut seckinger spatburgunder petershohle blanc de noir
+981. weingut seckinger spatburgunder blanc de noir 2025
+982. weingut seckinger spatburgunder blanc de noir 2025
+983. weingut seckinger spatburgunder blanc de noir 2024
+984. weingut seckinger spatburgunder blanc de noir 2023
+985. weingut seckinger sparkling rose entalkoholisiert 0
+986. weingut seckinger sparkling blanc entalkoholisiert 0
+987. weingut seckinger sparkling blanc 00
+988. weingut seckinger solera in paradise 18192021
+989. weingut seckinger savagnin pure 2024
+990. weingut seckinger savagnin pure 2023
+991. weingut seckinger savagnin pure 2022
+992. weingut seckinger savagnin pure 2022
+993. weingut seckinger savagnin
+994. weingut seckinger sauvignon blanc pure
+995. weingut seckinger ruppertsberger reiterpfad cabernet sauvignon 2020
+996. weingut seckinger rose pure magnum 2020
+997. weingut seckinger rose 2023
+998. weingut seckinger rose
+999. weingut seckinger riesling vom loss 2024
+1000. weingut seckinger riesling vom loss 2024

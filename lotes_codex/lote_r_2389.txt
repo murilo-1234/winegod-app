@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. il bastardo sangiovese rosso di toscana
+2. il bastardo sangiovese toscana 2023
+3. il bastardorufina toscana
+4. il battito del maletto doc 2022 monte maletto
+5. il bello the blend
+6. il beneficio sangiovese di romagna riserva serra costa archi
+7. il bergamotto e il vino ciro in bruxelles belgio
+8. il bianchetto sacchetto sauvignon blanc trevenezie
+9. il bianchetto sacchetto sauvignon blanc trevenezie
+10. il bianchetto sacchetto sauvignon blanc trevenezie
+11. il bianco
+12. il bianco 2018 from black to white
+13. il bianco 2022
+14. il bianco 2022
+15. il bianco 2024
+16. il bianco 2024
+17. il bianco 2024
+18. il bianco 2024 liguria di levante igt il torchio
+19. il bianco dei vespa fiano
+20. il bianco dei vespa fiano salento igp 2021
+21. il bianco della casa
+22. il bianco della staffa umbria igt
+23. il bianco di cesare
+24. il bianco di chiara bianco di merlot ticino doc
+25. il bianco di chiara ticino doc bianco di merlot 2022
+26. il bianco di chiara ticino doc bianco di merlot 2023
+27. il bianco di ciccio
+28. il bianco di ciccio 2023
+29. il bianco di civita
+30. il bianco di civita 2023 fra i monti
+31. il bianco di civita magnum 2022 fra i monti
+32. il bianco di ludovico bianco riserva doc 2018
+33. il bianco di ludovico doc 2018 riserva
+34. il bianco from black to white 2021
+35. il bianco from black to white igp
+36. il bianco igt toscana brancaia 2023
+37. il bianco king
+38. il bianco tenute santamaria
+39. il bianco tenute santamaria
+40. il bianco toscana igt
+41. il bianco toscana igt 2022
+42. il bianco toscana igt agricole selvi
+43. il bianco toscana igt bio 2022
+44. il bianco tre venezie igt
+45. il biancuzzo hvidvin sicilia
+46. il bimbo doro primitivo
+47. il bio selvatico toscana rosso igt 2020
+48. il bioselvatico sangiovese 1 2019
+49. il bioselvatico sangiovese 1 2019
+50. il bioselvatico sangiovese 2020
+51. il bioselvatico sangiovese 2020
+52. il bioselvatico toscana magnum 2020
+53. il bioselvatico toscana magnum 2020
+54. il bioselvatico toscana rosso 2021
+55. il bioselvatico toscana rosso 2022
+56. il bioselvatico toscana rosso 2022
+57. il bioselvatico toscana rosso 2022
+58. il bioselvatico toscana rosso 2022
+59. il black back friday di vigneronwine
+60. il blau grendelmeier 2023
+61. il bloggerone
+62. il blu 2021
+63. il blu 2021 toscana igt brancaia
+64. il blu latte di bufala casa madaio
+65. il blu rosso toscana igt bio brancaia 2020
+66. il blu special release 2015
+67. il borghetto bilaccio 2018
+68. il borghetto monte de sassi
+69. il borghetto monte de sassi tuscany igt 2017
+70. il borghetto monte dei sassi 2019
+71. il borghetto montedesassi
+72. il borghetto montedesassi igp italy 2016
+73. il borghetto montedesassi toscana organic
+74. il borghetto montigiano 2019
+75. il borghetto toscana monte de sassi 2013
+76. il borghetto toscana monte de sassi 2015
+77. il borghetto toscana rosso monte de sassi 2015
+78. il borgo calabria sugo con cipolla fritta 520g
+79. il borgo cantuccini
+80. il borgo del balsamico condimento yellow label low viscosity oval bottle
+81. il borgo del balsamico di modena condimento aged orange label medium viscosity flask bottle
+82. il borgo del balsamico di modena condimento aged orange label medium viscosity oval bottle
+83. il borgo del balsamico di modena condimento aged red label high viscosity oval bottle
+84. il borgo del balsamico di modena condimento aged red label high viscosity oval bottle
+85. il borgo del balsamico di modena condimento aged red label high viscosity oval bottle no box
+86. il borgo del balsamico di modena condimento aged yellow label low viscosity flask bottle
+87. il borgo del balsamico di modena condimento satin oval bottle dalia flower no box
+88. il borgo del balsamico di modena condimento satin oval bottle rose flower
+89. il borgo del balsamico di modena condimento white bottle
+90. il borgo del balsamico di modena condimento white box
+91. il borgo del balsamico di modena igp red label high viscosity 5 monodose in box
+92. il borgo del balsamico di modena igp red label high viscosity monodose
+93. il borgo del balsamico di modena il tinello condimento truffle
+94. il borgo del balsamico di modena il tinello igp yellow label low viscosity
+95. il borgo del balsamico di modena il tinello pgi orange label medium viscosity gallon
+96. il borgo del balsamico di modena il tinello pgi red label high viscosity flask bottle
+97. il borgo del balsamico di modena il tinello pgi yellow label low viscosity gallon
+98. il borgo del balsamico di modena pgi aged orange label mediumhigh viscosity flask bottle
+99. il borgo del balsamico di modena pgi aged red label high viscosity flask bottle
+100. il borgo del balsamico di modena pgi aged white label low viscosity flask bottle
+101. il borgo del balsamico di modena pgi aged yellow label medium viscosity flask bottle 250mll
+102. il borgo del balsamico di modena white vinager agedbarrel trebbiano singlevarietal
+103. il borgo del balsamico igp pink label
+104. il borgo del balsamico il tinello la saba cooked most
+105. il borgo del balsamico il tinello white condiment
+106. il borgo del balsamico il tinelo saba
+107. il borgo del balsamico lime condiment
+108. il borgo del balsamico red label aged condiment
+109. il borgo del balsamico satin rose edition aged condiment
+110. il borgo del balsamico twentieth anniversary condiment
+111. il borgo del balsamico white blueberry condiment
+112. il borgo del balsamico white blueberry condiment 100m
+113. il borgo magnum cofanetto legno astucciato tenute del cabreo ambrogio e giovanni folonari
+114. il borgo pinot nero toscana igt 2021 borgo macereto
+115. il borgo tenute del cabreo ambrogio e giovanni folonari
+116. il borro
+117. il borro
+118. il borro 2000 tenuta il borro
+119. il borro 2018 bio igt tenuta il borro
+120. il borro 2020
+121. il borro 2020
+122. il borro 2020 il borro cofanetto
+123. il borro bolle di borro metodo classico brut rose 2015
+124. il borro bolle di borro metodo classico rose brut 2017
+125. il borro bolle di borro rose metado classico
+126. il borro bolle di borro rose metodo classico brut 2018
+127. il borro borigianno toscana igt 2022 135 0
+128. il borro borrigiano
+129. il borro borrigiano 2022
+130. il borro borrigiano igt 2024
+131. il borro borrigiano igt toscana rosso
+132. il borro borrigiano igt toscana rosso
+133. il borro borrigiano rosso igt 2022 case only
+134. il borro borrigiano val darno di sopra 2020
+135. il borro borrigiano valdarno di sopra
+136. il borro borrigiano valdarno di sopra 2019
+137. il borro borrigiano valdarno di sopra bio 2019
+138. il borro borrigiano valdarno di sopra doc
+139. il borro borrigiano valdarno di sopra pratomagno rosso italy sangiovese blend 2024
+140. il borro borrorosa igt toscana
+141. il borro borrorose rose 2022
+142. il borro borrosa rosato igt 2024
+143. il borro chardonnay 2022
+144. il borro chardonnay 2024
+145. il borro chardonnay 2024 valdarno di sopra doc
+146. il borro chardonnay lamelle
+147. il borro chiaro di bolle metodo classico 2022
+148. il borro chiaro di bolle metodo classico brut 2021
+149. il borro igt super tuscan 2018
+150. il borro igt toscana
+151. il borro igt toscana
+152. il borro igt toscana
+153. il borro igt toscana
+154. il borro igt toscana
+155. il borro igt toscana rosso
+156. il borro il borro 2020
+157. il borro il borro toscana igt rosso 2020 vino rosso
+158. il borro lamelle
+159. il borro lamelle chardonnay
+160. il borro lamelle chardonnay 2022
+161. il borro lamelle chardonnay 2022
+162. il borro lamelle chardonnay 2023
+163. il borro lamelle igt chardonnay 2024
+164. il borro lamelle igt toscana chardonnay
+165. il borro lamelle toscana 2022
+166. il borro lamelle toscana chardonnay 2022 case only
+167. il borro lamelle toscana chardonnay igt 2022
+168. il borro lamelle toscana igt 2023 125 0
+169. il borro lamelle toscana igt bianco
+170. il borro petruna anfora igt toscana sangiovese
+171. il borro petruna anfora sangiovese igt 2019
+172. il borro petruna anforia valdorno di sopra
+173. il borro petruna in anfora doc 2020
+174. il borro petruna in anfora sangiovese 2020
+175. il borro petruna sangiovese in anfora 2018
+176. il borro pian di nova
+177. il borro pian di nova 2018
+178. il borro pian di nova 2022
+179. il borro pian di nova igt 2022
+180. il borro pian di nova igt toscana
+181. il borro pian di nova igt toscana rosso
+182. il borro pian di nova rosso eco 2019
+183. il borro pian di nova rosso toscana igt
+184. il borro pian di nova toscana
+185. il borro pian di nova toscana rosso igt 2018
+186. il borro pian di nova toscana rosso igt 2022
+187. il borro pian di nova toscana syrah sangiovese 2020 case only
+188. il borro pian di nova tuscan red
+189. il borro polissena igt 2018
+190. il borro polissena igt toscana rosso
+191. il borro polissena toscana doc 2020
+192. il borro polissena toscana sangiovese 2017 case only
+193. il borro polissena toscana sangiovese igt 2018
+194. il borro polissena valdarno di sopra doc 2019
+195. il borro rosato
+196. il borro rose
+197. il borro rose del borro 2019
+198. il borro rose del borro igt 2021
+199. il borro rose del borro igt toscana
+200. il borro rose del borro igt toscana rose
+201. il borro rosso toscana 6 case
+202. il borro sangiovese doc petruna in anfora 2020
+203. il borro sangiovese petruna in anfora 2020
+204. il borro sangiovese petruna in anfora 2020
+205. il borro sangiovese petruna in anfora 2020
+206. il borro sangiovese polissena
+207. il borro sangiovese vigna polissena 2019
+208. il borro sangiovese vigna polissena 2019
+209. il borro sangiovese vigna polissena 2019
+210. il borro sangiovese vigna polissena 2019 eko 145 0
+211. il borro spumant rose bolle di borro
+212. il borro tascana rosso 2015
+213. il borro toscana
+214. il borro toscana
+215. il borro toscana 2015
+216. il borro toscana 2016
+217. il borro toscana borrigiano 2023 case only
+218. il borro toscana igt 2020
+219. il borro toscana igt 2021 il borro
+220. il borro toscana italy red blend 2020
+221. il borro toscana pian di nova 2016
+222. il borro toscana rosso 2020
+223. il borro toscana rosso igt 2019
+224. il borro toscana sangiovese petruna in anfora 2018 case only
+225. il borro tuscana 2020
+226. il borro vigna polissena
+227. il borro vin santo del chianti occhio di pernice
+228. il borro vinsanto del chianti occhio di pernice doc 2017
+229. il borro vinsanto occhio pernice 2015 demi
+230. il bosco 2020 amarone della valpolicella classico docg cesari
+231. il bosco di grazia 2010 brunello di montalcino riserva
+232. il bosco di grazia brunello di montalcino docg 2013
+233. il bosco di grazia rosso di montalcino doc 2017
+234. il bosco gavi del comune di gavi
+235. il bosco syrah doc tenimenti luigi dalessandro 2018
+236. il bosco tenimenti
+237. il bossolo 2021 giacomo baraldo
+238. il bossolo 2021 giacomo baraldo
+239. il bossolotto 2022 giacomo baraldo
+240. il bossolotto 2022 giacomo baraldo
+241. il botolo le coccole rose prijs
+242. il bottegaio consiglia
+243. il bottegaio consiglia ii
+244. il bove 2019 montefalco sagrantino docg
+245. il bria bianco 800g cioccolato bianco e vaniglia pasticceria bonci
+246. il bria mokanero 800g bonci
+247. il bria pera 850g pasticceria bonci
+248. il bria tronchetto arancia e bitter edizione limitata pasticceria bonci
+249. il bria tronchetto mela e calvados 500g pasticceria bonci
+250. il bria tronchetto pera cioccolato 500g pasticceria bonci
+251. il bria tronchetto zagara e fiori darancio pasticceria bonci
+252. il bria zagara pasticceria bonci
+253. il bricco 1987 barbaresco
+254. il bricco 2006 barbaresco
+255. il brigantino
+256. il brigantino vino rosso n5
+257. il brigantino vino rosso n7
+258. il brigantino vino rosso vini briganti
+259. il brolo prosecco doc bollicine di seta 2020
+260. il brolo prosecco doc bollicine di seta prossecco doc 2020
+261. il brolo rosso veneto igt tra i gelsi merlot 2020
+262. il bruciato
+263. il bruciato
+264. il bruciato
+265. il bruciato
+266. il bruciato
+267. il bruciato
+268. il bruciato
+269. il bruciato 2020 bolgheri rosso guado al tasso
+270. il bruciato 2020 magnum bolgheri rosso
+271. il bruciato 2021 bolgheri antinori
+272. il bruciato 2021 bolgheri doc marchesi antinori
+273. il bruciato 2021 bolgheri rosso guado al tasso
+274. il bruciato 2021 doppia
+275. il bruciato 2021 magnum bolgheri rosso
+276. il bruciato 2022 bolgheri antinori cl75
+277. il bruciato 2022 bolgheri guado al tasso antinori
+278. il bruciato 2022 bolgheri rosso
+279. il bruciato 2022 bolgheri rosso doc guado al tasso marchesi antinori
+280. il bruciato 2022 bolgheri rosso guado al tasso
+281. il bruciato 2022 magnum in cassa legno bolgheri rosso doc tenuta guado al tasso marchesi antinori
+282. il bruciato 2023 bolgheri antinori cl75
+283. il bruciato 2023 bolgheri antinori magnum cl150
+284. il bruciato 2023 bolgheri doc antinori
+285. il bruciato 2023 bolgheri doc tenuta guado al tasso 075
+286. il bruciato 2023 bolgheri rosso doc guado al tasso marchesi antinori
+287. il bruciato 2023 magnum bolgheri rosso doc guado al tasso marchesi antinori in cassa legno
+288. il bruciato 2024 bolgheri antinori cl75
+289. il bruciato 2024 bolgheri antinori magnum cl150
+290. il bruciato 2024 bolgheri rosso doc guado al tasso marchesi antinori
+291. il bruciato 2024 magnum bolgheri rosso doc guado al tasso marchesi antinori in cassa legno
+292. il bruciato antinori
+293. il bruciato antinori
+294. il bruciato antinori
+295. il bruciato antinori
+296. il bruciato antinori
+297. il bruciato antinori
+298. il bruciato antinori mezza bottiglia
+299. il bruciato antinori tenuta guado al tasso
+300. il bruciato antinori tenuta guado al tasso
+301. il bruciato bolgheri
+302. il bruciato bolgheri
+303. il bruciato bolgheri 2024 marchesi antinori
+304. il bruciato bolgheri antinori 2022
+305. il bruciato bolgheri doc
+306. il bruciato bolgheri doc 2021 antinori
+307. il bruciato bolgheri doc 2022 magnum marchesi antinori cassa legno
+308. il bruciato bolgheri doc 2023
+309. il bruciato bolgheri doc 2023 antinori box
+310. il bruciato bolgheri doc 2023 antinori tenuta guado al tasso
+311. il bruciato bolgheri doc 2023 guado al tasso antinori
+312. il bruciato bolgheri doc 2023 magnum 1 owc antinori
+313. il bruciato bolgheri doc 2023 tenuta guado al tasso marchesi antinori
+314. il bruciato bolgheri doc 2024 antinori
+315. il bruciato bolgheri doc 21
+316. il bruciato bolgheri doc 23
+317. il bruciato bolgheri doc antinori
+318. il bruciato bolgheri doc antinori 2023
+319. il bruciato bolgheri doc guado al tasso
+320. il bruciato bolgheri doc guado al tasso
+321. il bruciato bolgheri doc guado al tasso
+322. il bruciato bolgheri doc tenuta guado al tasso
+323. il bruciato bolgheri doc tenuta guado al tasso
+324. il bruciato bolgheri doc tenuta guado al tasso 2022
+325. il bruciato bolgheri doc tenuta guado al tasso 2023
+326. il bruciato bolgheri doc tenuta guado al tasso 2024
+327. il bruciato bolgheri doc tenuta guado al tasso antinori
+328. il bruciato bolgheri doc tenuta guado al tasso antinori 0
+329. il bruciato bolgheri italy
+330. il bruciato bolgheri rosso
+331. il bruciato bolgheri rosso
+332. il bruciato bolgheri rosso doc 2023
+333. il bruciato bolgheri rosso doc guado al tasso 2024 marchesi antinori
+334. il bruciato bolgheri rosso doc tenuta guado al tasso 2024
+335. il bruciato bolgheri rosso doc tenuta guado al tasso 2024
+336. il bruciato cabernet merlot syrah guardo al tasso tuscany italy 2021
+337. il bruciato doc bolgheri 0
+338. il bruciato doc bolgheri tuscany italy 2022
+339. il bruciato guado al tasso antinori bolgheri rosso doc 2024
+340. il bruciato guado al tasso marchesi antinori
+341. il bruciato guado tasso antinori
+342. il bruciato rosso bolgheri doc
+343. il bruciato tenuta guado al tasso
+344. il bruciato tenuta guado al tasso
+345. il bruciato tenuta guado al tasso antinori 2024
+346. il bruciato tenuta guado al tasso antinori 2024
+347. il bruno calonga
+348. il bruno dei giusti monferrato 2020
+349. il bruno dei vespa
+350. il bruno dei vespa primitivo 2021 vespa
+351. il bruno dei vespa primitivo salento igt 2021
+352. il bruno dei vespa primitivo salento igt 2022
+353. il bruno diano dalba
+354. il brunone chianti classico
+355. il brunone chianti classico riserva
+356. il bruscia bianco
+357. il bruscia rosso
+358. il bruto and the beast magnum valli unite
+359. il bruto and the beast valli unite
+360. il bruto the beast 2021 valli unite
+361. il bruto the beast mgm 1 2020 valli unite
+362. il bucco
+363. il bucco montepulciano
+364. il bucco montepulciano
+365. il bucco montepulciano dabruzzo
+366. il bucco pinot grigio
+367. il bucco pinot grigio
+368. il bugiardo ripasso valpolicella classico superiore 2022
+369. il bugiardo valpolicella ripasso classico
+370. il buono biscotto bigusto fara gluten 125g
+371. il buono il brut il dolcetto tasting box 3 bottiglie
+372. il buono il brut il dolcetto tasting box 3 bottiglie
+373. il burbero
+374. il burbero
+375. il burbero 2019 umbria igt collecapretta
+376. il burrone 2015
+377. il caberlot
+378. il caberlot
+379. il caberlot 2020
+380. il caberlot igt toscana 0 demimagnum 2020
+381. il caberlot igt toscana 0 demimagnum 2021
+382. il caberlot igt toscana 1 2017
+383. il caberlot igt toscana 1 2019
+384. il caberlot igt toscana 1 2020
+385. il caberlot igt toscana 1 2021
+386. il caberlot sommelleria
+387. il caberlot toscane sommeleria demi magnum 2019
+388. il cabernet
+389. il cabernet
+390. il cabernet franc ticino doc
+391. il cacciatore di sogni 2021 rosso conero doc la calcinara
+392. il cacciatore di sogni 2022 rosso conero doc la calcinara
+393. il cacciatore di sogni 2023 rosso conero doc la calcinara
+394. il cacciatore di sogni la calcinara 2022
+395. il cadere appassimento rosso arets jagtvin
+396. il cadetto rosato dellemilia 2021
+397. il caffe
+398. il caggio 2015 ipsus chianti classico gran selezione
+399. il caggio 2018 ipsus chianti classico gran selezione
+400. il caggio 2018 ipsus chianti classico gran selezione
+401. il caggio 2019 ipsus chianti classico gran selezione
+402. il caggio chianti
+403. il caggio chianti docg
+404. il caggio ipsus 2018 ipsus chianti classico gran selezione
+405. il caggio ipsus 2019 ipsus chianti classico gran selezione il caggio 2019
+406. il caggio ipsus chianti classico gran selezione docg
+407. il caggio ipsus chianti classico gran selezione docg
+408. il caggio ipsus chianti classico gran selezione docg 2015
+409. il caggio ipsus chianti classico gran selezione docg 2016
+410. il caggio ipsus chianti classico gran selezione docg 2018
+411. il caggio ipsus project by mazzei 2020 ipsus chianti classico gran selezione 2020
+412. il caggio montepulciano
+413. il caggio montepulciano 2023
+414. il caggio montepulciano dabruzzo
+415. il caggio pinot grigio
+416. il caggio pinot grigio
+417. il caggio pinot grigio 11
+418. il caggio pinot grigio 2023
+419. il caggio pinot grigio rose
+420. il caggio pinot grigio rose
+421. il caggio pinot grigio rose 2023
+422. il caggio prosecco
+423. il caggio prosecco
+424. il caggio prosecco doc spumante
+425. il caggio prosecco doc spumante extra dry
+426. il caggio prosecco doc spumante extra dry single serve
+427. il caggio prosecco doc veneto italy
+428. il caggio prosecco extra dry
+429. il caggio prosecco mini
+430. il caggio prosecco rose
+431. il caggio prosecco rose
+432. il caggio prosecco rose extra dry
+433. il caggio prosecco rose single serve
+434. il caggio prosecco rose veneto italy
+435. il caggio rose prosecco
+436. il caggio sauvignon blanc
+437. il calamaio vini ancolu
+438. il calamaio vini ancolu
+439. il calamaio vini antenato
+440. il calamaio vini antenato
+441. il calamaio vini miele
+442. il calamaio vini miele
+443. il calamaio vini poiana
+444. il calamaio vini poiana
+445. il calamaio vini soffio
+446. il calamaio vini soffio
+447. il calandrino maremma toscana doc
+448. il calendario delle feste
+449. il calepino surie riserva doc 1997
+450. il calice di papa
+451. il calice valpolicella classico
+452. il calice valpolicella classico doc 2023
+453. il califfo di bagdad
+454. il campanile 2019 igt
+455. il campanile chiesa del carmine 2021
+456. il campetto bianco frizzante pavia igt 2022
+457. il campitello riserva 2021 monteraponi chianti classico docg 075ltr
+458. il campone rosso di toscana igt querce bettina
+459. il campora 2016
+460. il canarino vino italiano frizzantino
+461. il cancelliere gioviano aglianico 2018
+462. il cancelliere irpinia aglianico montemarano 2018
+463. il cancelliere taurasi montemarano 2016
+464. il cancelliere taurasi nero ne ayuki 2014
+465. il cancelliere vendemmia 2019 campania
+466. il cancelliere vendemmia 2019 campania
+467. il cancelliere vendemmia aglianico igt 2018
+468. il cancelliere vendemmia igt 2019
+469. il canet
+470. il canneto sangiovese maremma toscana doc mantellassi
+471. il cannone
+472. il canovino quatro vecchio valpolicella
+473. il canovino riserva amarone docg
+474. il canovino riserva amarone docg trkasse a 6 stk
+475. il cantagallo
+476. il cantico della figura jesi doc riserva 2018 andrea felici
+477. il cantico della figura jesi doc riserva 2020 andrea felici
+478. il cantico della figura jesi doc riserva 2020 magnum andrea felici
+479. il cantico pinot grigio
+480. il cantine 2020 i versanti
+481. il cantine i versanti
+482. il canto del cio
+483. il canto del cio 2007 2015
+484. il canto del cio 20072020 podere pradarolo
+485. il canto della terra rosso del ticino doc
+486. il canto della vigna igp aged campanian red wine
+487. il capitano fausta mansio consiglio
+488. il capolavoro bianco 125 vol bib
+489. il capolavoro pinot grigio 125 bib
+490. il capolavoro selezione delicata 125 vol bib
+491. il capolavoro selezone delicata 135 bib
+492. il cappelli spaghetti 500g felicetti
+493. il capretto di vergaia
+494. il capriccio della marchesa fiano
+495. il caprone malbec
+496. il carasau di sardegna by logias sardijnsbrood 250g
+497. il caratello aceto balsamico di modena dop
+498. il caratello aceto balsamico di modena igp
+499. il carbonaione
+500. il carbonaione 2016 podere poggio scalette alta valle della greve igt 0
+501. il carbonaione 2019
+502. il carbonaione 2020 poggio scalette
+503. il carbonaione alta valle della greve igt podere poggio scalette 2020
+504. il carbonaione igt 2020
+505. il carbonaione igt 2020 magnum poggio scalette
+506. il carbonaione igt 2020 podere poggio scalette
+507. il carbonaione igt 2021 poggio scalette
+508. il carbonaione podere poggio scalette 2013 red blend
+509. il carbonaione podere poggio scalette 2016 0750 toscane italie
+510. il carbonaione poderi poggio scalette 2003
+511. il carciofo casereccio artischocken
+512. il carica lasino
+513. il carisma ornellaia bolgheri superiore doc william kentridge cassetta legno 2015
+514. il carnasciale 2020
+515. il carnasciale il caberlot toscana trentesimo 2018
+516. il carnasciale il caberlot toscana trentesimo 2018
+517. il carpino bianco runc isonzo doc
+518. il carpino chardonnay collio doc
+519. il carpino collio malvasia 2017
+520. il carpino collio ribolla gialla 2018
+521. il carpino exordium friulano 2018
+522. il carpino exordium friulano 2019
+523. il carpino frascati doc trocken 1
+524. il carpino frascati doc trocken 6 x 1
+525. il carpino frascati vin alb sec
+526. il carpino frascati weiwein doc trocken 6 x 0
+527. il carpino friulano collio doc
+528. il carpino friulano exordium igt la selezione 2013
+529. il carpino malvasia
+530. il carpino malvasia 2017
+531. il carpino malvasia collio doc
+532. il carpino malvasia doc collio vigna runc 2016
+533. il carpino merlot isonzo doc
+534. il carpino orvieto classico doc trocken 6 x 0
+535. il carpino orvieto classico vin alb sec
+536. il carpino pinot grigio collio doc
+537. il carpino pinot grigio vis uvae igt la selezione 2013
+538. il carpino ribolla gialla 2018
+539. il carpino ribolla gialla collio doc
+540. il carpino sauvignon blanc collio doc
+541. il carpino vis uvae pinot grigio 2010
+542. il carpino vis uvae pinot grigio 2013
+543. il carretto igt rosso di puglia 2024
+544. il casaro lovelanghe
+545. il casato cabernet sauvignon
+546. il casato chardonnay
+547. il casato friuli doc sauvignon blanc 2020 italy
+548. il casato friuli sauvignon blanc 2024case only
+549. il casato il casato rose pinot grigio 2022 case only
+550. il casato il casato valdadige pinot grigio 2022 case only
+551. il casato pinot grigio
+552. il casato pinot grigio
+553. il casato pinot grigio
+554. il casato pinot grigio
+555. il casato pinot grigio
+556. il casato pinot grigio blush
+557. il casato pinot grigio delle venezie doc rose
+558. il casato pinot grigio delle venezie rose doc
+559. il casato pinot grigio rose
+560. il casato pinot grigio valdadige
+561. il casato pinot grigio valdadige
+562. il casato pinot grigio valdadige
+563. il casato pinot grigio valdadige 2024
+564. il casato pinot grigio valdadige 2024italia pinot grigio brancoenoclubenao enoclube
+565. il casato pinot grigio valdadige doc
+566. il casato pinot grigio valdadige doc
+567. il casato pinot grigio valdadige doc
+568. il casato pinot grigio valdadige doc 2024
+569. il casato red blend
+570. il casato red blend
+571. il casato red blend
+572. il casato rose pinot grigio
+573. il casato rose pinot grigio 2024case only
+574. il casato rose pinot grigio 2025case only
+575. il casato sauv blanc 2021 case only
+576. il casato sauvignon blanc friuli
+577. il casato sauvignon blanc friuli
+578. il casato sauvignon blanc friuli doc 2020
+579. il casato teroldego vigneti del dolomiti
+580. il casato teroldego vigneti delle dolomiti igt
+581. il casato valdadige chardonnay 2023case only
+582. il casato valdadige chardonnay 2024case only
+583. il casato valdadige pinot grigio
+584. il casato valdadige pinot grigio 2024case only
+585. il cascinone alasia brachetto dacqui docg 2024
+586. il cascinone alasia brut 2020
+587. il cascinone alasia moscato dasti docg 2024
+588. il cascinone avamposti ventura pinot nero 2024
+589. il cascinone barbera asti superiore crocera
+590. il cascinone camillona sauvignon
+591. il cascinone camillona sauvignon blanc 2024
+592. il cascinone camilona sauvignon blanc 2024
+593. il cascinone campo fiorito chardonnay
+594. il cascinone campo fiorito chardonnay 2024
+595. il cascinone crocera barbera
+596. il cascinone crocera barbera dasti superiore
+597. il cascinone crocera barbera dasti superiore 2021
+598. il cascinone crocera barbera dasti superiore 2021
+599. il cascinone crocera barbera dasti superiore doc 2021
+600. il cascinone dannona barbera dasti superiore doc 2017
+601. il cascinone fontanino riesling 2022
+602. il cascinone fontanino riesling doc
+603. il cascinone fontanino riesling italy
+604. il cascinone leccio chiaretto monferrato 2023
+605. il cascinone leccio chiaretto rose
+606. il cascinone monferrato doc nebbiolo avamposti altrove
+607. il cascinone moscato passito 2017
+608. il cascinone moscato passito palazzina
+609. il cascinone moscato vendemmia tardiva 2015
+610. il cascinone palazzina moscato dasti 2017
+611. il cascinone piemonte doc pinot nero avamposti ventura
+612. il cascinone rive barbera
+613. il cascinone rive barbera 2017
+614. il cascinone rive barbera dasti
+615. il cascinone rive barbera dasti 2021
+616. il cascinone rive barbera dasti superiore 2017
+617. il cascinone rive barbera dasti superiore 2021
+618. il cascinone rive barbera dasti superiore doc 2021
+619. il cascinone soliti merlot
+620. il cascinone soliti merlot 2022
+621. il casello bonarda 2021
+622. il casolare olivenol extra vergine kaltgepresst ungefiltert
+623. il casolare rosso
+624. il cason del prato bianco
+625. il cason del prato bianco veronese prima vera 2025
+626. il cason del prato cadel prato bianco
+627. il cason del prato cadel prato rosa
+628. il cason del prato chardonnay igt dv 2025
+629. il cason del prato lugana doc dv 2025
+630. il cason del prato pinot grigio doc dv 2025
+631. il cason del prato prima vera igt dv 2025
+632. il cason del prato rosa igt dv 2025
+633. il casone garganega veneto
+634. il casone gargenega veneto 2024
+635. il casone pinot grigio delle venezie
+636. il casone pinot grigio venezie 2024
+637. il casone raboso veneto
+638. il casone raboso veneto 2023
+639. il casone raboso veneto 2024
+640. il casone veneto garganega 2023
+641. il casone veneto garganega 2024
+642. il casone veneto raboso 2023
+643. il casone veneto raboso 2024
+644. il casone venezie pinot grigio 2023
+645. il casone venezie pinot grigio 2024
+646. il casotto badalischio igt toscana rosso 2021 vino rosso
+647. il casotto muffato igt toscana passito 2023 vino dolce
+648. il casotto riesling renano igt toscana bianco 2024 vino bianco
+649. il casotto traminer aromatico igt toscana bianco 2022 vino bianco
+650. il castagneto chardonnay ticino doc
+651. il castagnino cortona doc syrah bio fabrizio dionisio ml 750 cod dio03
+652. il castagno
+653. il castagno cortona doc syrah cru bio fabrizio dionisio ml 750 cod dio02
+654. il castellaccio bolgheri superiore doc
+655. il castellaccio coste di felice chianti classico 2023
+656. il castellaccio coste di olinto chianti classico riserva 2022
+657. il castellano fiano puglia igp
+658. il castellano negroamaro igp salento tinto 2020
+659. il castellengo coste della sesia nebbiolo centovigne castello di castellengo cossato bi
+660. il castelliere vernaccia 1979
+661. il castello
+662. il castello gavi docg bio
+663. il castelluccio emanuela tamburini 2024
+664. il castelluccio toscana bianco igt azienda agricola tamburini 2022
+665. il cattivo arneis 2024
+666. il cattivo arneis 2024 6 pack
+667. il cattivo fiano 2024 6 pack
+668. il cattivo grenache 2024
+669. il cattivo grenache 2024 6 pack
+670. il cattivo grenache rose 2024 6 pack
+671. il cattivo montepulciano 2022 6 pack
+672. il cattivo nebbiolo 2024 6 pack
+673. il cattivo prosecco 2024 6 pack
+674. il cattivo sangiovese 2024 6 pack
+675. il cattivo tempranillo 2024 6 pack
+676. il cattivo vermentino 2025 6 pack
+677. il cavaliere fiano di avellino docg 2024 dantiche terre
+678. il cavaliere romano rosso roma 2021
+679. il cavallino calombarda 2020
+680. il cavallino di sauro maule ca lombarda 2019
+681. il cavallino di sauro maule ca lombarda 2019
+682. il cavallino di sauro maule granselva 2019
+683. il cavallino di sauro maule granselva 2019
+684. il cavallino di sauro maule my tai 2019
+685. il cavallino di sauro maule my tai 2019
+686. il cavallino di sauro maule pri 2019
+687. il cavallino di sauro maule pri 2019
+688. il cavallino di sauro maule sgass 2020
+689. il cavallino di sauro maule sgass 2020
+690. il cavallino di sauro maule sgass rosa 2020
+691. il cavallino di sauro maule sgass rosa 2020
+692. il cavallino my tai 2020
+693. il cavallino pri 2024
+694. il cavallino rosato frizzante
+695. il cellese s2 collezione privata sergio sardelli toscana igt 2019
+696. il cenerino 2020 lambrusco dellemilia igp podere cervarola
+697. il cenerino 2023 podere cervarola
+698. il censo 2015 terre silciliane 700
+699. il censo 2018 700 nero davola terre siciliane rosso
+700. il censo 700 2016
+701. il censo 700 nero davola 2016
+702. il censo 700 nero davola 2018
+703. il censo 700 nero davola terre siciliane rosso 2018 140 abv
+704. il censo 700 rosso 2015
+705. il censo cataratto bianco praruar
+706. il censo catarratto praruar 2018
+707. il censo catarratto praruar 2019
+708. il censo catarratto praruar 2020 sicily italy
+709. il censo gurte 2020
+710. il censo gurte insolia terre sicilane bianco sicily italy
+711. il censo gurte insolia terre siciliane 2022
+712. il censo nero davola 700
+713. il censo njuro
+714. il censo njuro
+715. il censo praruar 2019 sicily italy
+716. il censo praruar bianco 2020
+717. il censo praruar bianco terre siciliane 2019
+718. il censo praruar cataratto terre sicilianne bianco 2021
+719. il censo praruar catarrato terre siciliane bianco 2020
+720. il censo praruar catarrato terre siciliane bianco 2020
+721. il censo praruar catarratto terre siciliane bianco 2020
+722. il censo provvido
+723. il censo terre siciliane rosso njuro
+724. il centovigne coste della sesia doc castello di castellengo
+725. il centovigne il centovigne coste della sesia
+726. il centovigne il centovigne coste della sesia
+727. il ceo carbonic rose groppea 2021
+728. il ceo groppea rose nv
+729. il ceo groppea rosso 2021
+730. il ceo orange vespaiola vespri 2021
+731. il ceo pinot noir rosato petnat 2022
+732. il ceo rosato frizzante 2022
+733. il ceo rose frizzante 2022
+734. il ceo togo 2023
+735. il ceo toro 2023
+736. il ceo toro rosso 2021
+737. il ceo vespri frizzante 2023
+738. il ceo vespri orange 2021
+739. il ceo vespri vespaiola frizzante 2021
+740. il ceppo prosecco
+741. il cepprone 2015 chianti docg italy
+742. il cerchio valmarina sangiovese 2012
+743. il cerreto 2022 barbera dalba
+744. il cerreto barbera dalba doc voerzio 2022
+745. il cerro dei locchi montecucco doc
+746. il cerrone chianti
+747. il chaos
+748. il chaos primitivo igp roccamonfina 2022 enoz
+749. il chaos roccamonfina primitivo 2019 enoz masseria torricella
+750. il chardonnay ticino doc
+751. il chianti classico secondo la cantina ripoli
+752. il chiaretto rosaluce 2024 pasini san giovanni
+753. il chioso piedmonte aziend agricole sella 1992
+754. il chioso piemonte aziende agricole sella 1992
+755. il chioso piemonte aziende agricole sella 1992
+756. il chiosso colline novaresi bianco doc paglierino 2013
+757. il chiosso colline novaresi bianco doc paglierino 2017
+758. il chiosso colline novaresi doc ficorosa 2018
+759. il chiosso colline novaresi nebbiolo doc 2010
+760. il chiosso colline novaresi nebbiolo doc 2011
+761. il chiosso colline novaresi vespolina 2011
+762. il chiosso fara
+763. il chiosso fara 2017
+764. il chiosso fara doc 2016
+765. il chiosso gattinara
+766. il chiosso gattinara 2016
+767. il chiosso gattinara 2018
+768. il chiosso gattinara 2019
+769. il chiosso gattinara 2019
+770. il chiosso gattinara docg 2014
+771. il chiosso gattinara docg riserva 2015
+772. il chiosso gattinara galizja docg 2013
+773. il chiosso gattinara terre vulcaniche docg 2017
+774. il chiosso ghemme
+775. il chiosso ghemme 2018
+776. il chiosso ghemme 2019
+777. il chiosso ghemme docg 2011
+778. il chiosso ghemme docg 2020
+779. il chiosso ghemme terre moreniche docg 2014
+780. il chiosso nebbiolo colline novaresi
+781. il chiosso nebbiolo colline novaresi ficorosa rose
+782. il chiosso sizzano doc 2019
+783. il chiosso spanna 2023
+784. il chiosso vino tavola ficorosso 2013
+785. il chiosso vino tavola ficorosso 2018
+786. il chiurlo maremma toscana rosso dop 2022
+787. il chiuso
+788. il chiuso igt 2022 castello di ama
+789. il ciabattino podere la bandita
+790. il ciaret piemonte doc rosato
+791. il cigno bianco
+792. il cigno bianco
+793. il cigno dellavon amarone della valpolicella docg 2020 le clivie
+794. il cigno dellavon amarone della valpolicella docg 2020 le clivie
+795. il cigno dellavon amarone della valpolicella docg 2021 le clivie
+796. il cigno merlot
+797. il cigno merlot
+798. il cigno pinot grigio
+799. il cigno pinot grigio
+800. il cigno pinot grigio
+801. il cigno pinot grigio
+802. il cigno sangiovese
+803. il cigno sangiovese
+804. il cigno sangiovese
+805. il ciottolo 2021 podere luisa
+806. il classico 2023 luca bambara
+807. il classico 2023 luca bambara
+808. il classico a pasqua
+809. il classico balsamico guiseppe giusti
+810. il classico chianti classico docg 2022
+811. il classico chianti classico docg 2022
+812. il classico chianti classico docg 2023
+813. il classico viva valentina
+814. il clementino vermouth dry tenuta saiano
+815. il cocco brunello di montalcino
+816. il cocco brunello di montalcino 2018 tuscany italy
+817. il cocco brunello di montalcino italy
+818. il cocco rosso di montalcino
+819. il cocco vino spumante laila
+820. il colle
+821. il colle brunello di montalcino
+822. il colle brunello di montalcino 2013
+823. il colle brunello di montalcino 2016
+824. il colle brunello di montalcino 2017
+825. il colle brunello di montalcino 2018
+826. il colle brunello di montalcino 2018
+827. il colle brunello di montalcino 2020
+828. il colle brunello di montalcino 2020
+829. il colle brunello di montalcino docg 2013
+830. il colle colle baio congeliano valdobbiadene prosecco docg brut vino biologico bio vegan
+831. il colle conegliano valdobbiadene prosecco docg millesimato extra brut
+832. il colle conegliano valdobbiadene prosecco superior docg brut 1
+833. il colle conegliano valdobbiadene prosecco superior docg extra dry 1
+834. il colle conegliano valdobbiadene prosecco superiore docg
+835. il colle conegliano valdobbiadene prosecco superiore docg brut
+836. il colle conegliano valdobbiadene prosecco superiore docg extra dry magnum 1
+837. il colle del gu pistachio butter spread
+838. il colle di carli 2020 brunello di montalcino docg
+839. il colle di carli 2022 rosso di montalcino doc
+840. il colle di carli brunello di montalcino docg
+841. il colle di carli rosso di montalcino doc 2021
+842. il colle extra dry conegliano valdobbiadene prosecco superiore treviso veneto italy nv
+843. il colle icy bubbles spumante extra dry
+844. il colle pinot grigio delle venezie doc suche 2022
+845. il colle prosecco borgo frare 105vol 075 ltr
+846. il colle prosecco conegliano valdobbiadene docg superiore spumante brut
+847. il colle prosecco conegliano valdobbiadene spumante superiore brut docg italie
+848. il colle prosecco coneglianovaldobbiadene docg rive di collalbrigocosta exra dry
+849. il colle prosecco coneglianovaldobbiadene docg rive di rua di felleto extra brut
+850. il colle prosecco coneglianovaldobbiadene superiore docg brut magnum 1
+851. il colle prosecco coneglianovaldobbiadene superiore docg extra dry
+852. il colle prosecco coneglianovaldobbiane docg rive di rua di felleto extra brut
+853. il colle prosecco doc treviso
+854. il colle prosecco doc treviso brut
+855. il colle prosecco doc treviso spumante brut
+856. il colle prosecco extra brut millesimato
+857. il colle prosecco rose treviso doc millesimato extra dry
+858. il colle prosecco superiore brut docg
+859. il colle prosecco superiore di cartizze dry docg
+860. il colle prosecco superiore extra dry docg
+861. il colle prosecco treviso doc
+862. il colle prosecco treviso doc frizzante brut
+863. il colle prosecco treviso doc frizzante extra dry
+864. il colle rive di collalbrigo costa conegliano valdobbiadene prosecco superiore docg extra dry
+865. il colle rive di rua conegliano valdobbiadene prosecco docg extra brut
+866. il colle rosso colli di conegliano docg masello 2013
+867. il colle rosso di montalcino 2016
+868. il colle rosso di montalcino 2019
+869. il colle rosso di montalcino 2022
+870. il colle superiore di cartizze valdobbiadene prosecco docg dry
+871. il colle tramonti bianco 2023 ida giordano
+872. il colle valdobbiadene superiore di cartizze docg dry
+873. il collepere colli maceratesi doc
+874. il colombaio campo del pieve vernaccia docg
+875. il colombaio di cencio monticello chianti classico 2020
+876. il colombaio di cencio monticello chianti classico docg
+877. il colombaio di santa chiara albereta vernaccia di san gimignano riserva 2019
+878. il colombaio di santa chiara igt toscana rosato cremisi
+879. il colombaio di santa chiara selvabianca vernaccia di san gimignano 2021
+880. il colombaio di santa chiara vernaccia san gimignano selvabianca 2023
+881. il colombaio di santachiara bacicolo
+882. il colombaio di santachiara selvabianca 2024
+883. il colombaio di santachiara vernaccia di san gimignano selvabianca
+884. il colombaio di santachiara vernaccia di san gimignano selvabianca
+885. il colombaio di santachiara vernaccia di san gimignano selvabianca 2020
+886. il colombaio ekstra jomfru oliven olie bio
+887. il colombaio il priore chianti colli senesi docg riserva
+888. il colombaio lalbereta riserva vernaccia docg
+889. il colombaio rosso igt sangiovese
+890. il colombaio selvabianca 2022 vernaccia di san gimignano
+891. il colombaio selvabianca vernaccia di san gimignano
+892. il colombaio selvabianca vernaccia di san gimignano docg
+893. il colombaio selvabianco vernaccia docg
+894. il colombarone 2021 tenuta la viola
+895. il colombarone 2023 tenuta la viola bio
+896. il colombarone superiore bio tenuta la viola
+897. il colorino di casanova 2019 la spinetta
+898. il colorino di casanova la spinetta
+899. il concerto brut prosecco san simone
+900. il concerto prosecco doc brut
+901. il concerto prosecco doc extra dry
+902. il concerto rose brut
+903. il condimento
+904. il conquistatore 2018
+905. il contadino
+906. il conte 2022 manincor
+907. il conte 2023 manincor
+908. il conte aurato falerio pecorino 0
+909. il conte aurato falerio pecorino 2024 0
+910. il conte aurato pecorino dop
+911. il conte ca dei conti tano
+912. il conte ca dei conti tano
+913. il conte ceppo marche paserina 2023 0
+914. il conte ceppo villa prandone marche passerina dop
+915. il conte conte rosso piceno 075
+916. il conte conte rosso piceno 075 2024
+917. il conte dalba stella rosa berry
+918. il conte dalba stella rosa limon lime
+919. il conte dalba stella rosa peach
+920. il conte delle venezie pinot grigio 2024
+921. il conte donello marche sangiovese 075
+922. il conte donello marche sangiovese 075 2024
+923. il conte donello villa prandone marche sangiovese igp
+924. il conte ix prandone marche merlot 075 2020
+925. il conte lu kont rosso igp 075 2021
+926. il conte manincor
+927. il conte manincor
+928. il conte marinus rosso piceno dop 2017 14
+929. il conte marinus villa prandone rosso piceno superiore dop
+930. il conte mariunus piceno dop superiore 075
+931. il conte meraviglia azione drammatica in cinque parti di vitaliano prina 1855 leather bound
+932. il conte montepulciano
+933. il conte montepulciano
+934. il conte montepulciano
+935. il conte montepulciano d abruzzo
+936. il conte montepulciano dabruzzo
+937. il conte montepulciano dabruzzo
+938. il conte montepulciano dabruzzo 2018
+939. il conte montepulciano dabruzzo 2021
+940. il conte montepulciano dabruzzo 2022
+941. il conte montepulciano dabruzzo 2023
+942. il conte montepulciano dabruzzo 2023
+943. il conte montepulciano dabruzzo 2023
+944. il conte navicchio offida pecorino 0
+945. il conte navicchio offida pecorino 2024 0
+946. il conte navicchio offida pecorino docg 2021 13
+947. il conte pinot grigio
+948. il conte pinot grigio
+949. il conte pinot grigio
+950. il conte pinot grigio
+951. il conte pinot grigio 2020
+952. il conte pinot grigio 2024
+953. il conte pinot grigio 2024
+954. il conte rose rose 11
+955. il conte rosso veronese igt 2015
+956. il conte stella rosa black
+957. il conte stella rosa black italy
+958. il conte stella rosa mango chili semi sweet italy
+959. il conte stella rosa pineapple docg italy
+960. il conte stella rosa red
+961. il conte stella rosa red wine italy
+962. il conte verdicchio dei castelli di jesi classico 0 125
+963. il conte verdicchio dei castelli di jesi dop
+964. il conte villa prandone
+965. il conte villa prandone aurato falerio 2022 white dry 13 075
+966. il conte villa prandone aurato pecorino 2023
+967. il conte villa prandone aurato pecorino 2024
+968. il conte villa prandone belva di terra 2022
+969. il conte villa prandone cavaceppo
+970. il conte villa prandone cavaceppo
+971. il conte villa prandone cavaceppo offida passerina 2021
+972. il conte villa prandone cavaceppo offida passerina 2022
+973. il conte villa prandone cavaceppo offida passerina 2023
+974. il conte villa prandone ceppo
+975. il conte villa prandone ceppo
+976. il conte villa prandone ceppo marche passerina 2023
+977. il conte villa prandone ceppo passerina marche igp 2024
+978. il conte villa prandone conte rosso
+979. il conte villa prandone conte rosso
+980. il conte villa prandone donello
+981. il conte villa prandone donello
+982. il conte villa prandone falerio pecorino dop aurato
+983. il conte villa prandone falerio pecorino dop aurato
+984. il conte villa prandone falerio pecorino dop aurato
+985. il conte villa prandone falerio pecorino dop aurato
+986. il conte villa prandone falerio pecorino dop aurato 2023
+987. il conte villa prandone falerio pecorino dop aurato 2024
+988. il conte villa prandone falerio pecorino dop aurato 2025
+989. il conte villa prandone ix prandone rosso 2019
+990. il conte villa prandone lu kont
+991. il conte villa prandone lu kont
+992. il conte villa prandone lu kont 2019
+993. il conte villa prandone lu kont 2020
+994. il conte villa prandone marche igp belva di terra
+995. il conte villa prandone marche igp belva di terra
+996. il conte villa prandone marche igp ceppo
+997. il conte villa prandone marche igp ceppo
+998. il conte villa prandone marche igp ceppo 2023
+999. il conte villa prandone marche igp ix prandone
+1000. il conte villa prandone marche igp ix prandone 2019

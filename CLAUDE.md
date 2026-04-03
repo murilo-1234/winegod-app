@@ -113,6 +113,7 @@ Todas em `.env` (NAO commitado). Variaveis:
 ### REGRA 0 — Comunicacao
 - Usuario NAO e programador. Respostas simples e diretas.
 - Sem jargao. Bullet points > paragrafos.
+- Ao mencionar ou gerar qualquer arquivo, SEMPRE usar o caminho completo (ex: `C:\winegod-app\scripts\arquivo.py`). Nunca usar caminho relativo.
 
 ### REGRA 1 — Commit e Push
 - SEMPRE perguntar antes de commit/push

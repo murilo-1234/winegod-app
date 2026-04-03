@@ -12,7 +12,7 @@ from psycopg2.pool import ThreadedConnectionPool
 import google.generativeai as genai
 
 # === CONFIG ===
-API_KEY = "AIzaSyBsEL2932vDZcVGdkqUiDbXl_8BKZ-Pb94"
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 MODEL = "gemini-2.5-flash"
 BATCH_SIZE = 20
 WORKERS = 50

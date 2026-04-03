@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. vincent sophie morey santenay 1er cru passetemps blanc 2018
+2. vincent sophie morey santenay 1er cru les gravieres 2022
+3. vincent sophie morey saintaubin les charmois 2016
+4. vincent sophie morey saintaubin les charmois 2015
+5. vincent sophie morey saintaubin 1er cru les charmois 2023
+6. vincent sophie morey pulignymontrachet la truffiere 2018
+7. vincent sophie morey maranges la fussiere 1er cru 2022
+8. vincent sophie morey les embrazees chassagnemontrachet 1er cru 2023
+9. vincent sophie morey chassagnemontrachet vieilles vignes 2017 red from cote de beaune
+10. vincent sophie morey chassagnemontrachet rouge vieilles vignes 2014
+11. vincent sophie morey chassagnemontrachet morgeot 1er cru 2022
+12. vincent sophie morey chassagnemontrachet les embrazees 2016
+13. vincent sophie morey chassagnemontrachet les caillerets 2014
+14. vincent sophie morey chassagnemontrachet
+15. vincent sophie morey chassagne montrachet 1er cru les embrazees 2022
+16. vincent sophie morey bourgogne pinot noir 2022
+17. vincent sophie morey bourgogne chardonnay 2018
+18. vincent sophie morey bourgogne chardonnay 2016
+19. vincent sophie morey bourgogne chardonnay 2014
+20. vincent sophie morey bourgogne blanc
+21. vincent slegerstim holehouse split
+22. vincent sirince murdum erigi
+23. vincent sirince mandalina sarab
+24. vincent sirince karadut sarab
+25. vincent sirince ahududu sarab
+26. vincent siretcourtaud quincy loire france 2023
+27. vincent siretcourtaud quincy 2022
+28. vincent siretcourtaud chateaumeillant rouge loire france 2022
+29. vincent seftali
+30. vincent sauvestre savigny les beaune premier cru
+31. vincent sauvestre bourgogne chardonnay
+32. vincent santenay rouge 2011
+33. vincent saintveran les morats
+34. vincent saint denis clos de la roche grand cru
+35. vincent ruiz yseult mon amour syrah 2022
+36. vincent ruiz yseult mon amour syrah 2022
+37. vincent ruiz yseult mon amour syrah 2021
+38. vincent ruiz yseult mon amour 2023
+39. vincent ruiz yseult mon amour 2023
+40. vincent ruiz yseult mon amour 2022
+41. vincent ruiz prima materia grenache noir 2022
+42. vincent ruiz prima materia grenache 2022
+43. vincent ruiz prima materia 2022
+44. vincent ruiz prima materia 2022
+45. vincent ruiz les nuits blanches 2023
+46. vincent ruiz les noces alchimiques 2023
+47. vincent ruiz les noces alchimiques 2023
+48. vincent ruiz le mariage de marguerite 2023
+49. vincent ruiz la condition humaine 2022
+50. vincent ruiz a mon ami faust 2023
+51. vincent ruiz a lami faust 2023
+52. vincent ruiz a lami faust 2022
+53. vincent roze
+54. vincent roze
+55. vincent roz
+56. vincent roussely vin de france blanc 2018
+57. vincent roussely vin de france blanc 2018
+58. vincent roussely vin de france blanc 2018
+59. vincent roussely temps danse rose
+60. vincent roussely orange wine
+61. vincent roussely orange vdf loire valley france
+62. vincent roussely orange sauvignon blanc france 2024
+63. vincent roussely orange
+64. vincent roussely o eco vinho de franca branco 2022
+65. vincent roussely libertine
+66. vincent roussely lecho vin de france wei 2022
+67. vincent roussely lecho vin de france blanc 2022
+68. vincent roussely lecho vin de france blanc 2022
+69. vincent roussely lecho vin de france blanc 2022
+70. vincent roussely le clos aop touraine blanc 2021
+71. vincent roussely le clos aop touraine blanc 2021
+72. vincent roussely le clos aop touraine blanc 2021
+73. vincent roussely le clos aop touraine blanc 2021
+74. vincent roussely irreductible pineau daunis wine nexus
+75. vincent roussely irreductible pineau daunis 2022
+76. vincent rouge minervois festiano
+77. vincent rose
+78. vincent richard cremant du jura brut harmonie nv
+79. vincent richard cotes du jura poulsard le vernois jere 2020
+80. vincent ricard le vilain p tit rouge 2022
+81. vincent ricard le pierre a feu sauvignon 2023
+82. vincent ricard le petit blanc 2024
+83. vincent ribbon ridge pinot noir 2023
+84. vincent renoir rose de terroir
+85. vincent renoir champagne grand cru brut rose de terroir nv
+86. vincent renoir brut tradition
+87. vincent renoir 72 mois extra brut
+88. vincent rencel
+89. vincent ravaut ladoix les basses mourottes 2019
+90. vincent ravaut aligote 2021
+91. vincent raimbault vouvray sec 2022
+92. vincent raimbault vouvray brut nv
+93. vincent raimbault belair vouvray sec
+94. vincent prunier saintaubin premier cru sur le sentier du clou
+95. vincent prunier saintaubin premier cru frionnes
+96. vincent pouillyfuisse marieantoinettefamilie
+97. vincent pouillyfuisse marie antoinette 2021
+98. vincent pouillyfuisse marie antoinette
+99. vincent pouilly fuisse marie antoinette
+100. vincent pinot noir willamette 2023
+101. vincent pinot noir willamette
+102. vincent pinot noir temperance hill
+103. vincent pinot noir ribbon ridge vineyard
+104. vincent pinot noir ribbon ridge 2022
+105. vincent pinot noir ribbon ridge
+106. vincent pinot noir
+107. vincent pinot noir
+108. vincent pinot gris noir
+109. vincent pinot gris 2023
+110. vincent pinard vendanges entieres rouge 2022
+111. vincent pinard sancerre rouge charlouise 2021
+112. vincent pinard sancerre rouge 2023
+113. vincent pinard sancerre pinot noir
+114. vincent pinard sancerre petit chemarin 2022
+115. vincent pinard sancerre petit chemarin 2019
+116. vincent pinard sancerre nuance 2020
+117. vincent pinard sancerre les chateau 2016
+118. vincent pinard sancerre le chateau 2022
+119. vincent pinard sancerre le chateau 2022
+120. vincent pinard sancerre le chateau 2021
+121. vincent pinard sancerre le chateau
+122. vincent pinard sancerre harmonie 2019
+123. vincent pinard sancerre grand chemarin 2023
+124. vincent pinard sancerre grand chemarin 2023
+125. vincent pinard sancerre flores 2024
+126. vincent pinard sancerre flores 2024
+127. vincent pinard sancerre flores 2024
+128. vincent pinard sancerre flores 2024
+129. vincent pinard sancerre flores 2024
+130. vincent pinard sancerre flores 2023
+131. vincent pinard sancerre flores 2023
+132. vincent pinard sancerre flores 2023
+133. vincent pinard sancerre flores 2021
+134. vincent pinard sancerre flores
+135. vincent pinard sancerre flores
+136. vincent pinard sancerre cuvee flores 2020
+137. vincent pinard sancerre chene marchand 2022
+138. vincent pinard sancerre chene marchand 2020
+139. vincent pinard sancerre 2018 flores
+140. vincent pinard petit chemarin 2022
+141. vincent pinard nuance sancerre 2022
+142. vincent pinard nuance sancerre
+143. vincent pinard nuance sancerre
+144. vincent pinard nuance
+145. vincent pinard les creots sancerre 2022
+146. vincent pinard les creots 2023
+147. vincent pinard les creots 2021
+148. vincent pinard le chateau 2022
+149. vincent pinard le chateau 2020
+150. vincent pinard le chateau 2019
+151. vincent pinard le chateau
+152. vincent pinard harmonie sancerre
+153. vincent pinard harmonie
+154. vincent pinard grand chemarin 2022
+155. vincent pinard flores sancerre loire france sauvignon blanc 2022
+156. vincent pinard flores sancerre 2022
+157. vincent pinard flores sancerre
+158. vincent pinard flores
+159. vincent pinard cuvee flores sancerre 2018
+160. vincent pinard chene marchand 2022
+161. vincent pinard charlouise sancerre rouge 2022
+162. vincent pinard charlouise rouge 2022
+163. vincent paris vin de pays de lardeche granit blanc 2023
+164. vincent paris vdp granit blanc 2023
+165. vincent paris vdp ardeche blanc granit blanc 2021
+166. vincent paris syrah vdp collines rhodaniennes northern rhone france
+167. vincent paris syrah vdp collines rhodaniennes 2024
+168. vincent paris syrah igp collines rhodaniennes
+169. vincent paris syrah 2022
+170. vincent paris syrah
+171. vincent paris selections syrah collines rhodaniennes 2023
+172. vincent paris selections syrah
+173. vincent paris selection syrah collines rhodaniennes
+174. vincent paris selection syrah 2024
+175. vincent paris selection syrah
+176. vincent paris selection igp collines rhodaniennes 2019
+177. vincent paris selection crozeshermitage 2022
+178. vincent paris selection crozes hermitage 2024
+179. vincent paris selection crozes hermitage 2023
+180. vincent paris selection crozes hermitage 2022
+181. vincent paris saintjoseph les cotes 2020
+182. vincent paris saintjoseph les cotes 2019
+183. vincent paris saintjoseph les cotes 2019
+184. vincent paris saintjoseph les cotes
+185. vincent paris saintjoseph 2016
+186. vincent paris saint joseph 2022
+187. vincent paris les cotes saintjoseph 2019
+188. vincent paris les cotes saint joseph 202122
+189. vincent paris les cotes saint joseph 2021
+190. vincent paris les cotes 2022
+191. vincent paris les cotes
+192. vincent paris granit blanc 2022
+193. vincent paris granit blanc
+194. vincent paris granit 60 vv 2023
+195. vincent paris granit 60 cornas 2022
+196. vincent paris granit 60 2023
+197. vincent paris granit 60 2023
+198. vincent paris granit 30 cornas 2022
+199. vincent paris granit 30 cornas 2022
+200. vincent paris granit 30 cornas
+201. vincent paris granit 30 2024
+202. vincent paris granit 30 2023
+203. vincent paris granit 30 2019
+204. vincent paris granit 30 2019
+205. vincent paris granit 30 2015
+206. vincent paris crozeshermitage syrah 2022
+207. vincent paris crozes hermitage rouge selection 2022
+208. vincent paris crozes hermitage 2023
+209. vincent paris crozes hermitage 2020
+210. vincent paris cornas granit 60 vielles vignes 2015
+211. vincent paris cornas granit 60 2023
+212. vincent paris cornas granit 60 2023
+213. vincent paris cornas granit 60 2022
+214. vincent paris cornas granit 60 2020
+215. vincent paris cornas granit 60 2019
+216. vincent paris cornas granit 60 2018
+217. vincent paris cornas granit 60 2017
+218. vincent paris cornas granit 60 2016
+219. vincent paris cornas granit 60 2016
+220. vincent paris cornas granit 60 2015
+221. vincent paris cornas granit 60 2011
+222. vincent paris cornas granit 60
+223. vincent paris cornas granit 30 2023
+224. vincent paris cornas granit 30 2023
+225. vincent paris cornas granit 30 2023
+226. vincent paris cornas granit 30 2022
+227. vincent paris cornas granit 30 2021
+228. vincent paris cornas granit 30 2020
+229. vincent paris cornas granit 30 2020
+230. vincent paris cornas granit 30 2019
+231. vincent paris cornas granit 30 2018
+232. vincent paris cornas granit 30 2017
+233. vincent paris cornas granit 30 2016
+234. vincent paris cornas granit 30 2015
+235. vincent paris cornas granit 30
+236. vincent paris cornas granit 30
+237. vincent paris cornas granit 30
+238. vincent paris cornas granit 30
+239. vincent paris cornas 60 2021
+240. vincent paris 2024 cornas granit 60
+241. vincent paris 2024 cornas granit 30
+242. vincent paindavoine nuitsstgeorges les fleurieres 2023
+243. vincent paindavoine nuits st georges les fleurieres 2023
+244. vincent paindavoine gevreychambertin les crais 2023
+245. vincent paindavoine gevreychambertin les crais 2023
+246. vincent paindavoine coteaux bourguignons pinot noir les paquiers 2023
+247. vincent paindavoine coteaux bourguignons les paquiers 2023
+248. vincent paindavoine coteaux bourguignons les paquiers 2022
+249. vincent paindavoine bourgogne cote dor blanc les chassagnes 2023
+250. vincent paindavoine bourgogne chardonnay les chassagnes 2023
+251. vincent nar
+252. vincent murdum erigi
+253. vincent mothe chardonnay chablis burgundy france 2023
+254. vincent mothe chablis 2023
+255. vincent mothe chablis 2023
+256. vincent mothe chablis 2020
+257. vincent mothe chablis 2019
+258. vincent mothe chablis 2018
+259. vincent mothe chablis 2017
+260. vincent mothe chablis 2016
+261. vincent mothe chablis 2015
+262. vincent morey sophie pulignymontrachet la truffiere 1er cru 2023
+263. vincent morey chassagnemontrachet vielles vignes rouge 2022 half
+264. vincent moreau st cecile cdr 2024
+265. vincent marie tricot vdf rose 2020
+266. vincent marie tricot rouge lux vdf red 2020
+267. vincent marie tricot rouge lux
+268. vincent marie tricot rose
+269. vincent marie tricot rassenere white 2023
+270. vincent marie tricot les milans vdf red 2024
+271. vincent marie tricot les 3 bonhommes mc vdf red 2024
+272. vincent marie tricot le petit rouge de la cote ouest vdf red 2020
+273. vincent lemaitre chateau rousselle 2020
+274. vincent legou bourgogne hautes cotes de nuits blanc
+275. vincent ledy vieilles vignes savignylesbeaune les connardises2020
+276. vincent ledy nuitssaintgeorges 1er cru les porets saint georges20
+277. vincent ledy nuits saint georges les porets saint georges 2019
+278. vincent ledy nuits saint georges 1er cru les porets 2022
+279. vincent ledy bourgogne rouge les combes
+280. vincent ledy bourgogne hautescotes de nuits la vacherotte 2019
+281. vincent ledy bourgogne hautescotes de nuits 2020
+282. vincent ledy 2022 nuitssaintgeorges 1er les porets
+283. vincent laval rose cumieres brut nature champagne france
+284. vincent laval rose cumieres 1er cru brut nature
+285. vincent laval les vignes de mon oncle
+286. vincent laval georges laval cumieres premier vignes de mon oncle cru brut nature champagne france 2022
+287. vincent laval georges laval cumieres premier cru rose brut nature nv
+288. vincent laval georges laval cumieres preimier cru rouge coteaux champenois champagne france 2022
+289. vincent laval cumieres 1er cru rose
+290. vincent laval champagne les vignes de mon oncle brut nature
+291. vincent laval by georges laval cumieres rose brut nature nv
+292. vincent latour volnay cuvee nathan 2021
+293. vincent latour vieilles vignes pommard
+294. vincent latour st aubin cuvee thomas
+295. vincent latour saintaubin cuvee thomas 2021
+296. vincent latour saint aubin cuvee thomas 2023
+297. vincent latour poruzots meursault 1er cru
+298. vincent latour morgeot chassagne montrachet 1er cru
+299. vincent latour meursault rouge premier cru les cras 2021
+300. vincent latour meursault premier cru les poruzots 2021
+301. vincent latour meursault premier cru charmes 2021
+302. vincent latour meursault les poruzots 1er cru 2018
+303. vincent latour meursault les pellans 2020
+304. vincent latour meursault les narvaux 2021
+305. vincent latour meursault les narvaux 2019 1
+306. vincent latour meursault les grands charrons 2021
+307. vincent latour meursault les grands charrons 2020
+308. vincent latour meursault les grand charrons
+309. vincent latour meursault les gouttes dor 1er cru 2019
+310. vincent latour meursault grands charrons 2020
+311. vincent latour meursault grands charrons 2019
+312. vincent latour meursault grand charrons 2021
+313. vincent latour meursault grand charrons 2021
+314. vincent latour meursault grand charrons 2020
+315. vincent latour meursault cuvee saint jean 2023 130 abv
+316. vincent latour meursault cuvee saint jean 2021
+317. vincent latour meursault clos des magny 2021
+318. vincent latour meursault clos de magny 2018
+319. vincent latour meursault 1er cru perrieres 2021
+320. vincent latour meursault 1er cru les perrieres 2021
+321. vincent latour meursault 1er cru goutte dor 2021
+322. vincent latour meursault 1er cru charmes 2021
+323. vincent latour les cras meursault 1er cru
+324. vincent latour goutte dor meursault 1er cru
+325. vincent latour cuvee thomas saint aubin
+326. vincent latour cos des magny meursault
+327. vincent latour clos des magny meursault
+328. vincent latour chassagnemontrachet premier cru morgeot 2021
+329. vincent latour chassagne montrachetmorgeot 2019
+330. vincent latour charmes meursault 1er cru
+331. vincent latour bourgogne chardonnay
+332. vincent latour bourgogne blanc cote dor 2023
+333. vincent latour bourgogne blanc 2022
+334. vincent latour bourgogne blanc 2021
+335. vincent latour bourgogne blanc 2021
+336. vincent latour bourgogne blanc 2017
+337. vincent latour bourgogne blanc
+338. vincent lamouller merlot moqueur
+339. vincent lamouller le gabier
+340. vincent lamouller le canon du bon jaja
+341. vincent lamouller le canon de la goulue
+342. vincent lamouller le bateau ivre rouge
+343. vincent lamouller le bateau ivre
+344. vincent lamouller la favorite
+345. vincent lamouller frisson noir
+346. vincent lamouller frisson blanc
+347. vincent lamothe heritage blanc
+348. vincent lagille fleur de meunier brut rose nv
+349. vincent lacour touraine
+350. vincent lacoste dompter la bete
+351. vincent lacoste black malbec
+352. vincent krmz
+353. vincent krmz
+354. vincent krmz
+355. vincent kavun
+356. vincent karadut
+357. vincent jeanpierre charton bourgogne pinot noir 2023
+358. vincent gross cremant dalsace prelude 2020
+359. vincent grall wines le manoir sancerre blanc 2023
+360. vincent grall tradition silex sancerre 2024
+361. vincent grall tradition silex sancerre 2024
+362. vincent grall tradition silex
+363. vincent grall sancerre tradition silex t 2024
+364. vincent grall sancerre tradition calcaire 2023
+365. vincent grall sancerre tradition calcaire 2022
+366. vincent grall sancerre rose 2023
+367. vincent grall sancerre le manoir 2023
+368. vincent grall sancerre le mano
+369. vincent grall sancerre blanc tradition silex 2023
+370. vincent grall sancerre blanc tradition silex
+371. vincent grall sancerre
+372. vincent grall sancerre
+373. vincent grall sancerre
+374. vincent grall le manoir sancerre 2023
+375. vincent grall le manoir
+376. vincent grall le grall sancerre 2023
+377. vincent grall le grall sancerre 2021
+378. vincent grall le grall
+379. vincent giraudon et romain paire tentation
+380. vincent giraudon et romain paire primavera
+381. vincent giraudon et romain paire la cote
+382. vincent girardin volnay vieilles vignes rouge
+383. vincent girardin volnay vieilles vignes 2022
+384. vincent girardin volnay vieilles vignes 2022
+385. vincent girardin volnay vieilles vignes 2022
+386. vincent girardin volnay vieilles vignes 2022
+387. vincent girardin volnay vieilles vignes 2022
+388. vincent girardin volnay vieilles vignes 2022
+389. vincent girardin volnay vieilles vignes 2021
+390. vincent girardin volnay vieilles vignes 2021
+391. vincent girardin volnay vieilles vignes 2021
+392. vincent girardin volnay les vieilles vignes 2022
+393. vincent girardin volnay 1er cru clos des chenes 2022
+394. vincent girardin volnay 1er cru champans 2022
+395. vincent girardin volnay 1er cru champans 2022
+396. vincent girardin volnay 1er cru champans 2022
+397. vincent girardin volnay 1er cru champans 2017
+398. vincent girardin st aubin 1er cru la chateniere 2022
+399. vincent girardin st aubin 1er cru la chateniere 2022
+400. vincent girardin st aubin 1er cru en remilly 2022
+401. vincent girardin st aubin 1er cru en remilly 2022
+402. vincent girardin santenay vieilles vignes 2022
+403. vincent girardin santenay rouge 1er cru les gravieres 2020
+404. vincent girardin santenay 1er cru les gravieres rouge 2022
+405. vincent girardin santenay 1er cru les gravieres rouge 2022
+406. vincent girardin santenay 1er cru les gravieres rouge 2022
+407. vincent girardin santenay 1er cru le beaurepaire 2022
+408. vincent girardin santenay 1er cru le beaurepaire 2022
+409. vincent girardin saint romain 2021
+410. vincent girardin rully village vieilles vignes 2022
+411. vincent girardin rully vieilles vignes 2022
+412. vincent girardin rully blanc vieilles vignes
+413. vincent girardin rully 1er cru gresigny 2021
+414. vincent girardin pulignymontrachet vieilles vignes 2022
+415. vincent girardin pulignymontrachet 1er cru les combettes 2021
+416. vincent girardin puligny montrachet vieilles vignes 2022
+417. vincent girardin puligny montrachet vieilles vignes 2022
+418. vincent girardin puligny montrachet vieilles vignes 2022
+419. vincent girardin puligny montrachet vieilles vignes 2022
+420. vincent girardin puligny montrachet vieilles vignes 2022
+421. vincent girardin puligny montrachet combettes 2021
+422. vincent girardin puligny montrachet 1er cru les combettes 2022
+423. vincent girardin puligny montrachet 1er cru les combettes 2022
+424. vincent girardin puligny montrachet 1er cru les combettes 2022
+425. vincent girardin puligny montrachet 1er cru la pucelle 2022
+426. vincent girardin puligny montrachet 1er cru folatieres 2022
+427. vincent girardin puligny montrachet 1er cru folatieres 2022
+428. vincent girardin puligny montrachet 1er cru folatieres 2022
+429. vincent girardin pouillyfuisse vieilles vignes 2022
+430. vincent girardin pouilly fuisse vieilles vignes 2022
+431. vincent girardin pouilly fuisse vieilles vignes 2020
+432. vincent girardin pouilly fuisse 2021
+433. vincent girardin pommard village vieilles vignes 2022
+434. vincent girardin pommard village vieilles vignes 2022
+435. vincent girardin pommard village vieilles vignes 2021
+436. vincent girardin pommard vieilles vignes 2022
+437. vincent girardin pommard premier cru les epenots 2021
+438. vincent girardin pommard les vieilles vignes 2022
+439. vincent girardin morey saint denis vieilles vignes 2021
+440. vincent girardin meursault vieilles vignes 2022
+441. vincent girardin meursault vieilles vignes 2022
+442. vincent girardin meursault vieilles vignes 2022
+443. vincent girardin meursault vieilles vignes 2022
+444. vincent girardin meursault vieilles vignes 2022
+445. vincent girardin meursault vieilles vignes 2021
+446. vincent girardin meursault perrieres 2021
+447. vincent girardin meursault narvaux 2022
+448. vincent girardin meursault narvaux 2022
+449. vincent girardin meursault les vieilles vignes 2022
+450. vincent girardin meursault les vieilles vignes 2022
+451. vincent girardin meursault les vieilles vignes 2022
+452. vincent girardin meursault les vieilles vignes
+453. vincent girardin meursault les narvaux 2022
+454. vincent girardin meursault les narvaux 2022
+455. vincent girardin meursault les narvaux 2022
+456. vincent girardin meursault les clous 2018
+457. vincent girardin meursault les charrons 2022
+458. vincent girardin meursault genevrieres 2022
+459. vincent girardin meursault 1er cru les perrieres 2022
+460. vincent girardin meursault 1er cru les perrieres 2022
+461. vincent girardin meursault 1er cru les perrieres 2022
+462. vincent girardin meursault 1er cru les perrieres 2021
+463. vincent girardin meursault 1er cru les genevrieres 2022
+464. vincent girardin meursault 1er cru les genevrieres 2021
+465. vincent girardin meursault 1er cru les genevrieres 2018
+466. vincent girardin meursault 1er cru les charmesdess
+467. vincent girardin meursault 1er cru les charmesdess
+468. vincent girardin meursault 1er cru les charmesdess
+469. vincent girardin meursault 1er cru les charmesdess
+470. vincent girardin meursault 1er cru blagny 2022
+471. vincent girardin meursault 1er cru blagny 2022
+472. vincent girardin meursault 1er cru blagny 2022
+473. vincent girardin gevrey chambertin vieilles vignes 2022
+474. vincent girardin corton charlemagne quintessence grand cru 2023
+475. vincent girardin corton charlemagne quintessence grand cru 2022
+476. vincent girardin corton charlemagne grand cru 2022
+477. vincent girardin corton charlemagne grand cru 2022
+478. vincent girardin corton charlemagne grand cru 2020
+479. vincent girardin clos vougeot grand cru 2021
+480. vincent girardin clos vougeot grand cru 2020
+481. vincent girardin choreylesbeaune les bewaumonts 2021 gir1610621 2021
+482. vincent girardin chevaliermontrachet grand cru 2015
+483. vincent girardin chassagne montrachet vieilles vignes 2022
+484. vincent girardin chassagne montrachet vieilles vignes 2022
+485. vincent girardin chassagne montrachet 1er cru morgeot 2023
+486. vincent girardin chassagne montrachet 1er cru morgeot 2022
+487. vincent girardin chassagne montrachet 1er cru la romanee 2022
+488. vincent girardin chassagne montrachet 1er cru la romanee 2022
+489. vincent girardin chassagne montrachet 1er cru la romanee 2022
+490. vincent girardin charmes chambertin
+491. vincent girardin chambollemusigny vieilles vignes
+492. vincent girardin chambertin 2005
+493. vincent girardin bourgogne rouge cuvee saint vincent 2022
+494. vincent girardin bourgogne rouge cuvee saint vincent 2021
+495. vincent girardin bourgogne cuvee saintvincent pinot noir
+496. vincent girardin bourgogne blanc cuvee saintvincent 2021
+497. vincent girardin bourgogne blanc cuvee saint vincent 2022
+498. vincent girardin bourgogne blanc cuvee saint vincent 2022
+499. vincent girardin batardmontrachet grand cru 2021
+500. vincent girardin batardmontrachet grand cru 2021
+501. vincent girardin batard montrachet grand cru 2022
+502. vincent girardin batard montrachet grand cru 2022
+503. vincent girardin batard montrachet grand cru 2022
+504. vincent girardin batard montrachet grand cru 2022
+505. vincent girardin batard montrachet
+506. vincent gaudry vincengetorix 2021
+507. vincent gaudry sancerre vincent getorix 2020
+508. vincent gaudry sancerre vincengetorix rouge 2022
+509. vincent gaudry sancerre vincengetorix rouge 2020
+510. vincent gaudry sancerre vincengetorix 2023 red
+511. vincent gaudry sancerre vincengetorix 2020
+512. vincent gaudry sancerre tournebride 2022
+513. vincent gaudry sancerre rouge vincengetorix
+514. vincent gaudry sancerre pour vous 2022
+515. vincent gaudry sancerre pour vo
+516. vincent gaudry sancerre pour vo
+517. vincent gaudry sancerre mont damne 2022
+518. vincent gaudry sancerre melodie de vieilles vignes loire france 2023
+519. vincent gaudry sancerre melodie de vieilles vignes 2023 white
+520. vincent gaudry sancerre melodie de vieilles vignes 2021
+521. vincent gaudry sancerre les vignes de chavignol 2023 red
+522. vincent gaudry sancerre les vignes de chavignol 2023 magnum red
+523. vincent gaudry sancerre les vignes de chavignol 2022 red
+524. vincent gaudry sancerre les vignes de chavignol 2022
+525. vincent gaudry sancerre les garennes rouge 2020
+526. vincent gaudry sancerre le tournebride loire france 2023
+527. vincent gaudry sancerre le tournebride 2023 white
+528. vincent gaudry sancerre le tournebride 2023
+529. vincent gaudry sancerre le tournebride 2023
+530. vincent gaudry sancerre le tournebride 2022
+531. vincent gaudry sancerre le tournebride 2022
+532. vincent gaudry sancerre le tournebride 2021
+533. vincent gaudry sancerre le tournebride
+534. vincent gaudry sancerre constellation du scorpion 2023
+535. vincent gaudry sancerre constellation du scorpion 2021
+536. vincent gaudry sancerre constellation du scorpion 2021
+537. vincent gaudry sancerre blanc le tournebride 2023
+538. vincent gaudry sancerre aoc melodie de vieilles vignes 2019
+539. vincent gaudry sancerre aoc le tournebride 2019
+540. vincent gaudry sancerre a michemin 2022 white
+541. vincent gaudry sancerre a michemin 2022 magnum white
+542. vincent gaudry sancerre a michemin 2021 white
+543. vincent gaudry sancerre a mi chemin 2022
+544. vincent gaudry sancerre a mi chemin 2021
+545. vincent gaudry sancerre a mi chemin 2021
+546. vincent gaudry sancerre a mi chemin 2019
+547. vincent gaudry sancerre a mi chemin 2018
+548. vincent gaudry sancerre
+549. vincent gaudry pour vous sancerre 2021 blanc
+550. vincent gaudry pour vous
+551. vincent gaudry olle sauvignon blanc 2022
+552. vincent gaudry mont damne sancerre 2022
+553. vincent gaudry melodie sancerre blanc
+554. vincent gaudry melodie de vieilles vignes sancerre blanc 22
+555. vincent gaudry melodie de vieilles vignes sancerre 2022 blanc
+556. vincent gaudry melodie de vieilles vignes sancerre
+557. vincent gaudry melodie de vieilles vignes 2023
+558. vincent gaudry les vignes de chavignol sancerre rouge 2022
+559. vincent gaudry le tournebride sancerre france sauvignon blanc 2023
+560. vincent gaudry le tournebride sancerre 2022 blanc
+561. vincent gaudry le tournebride sancerre 2022
+562. vincent gaudry le tournebride sancerre 2021 blanc 37
+563. vincent gaudry le tournebride sancerre
+564. vincent gaudry la tournebride sancerre blanc 23
+565. vincent gaudry gaudryolle sauvignon blanc igp 2023
+566. vincent gaudry gaudryolle sauvignon blanc 23
+567. vincent gaudry gaudryolle 2022 blanc
+568. vincent gaudry gaudryolle 2022
+569. vincent gaudry gaudry olle sauvignon blanc
+570. vincent gaudry gaudry olle sauvignon blanc
+571. vincent gaudry constellation du scorpion sancerre 23
+572. vincent gaudry constellation du scorpion sancerre 2022 blanc
+573. vincent gaudry a michemin sancerre 2021 blanc
+574. vincent gaudry 2023 sancerre le tournebride
+575. vincent gaudry
+576. vincent gaudreau vouvray sec 2023
+577. vincent gamay noir
+578. vincent francois jouard les chaumees clos de la truffiere chassagnemontrachet premier cru 2017
+579. vincent francois jouard chassagnemontrachet vv 2023
+580. vincent francois jouard chassagnemontrachet rouge vv 2022
+581. vincent francois jouard chassagnemontrachet rouge 1 cru morgeot vv 2022
+582. vincent francois jouard chassagnemontrachet 1 cru la maltroie vv 2023
+583. vincent francois jouard bourgogne aligote 2023
+584. vincent francois cotes du rhone red 15
+585. vincent fleith cremant dalsace
+586. vincent fleith cremant dalsace
+587. vincent fils pouillyfuisse tete de cuvee 2023
+588. vincent fils pouilly fuisse chateau fuisse les clos monopole branco 2022
+589. vincent fils julienas tinto
+590. vincent family morgon les charmes
+591. vincent family julienas
+592. vincent family bourgogne blanc
+593. vincent et sophie morey santenay les hates blanc 2022
+594. vincent et sophie morey santenay beaurepaire blanc 2023
+595. vincent et sophie morey saintaubin premier cru les charmois
+596. vincent et sophie morey saint aubin 1er cru les charmois 2019
+597. vincent et sophie morey chassagne montrachet vieilles vignes 2023
+598. vincent et sophie morey chassagne montrachet morgeot
+599. vincent et sophie morey bourgogne blanc
+600. vincent et marie tricot white light
+601. vincent et marie tricot rasserene
+602. vincent et marie tricot mc
+603. vincent et marie tricot les petits fleurs
+604. vincent et marie tricot escargot
+605. vincent et marie tricot desire
+606. vincent et alexandre cluzel saintjoseph 2024
+607. vincent et alexandre cluzel saintjoseph 2023
+608. vincent et alexandre cluzel igp cotes rhodaniennes viognier 2023
+609. vincent et alexandre cluzel igp cotes rhodaniennes syrah 2023
+610. vincent et alexandre cluzel igp cotes rhodaniennes roussanne 2022
+611. vincent et alexandre cluzel coterotie maison blanche 2023
+612. vincent et alexandre cluzel condrieu 2024
+613. vincent elma
+614. vincent edouard poirier methode traditionelle brut
+615. vincent dureuiljanthial rully rouge maizieres 2020
+616. vincent dureuiljanthial rully rouge 2023
+617. vincent dureuiljanthial rully rouge 2021
+618. vincent dureuiljanthial rully rouge 2020
+619. vincent dureuiljanthial rully rouge 2012
+620. vincent dureuiljanthial rully premier cru le meix cadot vieilles vignes 2020
+621. vincent dureuiljanthial rully premier cru le meix cadot 2019
+622. vincent dureuiljanthial rully en guesnes
+623. vincent dureuiljanthial rully cuvee unique reserve vv 1998
+624. vincent dureuiljanthial rully chapitre
+625. vincent dureuiljanthial rully blanc maizieres 2020
+626. vincent dureuiljanthial rully blanc maizieres 2020
+627. vincent dureuiljanthial rully blanc maizieres 2019
+628. vincent dureuiljanthial rully blanc chene 2019
+629. vincent dureuiljanthial rully blanc 2020
+630. vincent dureuiljanthial rully blanc 2018
+631. vincent dureuiljanthial rully blanc 2017
+632. vincent dureuiljanthial rully blanc 2015
+633. vincent dureuiljanthial rully 1er cru le meix cadot
+634. vincent dureuiljanthial puligny montrachet corvee de vignes 2022
+635. vincent dureuiljanthial mercurey rouge 2020
+636. vincent dureuiljanthial mercurey rouge 2019
+637. vincent dureuiljanthial coteaux bourguignons 2020
+638. vincent dureuiljanthial corvee vignes 2022 puligny montrachet
+639. vincent dureuiljanthial bourgogne blanc 2017
+640. vincent dureuiljanthial bourgogne aligote 2020
+641. vincent dureuiljanthial
+642. vincent dureuil janthial rully vauvry
+643. vincent dureuil janthial rully rouge
+644. vincent dureuil janthial rully meix cadot vv
+645. vincent dureuil janthial rully meix cadot
+646. vincent dureuil janthial rully margotes
+647. vincent dureuil janthial rully maizieres rouge
+648. vincent dureuil janthial rully guesnes
+649. vincent dureuil janthial rully gresigny vv
+650. vincent dureuil janthial rully blanc
+651. vincent dureuil janthial puligny montrachet corvee vignes
+652. vincent dureuil janthial puligny montrachet champs gains
+653. vincent dureuil janthial nuits saint georges clos argillieres
+654. vincent dureuil janthial bourgogne rouge
+655. vincent dureuil janthial blanc
+656. vincent doucet sancerre 2023
+657. vincent doucet sancerre 2022
+658. vincent doucet sancerre
+659. vincent docet sancerre
+660. vincent delouvin champagne rose 12
+661. vincent delouvin champagne rose
+662. vincent delouvin champagne rose
+663. vincent delouvin champagne rose
+664. vincent delouvin champagne pur meunier
+665. vincent delouvin champagne pur meunier
+666. vincent delouvin champagne pur meunier
+667. vincent delouvin champagne pur meunier
+668. vincent delouvin champagne nature 12
+669. vincent delouvin champagne nature 12
+670. vincent delouvin champagne nature 12
+671. vincent delouvin champagne nature
+672. vincent delouvin champagne cuvee du bicentenaire 12
+673. vincent delouvin champagne cuvee du bicentenaire 12
+674. vincent delouvin champagne cuvee du bicentenaire
+675. vincent delouvin champagne brut reserve 12
+676. vincent delouvin champagne brut reserve
+677. vincent delouvin champagne brut reserve
+678. vincent delouvin champagne brut reserve
+679. vincent delouvin champagne blancs de blancs 12
+680. vincent delouvin champagne blancs de blancs 12
+681. vincent delouvin champagne blancs de blancs 12
+682. vincent delouvin champagne blancs de blancs
+683. vincent delaporte silex blanc 2023
+684. vincent delaporte sancerre 22
+685. vincent delaporte sancerre 2010
+686. vincent delaporte sancerre
+687. vincent delaporte sancerre
+688. vincent de saint denis morey saint denis
+689. vincent de saint denis corton charlemagne grand cru
+690. vincent de saint denis charmes chambertin grand cru
+691. vincent dauvissatcamus chablis grand cru les clos 2022
+692. vincent dauvissatcamus chablis chablis grand cru les preuses 2017
+693. vincent dauvissatcamus chablis chablis grand cru les preuses 2016
+694. vincent dauvissatcamus chablis chablis grand cru les preuses 2006
+695. vincent dauvissatcamus chablis chablis 1er cru vaillons 2018
+696. vincent dauvissatcamus chablis chablis 1er cru la forest 2022
+697. vincent dauvissatcamus chablis chablis 1er cru la forest 2020
+698. vincent dauvissatcamus chablis chablis 1er cru la forest 2018
+699. vincent dauvissatcamus chablis 1er cru la forest 2022
+700. vincent dauvissatcamus chablis 1er cru la forest 2020
+701. vincent dauvissatcamus chablis 1er cru la forest 2018
+702. vincent dauvissatcamus chablis 1er cru la forest 2014
+703. vincent dauvissat village chablis 2022
+704. vincent dauvissat vaillons premier cru chablis 2022
+705. vincent dauvissat vaillons premier cru chablis 2017
+706. vincent dauvissat vaillons chablis premier cru 2023
+707. vincent dauvissat sechet chablis 1er cru
+708. vincent dauvissat sechet 2011
+709. vincent dauvissat rene vincent chablis 1er cru la forest 2019
+710. vincent dauvissat rene vincent chablis 1er cru la forest 2013
+711. vincent dauvissat rene vincent chablis 1er cru la forest 2012
+712. vincent dauvissat premier cru vaillons 2019
+713. vincent dauvissat petitchablis 2023
+714. vincent dauvissat petitchablis 2018
+715. vincent dauvissat petit chablis burgundy 2013
+716. vincent dauvissat petit chablis 2023
+717. vincent dauvissat petit chablis 2023
+718. vincent dauvissat petit chablis 2020 2024 release
+719. vincent dauvissat petit chablis 2019
+720. vincent dauvissat petit chablis 2018
+721. vincent dauvissat petit chablis 2017
+722. vincent dauvissat petit chablis 2015
+723. vincent dauvissat petit chabis 2012
+724. vincent dauvissat les clos chablis grand cru 2013
+725. vincent dauvissat les clos chablis grand cru
+726. vincent dauvissat la forest premier cru chablis 2022
+727. vincent dauvissat la forest chablis premier cru chablis 2017
+728. vincent dauvissat la forest chablis 1er cru 2022
+729. vincent dauvissat la forest chablis 1er cru 2000
+730. vincent dauvissat irancy 2023
+731. vincent dauvissat irancy 2023
+732. vincent dauvissat irancy 2022
+733. vincent dauvissat irancy 2018
+734. vincent dauvissat irancy 2014
+735. vincent dauvissat forest chablis 1er cru
+736. vincent dauvissat coteaux bourguignons vallee de coigny 2022
+737. vincent dauvissat chablis vaillons
+738. vincent dauvissat chablis sechets
+739. vincent dauvissat chablis preuses
+740. vincent dauvissat chablis premier cru vaillons 2023
+741. vincent dauvissat chablis premier cru vaillons 2022
+742. vincent dauvissat chablis premier cru vaillons 2019
+743. vincent dauvissat chablis premier cru vaillons 2011
+744. vincent dauvissat chablis premier cru vaillons 2007
+745. vincent dauvissat chablis premier cru vaillons 2004
+746. vincent dauvissat chablis premier cru sechet 75
+747. vincent dauvissat chablis premier cru les clos 2009
+748. vincent dauvissat chablis premier cru la forest 75
+749. vincent dauvissat chablis premier cru la forest 2023
+750. vincent dauvissat chablis premier cru la forest 2022
+751. vincent dauvissat chablis premier cru la forest 2007
+752. vincent dauvissat chablis premier cru la forest
+753. vincent dauvissat chablis montee tonnerre
+754. vincent dauvissat chablis les preuses grand cru 1994 1
+755. vincent dauvissat chablis la forest 1er cru
+756. vincent dauvissat chablis grand cru les preuses 2008
+757. vincent dauvissat chablis grand cru les preuses
+758. vincent dauvissat chablis grand cru les preuses
+759. vincent dauvissat chablis grand cru les clos 2023
+760. vincent dauvissat chablis grand cru les clos 2021
+761. vincent dauvissat chablis grand cru les clos 2020
+762. vincent dauvissat chablis grand cru les clos 2018
+763. vincent dauvissat chablis grand cru les clos 2002
+764. vincent dauvissat chablis grand cru les clos
+765. vincent dauvissat chablis forest
+766. vincent dauvissat chablis clos
+767. vincent dauvissat chablis aoc
+768. vincent dauvissat chablis 75
+769. vincent dauvissat chablis 75
+770. vincent dauvissat chablis 2023 1er cru vaillons
+771. vincent dauvissat chablis 2023
+772. vincent dauvissat chablis 2023
+773. vincent dauvissat chablis 2022
+774. vincent dauvissat chablis 2022
+775. vincent dauvissat chablis 2022
+776. vincent dauvissat chablis 2022
+777. vincent dauvissat chablis 2021 la forest
+778. vincent dauvissat chablis 2021
+779. vincent dauvissat chablis 2020
+780. vincent dauvissat chablis 2019 vaillons
+781. vincent dauvissat chablis 2019
+782. vincent dauvissat chablis 2018 vaillons
+783. vincent dauvissat chablis 2018 les clos grand cru
+784. vincent dauvissat chablis 2018 la forest
+785. vincent dauvissat chablis 2018
+786. vincent dauvissat chablis 2018
+787. vincent dauvissat chablis 2018
+788. vincent dauvissat chablis 2017 vaillons
+789. vincent dauvissat chablis 2017 les clos grand cru
+790. vincent dauvissat chablis 2017 la forest
+791. vincent dauvissat chablis 2017
+792. vincent dauvissat chablis 2016 vaillons
+793. vincent dauvissat chablis 2016 les clos grand cru
+794. vincent dauvissat chablis 2016 la forest
+795. vincent dauvissat chablis 2015 la forest
+796. vincent dauvissat chablis 2015
+797. vincent dauvissat chablis 2014 vaillons
+798. vincent dauvissat chablis 2011 les clos grand cru
+799. vincent dauvissat chablis 2011 la forest
+800. vincent dauvissat chablis 2009 les clos grand cru
+801. vincent dauvissat chablis 2009
+802. vincent dauvissat chablis 1er la forest 2020
+803. vincent dauvissat chablis 1er cru vaillons 2020
+804. vincent dauvissat chablis 1er cru vaillons 2019
+805. vincent dauvissat chablis 1er cru vaillons 15
+806. vincent dauvissat chablis 1er cru sechet 2023
+807. vincent dauvissat chablis 1er cru sechet 2019
+808. vincent dauvissat chablis 1er cru la forest 2023
+809. vincent dauvissat chablis 1er cru la forest 2022
+810. vincent dauvissat chablis 1er cru la forest 2021
+811. vincent dauvissat chablis 1er cru la forest 2019
+812. vincent dauvissat chablis 1er cru la forest 2018 30
+813. vincent dauvissat chablis 1er cru la forest 2018
+814. vincent dauvissat chablis 1er cru la forest 2013 31
+815. vincent dauvissat chablis 1er cru la forest
+816. vincent dauvissat chablis
+817. vincent dauvissat
+818. vincent dastree champagne vinotheque chardonnay premier cru brut vintage magnum 2006
+819. vincent dastree champagne vinotheque bdb premier cru brut 2008
+820. vincent dastree champagne saignee rose brut nv
+821. vincent dastree champagne premier cru extrabrut
+822. vincent dastree champagne premier cru brut
+823. vincent dastree champagne premier cru brut
+824. vincent dastree champagne premier cru brut
+825. vincent dastree champagne pinot meunier blanc de noirs premier cru brut vintage 2016
+826. vincent dastree champagne blanc de blancs premier cru brut vintage 2015
+827. vincent dastree champagne blanc de blancs nv
+828. vincent dastree champagne
+829. vincent dastree brut champagne premier cru nv
+830. vincent dastree brut champagne millesime 2011
+831. vincent dancer tete du clos 1er cru chassagne montrachet 2022
+832. vincent dancer pommard pezerolles 2017
+833. vincent dancer pommard pezerolles
+834. vincent dancer pommard perrieres 2023
+835. vincent dancer pommard perrieres 2018
+836. vincent dancer pommard perrieres
+837. vincent dancer pommard les pezerolles 1er cru 2022
+838. vincent dancer pommard les perrieres village 2022
+839. vincent dancer pommard les perrieres rouge 2017
+840. vincent dancer pommard les perrieres 2022
+841. vincent dancer pommard les perrieres 2021
+842. vincent dancer pommard les perrieres 2020
+843. vincent dancer pommard les perrieres 2020
+844. vincent dancer pommard les perrieres 2019
+845. vincent dancer pommard les perrieres 2018
+846. vincent dancer pommard les perrieres 2018
+847. vincent dancer pommard les perrieres 2017
+848. vincent dancer pommard les perrieres 2017
+849. vincent dancer pommard 1er cru pezerolles 2022
+850. vincent dancer pommard 1er cru les pezerolles 2018
+851. vincent dancer oskar vdf blanc 2022
+852. vincent dancer oskar vdf blanc 2022
+853. vincent dancer oskar blanc 2021
+854. vincent dancer oskar 2023
+855. vincent dancer oskar 2021 1
+856. vincent dancer meursault perrieres blanc
+857. vincent dancer meursault les perrieres 2018
+858. vincent dancer meursault les perrieres 1er cru 2017 1
+859. vincent dancer meursault les perrieres 1er cru 2016 1
+860. vincent dancer meursault les grands charrons 2023 1
+861. vincent dancer meursault les grands charrons 2023
+862. vincent dancer meursault les grands charrons 2023
+863. vincent dancer meursault les grands charrons 2023
+864. vincent dancer meursault les grands charrons 2020 1
+865. vincent dancer meursault les grands charrons 2019
+866. vincent dancer meursault les grands charrons 2018
+867. vincent dancer meursault les grands charrons
+868. vincent dancer meursault les corbins cote de beaune france 2019
+869. vincent dancer meursault les corbins cote de beaune
+870. vincent dancer meursault les corbins burgundy france 2023
+871. vincent dancer meursault les corbins 2023 1
+872. vincent dancer meursault les corbins 2023
+873. vincent dancer meursault les corbins 2022 1
+874. vincent dancer meursault les corbins 2021 1
+875. vincent dancer meursault les corbins 2020
+876. vincent dancer meursault les corbins 2020
+877. vincent dancer meursault les corbins 2019
+878. vincent dancer meursault les corbins 2018 1
+879. vincent dancer meursault les corbins 2018
+880. vincent dancer meursault les corbins 2018
+881. vincent dancer meursault les corbins 2017 1
+882. vincent dancer meursault les corbins 2008 0
+883. vincent dancer meursault corbins 2021
+884. vincent dancer meursault corbins
+885. vincent dancer meursault 1er cru perrieres 2023
+886. vincent dancer meursault 1er cru perrieres 2018
+887. vincent dancer meursault 1er cru perrieres 2015
+888. vincent dancer meursault 1er cru les perrieres 2019
+889. vincent dancer meursault 1er cru les perrieres 2018
+890. vincent dancer les perrieres pommard 2022
+891. vincent dancer les perrieres pommard
+892. vincent dancer les montrevenots beaune 1er cru 2022
+893. vincent dancer les corbins meursault 2022
+894. vincent dancer la romanee chassagnemontrachet premier cru
+895. vincent dancer hautescotes de beaune blanc
+896. vincent dancer hautes cotes de beaune blanc 2023
+897. vincent dancer hautes cotes de beaune blanc 2023
+898. vincent dancer hautes cotes de beaune blanc 2023
+899. vincent dancer hautes cotes de beaune blanc 2023
+900. vincent dancer chevaliermontrachet grand cru 2019
+901. vincent dancer chevaliermontrachet grand cru 2018
+902. vincent dancer chevalier montrachet grand cru 2018
+903. vincent dancer chevalier montrachet grand cru 2018
+904. vincent dancer chevalier montrachet grand cru 2018
+905. vincent dancer chevalier montrachet grand cru 2017
+906. vincent dancer chevalier montrachet grand cru
+907. vincent dancer chevalier montrachet blanc
+908. vincent dancer chevalier montrachet 2020 grand cru classe en 1855
+909. vincent dancer chassagnemontrachet tete du clos 1er cru 2020 1
+910. vincent dancer chassagnemontrachet tete du clos 1er cru 2019 1
+911. vincent dancer chassagnemontrachet tete du clos 1er cru 2018 1
+912. vincent dancer chassagnemontrachet tete du clos 1er cru 2017 1
+913. vincent dancer chassagnemontrachet premier cru la romanee 2020
+914. vincent dancer chassagnemontrachet morgeot rouge 1er cru 2023
+915. vincent dancer chassagnemontrachet morgeot 2020
+916. vincent dancer chassagnemontrachet morgeot 1er cru 2020 1
+917. vincent dancer chassagnemontrachet morgeot 1er cru 2018 1
+918. vincent dancer chassagnemontrachet la romanee 1er cru 2018 1
+919. vincent dancer chassagnemontrachet la romanee 1er cru 2017 1
+920. vincent dancer chassagnemontrachet 2023
+921. vincent dancer chassagnemontrachet 2020
+922. vincent dancer chassagnemontrachet 1er cru tete du clos 2019
+923. vincent dancer chassagnemontrachet 1er cru tete du clos 2018
+924. vincent dancer chassagnemontrachet 1er cru tete du clos
+925. vincent dancer chassagnemontrachet 1er cru morgeots 2018
+926. vincent dancer chassagnemontrachet 1er cru morgeot blanc 2022
+927. vincent dancer chassagnemontrachet 1er cru morgeot 2023
+928. vincent dancer chassagnemontrachet 1er cru morgeot
+929. vincent dancer chassagnemontrachet 1er cru la romanee 2019
+930. vincent dancer chassagnemontrachet 1er cru la romanee 2018
+931. vincent dancer chassagnemontrachet
+932. vincent dancer chassagne montrachet tete clos blanc
+933. vincent dancer chassagne montrachet romanee
+934. vincent dancer chassagne montrachet premier cru tete du clos blanc 2018
+935. vincent dancer chassagne montrachet premier cru tete du clos blanc 2018
+936. vincent dancer chassagne montrachet morgeot blanc
+937. vincent dancer chassagne montrachet morgeot 2022
+938. vincent dancer chassagne montrachet morgeot 2018
+939. vincent dancer chassagne montrachet morgeot 1er cru 2020
+940. vincent dancer chassagne montrachet morgeot 1er cru 2017
+941. vincent dancer chassagne montrachet la romanee 2018
+942. vincent dancer chassagne montrachet la romanee 2018
+943. vincent dancer chassagne montrachet la romanee 2016
+944. vincent dancer chassagne montrachet la romanee 1er cru 2020
+945. vincent dancer chassagne montrachet la romanee
+946. vincent dancer chassagne montrachet burgundy france 2023
+947. vincent dancer chassagne montrachet 2023
+948. vincent dancer chassagne montrachet 2023
+949. vincent dancer chassagne montrachet 2022
+950. vincent dancer chassagne montrachet 1er cru tete du clos 2022
+951. vincent dancer chassagne montrachet 1er cru morgeot blanc 2022
+952. vincent dancer chassagne montrachet 1er cru morgeot blanc 2022
+953. vincent dancer chassagne montrachet 1er cru morgeot blanc 2022
+954. vincent dancer chassagne montrachet 1er cru morgeot blanc 2022
+955. vincent dancer chassagne montrachet 1er cru la romaee 2019
+956. vincent dancer bourgogne rouge 2022
+957. vincent dancer bourgogne hautescotes de beaune blanc 2022
+958. vincent dancer bourgogne hautes cotes de beaune blanc 2023
+959. vincent dancer bourgogne hautes cotes de beaune blanc 2022
+960. vincent dancer bourgogne chardonnay burgundy france 2019
+961. vincent dancer bourgogne chardonnay 2018 1
+962. vincent dancer bourgogne blanc 2023
+963. vincent dancer bourgogne blanc 2023
+964. vincent dancer bourgogne blanc 2022
+965. vincent dancer bourgogne blanc 2022
+966. vincent dancer bourgogne blanc 2022
+967. vincent dancer bourgogne blanc 2021
+968. vincent dancer bourgogne blanc 2020
+969. vincent dancer bourgogne blanc 2020
+970. vincent dancer bourgogne blanc 2019
+971. vincent dancer bourgogne blanc 2019
+972. vincent dancer bourgogne blanc 2018
+973. vincent dancer bourgogne blanc 2017
+974. vincent dancer bourgogne blanc 2016
+975. vincent dancer bourgogne blanc
+976. vincent dancer bourgogne blanc
+977. vincent dancer bourgogne 2020
+978. vincent dancer beaune rouge 1er cru les montrevenots 2020
+979. vincent dancer beaune montrevenots 2018
+980. vincent dancer beaune montrevenots 2016
+981. vincent dancer beaune montrevenots
+982. vincent dancer beaune les montrevenots 1er cru 2022
+983. vincent dancer beaune les montrevenots 1er cru 2019
+984. vincent dancer beaune les montrevenots 1er cru 2018
+985. vincent dancer beaune 1er cru montrevenots 2022
+986. vincent dancer beaune 1er cru les montrevenots rouge 2022
+987. vincent dampt petite chablis 202324
+988. vincent dampt petit chablis 2023
+989. vincent dampt petit chablis 2022
+990. vincent dampt petit chablis 2021
+991. vincent dampt petit chablis
+992. vincent dampt chablis premier cru vaillons 2011 jr165
+993. vincent dampt chablis cote de lechet 1er cru 2007 1
+994. vincent dampt chablis 2023
+995. vincent dampt chablis 2022
+996. vincent dampt chablis 1er cru les lys
+997. vincent cuillier larbre nv
+998. vincent cuillier larbre nv
+999. vincent cuillier larbre blanc de noirs brut nature champagne
+1000. vincent cuillier larbre blanc de noir brut nature

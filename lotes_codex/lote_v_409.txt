@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. vinho finca la anita syrah 2022
+2. vinho finca la anita single vineyard luna malbec rose 2021
+3. vinho finca la anita single vineyard luna malbec 2021
+4. vinho finca la anita petit verdot 2022
+5. vinho finca la anita petit verdot
+6. vinho finca la anita malbec 2022
+7. vinho finca la anita malbec
+8. vinho finca la anita malbec
+9. vinho finca la anita luna single vineyard malbec
+10. vinho finca la anita luna malbec 2020
+11. vinho finca la anita luna malbec
+12. vinho finca la anita luna agrelo rose of malbec
+13. vinho finca la anita gran corte 2022
+14. vinho finca la anita gran corte
+15. vinho finca la anita gran corte
+16. vinho finca la anita cabernet sauvignon tinto
+17. vinho finca gabriel edicion especial sauvignon blanc
+18. vinho finca gabriel edicion especial malbec
+19. vinho finca flichman roble malbec
+20. vinho finca flichman reserva malbec
+21. vinho finca flichman reserva chardonnay
+22. vinho finca flichman reserva cabernet franc
+23. vinho finca flichman estate malbec tinto 2024
+24. vinho finca flichman estate malbec
+25. vinho finca flichman estate cabernet sauvignon
+26. vinho finca flichman dedicado malbec tinto
+27. vinho finca flichman dedicado chardonnay
+28. vinho finca flichman dedicado chardonnay
+29. vinho finca flichman chardonnay
+30. vinho finca flichman cabernet sauvignon tinto
+31. vinho finca ferrer reserva cabernet franc
+32. vinho finca el portillo pinot noir
+33. vinho finca el portillo chardonnay
+34. vinho finca el portillo chardonnay
+35. vinho finca el portillo cabernet sauvignon
+36. vinho finca el portillo cabernet sauvignon
+37. vinho finca el origen phi single vineyard
+38. vinho finca el origen estate cabernet sauvignon
+39. vinho finca de las moras sauvignon blanc
+40. vinho finca de las moras malbec
+41. vinho finca de las moras cabernet sauvignon
+42. vinho finca beltran sauvignon blanc
+43. vinho finca beltran malbec
+44. vinho finca beltran duo tempranillo e malbec
+45. vinho finca beltran duo syrah e malbec
+46. vinho finca beltran duo syrah e malbec
+47. vinho finca beltran duo chenin e chardonnay
+48. vinho finca beltran cabernet sauvignon
+49. vinho finca beltran bonarda
+50. vinho finca azaya valduero
+51. vinho finca antigua reserva
+52. vinho finca antigua crianza unico
+53. vinho finca antigua cabernet sauvignon tinto seco
+54. vinho finca andrea malbec
+55. vinho finca amadeo torrentes bco
+56. vinho finca amadeo gran reserva malbec
+57. vinho finca amadeo gran reserva cabernet franc
+58. vinho finca agostino vinas argentinas torrontes 2022
+59. vinho finca agostino vinas argentinas malbec 2022
+60. vinho finca agostino vinas argentinas cabernet sauvignon 2022
+61. vinho finca agostino tierra telteca malbec 2021
+62. vinho finca agostino tierra telteca cabernet sauvignon 2021
+63. vinho finca agostino tierra telteca cabernet franc 2021
+64. vinho finca agostino alma telteca torrontes 2022
+65. vinho finca agostino alma telteca malbec 2022
+66. vinho finca agostino alma telteca cabernet sauvignon
+67. vinho fin single vineyard cabernet franc tinto seco
+68. vinho fin del mundo special reserva
+69. vinho fin del mundo single vineyard pinot noir
+70. vinho fin del mundo single vineyard merlot
+71. vinho fin del mundo single vineyard malbec
+72. vinho fin del mundo single vineyard cabernet sauvignon
+73. vinho fin del mundo malbec tinto
+74. vinho fin del mundo cabernet sauvignon tinto
+75. vinho filipa pato nossa calcario baga tinto bairrada 2023
+76. vinho fild blend zorzal wines
+77. vinho fidalgo dos perdigoes tinto selecao de barricas
+78. vinho fidalgo dos perdigoes tinto reserva
+79. vinho fidalgo dos perdigoes tinto coleita
+80. vinho fidalgo dos perdigoes branco
+81. vinho fico susumaniello puglia pop
+82. vinho fiano di avellino docg feudi di san gregorio
+83. vinho fiano di avellino docg
+84. vinho feudi pisciotto inzolia baglio del sole
+85. vinho feudi di san marzano f negroamaro
+86. vinho feudi di san gregorio taurasi
+87. vinho feudi di san gregorio rubrato
+88. vinho feudi di san gregorio falanghina
+89. vinho ferus malbec
+90. vinho ferreirinha reserva especial
+91. vinho ferreira porto tawny ferreira
+92. vinho ferreira porto tawny
+93. vinho ferreira porto ruby vinhos
+94. vinho ferraud macon rouge
+95. vinho ferraud les merrains beaujolais
+96. vinho ferraud le chai des platanes
+97. vinho ferraud la table de jacques beaujolais
+98. vinho ferraud la cave de fred beaujolais
+99. vinho ferraton la tournee tinto 2022
+100. vinho ferraton la tournee rose
+101. vinho ferraton cotesdurhone samorens 2021
+102. vinho fernao po branco bag in box 5 litrosem ate5xdesem jurosno boletono pixcomprar
+103. vinho fernao po asf tinto
+104. vinho fernao pires
+105. vinho fernando de castilla vermut tinto
+106. vinho fernando de castilla manzanilla classic dry tto 1x
+107. vinho fernando de castilla manzanilla branco
+108. vinho fernando de castilla fino sherry branco
+109. vinho fernand engel riesling reserve
+110. vinho fernand engel renaissance
+111. vinho fernand engel pinot blanc reserve
+112. vinho fernand engel grand cru praelatenberg
+113. vinho felsina fontalloro 2017
+114. vinho felsina chianti classico rancia riserva 2019
+115. vinho felix solis mucho mas tinto
+116. vinho felitche sauvignon blanc 2020
+117. vinho felitche pinot noir sweet 2023
+118. vinho felitche pinot noir 2024
+119. vinho felitche merlot 2019
+120. vinho felitche malbec 2021
+121. vinho felitche chardonnay sweet 2023
+122. vinho felitche chardonnay 2020
+123. vinho felitche carmenere 2020
+124. vinho felitche cabernet sauvignon 2021
+125. vinho felipe rutini 2009 tinto
+126. vinho felipe rutini
+127. vinho felipe rutini
+128. vinho felino vina cobos malbec
+129. vinho felino vina cobos cab sauv
+130. vinho felino malbec tinto
+131. vinho felino chardonnay oferta
+132. vinho felino cabernet sauvignon tinto
+133. vinho feiticeira tinto
+134. vinho feiticeira rose
+135. vinho federico paternina rioja gran reserva
+136. vinho federico paternina rioja gran reserva
+137. vinho fdase merlot 2019
+138. vinho fazzoletto piemonte barbera araldica
+139. vinho fazendas da areia caracol dos profetas dop madeirense branco
+140. vinho fazenda velha tinto
+141. vinho fazenda velha ermelinda freitas
+142. vinho fazenda velha branco bag in box
+143. vinho fausto verve gran reserva tinto seco
+144. vinho fausto verve gran reserva tinto
+145. vinho fausto verve gran reserva
+146. vinho fausto verve gran reserva
+147. vinho fausto tannat tinto seco
+148. vinho fausto tannat tinto
+149. vinho fausto tannat
+150. vinho fausto tannat
+151. vinho fausto pizzato cabernet sauvignon
+152. vinho fausto merlot tinto
+153. vinho fausto merlot rose
+154. vinho fausto merlot rose
+155. vinho fausto merlot rose
+156. vinho fausto merlot
+157. vinho fausto merlot
+158. vinho fausto merlot
+159. vinho fausto merlot
+160. vinho fausto de pizzato verve gran reserva
+161. vinho fausto de pizzato merlot rose seco
+162. vinho fausto chardonnay branco
+163. vinho fausto chardonnay
+164. vinho fausto chardonnay
+165. vinho fausto cabernet sauvignon tinto
+166. vinho fausto cabernet sauvignon
+167. vinho fausto cabernet sauvignon
+168. vinho faustino vii roble doca
+169. vinho faustino vii roble doca
+170. vinho faustino vii branco
+171. vinho faustino verdejo
+172. vinho faustino v reserva rioja 2011 2015 135
+173. vinho faustino v reserva doca
+174. vinho faustino v reserva doca
+175. vinho faustino tempranillo tt
+176. vinho faustino shiraz
+177. vinho faustino rivero ulecia verdejo
+178. vinho faustino rivero ulecia verdejo
+179. vinho faustino rivero ulecia tempranillo tinto
+180. vinho faustino rivero ulecia tempranillo
+181. vinho faustino rivero ulecia tempranillo
+182. vinho faustino rivero ulecia tempranillo
+183. vinho faustino rivero ulecia tempranillo
+184. vinho faustino rivero ulecia chardonnay
+185. vinho faustino rivero ulecia chardonnay
+186. vinho faustino rivero ulecia chardonay
+187. vinho faustino rivero ulecia cabernet sauvignon tinto
+188. vinho faustino rivero ulecia cabernet sauvignon
+189. vinho faustino rivero ulecia cabernet sauvignon
+190. vinho faustino rivero ulecia bobal rose
+191. vinho faustino rivero ulecia bobal
+192. vinho faustino rivero bobal rose
+193. vinho faustino red rioja
+194. vinho faustino i grand reserva
+195. vinho faustino i gran reserva rioja 2014 14
+196. vinho faustino i gran reserva doca
+197. vinho faustino i gran reserva doca
+198. vinho faustino i gran reserva 75th aniversario doc
+199. vinho faustino crianza doca
+200. vinho faustino crianza doca
+201. vinho faustino bobal rose
+202. vinho fattoria le pupille morellino di scansano riserva 2016
+203. vinho fattoria del colle orcia
+204. vinho fattoria dei barbi brunello di montalcino vigna del fiore docg 2018
+205. vinho fattoria dei barbi brunello di montalcino riserva docg 2001
+206. vinho fattoria dei barbi brunello di montalcino 2018
+207. vinho fattoi rosso di montalcino
+208. vinho fattoi brunello di montalcino docg
+209. vinho fattoi brunello di montalcino
+210. vinho fat bastard syrah igp pays doc
+211. vinho fat bastard syrah igp pays doc
+212. vinho fat bastard sauvignon blanc igp cotes de gascogne
+213. vinho fat bastard sauvignon blanc igp cotes de gascogne
+214. vinho fat bastard sauvignon blanc igp cotes de gascogne
+215. vinho fat bastard pinot noir igp pays doc
+216. vinho fat bastard pinot noir igp pays doc
+217. vinho fat bastard merlot igp pays doc
+218. vinho fat bastard cabernet sauvignon igp pays doc
+219. vinho fasano barolo
+220. vinho faroni lopez tinto suave
+221. vinho faroni lopez tinto demisec
+222. vinho faroni lopez tinto bordo suave
+223. vinho faroni lopez tinto bordo seco
+224. vinho faroni lopez rose suave
+225. vinho faroni lopez rosado suave
+226. vinho faroni lopez cabernet sauvignon suave
+227. vinho faroni lopez branco suave
+228. vinho faroni lopez branco demisec
+229. vinho faroni lopez bordo suave
+230. vinho faro syrah rose
+231. vinho faro sauvignon blanc
+232. vinho faro reserva sauvignon blanc
+233. vinho faro reserva chardonnay branco
+234. vinho faro reserva carmenere
+235. vinho faro reserva cabernet sauvignon
+236. vinho faro merlot faro
+237. vinho faro del plata chardonnay res bco 1x
+238. vinho faro del plata chardonnay
+239. vinho faro del plata cabernet sauvignon
+240. vinho faro chardonnay branco
+241. vinho faro chardonnay branco
+242. vinho faro carmenere
+243. vinho farnese sangiovese igt
+244. vinho farnese edizione cinque autoctoni
+245. vinho farmus reserva winemaker pinot noir
+246. vinho farmus reserva winemaker pinot noir
+247. vinho farmus reserva winemaker malbec
+248. vinho farmus reserva special collection sauvignon blanc
+249. vinho farmus reserva special collection carmenere
+250. vinho farmus reserva special collection cabernet sauvignon
+251. vinho farmus reserva sauvignon blanc
+252. vinho farmus reserva merlot
+253. vinho farmus gran reserva cabernet sauvignon 14alc nv
+254. vinho farmus gran reserva cabernet sauvignon
+255. vinho faria s wineyard tinto
+256. vinho fantini trebbiano dabruzzo doc
+257. vinho fantini trebbiano d abruzzo doc
+258. vinho fantini sangiovese igt
+259. vinho fantini pinot grigio igp
+260. vinho fantini montepulciano dabruzzo doc
+261. vinho fantini montepulciano d abruzzo doc
+262. vinho fantini farnese trebbiano dabruzzo branco
+263. vinho fantini farnese tinto
+264. vinho fantini farnese sangiovese tinto
+265. vinho fantini farnese pinot grigio branco
+266. vinho fantini farnese montepulciano dabruzzo tinto
+267. vinho fantini edizione tinto
+268. vinho fantini edizione cinque autoctoni no 22 2020
+269. vinho fanoa seis tintos biodinamico blend
+270. vinho fanoa los confines moscatel
+271. vinho famille perrin chateauneufdupape les sinards rouge 2021
+272. vinho famille hugel pinot noir
+273. vinho famille bourgrier rose danjou
+274. vinho famille bougrier pure vallee pinot noir
+275. vinho familia torres coronas tempranillo
+276. vinho familia silva branco tinto 2021
+277. vinho familia silva branco tinto 0
+278. vinho familia silva branco branco 2023
+279. vinho familia silva branco branco 2021
+280. vinho familia silva branco branco 2019
+281. vinho familia silva branco branco 0
+282. vinho familia schroeder tinto pinot noir malbec 2020 145
+283. vinho familia schroeder saurus pinot noir 2024
+284. vinho familia schroeder saurus pinot noir
+285. vinho familia schroeder saurus malbec 2023
+286. vinho familia schroeder saurus malbec
+287. vinho familia schroeder pinot noir saurus select 2021
+288. vinho familia schroeder merlot saurus
+289. vinho familia schroeder malbec saurus
+290. vinho familia porretta petit verdot
+291. vinho familia porretta malbec
+292. vinho familia porretta cabernet franc
+293. vinho familia petrini tannat
+294. vinho familia petrini roca volcanica malbec
+295. vinho familia petrini malbec
+296. vinho familia mayol uvas locas malbec
+297. vinho familia mayol tritono malbec
+298. vinho familia mayol tempranillo
+299. vinho familia mayol tempranillo
+300. vinho familia mayol sebastian pinot noir
+301. vinho familia mayol sauvignon blanc
+302. vinho familia mayol pinot grigio
+303. vinho familia mayol malbec
+304. vinho familia mayol malbec
+305. vinho familia mayol finca pircas malbec
+306. vinho familia mayol finca montuiri malbec
+307. vinho familia mayol cuatro primos blend
+308. vinho familia mayol cabernet sauvignon
+309. vinho familia mayol cabernet franc
+310. vinho familia mayol bonarda
+311. vinho familia mayol bonarda
+312. vinho familia laplace chateau daydie lorigine
+313. vinho familia laplace chateau daydie
+314. vinho familia laplace aramis
+315. vinho familia gascon syrah tinto 1x
+316. vinho familia gascon malbec tto 1x
+317. vinho familia gascon malbec tinto
+318. vinho familia gascon malbec
+319. vinho familia gascon chardonnay branco 1x
+320. vinho familia gascon cabernet sauvignon
+321. vinho familia gascon cab sauvignon 1x
+322. vinho familia fardo casa malvasia
+323. vinho familia familia familia tinto
+324. vinho familia familia familia rose
+325. vinho familia deicas tannat massimo deicas
+326. vinho familia deicas tannat massimo deicas
+327. vinho familia deicas tannat
+328. vinho familia deicas preludio tinto
+329. vinho familia deicas preludio tinto
+330. vinho familia deicas preludio tinto
+331. vinho familia deicas preludio branco
+332. vinho familia deicas preludio branco
+333. vinho familia deicas preludio branco
+334. vinho familia deicas preludio barrel select
+335. vinho familia deicas preludio
+336. vinho familia deicas atlantico sur tannat
+337. vinho familia deicas atlantico sur reserve albarino
+338. vinho familia crotta com1enzos bonarda
+339. vinho familia blanco sauvignon blanc
+340. vinho familia blanco blend
+341. vinho familia bebber touriga nacional safra 2022
+342. vinho familia bebber reserva cabfranc
+343. vinho familia bebber marselan safra 2021
+344. vinho familia bebber malbec safra 2022
+345. vinho familia bebber guri pinot noir
+346. vinho familia bebber conecto gran blend
+347. vinho familia bebber cabernet franc safra 2022
+348. vinho familia bebber bah tannat
+349. vinho familia barberis malbec
+350. vinho familia barberis cabernet sauvignon
+351. vinho familia barberis cabernet sauvignon
+352. vinho familia barberis cabernet sauvignon
+353. vinho familia barberis cab sauv
+354. vinho familia agostino blend branco
+355. vinho famiglia castellani arbos sangiovese toscana igt
+356. vinho famiglia bianchi malbec 2024
+357. vinho famgilia castellani arbos chianti
+358. vinho falua reserva unoaked vrt branco 0
+359. vinho falua caber aragones vrt tinto 0
+360. vinho falernia reserva pinot noir 2021
+361. vinho falernia reserva carmenere 2022
+362. vinho falernia reserva carmenere
+363. vinho falcoaria colheita tardia 2021
+364. vinho faisao tinto
+365. vinho fairview sauvignon blanc
+366. vinho fagote reserva tinto 0
+367. vinho fagote reserva branco 0
+368. vinho facundo garcia
+369. vinho faces do brasil rose pinot noir
+370. vinho faces do brasil pinot noir rose
+371. vinho faces do brasil merlot
+372. vinho faces do brasil chardonnay
+373. vinho faces do brasil chardonnay
+374. vinho fabrice masse givry la brulee 1er cru pinot noir
+375. vinho fabrice dodane le dos dchat gg rouge
+376. vinho fabrice dodane le dos dchat du quin quin rouge
+377. vinho fabre montmayou reserva malbec 2022
+378. vinho fabre montmayou reserva cabernet franc 2020
+379. vinho fabre montmayou barrel selection malbec 2022
+380. vinho fabre monte reserva merlot
+381. vinho fabian tannat barricas
+382. vinho fabian sauvignon blanc reserva
+383. vinho fabian rose intuicao
+384. vinho fabian reserva cabernet sauvignon 2017
+385. vinho fabian pinot noir reserva
+386. vinho fabian merlot intuicao
+387. vinho fabian intuicao rose
+388. vinho fabian intuicao rose
+389. vinho fabian intuicao merlot 2018
+390. vinho fabian intuicao merlot
+391. vinho fabian intuicao cabernet sauvignon 2018
+392. vinho fabian intuicao cabernet sauvignon
+393. vinho fabian intuicao branco
+394. vinho fabian intuicao branco
+395. vinho fabian intuicao branco
+396. vinho fabian chardonnay reserva
+397. vinho fabian chardonnay reserva
+398. vinho fabian carmenere reserva
+399. vinho fabian cabernet sauvignon reserva
+400. vinho fabian cabernet sauvignon intuicao
+401. vinho fabian cabernet franc reserva
+402. vinho fabian blend reserva
+403. vinho fabelhaft alkoholfrei branco
+404. vinho f hugel gentil
+405. vinho f hugel classic riesling
+406. vinho f hugel classic pinot noir
+407. vinho f hugel classic gewurztraminer
+408. vinho f bougrier confidences chinon
+409. vinho explicit
+410. vinho exhib cotes de thau rose
+411. vinho exception laurent dastree tinto
+412. vinho excelso superior syrah tinto
+413. vinho excelso superior sauvignon blanc
+414. vinho excelso superior rose de merlot
+415. vinho excelso superior chardonnay branco
+416. vinho excelso superior carmenere tinto
+417. vinho excelso superior carmenere
+418. vinho excelso superior cabernet sauvignon tinto
+419. vinho excelso superior cabernet sauvignon com syrah
+420. vinho excelso superior cabernet sauvignon
+421. vinho excelso gran reserva carmenere tinto vinho excelso gran reserva carmenere
+422. vinho excelso cabernet sauvignon merlot
+423. vinho excelso cabernet sauvignon
+424. vinho exaequo tinto 2017
+425. vinho evinor tokaji 3 puttonyos aszu branco
+426. vinho evel reserva douro tinto
+427. vinho evel douro tinto
+428. vinho evel
+429. vinho eve encore rose igp mediteranee 2020 franca
+430. vinho evaristo regional lisboa blend tinto
+431. vinho eulogio pomares penapedre tinto 2021
+432. vinho eulogio pomares maceracion con pieles branco 2022
+433. vinho eulila red blend vina vik chileno
+434. vinho eugenio de almeida tinto
+435. vinho eugenio de almeida ea tinto
+436. vinho eugenio de almeida ea rose
+437. vinho eugenio de almeida branco
+438. vinho eugen muller spatburgunder hf 2019
+439. vinho eugen muller riesling trocken charisma
+440. vinho eua oak ridge reserva zinfandel tinto
+441. vinho eua cline cellars viognier
+442. vinho eua cline cellars viognier
+443. vinho ettore galasso corno grande pecorino terre di chieti igp
+444. vinho ettore galasso corno grande montepulciano dabruzzo dop premium
+445. vinho etna rosso tornatore
+446. vinho etna rosso doc
+447. vinho etna guardiola doc
+448. vinho etna bianco doc
+449. vinho etiqueta negra gran reserva tarapaca cab sauvignon 1x
+450. vinho etiqueta azul gran res tarapaca 1x
+451. vinho ethikos sauvignon blanc 2021
+452. vinho ethikos sauvignon blanc
+453. vinho ethikos rose cabernet sauvignon syrah
+454. vinho ethikos ethikos rose chile 2021
+455. vinho ethikos chardonnay 2022
+456. vinho ethikos chardonnay
+457. vinho ethikos carmerere 2021
+458. vinho ethikos cabernet sauvignon 2021
+459. vinho eternita rosa rose italiano
+460. vinho eternita rosa
+461. vinho etchart privado torrontes 750mlem ate1xdesem jurosno boletono pixcomprar
+462. vinho esvino reserva cabernet sauvignon
+463. vinho esvino malbec
+464. vinho estrellas reserva sauvignon blanc
+465. vinho estrellas reserva chardonnay
+466. vinho estrellas reserva carmenere
+467. vinho estrellas reserva cabernet sauvignon rose
+468. vinho estrellas reserva cabernet sauvignon
+469. vinho estrellas reserva cabernet sauvignon
+470. vinho estilo chardonnay reservado demisec
+471. vinho estiba i malbec
+472. vinho estiba i chardonnay
+473. vinho estiba i cabernet sauvignon tinto
+474. vinho estiba i cabernet sauvignon
+475. vinho estiba 1 malbec tinto
+476. vinho esteva tinto
+477. vinho esteva tinto
+478. vinho esteva douro tinto 1x
+479. vinho esteva douro tinto 0
+480. vinho esteva douro tinto 0
+481. vinho esteva douro casa ferreirinha 2022
+482. vinho esteva douro 2023
+483. vinho esteva douro
+484. vinho esteva douro
+485. vinho esteva casa ferreirinha tinto
+486. vinho estelar 57 sauvignon blanc
+487. vinho estelar 57 merlot
+488. vinho estelar 57 chardonnay
+489. vinho estelar 57 carmenere
+490. vinho estelar 57 cabernet sauvignon
+491. vinho esteban martin tinto
+492. vinho esteban martin tinto
+493. vinho esteban martin rose
+494. vinho esteban martin garnachasyrah
+495. vinho esteban martin do garntempsyrah tinto
+496. vinho esteban martin d o p carinena garnacha syrah tinto 2022
+497. vinho esteban martin d o p carinena garnacha rosado 2020
+498. vinho esteban martin chardonnaymacabeo
+499. vinho esteban martin chardonnay macabeo
+500. vinho esteban martin branco
+501. vinho este vinho verde doc rose gelado
+502. vinho este escolha vinho verde doc branco gelado
+503. vinho estay prieto picudo
+504. vinho estate tinto frisante suave
+505. vinho estate sauvignon blanc de corte
+506. vinho estate garzon pinot rose de corte
+507. vinho estate cabernet de corte
+508. vinho estate branco frisante suave
+509. vinho estandon quintessence rose
+510. vinho estandon heritage 2018 rose franca
+511. vinho estandon heritage
+512. vinho estandon brise marine rose
+513. vinho estandon brise marine rose
+514. vinho estandon brise marine rose
+515. vinho estandon brise marine mediterranee 2020
+516. vinho estandon brise marine mediterranee 2019 rose franca
+517. vinho estandon brise marine mediterranee
+518. vinho estanciero sauvignon blanc chileno
+519. vinho estancia paraizo don
+520. vinho estancia merlotmalbec
+521. vinho estancia merlotmalbec
+522. vinho estancia mendoza varietal cabernet sauvignon
+523. vinho estancia mendoza varietal cabernet sauvignon
+524. vinho estancia mendoza torrontes branco
+525. vinho estancia mendoza malbec tinto
+526. vinho estancia mendoza malbec tinto
+527. vinho estancia mendoza malbec rose
+528. vinho estancia mendoza malbec
+529. vinho estancia mendoza chardonnay
+530. vinho estancia mendoza cabernet sauvignon tinto
+531. vinho estancia mendoza cab sauvignon tinto
+532. vinho estancia mendoza bonarda tinto
+533. vinho estancia mendoza blend del enologo syrah tinto
+534. vinho estancia mendoza blend del enologo merlot tinto
+535. vinho estancia mendoza blend del enologo chard
+536. vinho estancia mendoza blend del enologo cab sauv tto
+537. vinho estancia mendoza bivarietal syrah cabernet
+538. vinho estancia mendoza bivarietal syrah cabernet
+539. vinho estancia mendoza bivarietal merlot malbec tto 1x
+540. vinho estancia mendoza bivarietal cabernet malbec
+541. vinho estancia mendoza bivarietal cabenet malbec tto 1x
+542. vinho estancia mendoza bivarietal bonarda malbec
+543. vinho estancia mendoza bivarietal bonarda malbec
+544. vinho estancia los cardones anko malbec 2019
+545. vinho estancia la cruz jano tannat
+546. vinho estancia chardonnaychenin
+547. vinho estancia chardonnay chenin
+548. vinho estancia cabernet malbec
+549. vinho estampa reserva carmenere
+550. vinho estampa reserva cabernet sauvingnon
+551. vinho estampa libre ssa cabenet sauvignon
+552. vinho estampa la cruz icone
+553. vinho estampa inspiracion sangiovese
+554. vinho estampa inspiracion nebbiolo
+555. vinho estadunidense robert mondavi woodbridge white rose
+556. vinho estados unidos three thieves pinot noir tinto seco
+557. vinho estados unidos three thieves pinot grigio branco seco
+558. vinho estados unidos three thieves chardonnay seco
+559. vinho estados unidos three thieves cabernet sauvignon seco
+560. vinho estados unidos terra doro zinfandel seco tinto
+561. vinho estados unidos terra doro sirah seco tinto
+562. vinho estados unidos terra doro pinot grigio seco branco
+563. vinho estados unidos terra doro moscato seco branco
+564. vinho estados unidos terra doro chenin viogn branco seco
+565. vinho estados unidos terra doro barbera seco tinto
+566. vinho estados unidos california roots sauvignon blanc
+567. vinho estados unidos california roots rose seco
+568. vinho estados unidos california roots red seco tinto
+569. vinho estados unidos california roots red seco tinto
+570. vinho estados unidos california roots pinot grigio seco branco
+571. vinho estados unidos california roots pink moscato seco
+572. vinho estados unidos california roots moscatel seco branco
+573. vinho estados unidos california roots chardonnay
+574. vinho estados unidos california root cabernet sauvignon seco
+575. vinho estados unidos california root cabernet sauvignon seco
+576. vinho estados unidos california dream red blend
+577. vinho estados unidos california dream pinot grigio
+578. vinho estados unidos california dream chardonnay seco
+579. vinho estados unidos california dream cabernet sauvignon seco
+580. vinho estados unidos california dream cabernet sauvignon seco
+581. vinho esquinas de argento pinot grigio branco
+582. vinho esquinas de argento cab sauvignon tinto
+583. vinho espumante vilares extra brut
+584. vinho espumante vilares extra brut
+585. vinho espumante vibratis nature premier 2015
+586. vinho espumante veuve du vernay ice demi sec 11
+587. vinho espumante veuve du vernay espumante frances adega sem alcool
+588. vinho espumante vertice rose bruto
+589. vinho espumante vendange 2016 blanc de noirs premier cru
+590. vinho espumante valduga sur lie
+591. vinho espumante valduga sur lie
+592. vinho espumante ultraviolette rose nature 2021
+593. vinho espumante terrers corpinnat brut nature 2017
+594. vinho espumante sur lie area15 blanc de blanc
+595. vinho espumante subtil corpinnat brut nature 2016
+596. vinho espumante san martin moscatel
+597. vinho espumante san diego moscatel rose
+598. vinho espumante salton series demi sec
+599. vinho espumante salton series demi sec
+600. vinho espumante salton series asti moscato rose
+601. vinho espumante salton series asti moscato rose
+602. vinho espumante salton fleur de bulles brut natural branco espumante brasileiro seco
+603. vinho espumante sainthilaire blanquette limoux brut
+604. vinho espumante saintcyr petnat rose nature
+605. vinho espumante rose vegano organico domaine bousquet brut
+606. vinho espumante rose vegano mionetto prosecco doc brut
+607. vinho espumante rose vegano freixenet italian rose seco
+608. vinho espumante rose vegano casa perini charmat brut rose
+609. vinho espumante rose turbullent vin mousseux nv
+610. vinho espumante rose turbullent vin mousseux nv
+611. vinho espumante rose salton series moscato rose
+612. vinho espumante rose salton series moscato
+613. vinho espumante rose salton series brut
+614. vinho espumante rose salton series brut
+615. vinho espumante rose salton ouro brut
+616. vinho espumante rose salton ouro brut
+617. vinho espumante rose salton brut prosecco
+618. vinho espumante rose salton brut prosecco
+619. vinho espumante rose prosecco bottega 115
+620. vinho espumante rose magno extra dry
+621. vinho espumante rose demisec bianchetti
+622. vinho espumante rose cremant de bourgogne blanc de noirs nature 2018
+623. vinho espumante rose chandon passion demisec
+624. vinho espumante rose chandon excellence brut
+625. vinho espumante rose chandon brut
+626. vinho espumante rose cerro da cruz nature
+627. vinho espumante rose brut cave de angelina domans
+628. vinho espumante rose brut area15 dalma
+629. vinho espumante rose afros 2018
+630. vinho espumante rose
+631. vinho espumante raposeira rose preco
+632. vinho espumante raposeira bruto preco
+633. vinho espumante raposeira blanc preco
+634. vinho espumante quinta morgado rose
+635. vinho espumante quinta morgado rose
+636. vinho espumante quinta morgado moscatel
+637. vinho espumante quinta morgado moscatel
+638. vinho espumante quinta morgado moscatel
+639. vinho espumante quinta morgado demisec ice
+640. vinho espumante quinta morgado demisec ice
+641. vinho espumante quinta morgado demi sec
+642. vinho espumante quinta morgado demi sec
+643. vinho espumante quinta do perdigao noel dao
+644. vinho espumante quinta do morgado brut branco
+645. vinho espumante quinta do morgado brut branco
+646. vinho espumante quinta das bageiras reserva tinto 2010
+647. vinho espumante psique extra brut charmat
+648. vinho espumante prosecco rose david bedin
+649. vinho espumante prosecco rose david bedin
+650. vinho espumante prosecco bottega gold
+651. vinho espumante prosecco bedin extra dry
+652. vinho espumante prosecco bedin extra dry
+653. vinho espumante portugues petnat branco
+654. vinho espumante piu piu spatburgunder petnat rose
+655. vinho espumante piu piu riesling petnat
+656. vinho espumante phaunus pet nat rose 2022
+657. vinho espumante phaunus pet nat branco 2022
+658. vinho espumante petnat rose tubarao 2020
+659. vinho espumante petnat glerachardonnay 2025 branco
+660. vinho espumante petnat chardonnaypinot noir 2023 branco
+661. vinho espumante petnat aligote 2023
+662. vinho espumante pet nat somnan bulles rose vdf 2021
+663. vinho espumante paco dos infantes reserva rose 2019
+664. vinho espumante paco dos infantes reserva branco 2019
+665. vinho espumante otto cuvee blanc de blanc brut
+666. vinho espumante oremus moscatel rose
+667. vinho espumante oremus moscatel rose
+668. vinho espumante oremus moscatel rose
+669. vinho espumante oremus moscatel asti
+670. vinho espumante oremus moscatel asti
+671. vinho espumante oremus demisec ice
+672. vinho espumante oremus demisec ice
+673. vinho espumante oremus demi sec
+674. vinho espumante oremus demi sec
+675. vinho espumante oremus brut
+676. vinho espumante oremus brut
+677. vinho espumante oremus brut
+678. vinho espumante opera prima pink
+679. vinho espumante nuit boreale methode traditionnelle brut nature
+680. vinho espumante nobrese demi sec
+681. vinho espumante naturelle moscatel rose casa valduga
+682. vinho espumante naturelle moscatel branco casa valduga
+683. vinho espumante naturelle moscatel branco casa valduga
+684. vinho espumante natural brut branco
+685. vinho espumante natural brut branco
+686. vinho espumante nat brut bianchetti
+687. vinho espumante nacional garibaldi brut prosecco branco
+688. vinho espumante nacional garibaldi brut chardonay branco
+689. vinho espumante nacional cava jaume serra branco
+690. vinho espumante murganheira millesime bruto
+691. vinho espumante mumm cuvee reserve brut rose
+692. vinho espumante moussamoussettes 2020
+693. vinho espumante moscatel rose
+694. vinho espumante moscatel branco 12x san martin
+695. vinho espumante moscatel bianchetti
+696. vinho espumante mimi grande reserve rose
+697. vinho espumante maximo boschi extra brut biografia
+698. vinho espumante marques de borba rose
+699. vinho espumante maria valduga brut rose com embalagem
+700. vinho espumante maria valduga brut rose com embalagem
+701. vinho espumante maria valduga brut branco
+702. vinho espumante maria valduga brut branco
+703. vinho espumante magnum branco chandon reserve brut
+704. vinho espumante magnum branco chandon excellence limited edition brut 2013
+705. vinho espumante lidio carraro nature
+706. vinho espumante lidio carraro faces do brasil moscatel
+707. vinho espumante lidio carraro dadivas moscatel
+708. vinho espumante le petit nat 2020
+709. vinho espumante la linda brut
+710. vinho espumante la linda brut
+711. vinho espumante la cle des sept arpents premier cru
+712. vinho espumante kriter brut rose
+713. vinho espumante kriter brut rose
+714. vinho espumante kriter brut rose
+715. vinho espumante kriter blanc de blanc
+716. vinho espumante kriter blanc de blanc
+717. vinho espumante jpchenet sparkling wine ice edition rose demi sec 11
+718. vinho espumante italiano veneto flute en rose extra dry uvas raboso e merlot casa burti
+719. vinho espumante italiano lambrusco villa giada
+720. vinho espumante intento nature 26 meses
+721. vinho espumante intento extra brut 15 meses
+722. vinho espumante intens rosat corpinnat brut nature 2017
+723. vinho espumante guy cherlemagne chardonnay brut blanc de blancs 12
+724. vinho espumante giz cuvee de noirs brut nature 2017
+725. vinho espumante garbo imperial blanc de blanc brut
+726. vinho espumante freixenet italian rose mini
+727. vinho espumante freixenet carta nevada np 6 brut 115
+728. vinho espumante frances sainthilaire blanquette de limoux brut
+729. vinho espumante frances chanson royale brut
+730. vinho espumante frances champagne montaudon grande rose brut
+731. vinho espumante frances champagne de monterat brut
+732. vinho espumante flute dolce
+733. vinho espumante ferrari maximum brut
+734. vinho espumante ferrari maximum brut
+735. vinho espumante espumante cuvee de noirs nature 2019
+736. vinho espumante don giovanni stravanganzza moscatel
+737. vinho espumante don giovanni stravaganzza brut
+738. vinho espumante don giovanni rose brut
+739. vinho espumante don giovanni brut 24 meses
+740. vinho espumante don giovanni blanc de noir brut
+741. vinho espumante don giovanni 24 meses brut
+742. vinho espumante dinamite clay powder 2016
+743. vinho espumante demisec vero
+744. vinho espumante demi sec perini ice
+745. vinho espumante cuvee extra dry valdo
+746. vinho espumante cremant du jura rose extrabrut
+747. vinho espumante cremant du jura rose brut
+748. vinho espumante cremant du jura blanc nature
+749. vinho espumante cremant du jura blanc brut
+750. vinho espumante cremant de bourgogne rose de noirs 2018
+751. vinho espumante cremant de bourgogne les collines de vaux zero dosage 2021
+752. vinho espumante cremant de bourgogne blanc extrabrut 2018
+753. vinho espumante cremant de bourgogne blanc de noir extra brut
+754. vinho espumante cremant de bourgogne blanc de blancs nature 2023
+755. vinho espumante cremant dalsace ritt rose extrabrut
+756. vinho espumante cremant dalsace breit blanc de blancs extrabrut
+757. vinho espumante cremant dalsace 2016
+758. vinho espumante courmayeur quintessencial extra brut rose
+759. vinho espumante courmayeur quintessencial extra brut
+760. vinho espumante courmayeur prosecco
+761. vinho espumante courmayeur brut rose
+762. vinho espumante cordelier varietale moscatel
+763. vinho espumante cordelier varietale brut rose
+764. vinho espumante cordelier varietale brut prosecco
+765. vinho espumante cordelier varietale brut
+766. vinho espumante cordelier moscatel
+767. vinho espumante cordelier moscatel
+768. vinho espumante cordelier champenoise nature
+769. vinho espumante cordelier champenoise nature
+770. vinho espumante cordelier champenoise brut branco
+771. vinho espumante cordelier champenoise brut branco
+772. vinho espumante cordelier brut rose
+773. vinho espumante cordelier brut rose
+774. vinho espumante cordelier brut
+775. vinho espumante cordelier brut
+776. vinho espumante codorniu classico branco brut
+777. vinho espumante codorniu anna
+778. vinho espumante cinzano prospritz
+779. vinho espumante chuva de prata glitz
+780. vinho espumante chozas carrascal cava roxanne brut 2023
+781. vinho espumante chileno espumante u by undurraga doregion del valle central brut
+782. vinho espumante chileno espumante u by undurraga do region del valle central demisec
+783. vinho espumante chileno espumante u by undurraga do region de aconcagua rose brut
+784. vinho espumante charmat prosecco brut 12x san martin
+785. vinho espumante charmat demi sec 1x san martin
+786. vinho espumante cavicchioli fantasia moscato
+787. vinho espumante cave geisse amadeu brut
+788. vinho espumante cave de angelina domans 1931 nature
+789. vinho espumante cava torre oria brut rose
+790. vinho espumante cava torre oria brut rose
+791. vinho espumante cava torre oria brut
+792. vinho espumante cava torre oria brut
+793. vinho espumante cava juve y camps rose brut 075
+794. vinho espumante cava castelfino brut rose champenoise
+795. vinho espumante cava castelfino brut rose champenoise
+796. vinho espumante cava castelfino brut champenoise
+797. vinho espumante cava castelfino brut champenoise
+798. vinho espumante casa valduga sur lie rose
+799. vinho espumante casa valduga sur lie rose
+800. vinho espumante casa valduga premivm nature branco
+801. vinho espumante casa valduga premivm nature branco
+802. vinho espumante casa valduga premivm moscatel
+803. vinho espumante casa valduga premivm moscatel
+804. vinho espumante casa valduga premivm extra brut
+805. vinho espumante casa valduga premivm extra brut
+806. vinho espumante casa valduga premivm demi sec rose
+807. vinho espumante casa valduga premivm demi sec rose
+808. vinho espumante casa valduga premivm brut rose
+809. vinho espumante casa valduga premivm brut rose
+810. vinho espumante casa valduga premivm brut branco
+811. vinho espumante casa valduga premivm brut branco
+812. vinho espumante casa valduga arte demi sec
+813. vinho espumante casa valduga arte demi sec
+814. vinho espumante casa valduga arte brut rose
+815. vinho espumante casa valduga arte brut rose
+816. vinho espumante casa valduga arte brut branco
+817. vinho espumante casa valduga arte brut branco
+818. vinho espumante casa valduga arte brut
+819. vinho espumante casa valduga 130 brut rose
+820. vinho espumante casa valduga 130 brut rose
+821. vinho espumante casa valduga 130 brut branco
+822. vinho espumante casa valduga 130 brut branco
+823. vinho espumante casa valduga 130 blanc de noir
+824. vinho espumante casa valduga 130 blanc de noir
+825. vinho espumante casa valduga 130 blanc de blanc
+826. vinho espumante casa valduga 130 blanc de blanc
+827. vinho espumante casa valduga 130 anos brut
+828. vinho espumante casa perini aquarela moscatel
+829. vinho espumante casa marques pereira exitv anni alvarinho nature
+830. vinho espumante campo largo moscatel rose doce
+831. vinho espumante ca ernesto millesimato extra dry rose
+832. vinho espumante bulles de roche zero dosage 2020
+833. vinho espumante brut rosebranco cava vilarnau 4un
+834. vinho espumante brut rose cornellana
+835. vinho espumante brut rose cornellana
+836. vinho espumante brut rose cornellana
+837. vinho espumante brut garbo akis espumante edicao limitada
+838. vinho espumante brut cave de angelina domans
+839. vinho espumante brut branco maria valduga com embalagem
+840. vinho espumante brut branco
+841. vinho espumante brut area15 dalma
+842. vinho espumante brasileiro courmayeur prosecco
+843. vinho espumante brasileiro courmayeur prosecco
+844. vinho espumante brasileiro courmayeur prosecco
+845. vinho espumante brasileiro courmayeur prosecco
+846. vinho espumante brasileiro courmayeur espumante moscatel
+847. vinho espumante brasileiro courmayeur brut rose
+848. vinho espumante brasileiro courmayeur brut
+849. vinho espumante branco vertice pinot noir extra brut 2012
+850. vinho espumante branco vertice gouveio extra brut 2015
+851. vinho espumante branco vertice gouveio extra brut 2015
+852. vinho espumante branco vegano freixenet prosecco doc seco
+853. vinho espumante branco sur lie quinta da neve
+854. vinho espumante branco salton series moscatel
+855. vinho espumante branco salton series moscatel
+856. vinho espumante branco salton series demisec
+857. vinho espumante branco salton series demisec
+858. vinho espumante branco salton prosecco brut
+859. vinho espumante branco salton prosecco brut
+860. vinho espumante branco salton geracoes azir antonio nature chardonnay
+861. vinho espumante branco salton geracoes azir antonio nature chardonnay
+862. vinho espumante branco salton evidence cuvee sur lie
+863. vinho espumante branco salton demisec
+864. vinho espumante branco salton demisec
+865. vinho espumante branco prosecco primo v kosher vegano
+866. vinho espumante branco ouro extra brut salton
+867. vinho espumante branco magno brut
+868. vinho espumante branco magno brut
+869. vinho espumante branco henkell trocken piccolo drysec
+870. vinho espumante branco henkell trocken drysec
+871. vinho espumante branco henkell brut
+872. vinho espumante branco henkell brut
+873. vinho espumante branco henkell blanc de blancs drysec
+874. vinho espumante branco espanhol codorniu ars collecta blanc de noirs brut reserva do cava
+875. vinho espumante branco cremant de bourgogne blanc de blancs nature 2021
+876. vinho espumante branco cordero con piel de lobo dulce
+877. vinho espumante branco cordero con piel de lobo dulce
+878. vinho espumante branco cordero con piel de lobo demisec
+879. vinho espumante branco chandon nevoa das encantadas chardonnay brut
+880. vinho espumante branco chandon excellence cuvee prestige brut 2013
+881. vinho espumante branco cerro da cruz nature sur lie
+882. vinho espumante branco cerro da cruz nature
+883. vinho espumante branco campo largo brut
+884. vinho espumante branco alianca brut champenoise
+885. vinho espumante branco alianca brut champenoise
+886. vinho espumante branco
+887. vinho espumante bottega sparkling wine rose gold piccolo 11
+888. vinho espumante bottega salcool sparkling life branco gape
+889. vinho espumante bottega rose salcool
+890. vinho espumante bottega prosecco gold 11
+891. vinho espumante bottega moscato petalo amore 65
+892. vinho espumante bellini cipriani
+893. vinho espumante baron herve grande reserve blanc de blanc
+894. vinho espumante baron herve grande reserve blanc de blanc
+895. vinho espumante baby rose vegano freixenet italian rose seco
+896. vinho espumante baby rose chandon passion demisec
+897. vinho espumante baby rose chandon brut
+898. vinho espumante baby branco vegano mionetto prosecco doc treviso brut
+899. vinho espumante baby branco vegano freixenet prosecco doc seco
+900. vinho espumante baby branco henkell trocken piccolo drysec
+901. vinho espumante baby branco chandon riche demisec
+902. vinho espumante arte brut valduga
+903. vinho espumante arte brut valduga
+904. vinho espumante ars collecta codorniu josep raventos gran res
+905. vinho espumante argentino espumante dada de finca las moras no 7 white sweet
+906. vinho espumante aplauso
+907. vinho esprit de pavie tinto
+908. vinho esprit ciel rose sul de france rose frances
+909. vinho esprit ciel rose sul de france magnum rose frances
+910. vinho esporao vinho de talha tinto
+911. vinho esporao vinho de talha branco 2022
+912. vinho esporao vinha do badeco tinto
+913. vinho esporao touriga nacional
+914. vinho esporao torre tinto 2017
+915. vinho esporao torre do esporao tinto estojo madeira
+916. vinho esporao tinto reserva
+917. vinho esporao tinto private selection 2016 145
+918. vinho esporao tinto assobio douro doc 135 2017 2022 2023
+919. vinho esporao reserva vertical combo tto 4x
+920. vinho esporao reserva tinto magnum 1
+921. vinho esporao reserva tinto doc
+922. vinho esporao reserva tinto 5lts
+923. vinho esporao reserva tinto 3lts
+924. vinho esporao reserva tinto 2022
+925. vinho esporao reserva tinto 2022
+926. vinho esporao reserva tinto 2022
+927. vinho esporao reserva tinto 1x
+928. vinho esporao reserva tinto 0
+929. vinho esporao reserva tinto
+930. vinho esporao reserva tinto
+931. vinho esporao reserva tinto
+932. vinho esporao reserva tinto
+933. vinho esporao reserva doc 3lts
+934. vinho esporao reserva branco 2024
+935. vinho esporao reserva branco 2023
+936. vinho esporao reserva branco 2023
+937. vinho esporao reserva branco 2018
+938. vinho esporao reserva branco 1x
+939. vinho esporao reserva branco 0
+940. vinho esporao reserva branco
+941. vinho esporao reserva branco
+942. vinho esporao reserva branco
+943. vinho esporao reserva branco
+944. vinho esporao reserva branco
+945. vinho esporao reserva 2022 branco portugal
+946. vinho esporao reserva 2021 tinto portugal
+947. vinho esporao reserva
+948. vinho esporao reserva
+949. vinho esporao quinta dos murcas vv47 tinto
+950. vinho esporao quinta dos murcas vv47
+951. vinho esporao quinta dos murcas reserva tinto
+952. vinho esporao quinta dos murcas porto vintage tinto
+953. vinho esporao quinta dos murcas minas tinto
+954. vinho esporao quinta dos murcas minas tinto
+955. vinho esporao quinta dos murcas margem tinto
+956. vinho esporao quinta dos murcas assobio douro tinto magnum
+957. vinho esporao quatro castas tinto
+958. vinho esporao private selection tinto estojo madeira
+959. vinho esporao private selection tinto 2019
+960. vinho esporao private selection tinto
+961. vinho esporao private selection tinto
+962. vinho esporao private selection garrafeira
+963. vinho esporao private selection branco 2022
+964. vinho esporao private selection branco
+965. vinho esporao private selection branco
+966. vinho esporao private selection 2014 tinto
+967. vinho esporao private selection 2012 tinto
+968. vinho esporao private selection 2011 tinto
+969. vinho esporao private selection
+970. vinho esporao pe tinto 750mlem ate1xdesem juroscomprar
+971. vinho esporao pe tinto 2024
+972. vinho esporao pe tinto 2024
+973. vinho esporao pe tinto 2019
+974. vinho esporao pe tinto
+975. vinho esporao pe tinto
+976. vinho esporao pe tinto
+977. vinho esporao pe tinto
+978. vinho esporao pe tinto
+979. vinho esporao pe tinto
+980. vinho esporao pe tinto
+981. vinho esporao pe rosado rose
+982. vinho esporao pe branco 750mlem ate1xdesem juroscomprar
+983. vinho esporao pe branco 2024
+984. vinho esporao pe branco 2019 portugal
+985. vinho esporao pe branco 1x
+986. vinho esporao pe branco
+987. vinho esporao pe branco
+988. vinho esporao pe branco
+989. vinho esporao pe branco
+990. vinho esporao pe branco
+991. vinho esporao pe branco
+992. vinho esporao pe branco
+993. vinho esporao pe 2022 tinto portugal
+994. vinho esporao pe 2022 branco portugal
+995. vinho esporao monte velho tinto magnum 5lts
+996. vinho esporao monte velho tinto magnum 3lts
+997. vinho esporao monte velho tinto 2024
+998. vinho esporao monte velho tinto 2023
+999. vinho esporao monte velho tinto 1x
+1000. vinho esporao monte velho tinto

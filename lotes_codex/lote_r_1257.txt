@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. barbacarlo oltrepo pavese rosso 2019
+2. barbacarlo provincia di pavia rosso igt 2021
+3. barbacarlo vino rosso 2018
+4. barbacarlo vino rosso 2019
+5. barbackologie beaujolais
+6. barbacoa preparada charola de 1 kilo kmd
+7. barbacoa preparada de pesaj charola de 1 kilo kmd
+8. barbacoa red tempranillo
+9. barbaddosu 2019 panevino gianfranco manca
+10. barbade 16 ans
+11. barbade doorlys xo golden
+12. barbade guyane rhum atlantic dos maderas
+13. barbade jamaique
+14. barbade rhum luxus dos maderas
+15. barbade rhum px 55 dos maderas
+16. barbadelo mencia 2021
+17. barbadilla arboledilla poniente manzanilla
+18. barbadillo
+19. barbadillo 12 la cilla pedro ximenez
+20. barbadillo 15 yr palo cortado obispo gascon
+21. barbadillo amontillado
+22. barbadillo amontillado
+23. barbadillo amontillado 075
+24. barbadillo amontillado 175
+25. barbadillo amontillado criadera en rama
+26. barbadillo amontillado dry sherry
+27. barbadillo amontillado medium
+28. barbadillo amontillado medium dry
+29. barbadillo amontillado medium dry sherry
+30. barbadillo amontillado medium dry sherry 175
+31. barbadillo amontillado medium dry sherry 175
+32. barbadillo amontillado medium sherry
+33. barbadillo amontillado medium sherry
+34. barbadillo amontillado medium sherry 195 abv
+35. barbadillo amontillado medium sherry sanlucar de barrameda spain
+36. barbadillo amontillado principe
+37. barbadillo amontillado principe
+38. barbadillo amontillado principe half bottle
+39. barbadillo amontillado san roberto bota 12 sherry
+40. barbadillo amontillado sherry
+41. barbadillo amontillado sherry
+42. barbadillo amontillado sherry half bottle
+43. barbadillo as de mirabras
+44. barbadillo ataman original vermut
+45. barbadillo ataman vermut
+46. barbadillo ataman vermut
+47. barbadillo ataman vermut
+48. barbadillo ataman vermut andalucia
+49. barbadillo ataman vermut de manzanilla nv
+50. barbadillo bb solera de jerez
+51. barbadillo beta brut
+52. barbadillo beta espumoso
+53. barbadillo blanco
+54. barbadillo blanco
+55. barbadillo blanco 2024
+56. barbadillo blanco 2024
+57. barbadillo blanco 2024
+58. barbadillo blanco de albariza
+59. barbadillo blanco de albariza
+60. barbadillo blanco de albariza weiwein trocken 0
+61. barbadillo blanco de blancos
+62. barbadillo bota unica 12 amontillado
+63. barbadillo cas san diego
+64. barbadillo castillo san diego
+65. barbadillo castillo san diego
+66. barbadillo castillo san diego rosado
+67. barbadillo cream
+68. barbadillo cream 075
+69. barbadillo cream jerez
+70. barbadillo cream sherry
+71. barbadillo cream sherry
+72. barbadillo cream sherry
+73. barbadillo cream sherry
+74. barbadillo cream sherry
+75. barbadillo cream sherry
+76. barbadillo cream sherry
+77. barbadillo cream sherry
+78. barbadillo cream sherry 175
+79. barbadillo cream sherry 175 abv
+80. barbadillo cream sherry 175vol
+81. barbadillo cream sherry half bottle
+82. barbadillo cream sherry jerez do
+83. barbadillo cream sherry jerez spain
+84. barbadillo cream sherry sanlucar de barrameda spain
+85. barbadillo criadera selection amontillado en rama
+86. barbadillo criadera selection amontillado en rama
+87. barbadillo criadera selection amontillado en rama 19vol
+88. barbadillo criadera selection amontillado en rama mil pesetas cellar
+89. barbadillo criadera selection amontillado en rama mil pesetas cellar nv
+90. barbadillo criadera selection amontillado en rama sherry andalucia spain
+91. barbadillo criadera selection oloroso en rama
+92. barbadillo criadera selection oloroso en rama
+93. barbadillo criadera selection oloroso en rama 75c
+94. barbadillo criadera selection oloroso en rama la compania cellar
+95. barbadillo criadera selection oloroso en rama la compania cellar nv
+96. barbadillo criadera selection palo cortado en rama
+97. barbadillo criadera selection palo cortado en rama 19vol
+98. barbadillo criadera selection palo cortado en rama la sacristia cellar nv
+99. barbadillo cuco 12 year old oloroso half
+100. barbadillo cuco 12 year oloroso sherry
+101. barbadillo cuco dry oloroso
+102. barbadillo cuco oloroso 075
+103. barbadillo cuco oloroso sherry
+104. barbadillo dona luisa cream sherry nv
+105. barbadillo dry oloroso
+106. barbadillo dry oloroso nv jerezxeressherry spain
+107. barbadillo espumoso
+108. barbadillo espumoso
+109. barbadillo eva cream
+110. barbadillo eva cream 18o
+111. barbadillo eva cream sherry
+112. barbadillo eva cream sherry
+113. barbadillo fino
+114. barbadillo fino
+115. barbadillo fino
+116. barbadillo fino
+117. barbadillo fino dry sherry
+118. barbadillo fino dry sherry 15
+119. barbadillo fino dry sherry sanlucar de barrameda spain
+120. barbadillo fino sherry
+121. barbadillo fino sherry
+122. barbadillo fino sherry
+123. barbadillo fino sherry
+124. barbadillo fino sherry
+125. barbadillo fino sherry
+126. barbadillo fino sherry
+127. barbadillo fino sherry
+128. barbadillo fino sherry
+129. barbadillo fino sherry
+130. barbadillo fino sherry
+131. barbadillo fino sherry
+132. barbadillo fino sherry
+133. barbadillo fino sherry
+134. barbadillo fino sherry
+135. barbadillo fino sherry
+136. barbadillo fino sherry 15
+137. barbadillo fino sherry half bottle
+138. barbadillo fino sherry jerez
+139. barbadillo fino sherry jerez do
+140. barbadillo gran reserva
+141. barbadillo la cilla 175o
+142. barbadillo la cilla pedro ximenez
+143. barbadillo la cilla pedro ximenez
+144. barbadillo la cilla pedro ximenez sherry
+145. barbadillo la cilla pedro ximenez sherry 0375
+146. barbadillo laura
+147. barbadillo laura dark moscatel sherry
+148. barbadillo laura moscatel
+149. barbadillo laura moscatel
+150. barbadillo laura moscatel
+151. barbadillo maestrante
+152. barbadillo manzanilla
+153. barbadillo manzanilla en rama nave trinidad
+154. barbadillo manzanilla extra dry
+155. barbadillo manzanilla extra dry sherry
+156. barbadillo manzanilla extra dry sherry sanlucar de barrameda spain
+157. barbadillo manzanilla nave trinidad nv
+158. barbadillo manzanilla pasada en rama de la pastora
+159. barbadillo manzanilla pasada en rama de la pastora sherry half
+160. barbadillo manzanilla pasada en rama de la pastora sherry jerez spain
+161. barbadillo manzanilla pasada en rama pastora
+162. barbadillo manzanilla pasada en rama pastora
+163. barbadillo manzanilla poniente
+164. barbadillo manzanilla sanlucar de barrameda
+165. barbadillo manzanilla sanlucar de barrameda
+166. barbadillo manzanilla sanlucar de barrameda
+167. barbadillo manzanilla sanlucar de barrameda
+168. barbadillo manzanilla sanlucar de barrameda sherry
+169. barbadillo manzanilla sherry
+170. barbadillo manzanilla sherry
+171. barbadillo manzanilla sherry
+172. barbadillo manzanilla sherry
+173. barbadillo manzanilla sherry
+174. barbadillo manzanilla sherry
+175. barbadillo manzanilla sherry
+176. barbadillo manzanilla sherry
+177. barbadillo manzanilla sherry 175
+178. barbadillo manzanilla sherry extra dry
+179. barbadillo manzanilla sherry half bottle
+180. barbadillo manzanilla solear
+181. barbadillo manzanilla solear
+182. barbadillo manzanilla solear
+183. barbadillo manzanilla solear
+184. barbadillo manzanilla solear 15vol
+185. barbadillo manzanilla solear extra dry
+186. barbadillo manzanilla solear sherry half
+187. barbadillo medium amontillado
+188. barbadillo medium amontillado sherry
+189. barbadillo medium amontillado sherry
+190. barbadillo medium amontillado sherry
+191. barbadillo medium sherry
+192. barbadillo mixed rebujito
+193. barbadillo moscatel laura half bottle
+194. barbadillo muy fina manzanilla
+195. barbadillo nude tintilla de rota
+196. barbadillo obispo gascon 12 palo cortado 15 years
+197. barbadillo obispo gascon palo cortado 15 yr jerexeressherry
+198. barbadillo oloroso 12 yr cuco
+199. barbadillo oloroso amoroso san rafael half bottle
+200. barbadillo oloroso criadera en rama
+201. barbadillo oloroso dry old cuco half bottle
+202. barbadillo oloroso dry sherry
+203. barbadillo oloroso full dry
+204. barbadillo oloroso full dry
+205. barbadillo oloroso full dry sherry
+206. barbadillo oloroso full dry sherry
+207. barbadillo oloroso full dry sherry
+208. barbadillo oloroso full dry sherry
+209. barbadillo oloroso full dry sherry 18
+210. barbadillo oloroso full dry sherry sanlucar de barrameda spain
+211. barbadillo oloroso fulldry
+212. barbadillo oloroso seco
+213. barbadillo oloroso seco
+214. barbadillo oloroso sherry
+215. barbadillo oloroso sherry
+216. barbadillo oloroso sherry
+217. barbadillo oloroso sherry
+218. barbadillo oloroso sherry
+219. barbadillo oloroso sherry
+220. barbadillo oloroso sherry half bottle
+221. barbadillo orloroso dry sherry
+222. barbadillo pale cream sherry
+223. barbadillo pale cream sherry
+224. barbadillo palo cortado criadera en rama
+225. barbadillo palo cortado obispo g
+226. barbadillo palo cortado obispo gascon half bottle
+227. barbadillo palomino oloroso jerez spain nv
+228. barbadillo pasada pastora en rama manzanilla
+229. barbadillo pastora manzanilla 2023
+230. barbadillo pastora manzanilla en rama
+231. barbadillo pastora manzanilla pasada en rama
+232. barbadillo pastora manzanilla pasada en rama nv
+233. barbadillo pastora manzanilla sherry
+234. barbadillo pedro xeminez
+235. barbadillo pedro ximenez
+236. barbadillo pedro ximenez
+237. barbadillo pedro ximenez
+238. barbadillo pedro ximenez
+239. barbadillo pedro ximenez
+240. barbadillo pedro ximenez
+241. barbadillo pedro ximenez
+242. barbadillo pedro ximenez
+243. barbadillo pedro ximenez
+244. barbadillo pedro ximenez 075
+245. barbadillo pedro ximenez jerez spain nv
+246. barbadillo pedro ximenez la cilla
+247. barbadillo pedro ximenez la cilla
+248. barbadillo pedro ximenez la cilla 375 jerez spain
+249. barbadillo pedro ximenez la cilla half
+250. barbadillo pedro ximenez la cilla half bottle
+251. barbadillo pedro ximenez sherry
+252. barbadillo pedro ximenez sherry
+253. barbadillo pedro ximenez sherry
+254. barbadillo pedro ximenez sherry
+255. barbadillo pedro ximenez sherry
+256. barbadillo pedro ximenez sherry
+257. barbadillo pedro ximenez sherry
+258. barbadillo pedro ximenez sherry
+259. barbadillo pedro ximenez sherry 0375
+260. barbadillo pedro ximenez sherry half bottle
+261. barbadillo pedro ximenez sherry jerez spain
+262. barbadillo pedro ximenz sherry 175
+263. barbadillo pedro ximinez
+264. barbadillo pedro ximinez sherry
+265. barbadillo pedro ximinez sherry 19
+266. barbadillo pedro ximinez sherry sanlucar de barrameda spain
+267. barbadillo principe amontilado
+268. barbadillo principe amontillado
+269. barbadillo principe san rafael oloroso
+270. barbadillo px 37
+271. barbadillo px la cilla nv
+272. barbadillo quadis crianza
+273. barbadillo quadis joven
+274. barbadillo rebujito
+275. barbadillo rebujito can
+276. barbadillo reliquia amontillado jerez
+277. barbadillo reliquia pedro ximenez jerez
+278. barbadillo reliquia series amontillado
+279. barbadillo reliquia series oloroso
+280. barbadillo reliquia series palo cortado
+281. barbadillo reliquia series pedro ximenez
+282. barbadillo rosado vino rosado vt cadiz
+283. barbadillo s roberto amontillado jerez
+284. barbadillo sabalo
+285. barbadillo sabalo organic palomino
+286. barbadillo saca estacional manzanilla pasada en rama saca de otono 2025 release
+287. barbadillo saca estacional manzanilla pasada en rama saca de otono 2025 release case
+288. barbadillo sacas estacionales
+289. barbadillo san rafael
+290. barbadillo san rafael 19o
+291. barbadillo san rafael amoroso
+292. barbadillo san rafael medium oloroso
+293. barbadillo san rafael oloroso blend
+294. barbadillo san roberto amontillado
+295. barbadillo san roberto paolo cortado
+296. barbadillo sherry amontillado
+297. barbadillo sherry fino
+298. barbadillo sherry manzanilla
+299. barbadillo sherry solear manzanilla 075
+300. barbadillo solear
+301. barbadillo solear en rama manzanilla saca de verano
+302. barbadillo solear manzanilla
+303. barbadillo solear manzanilla
+304. barbadillo solear manzanilla
+305. barbadillo solear manzanilla
+306. barbadillo solear manzanilla
+307. barbadillo solear manzanilla
+308. barbadillo solear manzanilla
+309. barbadillo solear manzanilla
+310. barbadillo solear manzanilla
+311. barbadillo solear manzanilla
+312. barbadillo solear manzanilla 15
+313. barbadillo solear manzanilla sanlucar de barrameda
+314. barbadillo solear manzanilla sherry
+315. barbadillo solear manzanilla sherry
+316. barbadillo solear manzanilla sherry
+317. barbadillo solear manzanilla sherry
+318. barbadillo solear manzanilla sherry
+319. barbadillo tintilla nude single bottle
+320. barbadillo tradicion fino viejo dry sherry
+321. barbadillo trinidad manzanilla
+322. barbadillo versos single cask amontillado sherry
+323. barbadillo vi cool
+324. barbadillo vi cool
+325. barbadillo vi cool frizzante
+326. barbadillo vi frizante
+327. barbadillo vi frizzante zero
+328. barbadillo vi pink frizante rosado
+329. barbadillo vino blanco palomino fino do cadiz
+330. barbadillo vino tinto do vt cadiz
+331. barbadillo vors amontillado
+332. barbadillo vors oloroso
+333. barbadillo vors palo cortado
+334. barbadillo vors palo cortado 30 year old obispo gascon
+335. barbadirame rossese di dolceacqua superiore
+336. barbados
+337. barbados 16 year old 2006 bottled by ldmw
+338. barbados 2003
+339. barbados 2005 58 royal cane ru
+340. barbados 20052018
+341. barbados 2006 16 ans lmdw collection new vibrations
+342. barbados 21 yo 20002021 sbs px sherry finish 471
+343. barbados 8 ans
+344. barbados 8 ans les rhums du sud
+345. barbados cantilever parasol 3m round grey
+346. barbados eva khaki
+347. barbados foursquare 20 yo esprit 52
+348. barbados grande reserve 5a
+349. barbados last ward 2007 16 ans
+350. barbados rhapsody ed2022
+351. barbados rhum berry bros rudd 405
+352. barbados rommi
+353. barbados single cask collection antipodes 26 ans
+354. barbados xo 20th anniversary mit zwei glasern
+355. barbados xo 40
+356. barbaesco
+357. barbafrizz
+358. barbagalli etna rosso doc 2010 pietradolce
+359. barbagalli etna rosso doc 2016 pietradolce
+360. barbagalli etna rosso doc 2017 pietradolce
+361. barbagaya 14 ans
+362. barbagia bianco
+363. barbagia bianco 2024 vike vike
+364. barbagia bianco 2024 vikevike
+365. barbagia bianco igt 2024 magnum vikevike astuccio
+366. barbagia bianco igt 2024 magnum vikevike astuccio
+367. barbagia bianco igt 2024 magnum vikevike astuccio
+368. barbagia bianco igt 2024 magnum vikevike astuccio
+369. barbagia bianco igt 2024 vikevike
+370. barbagia bianco igt 2024 vikevike
+371. barbagia bianco igt 2024 vikevike
+372. barbagia bianco igt perda pinta 2021 sedilesu
+373. barbagia bianco igt perda pinta 2021 sedilesu
+374. barbagia bianco igt perda pinta 2021 sedilesu
+375. barbagia granazza igt granazza 2022 sedilesu
+376. barbagia granazza igt granazza 2022 sedilesu
+377. barbagia granazza igt granazza 2022 sedilesu
+378. barbagia granazza igt granazza 2022 sedilesu
+379. barbagia igt ghirada erula 2022 teularju
+380. barbagia igt ghirada erula 2022 teularju
+381. barbagia igt ghirada erula 2022 teularju
+382. barbagia igt ghirada rizza 2022 teularju
+383. barbagia igt ghirada rizza 2022 teularju
+384. barbagia igt ghirada rizza 2022 teularju
+385. barbagia igt granazza sulle bucce 2021 sedilesu
+386. barbagia igt granazza sulle bucce 2021 sedilesu
+387. barbagia igt granazza sulle bucce 2021 sedilesu
+388. barbagia rosato igt 2024 vikevike
+389. barbagia rosato igt 2024 vikevike
+390. barbagia rosato igt 2024 vikevike
+391. barbagia rosato igt 2024 vikevike
+392. barbagia rosso esole ghirada garaunele a 2022
+393. barbagia rosso ghirada gurguruo
+394. barbagia rosso ghirada istevene
+395. barbagia rosso igt 2023 teularju
+396. barbagia rosso igt 2023 teularju
+397. barbagia rosso igt 2023 teularju
+398. barbagia rosso igt 2023 teularju
+399. barbagia rosso igt 2023 teularju
+400. barbagia rosso igt ghirada cara gonare 2021 teularju
+401. barbagia rosso igt ghirada cara gonare 2021 teularju
+402. barbagia rosso igt ghirada cara gonare 2021 teularju
+403. barbagia rosso igt ghirada caragonare 2019 teularju
+404. barbagia rosso igt ghirada fittiloghe 2020 vikevike wine outlet
+405. barbagia rosso igt ghirada fittiloghe 2020 vikevike wine outlet
+406. barbagia rosso igt ghirada fittiloghe 2020 vikevike wine outlet
+407. barbagia rosso igt ghirada fittiloghe 2021 vikevike
+408. barbagia rosso igt ghirada fittiloghe 2021 vikevike
+409. barbagia rosso igt ghirada fittiloghe 2021 vikevike
+410. barbagia rosso igt ghirada fittiloghe 2022 magnum vikevike cassetta di legno
+411. barbagia rosso igt ghirada fittiloghe 2022 magnum vikevike cassetta di legno
+412. barbagia rosso igt ghirada fittiloghe 2022 magnum vikevike cassetta di legno
+413. barbagia rosso igt ghirada fittiloghe 2022 magnum vikevike cassetta di legno
+414. barbagia rosso igt ghirada fittiloghe 2022 magnum vikevike cassetta di legno
+415. barbagia rosso igt ghirada gurguruo 2023 vikevike
+416. barbagia rosso igt ghirada gurguruo 2023 vikevike
+417. barbagia rosso igt ghirada gurguruo 2023 vikevike
+418. barbagia rosso igt ghirada gurguruo 2023 vikevike
+419. barbagia rosso igt ghirada gurguruo 2023 vikevike
+420. barbagia rosso igt ghirada istevene 2021 vikevike
+421. barbagia rosso igt ghirada istevene 2021 vikevike
+422. barbagia rosso igt ghirada istevene 2021 vikevike
+423. barbagia rosso igt ghirada ocruarana 2021 teularju
+424. barbagia rosso igt ghirada ocruarana 2021 teularju
+425. barbagia rosso igt ghirada ocruarana 2021 teularju
+426. barbagianna 2020 bragagni
+427. barbagianni san donatino
+428. barbagianni spumante brut giovanni
+429. barbagianni vino rosato 2021 san donatino
+430. barbaglia boca 2016
+431. barbaglia boca 2016
+432. barbaglia il silente nebbiolo 2019
+433. barbaglia ledi vespolina 2020
+434. barbaglia uva rara 2020
+435. barbagliante rose van gentili
+436. barbaglio de gaioncello franciacorta
+437. barbagood 2021
+438. barban 2018
+439. barban 2019
+440. barban 2020
+441. barbancourt 10 ans
+442. barbancourt 15 ans reserve du domaine
+443. barbancourt 15 jahre
+444. barbancourt 15 year reserve rhum
+445. barbancourt 15ans
+446. barbancourt 15yo
+447. barbancourt 160 eme anniversaire
+448. barbancourt 160th anniversary lmt ed
+449. barbancourt 2ans
+450. barbancourt 3 star
+451. barbancourt 3 star
+452. barbancourt 3 star
+453. barbancourt 3 star 4 year
+454. barbancourt 3 star 86o haiti rhum
+455. barbancourt 3 star rhum 4 yo 1980s vintage
+456. barbancourt 3 stars 4 ans rhum agricole
+457. barbancourt 3 stars 4 year old bottle style
+458. barbancourt 3 stars rhum 1960s vintage
+459. barbancourt 3 stelle 4a
+460. barbancourt 3star
+461. barbancourt 4 anni
+462. barbancourt 4 year
+463. barbancourt 4 year
+464. barbancourt 4 yo
+465. barbancourt 4 yo 0
+466. barbancourt 4ans
+467. barbancourt 4ans trois etoiles
+468. barbancourt 4yo
+469. barbancourt 5 star 8yo
+470. barbancourt 5 star 8yo
+471. barbancourt 5star
+472. barbancourt 8 year
+473. barbancourt 8 year
+474. barbancourt 8 yo 0
+475. barbancourt 8ans
+476. barbancourt 8ans cinq etoiles
+477. barbancourt 8yo
+478. barbancourt blanc 55
+479. barbancourt coffret 8ans 2 verres
+480. barbancourt estate reserve 15 ans rhum agricole
+481. barbancourt haiti 4y
+482. barbancourt pango rhum
+483. barbancourt reserve 8y 5 stelle
+484. barbancourt reserve du domain 15 anni astucciato
+485. barbancourt reserve du domain 15y
+486. barbancourt reserve du domaine 15 ans 43
+487. barbancourt reserve du domaine 15a
+488. barbancourt reserve du domaine 15ans
+489. barbancourt rhum 15 year old
+490. barbancourt rhum 15 year old
+491. barbancourt rhum 15 years old reserve du domaine
+492. barbancourt rhum 15y
+493. barbancourt rhum 3 star
+494. barbancourt rhum 3 star 4 year old
+495. barbancourt rhum 4 years old
+496. barbancourt rhum 4yr old
+497. barbancourt rhum 5 star
+498. barbancourt rhum 5 star 8 ars rom
+499. barbancourt rhum 5 star 8 year old
+500. barbancourt rhum 8yr old
+501. barbancourt rhum liberte limited edition
+502. barbancourt rhum overproof
+503. barbancourt rhums dhaiti en officiels ou independants
+504. barbancourt traditional white 110o rhum
+505. barbancourt white
+506. barbancourt white rhum
+507. barbancourt white rhum
+508. barbancourt white rhum 110 proof
+509. barbancourt white rhum 86 proof
+510. barbancourt white rhum haitian proof 110 prf
+511. barbanera 125 075
+512. barbanera 13 075
+513. barbanera 2022 gigino 80th anniversario toscana igt
+514. barbanera 5v toscana rosso igt tuscany italy
+515. barbanera aglianico primitivo 2024 igt
+516. barbanera alchimia primitivo
+517. barbanera ammone appassimento 2024 puglia
+518. barbanera appassimento rosso 2017 barbanera puglia italien
+519. barbanera chianti
+520. barbanera chianti
+521. barbanera chianti governo 2023 docg
+522. barbanera chianti reserva 2020 docg
+523. barbanera chieteno toscana
+524. barbanera collezione famiglia vecciano toscana 2023
+525. barbanera collezione famiglia vecciano toscana red 135 abv
+526. barbanera da uve leggermente appassite puglia igt 2024 rood
+527. barbanera docg chianti
+528. barbanera duca di saragnano toscana bianco sangiovese 2020 italy
+529. barbanera duca di saragnano toscana bianco sangiovese 2024
+530. barbanera eterno toscana rosso igt 2021
+531. barbanera gigino 80 anniversario 2021
+532. barbanera gigino 80 anniversario bianco 2024
+533. barbanera gigino 80 anniversario grande 2019
+534. barbanera gigino bianco 2021
+535. barbanera gigino grande 2019
+536. barbanera gigino grande toscana 2019 14 abv
+537. barbanera governo toscano rosso igt 2019 italy
+538. barbanera lopera 2023
+539. barbanera nero di troia
+540. barbanera ngudra primitivo del salento 2023
+541. barbanera pian oro 2024
+542. barbanera pian oro toscana
+543. barbanera puglia appassito 2023
+544. barbanera puglia nero di troia
+545. barbanera puglia nero di troia
+546. barbanera rosso toscana vecciano
+547. barbanera ser passo toscana rosso
+548. barbanera ser passo toscana rosso
+549. barbanera smagekasse
+550. barbanera special selection da uve leggermente appassite
+551. barbanera special selection da uve leggermente appassite
+552. barbanera special selection da uve leggermente appassite
+553. barbanera special selection da uve leggermente appassite 2024
+554. barbanera special selection da uve leggermente appassite 2024
+555. barbanera special selection puglia fiano
+556. barbanera special selection puglia rosso
+557. barbanera special selection terre siciliane
+558. barbanera special selection toscana bianco
+559. barbanera special selection toscana da uve leggermente appassite 2023
+560. barbanera special selection toscana rosso
+561. barbanera terra siciliane syrah 2023 igt
+562. barbanera terre siciliane appassito 2023 igt
+563. barbanera terre siciliane chardonnay
+564. barbanera toscana 5v supertuscan
+565. barbanera toscana 5v supertuscan
+566. barbanera vecciano bianco 2024
+567. barbanera vecciano rose 2023
+568. barbanera vecciano rosso 2021
+569. barbanera vecciano toscana bianco 12 abv
+570. barbanera vino bianco dispetto 2020
+571. barbanera wine dinner
+572. barbanera wine dinner 26 april
+573. barbansino vino de mesa blanco
+574. barbar
+575. barbar 2020 szekszard pdo heimann 075
+576. barbar bier honingbier fust vat 15 liter
+577. barbar blond
+578. barbar blond ow ba
+579. barbar blonde
+580. barbar blonde
+581. barbar blonde
+582. barbar blonde 8
+583. barbar blonde 8
+584. barbar blonde 8vol
+585. barbar blonde 8vol
+586. barbar blonde swing top bottle
+587. barbar bok
+588. barbar bok
+589. barbar bok
+590. barbar bok
+591. barbar bok
+592. barbar bok 85
+593. barbar es barbarossa diszdobozban
+594. barbar fallbar familjebadkar i pvc aret runt anvandning
+595. barbar gaseldstad provence crema 34 kw
+596. barbar lefebvre
+597. barbar lefebvre
+598. barbar pequena adega romana
+599. barbar pequena adega romana
+600. barbar rouge
+601. barbar rouge
+602. barbar rouge
+603. barbar rouge
+604. barbar vertikalis borkostolo
+605. barbar vertikalis selection
+606. barbara
+607. barbara
+608. barbara babapiskota
+609. barbara betu teszta 200g
+610. barbara burgonyapehely 250g
+611. barbara cernametelt 200g
+612. barbara citromos kremmel toltott vanilias keksz
+613. barbara csigateszta 200g
+614. barbara csokimazas gyumolcsizzel toltott mezes puszedli
+615. barbara dahl wer schneller kocht hat langer zeit feat sitt wines
+616. barbara dalba la lisi ghisolfi piemonte
+617. barbara dalba la morra docg 1974
+618. barbara eliodora cuvee syrah
+619. barbara eliodora gran reserva syrah
+620. barbara eliodora gran reserva syrah francois freres
+621. barbara eliodora rose de syrah flor
+622. barbara eliodora rose de syrah flor
+623. barbara eliodora sauvignon blanc
+624. barbara eliodora sauvignon blanc
+625. barbara eliodora sauvignon blanc
+626. barbara eliodora syrah
+627. barbara eliodora syrah
+628. barbara eliodora syrah classico
+629. barbara eliodora syrah classico
+630. barbara eliodora syrah classico
+631. barbara eliodora syrah cuvee
+632. barbara eliodora syrah gran reserva
+633. barbara eliodora syrah gran reserva
+634. barbara eliodora syrah gran reserva 205
+635. barbara eliodora syrah leger
+636. barbara eliodora syrah leger
+637. barbara eliodora syrah leve
+638. barbara eliodora tinto syrah leger
+639. barbara enrico serafino docg 1974
+640. barbara fodros kocka teszta 200g
+641. barbara fores blanc 2024
+642. barbara fores blanco
+643. barbara fores coma den pou tinto alta grenache syrah cabernet sauvignon catalonia spain
+644. barbara fores negre 2022
+645. barbara fores negre terra alta 2021
+646. barbara fores rosado
+647. barbara fores rosat 2024
+648. barbara fores rose terra alta 2023
+649. barbara fores templari terra alta 2021
+650. barbara fores tinto
+651. barbara glutenmentes rizsliszt 1000g
+652. barbara kajszibarack izzel toltott linzer
+653. barbara kakaos perec
+654. barbara lebled cheers
+655. barbara lebled cheers 2023
+656. barbara lebled gamay sans toi
+657. barbara lebled gamay sans toi 2023
+658. barbara lebled gamay sans toi 2023
+659. barbara lebled hey un dernier cot
+660. barbara lebled hey un dernier cot 2021
+661. barbara lebled hey un dernier cot 2023
+662. barbara lebled hey un dernier cot 2023
+663. barbara lebled tchin cheers vdf 2023
+664. barbara lebled tchin cheers vdf red wine 2023
+665. barbara lebled tchin cheers vdf rouge 2023
+666. barbara lebled tchin gamay sans toi 2022
+667. barbara lebled tchin hey un dernier cot vdf rouge 2023
+668. barbara lebled un dernier cot 2023
+669. barbara lisztkeverek fozeshez suteshez 1000g
+670. barbara lisztkeverek kenyer es kelt tesztakhoz 1000g
+671. barbara mezes etcsokis suti
+672. barbara mezes puszedli
+673. barbara nero kajszibarackos omlos sutemeny
+674. barbara nordwind 2023
+675. barbara ohlzelt
+676. barbara ohlzelt gemischter satz gut gegen nordwind 2023 quw niederosterreich austria 13
+677. barbara ohlzelt gemischter satz gut gegen nordwind niederosterreich 2023
+678. barbara ohlzelt gemischter satz gut gegen nordwind niederosterreich 2023
+679. barbara ohlzelt gemischter satz gut gegen nordwind niederosterreich 2023 case
+680. barbara ohlzelt gemischter satz gut gegen nordwind quw niederosterreich 6 bottle case deal
+681. barbara ohlzelt gmischter satz kitz
+682. barbara ohlzelt gruner leader
+683. barbara ohlzelt gruner leader
+684. barbara ohlzelt gruner leader
+685. barbara ohlzelt gruner leader 2023
+686. barbara ohlzelt gruner leader 2024
+687. barbara ohlzelt gruner leader 2024
+688. barbara ohlzelt gruner leader gruner veltliner 2024
+689. barbara ohlzelt gruner leader trocken kamptal dac austria 2023 case
+690. barbara ohlzelt gruner veltliner lamm erste lage dac kamptal 6 bottle case deal
+691. barbara ohlzelt gruner veltliner leader niederosterreich 2024
+692. barbara ohlzelt gruner veltliner leaders 2024 kamptal austria
+693. barbara ohlzelt gruner veltliner zobinger
+694. barbara ohlzelt gruner veltliner zobinger 2022
+695. barbara ohlzelt gruner veltliner zobinger 2024 125 abv
+696. barbara ohlzelt gruner veltliner zobinger trocken kamptal 2018
+697. barbara ohlzelt heiligenstein riesling kamptal dac reserve austria 2020
+698. barbara ohlzelt kitz gemischter satz 2021
+699. barbara ohlzelt kogelberg riesling kamptal dac austria 2020
+700. barbara ohlzelt riesling heiligenstein 2020 kamptal austria
+701. barbara ohlzelt riesling heiligenstein erste lage dac kamptal 2021
+702. barbara ohlzelt riesling heiligenstein erste lage dac kamptal 6 bottle case deal
+703. barbara ohlzelt riesling kogelberg
+704. barbara ohlzelt riesling kogelberg 2016
+705. barbara ohlzelt riesling kogelberg kamptal 2021
+706. barbara ohlzelt riesling ried heiligenstein 2021 kamptal austria
+707. barbara ohlzelt verjus spritz 0 nv
+708. barbara ohlzelt zobinger gruner veltliner kamptal dac austria
+709. barbara ohlzelt zobinger gruner veltliner kamptal dac austria
+710. barbara ohlzelt zobinger riesling
+711. barbara omlos keksz kakaos kremmel toltve
+712. barbara orso teszta 200g
+713. barbara priarone 1961
+714. barbara rose
+715. barbara rose
+716. barbara sec metodo clasico istenic
+717. barbara sheep
+718. barbara spagetti 200g
+719. barbara szeles metelt 200g
+720. barbara tarhonya 200g
+721. barbara top blue
+722. barbara top grey
+723. barbara vanilia izu karika
+724. barbarano colli berici doc
+725. barbardillo laura moscatel 19o
+726. barbare ambiance
+727. barbare ararat
+728. barbare cabernet sauvignon merlot
+729. barbare cabernet sauvignonmerlot red
+730. barbare elegance
+731. barbare elegance red
+732. barbare notr natural wine
+733. barbare pinot noir
+734. barbare premier blend
+735. barbare premier cabernet sauvignon
+736. barbare premier grenache
+737. barbare premier mourvedre
+738. barbare premier reserve ixxixii
+739. barbare premier sauvignon blanc
+740. barbare premier syrah
+741. barbare premier xl
+742. barbare prestige
+743. barbare rose
+744. barbare sauvignon blanc
+745. barbare sgm
+746. barbare spica
+747. barbarelli cabernet franc
+748. barbarersco bersano 1982
+749. barbaresco
+750. barbaresco
+751. barbaresco
+752. barbaresco
+753. barbaresco
+754. barbaresco
+755. barbaresco
+756. barbaresco
+757. barbaresco
+758. barbaresco
+759. barbaresco
+760. barbaresco
+761. barbaresco
+762. barbaresco
+763. barbaresco
+764. barbaresco
+765. barbaresco
+766. barbaresco
+767. barbaresco
+768. barbaresco
+769. barbaresco
+770. barbaresco
+771. barbaresco
+772. barbaresco
+773. barbaresco
+774. barbaresco
+775. barbaresco
+776. barbaresco 1957
+777. barbaresco 1957 marchesi di barolo
+778. barbaresco 1957 marchesi di barolo
+779. barbaresco 1957 marchesi di barolo
+780. barbaresco 1958
+781. barbaresco 1961 enrico serafino
+782. barbaresco 1961 enrico serafino
+783. barbaresco 1961 enrico serafino
+784. barbaresco 1961 riserva
+785. barbaresco 1964
+786. barbaresco 1964
+787. barbaresco 1966
+788. barbaresco 1967
+789. barbaresco 1967
+790. barbaresco 1967 produttori del barbaresco
+791. barbaresco 1967 produttori del barbaresco
+792. barbaresco 1967 produttori del barbaresco
+793. barbaresco 1967 riserva
+794. barbaresco 1967 riserva bad label
+795. barbaresco 1968
+796. barbaresco 1968 cantina francone
+797. barbaresco 1968 fontanafredda
+798. barbaresco 1968 fontanafredda
+799. barbaresco 1968 fontanafredda
+800. barbaresco 1968 la spinona
+801. barbaresco 1968 riserva
+802. barbaresco 1970 giovanni scanavino
+803. barbaresco 1970 produttori del barbaresco riserva moccagatta
+804. barbaresco 1970 produttori di barbaresco
+805. barbaresco 1970 riserva
+806. barbaresco 1971
+807. barbaresco 1971 cav g ceste
+808. barbaresco 1973
+809. barbaresco 1973 fra produttori del barbaresco
+810. barbaresco 1973 fran produttori del barbaresco
+811. barbaresco 1973 from produttori del barbaresco
+812. barbaresco 1973 produttori del barbaresco
+813. barbaresco 1973 produttori del barbaresco
+814. barbaresco 1973 produttori del barbaresco
+815. barbaresco 1973 produttori del barbaresco
+816. barbaresco 1973 riserva
+817. barbaresco 1973 van produttori del barbaresco
+818. barbaresco 1974
+819. barbaresco 1974
+820. barbaresco 1974 riserva
+821. barbaresco 1975
+822. barbaresco 1975 gaia mario
+823. barbaresco 1975 gaja
+824. barbaresco 1975 giordano
+825. barbaresco 1975 jeroboam
+826. barbaresco 1975 la brenta doro
+827. barbaresco 1975 marchesi di barolo
+828. barbaresco 1975 marchesi di barolo
+829. barbaresco 1975 marchesi di barolo
+830. barbaresco 1976
+831. barbaresco 1976
+832. barbaresco 1976 capellano
+833. barbaresco 1976 capellano
+834. barbaresco 1976 capellano
+835. barbaresco 1976 villadoria
+836. barbaresco 1976 villadoria
+837. barbaresco 1976 villadoria
+838. barbaresco 1977 pico mirandola
+839. barbaresco 1977 pico mirandola
+840. barbaresco 1977 pico mirandola
+841. barbaresco 1978
+842. barbaresco 1978 bersano
+843. barbaresco 1978 minuto luigi
+844. barbaresco 1978 minuto luigi
+845. barbaresco 1978 minuto luigi
+846. barbaresco 1979
+847. barbaresco 1979 jeroboam
+848. barbaresco 1979 jeroboam
+849. barbaresco 1980
+850. barbaresco 1981 gaja
+851. barbaresco 1981 gaja
+852. barbaresco 1981 gaja
+853. barbaresco 1982
+854. barbaresco 1982 casetta
+855. barbaresco 1982 casetta
+856. barbaresco 1982 casetta
+857. barbaresco 1982 from produttori del barbaresco
+858. barbaresco 1982 produttori del barbaresco riserva
+859. barbaresco 1982 produttori del barbaresco riserva
+860. barbaresco 1983
+861. barbaresco 1983 luigi minuto
+862. barbaresco 1983 luigi minuto
+863. barbaresco 1983 luigi minuto
+864. barbaresco 1984 produttori del barbaresco
+865. barbaresco 1984 produttori del barbaresco
+866. barbaresco 1984 produttori del barbaresco
+867. barbaresco 1984 produttori del barbaresco
+868. barbaresco 1985
+869. barbaresco 1985 produttori del barbaresco
+870. barbaresco 1985 produttori del barbaresco
+871. barbaresco 1985 produttori del barbaresco
+872. barbaresco 1985 produttori del barbaresco
+873. barbaresco 1986
+874. barbaresco 1987
+875. barbaresco 1987 producent luigi minuto
+876. barbaresco 1987 producer luigi minuto
+877. barbaresco 1987 produttore luigi minuto
+878. barbaresco 1988
+879. barbaresco 1988 jeroboam
+880. barbaresco 1988 selezione dei 30 anni
+881. barbaresco 1989 asili grasso
+882. barbaresco 1989 asili grasso
+883. barbaresco 1989 asili grasso
+884. barbaresco 1989 jeroboam
+885. barbaresco 1990
+886. barbaresco 1990
+887. barbaresco 1990
+888. barbaresco 1990
+889. barbaresco 1990 av produttori del barbaresco
+890. barbaresco 1990 by produttori del barbaresco
+891. barbaresco 1990 door produttori del barbaresco
+892. barbaresco 1990 produttori del barbaresco pora riserva
+893. barbaresco 1990 red wine from italy
+894. barbaresco 1990 riserva montestefano
+895. barbaresco 1990 rode wijn uit italie
+896. barbaresco 1990 rott vin fran italien
+897. barbaresco 1993
+898. barbaresco 1994
+899. barbaresco 1994 riserva
+900. barbaresco 1995
+901. barbaresco 1995 prunotto
+902. barbaresco 1996
+903. barbaresco 1996 parroco di neive
+904. barbaresco 1997
+905. barbaresco 1997 gaja
+906. barbaresco 1998
+907. barbaresco 1998 prunotto
+908. barbaresco 1999
+909. barbaresco 1999 cantina parroco
+910. barbaresco 1999 gaja
+911. barbaresco 1999 gaja
+912. barbaresco 1999 gaja
+913. barbaresco 2000 ca munari
+914. barbaresco 2000 cantina parroco
+915. barbaresco 2000 marchesi di barolo
+916. barbaresco 2001 az agricola falletto di bruno giacosa
+917. barbaresco 2005
+918. barbaresco 2007 asili riserva produttori del barbaresco
+919. barbaresco 2007 fran produttori del barbaresco
+920. barbaresco 2007 from produttori del barbaresco
+921. barbaresco 2007 van produttori del barbaresco
+922. barbaresco 2008
+923. barbaresco 2008 domaine angelo gaja
+924. barbaresco 2008 pio cesare
+925. barbaresco 2008 pio cesare
+926. barbaresco 2008 pio cesare
+927. barbaresco 2009 pora riserva produttori del barbaresco piemonte italien
+928. barbaresco 2010 domaine angelo gaja
+929. barbaresco 2011
+930. barbaresco 2011 domaine angelo gaja
+931. barbaresco 2011 pio cesare
+932. barbaresco 2011 produttori jerboam
+933. barbaresco 2012 barbaresco docg
+934. barbaresco 2012 docg
+935. barbaresco 2012 gaja
+936. barbaresco 2012 pio cesare
+937. barbaresco 2013 magnum
+938. barbaresco 2013 roccalini
+939. barbaresco 2014 e barolo 2013 batasiolo
+940. barbaresco 2014 magnum francesco versio
+941. barbaresco 20141617 18 gaja
+942. barbaresco 2015 barbaresco docg
+943. barbaresco 2015 ceretto
+944. barbaresco 2015 magnum francesco versio
+945. barbaresco 2016
+946. barbaresco 2016
+947. barbaresco 2016 cantina parroco
+948. barbaresco 2016 gaja
+949. barbaresco 2017
+950. barbaresco 2017
+951. barbaresco 2017 docg
+952. barbaresco 2017 domaine angelo gaja
+953. barbaresco 2017 morra gabriele
+954. barbaresco 2017 morra gabriele
+955. barbaresco 2018
+956. barbaresco 2018 bruno giacosa
+957. barbaresco 2018 bruno rocca
+958. barbaresco 2018 docg bel colle
+959. barbaresco 2018 e barolo 2014 batasiolo
+960. barbaresco 2018 martinega marchesi de gresy piemonte
+961. barbaresco 2018 prunotto
+962. barbaresco 2019
+963. barbaresco 2019
+964. barbaresco 2019
+965. barbaresco 2019
+966. barbaresco 2019
+967. barbaresco 2019
+968. barbaresco 2019
+969. barbaresco 2019 bava
+970. barbaresco 2019 gigi rosso
+971. barbaresco 2019 produttori del barbaresco
+972. barbaresco 2020
+973. barbaresco 2020
+974. barbaresco 2020
+975. barbaresco 2020
+976. barbaresco 2020 cascina roccalini barbaresco docg 075ltr
+977. barbaresco 2020 docg cascina roccalini
+978. barbaresco 2020 domaine angelo gaja
+979. barbaresco 2020 dosio
+980. barbaresco 2020 gabriele morra
+981. barbaresco 2020 gaja
+982. barbaresco 2020 giuseppe cortese
+983. barbaresco 2020 le filiere vallebelbo
+984. barbaresco 2020 massolino
+985. barbaresco 2020 produttori del barbaresco cl75
+986. barbaresco 2020 rizzi
+987. barbaresco 2020 ved 6 stk 32500 stk
+988. barbaresco 2021
+989. barbaresco 2021
+990. barbaresco 2021
+991. barbaresco 2021
+992. barbaresco 2021
+993. barbaresco 2021
+994. barbaresco 2021
+995. barbaresco 2021
+996. barbaresco 2021 azienda agricola demarie
+997. barbaresco 2021 biologico
+998. barbaresco 2021 bruno rocca
+999. barbaresco 2021 cascina roccalini
+1000. barbaresco 2021 domaine francesco versio

@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. vinho tinto quinta dos murcas reserva 2018 douro
+2. vinho tinto quinta dos murcas reserva
+3. vinho tinto quinta dos murcas minas 2023 douro
+4. vinho tinto quinta dos murcas minas
+5. vinho tinto quinta dos murcas margem
+6. vinho tinto quinta dos murcas douro vv47 esporao
+7. vinho tinto quinta dos murcas assobio 2023 douro
+8. vinho tinto quinta dos monteirinhos menino afonso reserva 2019 doc dao
+9. vinho tinto quinta dos monteirinhos menino afonso
+10. vinho tinto quinta dos monteirinhos manel chaves touriga nacional 2022 doc dao
+11. vinho tinto quinta dos monteirinhos lux edition 2016 doc dao
+12. vinho tinto quinta dos frades colheita tardia 37
+13. vinho tinto quinta dos castelares vinha do almirante
+14. vinho tinto quinta dos castelares superior 2022 douro
+15. vinho tinto quinta dos castelares superior 2020
+16. vinho tinto quinta dos castelares superior
+17. vinho tinto quinta dos castelares sublime 2018 douro
+18. vinho tinto quinta dos castelares reserva magum 1 2021
+19. vinho tinto quinta dos castelares reserva magnum 2022 1 douro
+20. vinho tinto quinta dos castelares reserva 2021 douro
+21. vinho tinto quinta dos castelares reserva 2021
+22. vinho tinto quinta dos castelares reserva
+23. vinho tinto quinta dos castelares manuel caldeira
+24. vinho tinto quinta dos castelares magnum 2023
+25. vinho tinto quinta dos castelares grande reserva magnum 2021 1 douro
+26. vinho tinto quinta dos castelares grande reserva 2020 douro
+27. vinho tinto quinta dos castelares grande reserva 2020
+28. vinho tinto quinta dos castelares grande reserva 1 2020
+29. vinho tinto quinta dos castelares grande reserva
+30. vinho tinto quinta dos castelares colheita magnum 2024 1 doc douro
+31. vinho tinto quinta dos castelares colheita 2024 douro
+32. vinho tinto quinta dos castelares colheita 2023
+33. vinho tinto quinta dos castelares bio 2023
+34. vinho tinto quinta dos castelares bicho da seda 2018 douro
+35. vinho tinto quinta dos castelares bastardo 2021 douro
+36. vinho tinto quinta dos castelares bastardo
+37. vinho tinto quinta dos castelares anonymo douro
+38. vinho tinto quinta dos castelares
+39. vinho tinto quinta dos carvalhais unico 2015 dao
+40. vinho tinto quinta dos carvalhais touriga nacional 2021 dao
+41. vinho tinto quinta dos carvalhais tinta roriz
+42. vinho tinto quinta dos carvalhais reserva dao
+43. vinho tinto quinta dos carvalhais reserva 2018 dao
+44. vinho tinto quinta dos carvalhais colheita 2021 dao
+45. vinho tinto quinta dos avidagos reserva 2021 douro
+46. vinho tinto quinta dos avidagos reserva 2018 douro
+47. vinho tinto quinta dos avidagos grande reserva 2018 douro
+48. vinho tinto quinta dos aciprestes reserva douro
+49. vinho tinto quinta dos aciprestes reserva doc douro
+50. vinho tinto quinta dos aciprestes reserva 2021 doc douro
+51. vinho tinto quinta dos aciprestes reserva
+52. vinho tinto quinta dos aciprestes grande reserva 2017 douro
+53. vinho tinto quinta dos aciprestes grande reserva
+54. vinho tinto quinta dos aciprestes douro
+55. vinho tinto quinta dos aciprestes 2022 douro
+56. vinho tinto quinta dos aciprestes
+57. vinho tinto quinta dos aciprestes
+58. vinho tinto quinta dos acipestres
+59. vinho tinto quinta dos abibes sublime 2015 bairrada
+60. vinho tinto quinta dos abibes reserva bairrada
+61. vinho tinto quinta dos abibes reserva 2018 bairrada
+62. vinho tinto quinta dona leonor reserva doc douro 2020
+63. vinho tinto quinta dona leonor colheita 2022 doc douro
+64. vinho tinto quinta dom rodrigo tinto
+65. vinho tinto quinta do zambujeiro 2020 alentejo
+66. vinho tinto quinta do vesuvio 2022 douro doc
+67. vinho tinto quinta do vesuvio 2022 douro
+68. vinho tinto quinta do vesuvio 2021 douro
+69. vinho tinto quinta do ventozelo tinto cao 2022 douro
+70. vinho tinto quinta do vallado vinha da granja 2021 douro
+71. vinho tinto quinta do vallado vinha da granja
+72. vinho tinto quinta do vallado vinha da coroa 2023 douro
+73. vinho tinto quinta do vallado vinha da coroa
+74. vinho tinto quinta do vallado touriga nacional douro
+75. vinho tinto quinta do vallado touriga nacional 2020 douro
+76. vinho tinto quinta do vallado touriga nacional
+77. vinho tinto quinta do vallado superior lady baga
+78. vinho tinto quinta do vallado superior
+79. vinho tinto quinta do vallado sousao 2021 douro
+80. vinho tinto quinta do vallado sousao
+81. vinho tinto quinta do vallado reserva field blend 2022 douro
+82. vinho tinto quinta do vallado reserva field blend 2021 douro
+83. vinho tinto quinta do vallado alicate bouschet
+84. vinho tinto quinta do vallado adelaide 2016 douro
+85. vinho tinto quinta do vallado
+86. vinho tinto quinta do vale da raposa reserva 2020
+87. vinho tinto quinta do valdoeiro syrah
+88. vinho tinto quinta do valdoeiro reserva
+89. vinho tinto quinta do torrao
+90. vinho tinto quinta do teste reserva 2025 douro
+91. vinho tinto quinta do soque
+92. vinho tinto quinta do sobreiro unico
+93. vinho tinto quinta do sobreiro touriga nacional
+94. vinho tinto quinta do sobreiro syrah
+95. vinho tinto quinta do sobreiro rio torto
+96. vinho tinto quinta do sobreiro reserva
+97. vinho tinto quinta do sobreiro regional
+98. vinho tinto quinta do sobreiro natura biologico
+99. vinho tinto quinta do sobreiro grande reserva
+100. vinho tinto quinta do sobreiro de cima reserva 2022
+101. vinho tinto quinta do sobreiro de cima grande reserva 2020
+102. vinho tinto quinta do sobreiro de cima 2022
+103. vinho tinto quinta do sobreiro de cima
+104. vinho tinto quinta do sobreiro cabernetsauvignon touriganacional 2020
+105. vinho tinto quinta do sobreiro cabernet sauvignon
+106. vinho tinto quinta do sobreiro cabernet reserva
+107. vinho tinto quinta do sanguinhal reserva 2017 obidos
+108. vinho tinto quinta do romeu reserva 2018
+109. vinho tinto quinta do rogel reserva 2020
+110. vinho tinto quinta do rogel 2020
+111. vinho tinto quinta do ribeirinho pe franco baga 2022 regional beiras
+112. vinho tinto quinta do ribeirinho baga pe franco luis pato 2019 bairrada
+113. vinho tinto quinta do portal reserva 2023 douro
+114. vinho tinto quinta do portal reserva 2021
+115. vinho tinto quinta do portal muros de vinha 2023 douro
+116. vinho tinto quinta do portal grande reserva 2019 douro
+117. vinho tinto quinta do portal colheita 2021
+118. vinho tinto quinta do portal auru 2019 douro
+119. vinho tinto quinta do portal auru 2019
+120. vinho tinto quinta do popa touriga nacional
+121. vinho tinto quinta do popa reserva 2021 douro
+122. vinho tinto quinta do popa lolita
+123. vinho tinto quinta do popa homenagem 2015 douro
+124. vinho tinto quinta do popa doce 2019 douro
+125. vinho tinto quinta do popa amphora 2018 douro
+126. vinho tinto quinta do poco do lobo reserva cabernet sauvignon 2003 bairrada doc
+127. vinho tinto quinta do poco do lobo reserva 2019 bairrada doc
+128. vinho tinto quinta do poco do lobo reserva 1996 bairrada doc
+129. vinho tinto quinta do poco do lobo reserva 1995 bairrada doc
+130. vinho tinto quinta do poco do lobo 1991 bairrada doc
+131. vinho tinto quinta do poco do lobo 1989 bairrada doc
+132. vinho tinto quinta do poco do lobo 1987 1 bairrada doc
+133. vinho tinto quinta do pinto tinta miuda 2004 lisboa
+134. vinho tinto quinta do pinto merlot syrah 2021 lisboa
+135. vinho tinto quinta do pinto merlot
+136. vinho tinto quinta do pinto limited edition tinta miuda 2017 lisboa
+137. vinho tinto quinta do piloto reserva setubal
+138. vinho tinto quinta do piloto colecao de familia setubal
+139. vinho tinto quinta do pessegueiro touriga nacional 2019 doc douro
+140. vinho tinto quinta do pessegueiro tinto cao 2021 doc douro
+141. vinho tinto quinta do pessegueiro tinta roriz 2021 doc douro
+142. vinho tinto quinta do pessegueiro tinta da barca alicante bouschet 2019 doc douro
+143. vinho tinto quinta do pessegueiro tinta amarela 2019 doc douro
+144. vinho tinto quinta do pessegueiro rufete 2020 doc douro
+145. vinho tinto quinta do pessegueiro reserva 2022 doc douro
+146. vinho tinto quinta do pessegueiro grande reserva 2019 doc douro
+147. vinho tinto quinta do pessegueiro cao danado 2021 douro
+148. vinho tinto quinta do penedo reserva doc
+149. vinho tinto quinta do penedo doc
+150. vinho tinto quinta do paral vinhas velhas 2020 regional alentejano
+151. vinho tinto quinta do paral vinhas velhas 2020 alentejo
+152. vinho tinto quinta do paral vinhas velhas
+153. vinho tinto quinta do paral vinhas velhas
+154. vinho tinto quinta do paral vinha de talha
+155. vinho tinto quinta do paral superior garrafa magnum 1
+156. vinho tinto quinta do paral superior garrafa magnum
+157. vinho tinto quinta do paral superior 2023 alentejo doc
+158. vinho tinto quinta do paral superior 2021 alentejo
+159. vinho tinto quinta do paral superior
+160. vinho tinto quinta do paral reserva 2020 regional alentejano
+161. vinho tinto quinta do paral reserva 2020 alentejo
+162. vinho tinto quinta do paral reserva
+163. vinho tinto quinta do paral reserva
+164. vinho tinto quinta do paral garrafa magnum 1
+165. vinho tinto quinta do paral estate tinto
+166. vinho tinto quinta do paral 2022 alentejo
+167. vinho tinto quinta do paral 2022 alentejo
+168. vinho tinto quinta do paral
+169. vinho tinto quinta do noval reserva 2021 douro
+170. vinho tinto quinta do mouro zagalos reserva alentejo
+171. vinho tinto quinta do mouro zagalos reserva alentejo
+172. vinho tinto quinta do mouro vinha do malho 2017 alentejo
+173. vinho tinto quinta do mouro vinha do malho 2017 alentejo
+174. vinho tinto quinta do mouro trincadeira 2015 alentejo
+175. vinho tinto quinta do mouro rotulo dourado alentejo
+176. vinho tinto quinta do mouro rotulo dourado 2019 alentejo
+177. vinho tinto quinta do mouro petit syrah alentejo
+178. vinho tinto quinta do mouro merlot 2017 alentejo
+179. vinho tinto quinta do mouro erro 4 2017 alentejo
+180. vinho tinto quinta do mouro alentejo
+181. vinho tinto quinta do mouro 2019 regional alentejano
+182. vinho tinto quinta do mouro 2019 alentejo
+183. vinho tinto quinta do morgado tannat suave
+184. vinho tinto quinta do morgado suave
+185. vinho tinto quinta do morgado
+186. vinho tinto quinta do monte xisto oriente 2022 douro
+187. vinho tinto quinta do monte xisto orbita
+188. vinho tinto quinta do monte xisto 2022 douro
+189. vinho tinto quinta do monte xisto 2021 douro
+190. vinho tinto quinta do monte xisto
+191. vinho tinto quinta do monte xisto
+192. vinho tinto quinta do monte doiro touriga nacional 2022 lisboa
+193. vinho tinto quinta do monte doiro tinta roriz 2021 lisboa
+194. vinho tinto quinta do monte doiro tempera 2012 lisboa
+195. vinho tinto quinta do monte doiro reserva late release 2015 lisboa
+196. vinho tinto quinta do monte doiro reserva late release 2011 lisboa
+197. vinho tinto quinta do monte doiro reserva 2022 lisboa
+198. vinho tinto quinta do monte doiro reserva 2021 lisboa
+199. vinho tinto quinta do monte doiro petit verdot 2022 lisboa
+200. vinho tinto quinta do monte doiro petit verdot 2015 lisboa
+201. vinho tinto quinta do monte doiro parcela 24 2020 lisboa
+202. vinho tinto quinta do monte doiro parcela 24 2019 lisboa
+203. vinho tinto quinta do monte doiro exaequo 2015 lisboa
+204. vinho tinto quinta do monte doiro collectors edition lisboa
+205. vinho tinto quinta do monte doiro caixa x6 lisboa
+206. vinho tinto quinta do monte doiro 2020 lisboa
+207. vinho tinto quinta do monte doiro 2019 lisboa
+208. vinho tinto quinta do mondego reserva dop dao 2015
+209. vinho tinto quinta do mondego munda touriga nacional dop dao magnum 1 2016
+210. vinho tinto quinta do mondego munda touriga nacional dop dao 2016
+211. vinho tinto quinta do mondego munda touriga nacional dop dao 2015
+212. vinho tinto quinta do mondego munda touriga nacional dop dao 2015
+213. vinho tinto quinta do mondego munda tinta roriz dop dao 2019
+214. vinho tinto quinta do mondego munda phoenix dop dao 2018
+215. vinho tinto quinta do mondego munda jaen dop dao 2021
+216. vinho tinto quinta do mondego munda alfrocheiro dop dao 2017
+217. vinho tinto quinta do mondego jaen dop dao 2024
+218. vinho tinto quinta do mondego family blend dop dao magnum 1 2022
+219. vinho tinto quinta do mondego family blend dop dao 2022
+220. vinho tinto quinta do gradil tannat 2022 lisboa
+221. vinho tinto quinta do gradil syrah 2022 lisboa
+222. vinho tinto quinta do gradil reserva 2017 regional lisboa
+223. vinho tinto quinta do gradil maria do carmo 2015 lisboa
+224. vinho tinto quinta do gradil alicante bouschet 2019 lisboa
+225. vinho tinto quinta do frances syrah terracos
+226. vinho tinto quinta do fojo 2017 douro
+227. vinho tinto quinta do fojo 2017 douro
+228. vinho tinto quinta do estanho vinhas velhas grande reserva 2019 douro
+229. vinho tinto quinta do estanho superior colheita 2021 douro
+230. vinho tinto quinta do estanho reserva 2020 douro
+231. vinho tinto quinta do espinho touriga nacional grande reserva 2019 douro
+232. vinho tinto quinta do espinho reserva 2018 douro
+233. vinho tinto quinta do espinho grande reserva touriga nacional 2019 douro
+234. vinho tinto quinta do espinho grande reserva 2019 douro
+235. vinho tinto quinta do espinho grande reserva 2019 douro
+236. vinho tinto quinta do encontro preto branco
+237. vinho tinto quinta do encontro 1 2014 bairrada
+238. vinho tinto quinta do cume touriga nacional 2021 douro
+239. vinho tinto quinta do cume selection douro
+240. vinho tinto quinta do cume reserva douro
+241. vinho tinto quinta do cume grande reserva 2014 douro
+242. vinho tinto quinta do crasto vinha maria teresa 2019 douro
+243. vinho tinto quinta do crasto touriga nacional 2021 douro
+244. vinho tinto quinta do crasto tinta roriz 2018 douro
+245. vinho tinto quinta do covao reserva touriga nacional 2019 dao
+246. vinho tinto quinta do covao colheita 2020 dao
+247. vinho tinto quinta do couquinho unius reserva douro
+248. vinho tinto quinta do couquinho touriga nacional reserva 2021 douro
+249. vinho tinto quinta do couquinho reserva 2021 douro
+250. vinho tinto quinta do couquinho colheita 2021 douro
+251. vinho tinto quinta do cotto vinha do dote 2021 douro
+252. vinho tinto quinta do cotto vinha do dote 2021 douro
+253. vinho tinto quinta do cotto vinha do dote
+254. vinho tinto quinta do cotto sousao 2021 douro
+255. vinho tinto quinta do cotto reserva 2022 douro
+256. vinho tinto quinta do cotto grande escolha 2020 douro
+257. vinho tinto quinta do cotto grande escolha 2020 douro
+258. vinho tinto quinta do cotto bastardo 2022 douro
+259. vinho tinto quinta do cotto bastardo 2021 douro
+260. vinho tinto quinta do cotto 2024 douro
+261. vinho tinto quinta do cotto
+262. vinho tinto quinta do correio
+263. vinho tinto quinta do convento reserva 2018 douro
+264. vinho tinto quinta do convento colheita 2019 douro
+265. vinho tinto quinta do cidro touriga nacional
+266. vinho tinto quinta do cidro pinot noir
+267. vinho tinto quinta do cidro marquis
+268. vinho tinto quinta do cerro da nora superior 2015 douro
+269. vinho tinto quinta do cerro da nora reserva magnum 2013 1 douro
+270. vinho tinto quinta do cerro da nora reserva 2013 douro
+271. vinho tinto quinta do cerro da nora grande reserva 2012 douro
+272. vinho tinto quinta do casal branco vinha do tojal 2016
+273. vinho tinto quinta do casal branco touriga nacional 2023
+274. vinho tinto quinta do casal branco terra dos lobos cabernet sauvignon castelao 2024
+275. vinho tinto quinta do casal branco reserva magnum 1 2020
+276. vinho tinto quinta do casal branco reserva doc tejo 2021
+277. vinho tinto quinta do casal branco red blend doc tejo 2020
+278. vinho tinto quinta do casal branco falcoaria magnum 1 2021
+279. vinho tinto quinta do casal branco falcoaria grande reserva magnum 1 2018
+280. vinho tinto quinta do casal branco falcoaria grande reserva doc tejo 2020
+281. vinho tinto quinta do casal branco falcoaria doc tejo 2021
+282. vinho tinto quinta do casal branco
+283. vinho tinto quinta do carvalhao torto touriga nacional jaen 2018 dao
+284. vinho tinto quinta do carvalhao torto reserva touriga nacional tinta roriz 2010 dao
+285. vinho tinto quinta do carvalhao torto jaen alfrocheiro 2010 dao
+286. vinho tinto quinta do carqueijal 2020 douro
+287. vinho tinto quinta do carmo reserva 2017 alentejo
+288. vinho tinto quinta do carmo alentejo
+289. vinho tinto quinta do carmo 2021 alentejo
+290. vinho tinto quinta do carmo 0
+291. vinho tinto quinta do carmo
+292. vinho tinto quinta do cardo vinha do castelo
+293. vinho tinto quinta do cardo superior garrafa magnum 1
+294. vinho tinto quinta do cardo superior 2021 doc beira interior
+295. vinho tinto quinta do cardo superior
+296. vinho tinto quinta do cardo reserva 2022 doc beira interior
+297. vinho tinto quinta do cardo reserva
+298. vinho tinto quinta do cardo grande reserva 2021 beira interior
+299. vinho tinto quinta do cardo grande reserva
+300. vinho tinto quinta do cardo 2021 doc beira interior
+301. vinho tinto quinta do canto garrafeira 1994 bairrada
+302. vinho tinto quinta do cadeado cadeado wines
+303. vinho tinto quinta do cachao douro
+304. vinho tinto quinta do cachao
+305. vinho tinto quinta de ventozelo touriga nacional 2022 doc douro
+306. vinho tinto quinta de ventozelo touriga franca 2021 douro
+307. vinho tinto quinta de ventozelo tinta roriz 2021 douro
+308. vinho tinto quinta de ventozelo tinta amarela 2024 douro
+309. vinho tinto quinta de ventozelo syrah unoaked 2024 douro
+310. vinho tinto quinta de ventozelo syrah oak matured 2022 douro
+311. vinho tinto quinta de ventozelo essencia 2014 douro
+312. vinho tinto quinta de ventozelo blend 2023 douro
+313. vinho tinto quinta de ventozelo blend 2022 douro
+314. vinho tinto quinta de valle de passos grande reserva
+315. vinho tinto quinta de tourais miura edicao bowie 2021
+316. vinho tinto quinta de sao sebastiao severa reserva 2017 regional lisboa
+317. vinho tinto quinta de sao sebastiao grande escolha 2015 lisboa
+318. vinho tinto quinta de sao luiz vinhas velhas grande reserva 2018 douro
+319. vinho tinto quinta de santa cristina vinhao 2024 vinhos verdes
+320. vinho tinto quinta de saes reserva estagio prolongado dao
+321. vinho tinto quinta de saes estagio prolongado 2019 dao
+322. vinho tinto quinta de saes 2021 dao
+323. vinho tinto quinta de s jose vinha ruy francisco 2019 douro
+324. vinho tinto quinta de s jose touriga nacional douro
+325. vinho tinto quinta de s jose reserva douro
+326. vinho tinto quinta de s jose reserva douro
+327. vinho tinto quinta de s jose grande reserva 2019 douro
+328. vinho tinto quinta de s jose grande reserva 2019 douro
+329. vinho tinto quinta de s jose douro
+330. vinho tinto quinta de s jose douro
+331. vinho tinto quinta de s francisco 2020 obidos
+332. vinho tinto quinta de s francisco 2019 1 obidos
+333. vinho tinto quinta de s bernardo carlota 2017 douro
+334. vinho tinto quinta de real de baixo
+335. vinho tinto quinta de pancas syrah special selection 2019 lisboa
+336. vinho tinto quinta de pancas reserva lisboa
+337. vinho tinto quinta de pancas reserva 2016 lisboa
+338. vinho tinto quinta de pancas merlot special selection 2016 regional lisboa
+339. vinho tinto quinta de pancas grande reserva 2021 lisboa
+340. vinho tinto quinta de pancas grande reserva 2021 lisboa
+341. vinho tinto quinta de pancas cabernet sauvignon special selection 2019 lisboa
+342. vinho tinto quinta de pancas 2020 regional lisboa
+343. vinho tinto quinta de murcas reserva esporao
+344. vinho tinto quinta de monforte vinhao grande reserva 2021 vinhos verdes
+345. vinho tinto quinta de monforte vinhao 2024 vinhos verdes
+346. vinho tinto quinta de lubazim reserva 2018 douro
+347. vinho tinto quinta de lubazim grande reserva 2016 douro
+348. vinho tinto quinta de lemos touriga nacional 2014 dao
+349. vinho tinto quinta de lemos tinta roriz 2014 dao
+350. vinho tinto quinta de lemos tinta roriz 2014
+351. vinho tinto quinta de lemos pica pica 2014 dao
+352. vinho tinto quinta de lemos na mouche 2019 dao
+353. vinho tinto quinta de lemos lucita 2021 dao
+354. vinho tinto quinta de lemos jaen 2014 dao
+355. vinho tinto quinta de lemos jaen 2014
+356. vinho tinto quinta de lemos dona santana 2016 dao
+357. vinho tinto quinta de lemos dona georgina 2014 dao
+358. vinho tinto quinta de lemos dona georgina 2013 dao
+359. vinho tinto quinta de lemos alfrocheiro 2014 dao
+360. vinho tinto quinta de lemos alfrocheiro 2014
+361. vinho tinto quinta de lagoalva reserva
+362. vinho tinto quinta de lagoalva
+363. vinho tinto quinta de la rosa touriga nacional 2020 douro
+364. vinho tinto quinta de la rosa touriga franca 2020 douro
+365. vinho tinto quinta de la rosa tinto cao 2019 douro
+366. vinho tinto quinta de la rosa reserva douro
+367. vinho tinto quinta de la rosa grande reserva douro
+368. vinho tinto quinta de la rosa douro
+369. vinho tinto quinta de la rosa douro
+370. vinho tinto quinta de la rosa 2020 douro
+371. vinho tinto quinta de la rosa
+372. vinho tinto quinta de la rosa
+373. vinho tinto quinta de foz de arouce vinhas velhas de santa maria 2019 beira atlantico
+374. vinho tinto quinta de foz de arouce 2020 beira interior
+375. vinho tinto quinta de espinho grande reserva
+376. vinho tinto quinta de cidro touriga nacional douro
+377. vinho tinto quinta de cidro touriga nacional cabernet sauvignon douro
+378. vinho tinto quinta de cidro touriga nacional 2021 douro
+379. vinho tinto quinta de cidro pinot noir 2023 douro
+380. vinho tinto quinta de cidro pinot noir 2023 douro
+381. vinho tinto quinta de cidro pinot noir 2017 douro
+382. vinho tinto quinta de cidro pinot noir 2015 douro
+383. vinho tinto quinta de cidro marquis 2008 douro
+384. vinho tinto quinta de carvalhicos reserva 2022
+385. vinho tinto quinta de carapecos vinhao 2024 vinhos verdes
+386. vinho tinto quinta de carapecos sousao 2024 vinhos verdes
+387. vinho tinto quinta de camarate 2017 peninsula de setubal
+388. vinho tinto quinta de camarate 2015 peninsula de setubal
+389. vinho tinto quinta de camarate
+390. vinho tinto quinta de camarate
+391. vinho tinto quinta de camarate
+392. vinho tinto quinta de cabriz pedro ines 2012 dao
+393. vinho tinto quinta de bonsventos peninsula de lisboa
+394. vinho tinto quinta de arcosso vinhas intemporais 2019 trasosmontes
+395. vinho tinto quinta de arcosso tinta amarela 2022 trasosmontes
+396. vinho tinto quinta de arcosso syrah 2021 trasosmontes
+397. vinho tinto quinta de arcosso syrah
+398. vinho tinto quinta de arcosso superior bago a bago 2021 trasosmontes
+399. vinho tinto quinta de arcosso reserva 2021 trasosmontes
+400. vinho tinto quinta de arcosso reserva
+401. vinho tinto quinta de arcosso grande reserva 2021 trasosmontes
+402. vinho tinto quinta de arcosso grande reserva
+403. vinho tinto quinta de arcosso colheita 2019 trasosmontes
+404. vinho tinto quinta de arcosso bastardo 2021 trasosmontes
+405. vinho tinto quinta de arcosso
+406. vinho tinto quinta de adorigo 2021 douro
+407. vinho tinto quinta de adorigo 2019 douro
+408. vinho tinto quinta dazinheira reserva 2022 douro
+409. vinho tinto quinta dazinheira grande reserva 2021 douro
+410. vinho tinto quinta dazinheira grande reserva
+411. vinho tinto quinta dazinheira colheita 2024
+412. vinho tinto quinta dazinheira colheita 2022 douro
+413. vinho tinto quinta dazinheira
+414. vinho tinto quinta das tecedeiras reserva 2021 douro
+415. vinho tinto quinta das setencostas red blend 2019
+416. vinho tinto quinta das setencostas doc 2019 portugues alenquer
+417. vinho tinto quinta das setencostas doc 2019 portugues alenquer
+418. vinho tinto quinta das marias reserva touriga nacional 2020 dao
+419. vinho tinto quinta das marias lote 2019 dao
+420. vinho tinto quinta das marias garrafeira 2015 dao
+421. vinho tinto quinta das marias cuvee tt 2020 dao
+422. vinho tinto quinta das marias alfrocheiro 2019 dao
+423. vinho tinto quinta das corricas tinta amarela 2023
+424. vinho tinto quinta das corricas reserva 2017
+425. vinho tinto quinta das corricas grande reserva 2019
+426. vinho tinto quinta das cerejeiras grande reserva 2019 obidos
+427. vinho tinto quinta das carvalhas reserva
+428. vinho tinto quinta das carvalhas blend douro
+429. vinho tinto quinta das brolhas reserva 2019 douro
+430. vinho tinto quinta das brolhas 2021 douro
+431. vinho tinto quinta daguieira 2017 bairrada
+432. vinho tinto quinta da vicosa jpr
+433. vinho tinto quinta da vicosa 2020 alentejo
+434. vinho tinto quinta da vacaria reserva 2022 douro doc
+435. vinho tinto quinta da vacaria grande reserva edicao feytor 2019 1 douro
+436. vinho tinto quinta da vacaria grande reserva 2019 douro
+437. vinho tinto quinta da tourigacha 2021 douro
+438. vinho tinto quinta da tourigacha 2018
+439. vinho tinto quinta da tor touriga nacional reserva
+440. vinho tinto quinta da tor cabernet sauvignon
+441. vinho tinto quinta da tor aragonez
+442. vinho tinto quinta da soalheira 2020 douro
+443. vinho tinto quinta da roseira magnum 2013 1 douro dop
+444. vinho tinto quinta da roseira magnum 2011 1 douro dop
+445. vinho tinto quinta da roseira 2015 douro dop
+446. vinho tinto quinta da romaneira tinto cao
+447. vinho tinto quinta da romaneira reserva 2018 douro
+448. vinho tinto quinta da romaneira petit verdot mirante 2019 douro
+449. vinho tinto quinta da romaneira malhadal syrah 2019 douro
+450. vinho tinto quinta da romaneira dona clara 2021 douro
+451. vinho tinto quinta da romaneira doc douro tinto
+452. vinho tinto quinta da romaneira apontador syrah 2023 douro
+453. vinho tinto quinta da rede vinha da seara 2019 douro
+454. vinho tinto quinta da rede reserva 2018 douro
+455. vinho tinto quinta da rede grande reserva 2016 douro
+456. vinho tinto quinta da ramalhosa vv
+457. vinho tinto quinta da ramalhosa touriga nacional
+458. vinho tinto quinta da ramalhosa palhete
+459. vinho tinto quinta da ramalhosa field blend
+460. vinho tinto quinta da ramalhosa alfrocheiro e touriga nacional
+461. vinho tinto quinta da pellada pinot noir 2016 dao
+462. vinho tinto quinta da pellada pape 2020 dao
+463. vinho tinto quinta da pellada jaen dao
+464. vinho tinto quinta da pellada jaen 2014 dao
+465. vinho tinto quinta da pellada casa 2019 dao
+466. vinho tinto quinta da pellada carrocel 2021 dao
+467. vinho tinto quinta da pellada alto 2019 dao
+468. vinho tinto quinta da pellada 49 2013 dao
+469. vinho tinto quinta da pellada 2014 dao
+470. vinho tinto quinta da pedra escrita reserva
+471. vinho tinto quinta da pedra escrita grande reserva
+472. vinho tinto quinta da pedra escrita biologico douro
+473. vinho tinto quinta da pacheca reserva vinhas velhas douro
+474. vinho tinto quinta da pacheca reserva doc
+475. vinho tinto quinta da pacheca grande reserva touriga nacional 2022 douro
+476. vinho tinto quinta da pacheca cais da ribeira
+477. vinho tinto quinta da mimosa 2023 peninsula de setubal
+478. vinho tinto quinta da mimosa
+479. vinho tinto quinta da manoella vv 2022 douro
+480. vinho tinto quinta da manoella vv 2020 douro
+481. vinho tinto quinta da leda gran reserva red blend
+482. vinho tinto quinta da leda 2018
+483. vinho tinto quinta da lapa pinot noir reserva 2020 tejo
+484. vinho tinto quinta da lapa malbec reserva 2020 tejo
+485. vinho tinto quinta da lapa homenagem sta teresa davila reserva 2018 tejo
+486. vinho tinto quinta da lapa homenagem a sta teresa de avila 2015 tejo
+487. vinho tinto quinta da lapa clarete 2020 tejo
+488. vinho tinto quinta da lapa cabernet sauvignon reserva 2018 tejo
+489. vinho tinto quinta da lagoalva grande reserva syrah 2020 tejo
+490. vinho tinto quinta da lagoalva grande reserva alfrocheiro 2021 tejo
+491. vinho tinto quinta da lagoalva dona isabel juliana grande reserva 2021 tejo
+492. vinho tinto quinta da lagoa velha singular bairrada
+493. vinho tinto quinta da lagoa velha singular 2017 bairrada
+494. vinho tinto quinta da laboeira garrafeira magnum magnum 1l
+495. vinho tinto quinta da giesta reserva 2019 doc dao
+496. vinho tinto quinta da giesta grande reserva 2016 doc dao
+497. vinho tinto quinta da giesta 2023 dao
+498. vinho tinto quinta da garrida reserva 2016 dao
+499. vinho tinto quinta da gaivosa vinha de lordelo 2022 douro
+500. vinho tinto quinta da gaivosa vinha de lordelo 2016 douro
+501. vinho tinto quinta da gaivosa vinha de lordelo
+502. vinho tinto quinta da gaivosa special limited reedition 2015 douro
+503. vinho tinto quinta da gaivosa primeiros anos
+504. vinho tinto quinta da gaivosa alves de sousa
+505. vinho tinto quinta da gaivosa 2022 douro
+506. vinho tinto quinta da gaivosa 2022 douro
+507. vinho tinto quinta da gaivosa 2021 garrafa magnum 1
+508. vinho tinto quinta da gaivosa 2020 garrafa magnum 1
+509. vinho tinto quinta da gaivosa 2019
+510. vinho tinto quinta da gaivosa 2019
+511. vinho tinto quinta da gaivosa 2015 garrafa magnum 1
+512. vinho tinto quinta da gaivosa
+513. vinho tinto quinta da foz reserva vinhas velhas 2019 douro
+514. vinho tinto quinta da foz grande reserva vinhas velhas 2018 douro
+515. vinho tinto quinta da foz 2019 douro
+516. vinho tinto quinta da foz 1872 2017 douro
+517. vinho tinto quinta da fonte souto 2020 alentejo
+518. vinho tinto quinta da ferradosa 2020 douro
+519. vinho tinto quinta da ferradosa 2018 douro
+520. vinho tinto quinta da fata touriga nacional 2017 dao
+521. vinho tinto quinta da fata reserva 2020 dao
+522. vinho tinto quinta da fata conde de vilar seco grande reserva 2015 dao
+523. vinho tinto quinta da fata alfrocheiro 2022 dao
+524. vinho tinto quinta da fata 2023 dao
+525. vinho tinto quinta da falorca traditional blend 2017 dao
+526. vinho tinto quinta da falorca touriga nacional 2012 dao
+527. vinho tinto quinta da falorca tnac 2016 dao
+528. vinho tinto quinta da falorca reserva 2014 dao
+529. vinho tinto quinta da falorca noblesse oblige 2015 dao
+530. vinho tinto quinta da falorca garrafeira 2017 dao
+531. vinho tinto quinta da falorca colheita selecionada 2016 dao
+532. vinho tinto quinta da espiga
+533. vinho tinto quinta da espiga
+534. vinho tinto quinta da espiga
+535. vinho tinto quinta da espiga
+536. vinho tinto quinta da esperanca reserva touriga nacional touriga franca
+537. vinho tinto quinta da esperanca reserva regional alentejano 2019
+538. vinho tinto quinta da esperanca grand
+539. vinho tinto quinta da esperanca gran reserva red blend
+540. vinho tinto quinta da escusa syrah 2020 tejo
+541. vinho tinto quinta da escusa reserva 2016 tejo
+542. vinho tinto quinta da devesa reserva vinhas velhas 2017 douro
+543. vinho tinto quinta da devesa reserva douro
+544. vinho tinto quinta da devesa douro
+545. vinho tinto quinta da curia clefs dor 2017 bairrada
+546. vinho tinto quinta da curia clefs dor 2014 bairrada
+547. vinho tinto quinta da cuca touriga nacional 2016 douro
+548. vinho tinto quinta da cuca 2014 douro
+549. vinho tinto quinta da costa do pinhao peladosa 2022 douro
+550. vinho tinto quinta da costa do pinhao gradual douro
+551. vinho tinto quinta da costa do pinhao 2014 douro
+552. vinho tinto quinta da corte princesa reserva 2020
+553. vinho tinto quinta da caldeirinha 2017
+554. vinho tinto quinta da boavista vinha do ujo douro
+555. vinho tinto quinta da boavista vinha do ujo douro
+556. vinho tinto quinta da boavista vinha do ujo douro
+557. vinho tinto quinta da boavista vinha do ujo 2021 douro
+558. vinho tinto quinta da boavista vinha do ujo 2014 douro
+559. vinho tinto quinta da boavista vinha do ujo 2013 douro
+560. vinho tinto quinta da boavista vinha do oratorio douro
+561. vinho tinto quinta da boavista vinha do oratorio douro
+562. vinho tinto quinta da boavista vinha do oratorio douro
+563. vinho tinto quinta da boavista vinha do oratorio 2021 douro
+564. vinho tinto quinta da boavista vinha do oratorio 2016 douro
+565. vinho tinto quinta da boavista vinha do oratorio 2015 douro
+566. vinho tinto quinta da boavista vinha do oratorio 2014 douro
+567. vinho tinto quinta da boavista vinha do oratorio 2014 douro
+568. vinho tinto quinta da boavista vinha do oratorio 2013 douro
+569. vinho tinto quinta da boavista vinha do oratorio 2013 douro
+570. vinho tinto quinta da boavista vinha do oratorio 2013 douro
+571. vinho tinto quinta da boavista vinha do oratorio
+572. vinho tinto quinta da boavista touriga nacional
+573. vinho tinto quinta da boavista touriga nacional
+574. vinho tinto quinta da boavista touriga franca
+575. vinho tinto quinta da boavista reserva 2014 douro
+576. vinho tinto quinta da boavista reserva 2014 douro
+577. vinho tinto quinta da boavista reserva 2014 douro
+578. vinho tinto quinta da boavista reserva 2013 douro
+579. vinho tinto quinta da boavista reserva 2013 douro
+580. vinho tinto quinta da boavista collectors edition 2015 douro
+581. vinho tinto quinta da boavista collectors edition 2014 douro
+582. vinho tinto quinta da boavista collectors edition 2013 douro
+583. vinho tinto quinta da boavista boavista reserva 2015 douro
+584. vinho tinto quinta da boavista
+585. vinho tinto quinta da boa esperanca touriga nacional 2022 lisboa
+586. vinho tinto quinta da boa esperanca syrah 2019 lisboa
+587. vinho tinto quinta da boa esperanca reserva 2017 lisboa
+588. vinho tinto quinta da boa esperanca grande reserva 2015 lisboa
+589. vinho tinto quinta da boa esperanca castelao 2020 lisboa
+590. vinho tinto quinta da boa esperanca alicante bouschet 2018 lisboa
+591. vinho tinto quinta da boa esperanca 2021 lisboa
+592. vinho tinto quinta da biaia reserva vegan 2017 beira interior
+593. vinho tinto quinta da biaia reserva
+594. vinho tinto quinta da biaia 750 2019 beira interior
+595. vinho tinto quinta da bageiras pai abel
+596. vinho tinto quinta da bageiras avo fausto
+597. vinho tinto quinta da bacalhoa magnum 1
+598. vinho tinto quinta da bacalhoa centenarium 2015 peninsula de setubal
+599. vinho tinto quinta da bacalhoa centenarium 2015 garrafa numerada9979no pix9979no boleto9977em ate3xdesem juroscomprar
+600. vinho tinto quinta da bacalhoa cabernet sauvignon 2018
+601. vinho tinto quinta da bacalhoa 2022 peninsula de setubal
+602. vinho tinto quinta da bacalhoa 2021
+603. vinho tinto quinta da alorna castelao 2020
+604. vinho tinto quinta da alorna 1723 grande reserva 2019 tejo
+605. vinho tinto quinta casa amarela reserva 2022 douro
+606. vinho tinto quinta casa amarela grande reserva elisio 2016 douro
+607. vinho tinto quinta brejinho colheita 2022
+608. vinho tinto quinta boa esperanca touriga nacional
+609. vinho tinto quinta boa esperanca syrah
+610. vinho tinto quinta boa esperanca reserva
+611. vinho tinto quinta boa esperanca grande reserva
+612. vinho tinto quinta boa esperanca garrafa magnum 1
+613. vinho tinto quinta boa esperanca castelao
+614. vinho tinto quinta boa esperanca alicante bouschet
+615. vinho tinto quinta boa esperanca
+616. vinho tinto quinta alta zuccaro grande reserva 2019 doc douro
+617. vinho tinto quinta alta qalt unique 2020 doc douro
+618. vinho tinto quinta alta qalt tinta barroca 2022 douro doc
+619. vinho tinto quinta alta qalt reserva 2022 doc douro
+620. vinho tinto quinta alta qalt reserva 2020 doc douro
+621. vinho tinto quinde criolla organico leve e frutado
+622. vinho tinto quinde criolla organico
+623. vinho tinto quinde cabernet franc organico
+624. vinho tinto quilometro 2019
+625. vinho tinto queulat gran reserva pinot noir kit 4 garrafas
+626. vinho tinto queulat gran reserva cabernet sauvignon 3 und
+627. vinho tinto querencias pinot noir
+628. vinho tinto quebrada chalinga reta
+629. vinho tinto quebracabecas reserva
+630. vinho tinto quebracabecas 17
+631. vinho tinto quebracabecas
+632. vinho tinto que beleza 2021 alentejo
+633. vinho tinto quatro ventos superior 2020 douro
+634. vinho tinto quatro ventos bacalhoa
+635. vinho tinto quatro ventos 2023 douro
+636. vinho tinto quatro castas premium almaunica
+637. vinho tinto quarantacinque montepulciano dabruzzo doc 2019
+638. vinho tinto quanta terra phenomena rose
+639. vinho tinto quanta terra manifesto 2018 douro
+640. vinho tinto quanta terra manifesto 2018 douro
+641. vinho tinto quanta terra iris vhilstudio garrafa magnum
+642. vinho tinto quanta terra inteiro 2013 douro
+643. vinho tinto quanta terra grande reserva garrafa magnum
+644. vinho tinto quanta terra grande reserva garrafa magnum
+645. vinho tinto quanta terra grande reserva 2022 douro
+646. vinho tinto quanta terra grande reserva 2021 douro
+647. vinho tinto quanta terra grande reserva 2021
+648. vinho tinto quanta terra grande reserva 2021
+649. vinho tinto quanta terra grande reserva
+650. vinho tinto quanta terra cota 600
+651. vinho tinto qta vale d maria vinha do rio douro
+652. vinho tinto qta vale d maria vinha da francisca douro
+653. vinho tinto qta das carvalhas vinhas velhas
+654. vinho tinto qp touriga nacional
+655. vinho tinto qp tannat
+656. vinho tinto qp colheita selecionada
+657. vinho tinto qp aragonez
+658. vinho tinto qdoe reserva preto branco
+659. vinho tinto qalt quinta alta reserva 2022 douro
+660. vinho tinto putos red blend 2021
+661. vinho tinto putos alentejo doc
+662. vinho tinto puro talha jose de sousa
+663. vinho tinto puro quinta da touriga douro
+664. vinho tinto purgatori torres costers del segre
+665. vinho tinto pure altitude pinot noir
+666. vinho tinto purcari saperavi
+667. vinho tinto pura textura dao
+668. vinho tinto punto limite patagonia reserva malbec
+669. vinho tinto punto limite patagonia gran reserva malbec
+670. vinho tinto punto limite gran reserva malbec
+671. vinho tinto punto final malbec reserva meia
+672. vinho tinto punto final gran reserva malbec
+673. vinho tinto punti ferrer conforme cabernet sauvignon
+674. vinho tinto punctum 99 rosas tempranillo cabernet sauvignon
+675. vinho tinto punctum 99 rosas edicao especial e limitada
+676. vinho tinto pumonte corsecalvi rouge 2021
+677. vinho tinto pulo do lobo selecao
+678. vinho tinto pulenta estate la flor malbec 2022
+679. vinho tinto pujanza norte
+680. vinho tinto puglia red blend
+681. vinho tinto puglia igt tre forte
+682. vinho tinto pt flor de penalva dao doc
+683. vinho tinto psi 2022 ribera del douro espanha
+684. vinho tinto prunotto bussia barolo 2019 piemonte
+685. vinho tinto prunotto barbaresco bric turot docg
+686. vinho tinto prunotto barbaresco 2020 piemonte
+687. vinho tinto prova cega douro
+688. vinho tinto protos roble 2021 ribera del duero espanha
+689. vinho tinto protos roble
+690. vinho tinto protos roble
+691. vinho tinto protos reserva
+692. vinho tinto protos reserva
+693. vinho tinto protos p tempranillo barrel aged
+694. vinho tinto protos gran reserva
+695. vinho tinto protos crianza
+696. vinho tinto protos crianza
+697. vinho tinto protos 27
+698. vinho tinto protos 27
+699. vinho tinto promesa merlot
+700. vinho tinto promesa cabernet sauvignon
+701. vinho tinto proibido vinha velha do pombal 2017 douro
+702. vinho tinto proibido grande reserva 2022 douro doc
+703. vinho tinto proibido grande reserva 2022 douro
+704. vinho tinto prodigal grenache kilikanoon
+705. vinho tinto procura vinhas velhas 2017 regional alentejano
+706. vinho tinto procura susana esteban 2017 alentejo
+707. vinho tinto private selection esporao
+708. vinho tinto private selection cebernet sauvignon robert mondavi
+709. vinho tinto private reserve gran bosque
+710. vinho tinto private colllection casal da coelheira blend
+711. vinho tinto private colletion kompassus
+712. vinho tinto private collection casal da coelheira alicante
+713. vinho tinto privado reserva tempranillo jorge rubio
+714. vinho tinto principe corsini zac igt toscana
+715. vinho tinto principe corsini le corti chianti classico docg
+716. vinho tinto principe corsini dom tommaso chianti classico docg
+717. vinho tinto principe corsini camporsino chianti docg
+718. vinho tinto principal grande reserva 2013 bairrada
+719. vinho tinto principal grande reserva 2012 bairrada
+720. vinho tinto principal grande reserva 2012
+721. vinho tinto principal grande reserva 2012
+722. vinho tinto primo primitivo puglia igt
+723. vinho tinto primitivo urceus cantolio
+724. vinho tinto primitivo puglia igt gabbia doro 2019
+725. vinho tinto primitivo puglia badia al colle
+726. vinho tinto primitivo puglia badia al colle
+727. vinho tinto primitivo di manduria duca levante doc
+728. vinho tinto primitivo di manduria dop vigne vecchie
+729. vinho tinto primitivo di manduria doc 4 conti
+730. vinho tinto primitivo di manduria dal 1947 italiano 6u cx mad
+731. vinho tinto primitivo di manduria conte di campiano doc
+732. vinho tinto primitivo di manduria cantore di castelforte doc 2019
+733. vinho tinto primitivo di manduria bacconi doc
+734. vinho tinto primitivo di manduria bacconi doc
+735. vinho tinto primitivo di manduria 1400 vulcanici doc
+736. vinho tinto primitivo del salento cantore di castelforte igt 2024
+737. vinho tinto primitivo de manduria sessantanni san marzano
+738. vinho tinto primitivo 2019 vista dos platanos vinicola foppa ambrosicom pixcom pix6x desem juros
+739. vinho tinto primitivo 2019 vista dos platanos vinicola foppa ambrosicom pixcom pix6x desem juros
+740. vinho tinto primitivo 2019 vista dos platanos vinicola foppa ambrosi com pix com pix 6 x de sem juros
+741. vinho tinto primitivo 2019 vista dos platanos vinicola foppa ambrosi
+742. vinho tinto primeur de trois peninsula de setubal
+743. vinho tinto primera reserva urraca
+744. vinho tinto primeiros anos alves sousa
+745. vinho tinto primasole primitivo italiano cielo
+746. vinho tinto primado 2021 dao
+747. vinho tinto pretexto palhete 2021 dao
+748. vinho tinto pretexto dao
+749. vinho tinto pretexto 2020 dao
+750. vinho tinto preta cuvee homenagem 2021
+751. vinho tinto preta cuvee grande reserva 2019
+752. vinho tinto prestige sangiovese uggiano
+753. vinho tinto prestige de calvet bordeaux
+754. vinho tinto prestige chianti uggiano
+755. vinho tinto premius la reserve
+756. vinho tinto premium seco marques de estremoz aragonez 2019 varietal
+757. vinho tinto premium pequenos defeitos grande desconto
+758. vinho tinto premium parte 2 merlot almaunica
+759. vinho tinto premium judas blend magnum 1
+760. vinho tinto premium fincas petit vega 28 meses
+761. vinho tinto premier rendezvous pinot noir
+762. vinho tinto premier rendezvous merlotcabernet
+763. vinho tinto premier rendezvous merlot cabernet 2017
+764. vinho tinto premier rendez vous merlot cabernet sauvignoncomprar
+765. vinho tinto premiado uvva diama vinicola uvva mucuge chapada diamantina bahia safra 2021
+766. vinho tinto premiado uvva cordel vinicola uvva mucuge chapada diamantina bahia
+767. vinho tinto premiado coroa de rei porto tawny
+768. vinho tinto premiado coroa de rei porto ruby
+769. vinho tinto premiado coroa de rei porto 10 anos
+770. vinho tinto prelude a grandpuy ducasse pauillac
+771. vinho tinto prelit damijan
+772. vinho tinto prelit
+773. vinho tinto predappio mga 2018
+774. vinho tinto preco
+775. vinho tinto precision wine xanthos reserva zinfandel
+776. vinho tinto precision octopoda cabernet sauvignon 2021
+777. vinho tinto praeteritum
+778. vinho tinto pousio selection 2022 alentejo
+779. vinho tinto pousio reserva 2022 alentejo
+780. vinho tinto pousio alicante bouschet 2020 regional alentejano
+781. vinho tinto poulsard subtil jerome arnoux
+782. vinho tinto poulet pere fils pommard
+783. vinho tinto poulet pere fils cote de nuits villages
+784. vinho tinto poulet pere fils cote de beaune villages
+785. vinho tinto pouca terra
+786. vinho tinto pouca roupa red blend
+787. vinho tinto pouca roupa 2024 alentejo
+788. vinho tinto pouca roupa
+789. vinho tinto pouca roupa
+790. vinho tinto potter tannat guatambu
+791. vinho tinto potenza tannat 2021 garbo
+792. vinho tinto postales roble malbec 2023
+793. vinho tinto postales cabernet sauvignon 2022
+794. vinho tinto post scriptum de chryseia douro
+795. vinho tinto post scriptum de chryseia 2023 douro
+796. vinho tinto portugues zero alcool 0riginal syrah
+797. vinho tinto portugues zambujeiro
+798. vinho tinto portugues zambujeiro
+799. vinho tinto portugues vitoria regia importado original
+800. vinho tinto portugues vinhas velhas encosta do sobral
+801. vinho tinto portugues vinhas velhas encosta do sobral
+802. vinho tinto portugues vinhas do coa
+803. vinho tinto portugues vinha rosa setubal selection
+804. vinho tinto portugues vinha rosa setubal selection
+805. vinho tinto portugues vinha do torrao casa ermelinda freitas
+806. vinho tinto portugues vinha do torrao casa ermelinda freitas
+807. vinho tinto portugues vinha da valentina reserva signature casa ermelinda freitas
+808. vinho tinto portugues vila portugal alentejano
+809. vinho tinto portugues vieira campos regional
+810. vinho tinto portugues vicente faria lolita
+811. vinho tinto portugues vella velha
+812. vinho tinto portugues velha arvore importado original
+813. vinho tinto portugues vallado douro quinta do vallado
+814. vinho tinto portugues vallado douro doc
+815. vinho tinto portugues vallado douro
+816. vinho tinto portugues valflor
+817. vinho tinto portugues vale dos barris
+818. vinho tinto portugues vale do corgo douro
+819. vinho tinto portugues vale de moncorvo
+820. vinho tinto portugues urbanista
+821. vinho tinto portugues trinca bolotas herdade do peso
+822. vinho tinto portugues trilho da raposa dao
+823. vinho tinto portugues touriga nacional sao miguel do sul
+824. vinho tinto portugues titular
+825. vinho tinto portugues terra do zambujeiro 2019
+826. vinho tinto portugues terra do zambujeiro 2019
+827. vinho tinto portugues terra del rei carmim
+828. vinho tinto portugues terra de xisto reserva
+829. vinho tinto portugues terra dao by osvaldo reserva
+830. vinho tinto portugues terra dao by osv colheita
+831. vinho tinto portugues tawny porto royal oporto
+832. vinho tinto portugues tawny porto essentia
+833. vinho tinto portugues tapada do chaves reserva
+834. vinho tinto portugues tamara falua
+835. vinho tinto portugues sold out
+836. vinho tinto portugues sold out
+837. vinho tinto portugues select rapariga da quinta
+838. vinho tinto portugues selecao cantanhede beira
+839. vinho tinto portugues santos e seixo encosta do sobral reserva
+840. vinho tinto portugues sandeman ruby gf
+841. vinho tinto portugues salino winemakers selection
+842. vinho tinto portugues salino reserva
+843. vinho tinto portugues ruelas garrafas
+844. vinho tinto portugues ruby porto essentia
+845. vinho tinto portugues romariz doc douro
+846. vinho tinto portugues rola touriga nacional
+847. vinho tinto portugues rola douro
+848. vinho tinto portugues rimor blend
+849. vinho tinto portugues ribeiro santo reserva
+850. vinho tinto portugues ribeiro santo
+851. vinho tinto portugues reserva tawny porto croft
+852. vinho tinto portugues reserva tawny croft
+853. vinho tinto portugues reserva quinta do espirito santo quinta da lixa
+854. vinho tinto portugues reserva doc douro porca de murca
+855. vinho tinto portugues reserva asterisco jose maria da fonseca
+856. vinho tinto portugues reguengos garrafeira dos socios doc
+857. vinho tinto portugues reguengos doc carmim
+858. vinho tinto portugues reguengos doc
+859. vinho tinto portugues reguengos carmim alentejo doc
+860. vinho tinto portugues regional alentejano merino
+861. vinho tinto portugues regia colheita doc
+862. vinho tinto portugues red blend periquita
+863. vinho tinto portugues ravasqueira touriga franca
+864. vinho tinto portugues rare
+865. vinho tinto portugues rapariga da quinta select
+866. vinho tinto portugues rapariga da quinta select
+867. vinho tinto portugues rapariga da quinta colheita
+868. vinho tinto portugues rapariga da quinta colheita
+869. vinho tinto portugues ramilo nativas
+870. vinho tinto portugues quinta sao sebastiao touriga nacional
+871. vinho tinto portugues quinta sao sebastiao syrah
+872. vinho tinto portugues quinta dos tavoras reserva costa boal
+873. vinho tinto portugues quinta dos castelares reserva douro doc blend tradicional envelhecido em carvalho
+874. vinho tinto portugues quinta do valdoeiro syrah
+875. vinho tinto portugues quinta do noval touriga nacional
+876. vinho tinto portugues quinta do noval reserva doc
+877. vinho tinto portugues quinta do espirito santo
+878. vinho tinto portugues quinta do casal branco red blend
+879. vinho tinto portugues quinta do casal branco falcoaria
+880. vinho tinto portugues quinta do carmo
+881. vinho tinto portugues quinta de cottas douro
+882. vinho tinto portugues quinta de bonsventos lisboa casa santos lima
+883. vinho tinto portugues quinta de bonsventos lisboa casa santos lima
+884. vinho tinto portugues quinta de bons ventos touriga nacional
+885. vinho tinto portugues quinta de bons ventos regional de lisboa bag in box
+886. vinho tinto portugues quinta de bons ventos
+887. vinho tinto portugues quinta de bons ventos
+888. vinho tinto portugues quinta de bons ventos
+889. vinho tinto portugues quinta das setencostas
+890. vinho tinto portugues quinta das carvalhas reserva douro
+891. vinho tinto portugues quinta das carvalhas red blend
+892. vinho tinto portugues quinta das carvalhas douro
+893. vinho tinto portugues quinta das carvalhas blend douro
+894. vinho tinto portugues quinta da roeda vintage croft
+895. vinho tinto portugues quinta da laceira douro doc seco
+896. vinho tinto portugues quinta da espiga
+897. vinho tinto portugues quinta bons ventos meia diversos
+898. vinho tinto portugues quatro ventos douro
+899. vinho tinto portugues prunus doc dao tinto
+900. vinho tinto portugues private esporao
+901. vinho tinto portugues premium vinha da valentina casa ermelinda freitas
+902. vinho tinto portugues premium vinha da valentina casa ermelinda freitas
+903. vinho tinto portugues pouca roupa em de joao portugal ramos
+904. vinho tinto portugues pouca roupa
+905. vinho tinto portugues porto terras de penaguiao tawny
+906. vinho tinto portugues porto sao pedro das aguias 10
+907. vinho tinto portugues porto messias tawny
+908. vinho tinto portugues porto messias ruby
+909. vinho tinto portugues porto fonseca tawny
+910. vinho tinto portugues porto ferreira tawny
+911. vinho tinto portugues porto ferreira ruby
+912. vinho tinto portugues porto ceremony touriga nacional garrafa
+913. vinho tinto portugues portas do sol
+914. vinho tinto portugues portas do sol
+915. vinho tinto portugues portao 9
+916. vinho tinto portugues portal douro
+917. vinho tinto portugues portada lote dfj
+918. vinho tinto portugues portada lote dfj
+919. vinho tinto portugues porta da ravessa grande escolha
+920. vinho tinto portugues porta 6 bag in box lisboa vidigal
+921. vinho tinto portugues porta 6 bag in box 3 und
+922. vinho tinto portugues porta 6 bag in box
+923. vinho tinto portugues porta 6
+924. vinho tinto portugues porta 6
+925. vinho tinto portugues poento reserva
+926. vinho tinto portugues poento reserva
+927. vinho tinto portugues poento alicante bouschet
+928. vinho tinto portugues poento alicante bouschet
+929. vinho tinto portugues poento
+930. vinho tinto portugues pocas junior simbolo doc
+931. vinho tinto portugues pocas junior reserva doc douro
+932. vinho tinto portugues pocas junior reserva doc douro
+933. vinho tinto portugues pocas junior coroa douro
+934. vinho tinto portugues pocas junior coroa douro
+935. vinho tinto portugues pocas fora da serie vinho da roga
+936. vinho tinto portugues pitch reservado
+937. vinho tinto portugues pitch algarve
+938. vinho tinto portugues pimenta preta
+939. vinho tinto portugues picapau
+940. vinho tinto portugues picapau
+941. vinho tinto portugues periquita reserva
+942. vinho tinto portugues perereca do monte
+943. vinho tinto portugues perereca do monte
+944. vinho tinto portugues peramanca
+945. vinho tinto portugues penina tejo
+946. vinho tinto portugues penina
+947. vinho tinto portugues pedra da se
+948. vinho tinto portugues pedra cancela selecao do enologo dao doc
+949. vinho tinto portugues pe tinto esporao 2020
+950. vinho tinto portugues pe tinto
+951. vinho tinto portugues pe tinto
+952. vinho tinto portugues parcelas dao doc
+953. vinho tinto portugues parcelas dao
+954. vinho tinto portugues parcela original signature
+955. vinho tinto portugues parcela original
+956. vinho tinto portugues parcela de pias
+957. vinho tinto portugues papa figos douro
+958. vinho tinto portugues papa figos
+959. vinho tinto portugues paco de sao vicente tejo
+960. vinho tinto portugues pacheca reserva doc
+961. vinho tinto portugues pacheca doc douro
+962. vinho tinto portugues ourico
+963. vinho tinto portugues original periquita jose maria da fonseca
+964. vinho tinto portugues original periquita jose maria da fonseca
+965. vinho tinto portugues opta reserva
+966. vinho tinto portugues opta dao doc
+967. vinho tinto portugues opta dao doc
+968. vinho tinto portugues opta bairrada
+969. vinho tinto portugues opta bairrada
+970. vinho tinto portugues olaria bag in box carmim
+971. vinho tinto portugues olaria bag in box carmim
+972. vinho tinto portugues nbnc
+973. vinho tinto portugues murcas reserva corte
+974. vinho tinto portugues murcas reserva corte
+975. vinho tinto portugues mouchao
+976. vinho tinto portugues morgado de silgueiros
+977. vinho tinto portugues monte velho esporao
+978. vinho tinto portugues monte velho aragonez trincadeira touriga nacional syrah herdade do esporao
+979. vinho tinto portugues monte velho
+980. vinho tinto portugues monte do zambujeiro
+981. vinho tinto portugues monte do zambujeiro
+982. vinho tinto portugues monte do pintor
+983. vinho tinto portugues monte de pinheiros cartuxa
+984. vinho tinto portugues monte de pinheiros
+985. vinho tinto portugues monte de estremoz reserva
+986. vinho tinto portugues monte das anforas bacalhoa
+987. vinho tinto portugues monte da ravasqueira vinhas das romas
+988. vinho tinto portugues monte da ravasqueira reserva da familia tinto
+989. vinho tinto portugues monte da ravasqueira reserva
+990. vinho tinto portugues monte da ravasqueira reserva
+991. vinho tinto portugues monte da ravasqueira premium
+992. vinho tinto portugues monte da ravasqueira classico
+993. vinho tinto portugues monte cacada syrah
+994. vinho tinto portugues monte cacada cabernet sauvignon
+995. vinho tinto portugues monte cacada alicante bouschet
+996. vinho tinto portugues monte cacada
+997. vinho tinto portugues montaria premium
+998. vinho tinto portugues monsaraz alentejo
+999. vinho tinto portugues mjfreitas ermelinda freitas
+1000. vinho tinto portugues messias quinta do cachao douro

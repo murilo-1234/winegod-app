@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. cora montepulciano dabruzzo 2022
+2. cora montepulciano dabruzzo 2022
+3. cora montepulciano dabruzzo 2023
+4. cora montepulciano dabruzzo 2024
+5. cora montepulciano dabruzzo 2024
+6. cora pinot bianco
+7. cora pinot grigio
+8. cora pinot grigio
+9. cora pinot grigio
+10. cora pinot grigio
+11. cora pinot grigio
+12. cora pinot grigio
+13. cora pinot grigio 2024
+14. cora pinot grigio colline pescaresi 2024 italy
+15. corabioare 400g brielko
+16. coracao alcachofra italiana la pastina 400g
+17. coracao alcachofra peruano em conserva la pastina 280 gr
+18. coracao amote 10cm
+19. coracao bandeja rivelli 1kg
+20. coracao bovino congelado 1kg
+21. coracao bovino congelado bandeja 1 unidade 618g
+22. coracao bovino congelado peca
+23. coracao d ouro
+24. coracao da alcatra bovino la hacienda importado congelado
+25. coracao da alcatra bovino pecapedaco 1kg
+26. coracao da alcatra maturatta peca
+27. coracao da alface americana organico rio de una 250g
+28. coracao da colheita vinhas velhas
+29. coracao da paleta angus oba reserve kg
+30. coracao da paleta bovino resfriado sem osso giassi vacuo kg
+31. coracao de alcachofra 280g la pastina
+32. coracao de alcachofra 295g maestra per la pastina
+33. coracao de alcachofra 295g maestra per la pastina
+34. coracao de alcachofra 3040 nor foods 25kg
+35. coracao de alcachofra 400g la pastina
+36. coracao de alcachofra agua e sal la pastina 165 g
+37. coracao de alcachofra com agua e sal la pastina 280g
+38. coracao de alcachofra decarlo 190g
+39. coracao de alcachofra em conserva la pastina 165g
+40. coracao de alcachofra em conserva la pastina lata 190g
+41. coracao de alcachofra gomes da costa 200g
+42. coracao de alcachofra grelhada 280g la pastina
+43. coracao de alcachofra grelhada la pastina 280g
+44. coracao de alcachofra grelhada la pastina 280g
+45. coracao de alcachofra italiana marinada paganini 240g
+46. coracao de alcachofra italiano la pastina 295g
+47. coracao de alcachofra la pastina 280g
+48. coracao de alcachofra la pastina 400g
+49. coracao de alcachofra la pastina maestra 295g
+50. coracao de alcachofra marinada paganini
+51. coracao de alcachofra marinado di salerno 210g
+52. coracao de alcachofra nor foods 290g
+53. coracao de alcachofra pack 2x290g
+54. coracao de alcachofra paganini marinada 240g
+55. coracao de alcachofras marinadas paganini 240g
+56. coracao de alcatra bovina maturatta kg
+57. coracao de alcatra bovino
+58. coracao de alcatra corte doro 12kg
+59. coracao de cru riesling
+60. coracao inamorato
+61. coracao obra prima white
+62. coracao pequeno
+63. coracho anejo
+64. coracho blanco rosa
+65. coracho reposado
+66. coracle 2021
+67. coracoes de alcachofras marinados paganini 240 g
+68. coracoes de amendoa da nossa pastelaria
+69. coracoes de lebkuchen com damasco weiss 150g
+70. coragem chardonnay
+71. coragem chardonnay branco 2021
+72. coragem ig lisboa
+73. coragem regional lisboa tinto
+74. coragem regional lisboa tinto caixa com 6
+75. coragem reserva
+76. coragem reserva 2021
+77. coragem reserva tinto
+78. coragem tinto
+79. coragem touriga nacional
+80. coragem touriga nacional 2021
+81. coragem touriga nacional 2021
+82. coragem touriga nacional tinto
+83. coragem touriga nacional tinto 2020
+84. coragem touriga nacional tinto caixa com 6
+85. coragem vinho branco igp
+86. coragem vinho tinto igp touriga nacional
+87. coragem vinho tinto regional igp
+88. coragem vinho tinto regional reserva igp
+89. coraggio
+90. coraggio
+91. coraggio 2022 podere sassi
+92. coraggio 2022 podere sassi
+93. coraggio 2022 podere sassi
+94. coraggio dolce 1000
+95. coraggio dolce 250
+96. coraggio dolce 500
+97. coraggio espresso 1000
+98. coraggio espresso 250
+99. coraggio espresso 500
+100. corail
+101. corail
+102. corail 2018
+103. corail 2019
+104. corail 2019
+105. corail 2021 chateau de roquefort
+106. corail 2022
+107. corail 2022
+108. corail atlantique
+109. corail blanc
+110. corail cotes de provence chateau de roquefort
+111. corail cotes du jura aoc 2017 chateau darlay
+112. corail oscuro eau de parfum
+113. corail rouge
+114. corail vdf rose
+115. coraje cittanina
+116. coraje cittanina
+117. corajillo duopack
+118. corajito classico caf
+119. coral 2022
+120. coral 2023
+121. coral agave based cocktails variety pack 12pk
+122. coral and white round vase
+123. coral bloom gerbera carnation rose
+124. coral border colored whiteboard with magnets to do list board
+125. coral canastas navidenas 2023
+126. coral cote dazur
+127. coral cruisers variety pack
+128. coral de merlin 2023 garcia de la jara
+129. coral de penascal ethical rose
+130. coral de penascal ethical rose 2022
+131. coral del mar albarino
+132. coral do mar
+133. coral do mar
+134. coral do mar
+135. coral do mar albarino
+136. coral do mar albarino 2024
+137. coral do mar albarino 34
+138. coral do mar albarino rias baixas
+139. coral duero las parvas
+140. coral duero los lastros toro 2018
+141. coral duero rompesedas
+142. coral elegance table flowers
+143. coral glow table flowers
+144. coral grace table flowers
+145. coral hipermercados canastas navidenas 2023
+146. coral long sleeve mid layer
+147. coral microfiber chair back cover
+148. coral orchid double
+149. coral premium rose 2021
+150. coral purple americano
+151. coral reef activity table
+152. coral reef chardonnay semilion
+153. coral reef chardonnay semilion wytrawne 6 butelek
+154. coral reef chardonnay semillion
+155. coral reef chardonnay semillion
+156. coral reef chardonnay semillon
+157. coral reef chardonnaysemillon
+158. coral reef chardonnaysemillon
+159. coral reef pinot grigio
+160. coral reef pinot grigio 2024
+161. coral reef pinot grigio 2024
+162. coral reef shiraz cabernet
+163. coral reef shiraz cabernet 6 butelek
+164. coral reef shiraz cabernet sauvignon
+165. coral reef shiraz cabernet sauvignon
+166. coral reef shirazcabernet sauvignon
+167. coral rosado
+168. coral shimmer embroidered cotton napkins set of 4
+169. coral sparkling cocktail the chilton agave cocktails 12pk
+170. coral sparkling cocktail transfusion
+171. coral sparkling cocktail waters edge cucumber watermelon 6pk
+172. coral still pink
+173. coral terzini
+174. coral tree bond paper 70gsm 20 sheets letter
+175. coral tree bond paper 70gsm 50s
+176. coral tree bond paper 70gsm long 20s
+177. coral tree bond paper 70gsm long 50s
+178. coral tree bond paper 70gsm short 20s
+179. coral tree bond paper 80gsm 20s
+180. coral tree bond paper 80gsm long 50s
+181. coral tree bond paper 80gsm short 50 sheets
+182. coral tree correction tape 6m
+183. coral tree pencil 2b 3s
+184. coral wine apollo ocone
+185. coral wine bacco felice
+186. coral wine dark side ivancic griffin wine 0
+187. coral wine marulli capuccini
+188. coral wine marulli menone
+189. coral wine metiusco rosso
+190. coral wine montaribaldi frere barbera
+191. coral wine montaribaldi ricu
+192. coral wine pietroso brunello
+193. coral wine pinot gris 2010
+194. coral wine rose 2011
+195. coral wine rose ivancic griffin wine 0
+196. coral wine ser filippo
+197. coral wine vila canestrari soave
+198. coral wine vila canestrari valpolicella superiore
+199. coral wine villa canestrari amarone a
+200. coral wine zero ivancic griffin wine 0
+201. coralcone midi cone ml menstrual cup
+202. coralcone mini cone sm menstrual cup
+203. coralcone twoin one combo menstrual cups
+204. corale apassimento syrah
+205. corale apassimento syrah 2022
+206. corale grillo
+207. corale grillo 2022
+208. corale nero davola
+209. corale nero davola 2022
+210. corale syrah
+211. corales de villalba
+212. coralie et damien delecheneau aop touraineamboise blanc 2020
+213. coralie et damien delecheneau aop touraineamboise blanc 2020
+214. coralie et damien delecheneau aop touraineamboise blanc 2020
+215. coralie et damien delecheneau tournage riant rose touraine france 2023
+216. coralie et damien delecheneau trinquames 2022
+217. coralie et damien delecheneau trinquames sauvignon 2024
+218. coralina blue collection by oscar de la renta
+219. coralina by oscar de la renta
+220. coralina spumante
+221. coraline
+222. coraline
+223. coraline cabernet danjou
+224. coralinspired dumbbell rack stand dumbbells not included aframe design weight rack with handle compact spacesaving dumbbell holder for home gym
+225. coralium syrah rosato
+226. coralium syrah rosato 2020
+227. coralli 2023
+228. coralli 2024
+229. corallian classic cuvee nv
+230. corallina stagionata di suino nero
+231. coralline oeildeperdrix aoc
+232. corallo vino rosato frizzante flli vincenzi
+233. corals aquatic mushrooms and flowers on faceted glass ring
+234. corals premium linen collection
+235. coralyn
+236. corambres
+237. corambres seleccion lucendo
+238. corante em po alimenticio amarelo junco 5g
+239. corante em po alimenticio azul junco 5g
+240. corante em po alimenticio preto junco 5g
+241. corante em po alimenticio rosa junco 5g
+242. corante em po alimenticio verde junco 5g
+243. corante em po alimenticio vermelho junco 5g
+244. corantes alimentares vahine 12
+245. coranya
+246. coranya 2015 doq sangenis i vaque porrera priorat spanien
+247. coranya 2016
+248. coranya sangenis i vaque
+249. corap beden 3538
+250. corap beden 4345
+251. coraplar beden 3942
+252. corasco rosso trevenezie igt 2018
+253. corash
+254. corash
+255. corash cantina del rimedio
+256. coratina
+257. coratina premium high polyphenol evoo 966 mgkg bag in box
+258. coratina premium high polyphenol evoo 966 mgkg le tre colonne
+259. coravin
+260. coravin
+261. coravin
+262. coravin
+263. coravin
+264. coravin
+265. coravin
+266. coravin
+267. coravin
+268. coravin 1000
+269. coravin 2
+270. coravin 3
+271. coravin 3
+272. coravin 3
+273. coravin 3
+274. coravin 3 needle assortment kit
+275. coravin 3 sl
+276. coravin 6 capsulas
+277. coravin 6 core
+278. coravin 6 core
+279. coravin 6 negro
+280. coravin 6 plateado
+281. coravin 6pack pure capsules
+282. coravin 6pack pure capsules
+283. coravin a65 capsulas 3 unidades
+284. coravin a65 capsule 2 pack
+285. coravin aerateur
+286. coravin agulha de distribuicao rapida pack de 3
+287. coravin agulha de substituicao rapida
+288. coravin agulha de substituicao standart normal
+289. coravin agulha de substituicao vintage
+290. coravin agulha padrao standard needle
+291. coravin agulha rapida faster pour needle
+292. coravin agulha vintage
+293. coravin aiguille de service rapide
+294. coravin aiguille pour millesimes
+295. coravin aiguille premium
+296. coravin aiguille standard
+297. coravin aireador
+298. coravin aireador
+299. coravin arejador
+300. coravin argon capsule
+301. coravin argon capsule
+302. coravin argon capsule 24 pack
+303. coravin argon capsule 3 pack
+304. coravin argon capsule refills 2pk
+305. coravin argon capsule refills 3pk
+306. coravin argon capsule refills 6pk
+307. coravin argon capsule refills single
+308. coravin argon capsules
+309. coravin argon capsules 24pk
+310. coravin argon capsules 3pk
+311. coravin argon capsules 65 6pk
+312. coravin argon capsules 6pk
+313. coravin argon capsules box of 6 capsules
+314. coravin argon capsules pro 12pk
+315. coravin argon gas canisters threepack
+316. coravin argon gas capsule pack of 6
+317. coravin argon gas capsules
+318. coravin argon gas capsules pack of 6
+319. coravin base
+320. coravin base premium
+321. coravin boite de 24 capsules dargon
+322. coravin c
+323. coravin capsula di gas singola argon pure per sistema mescita coravin
+324. coravin capsulas de argon 65 pack de 3
+325. coravin capsulas de argon 65 pack de 6
+326. coravin capsulas de argon 6pack
+327. coravin capsulas de argon profesional 12pack
+328. coravin capsulas de argon puro 65 6 unidades
+329. coravin capsulas gaspack 6
+330. coravin capsulas pack 3 und
+331. coravin capsulas pure pack 24
+332. coravin capsule 0
+333. coravin capsule 6 in a pack
+334. coravin capsule dargon
+335. coravin capsule pack 6
+336. coravin capsule sparkling co2
+337. coravin capsules
+338. coravin capsules
+339. coravin capsules 1 pack 6 capsules
+340. coravin capsules 2
+341. coravin capsules 2 pack
+342. coravin capsules 2 pack
+343. coravin capsules 24 capsule box
+344. coravin capsules 24 capsule box
+345. coravin capsules 24 capsule box coravin europe bv
+346. coravin capsules 24 stk box argon gas
+347. coravin capsules 24pack patroner
+348. coravin capsules 24pk small
+349. coravin capsules 2pack
+350. coravin capsules 2pack patroner
+351. coravin capsules 3 in a pack
+352. coravin capsules 3 stk
+353. coravin capsules 6 pack
+354. coravin capsules 6pack
+355. coravin capsules 6pack
+356. coravin capsules 6pk
+357. coravin capsules 6pk set
+358. coravin capsules 6st
+359. coravin capsules dargon pure standard
+360. coravin capsules de co2 pure sparkling
+361. coravin capsules for coravin systems
+362. coravin capsules for sparkling wine system co2
+363. coravin capsules pack 6 pcs
+364. coravin capsules pack of 6
+365. coravin capsules pack of 6
+366. coravin capsules single
+367. coravin capsules x24
+368. coravin capsules x3
+369. coravin capsules x3
+370. coravin carga gas
+371. coravin carry case
+372. coravin carry case
+373. coravin carry case
+374. coravin carry case
+375. coravin carry case
+376. coravin carry case
+377. coravin carry case
+378. coravin carry case bretaske
+379. coravin carry case for smartclamps with smart caps
+380. coravin carry case for systems with smart clamps
+381. coravin cas capsulus
+382. coravin coravin model eleven
+383. coravin coravin pivot
+384. coravin coravin pure argon gazpatron szett csendesborokhoz 3 dbos
+385. coravin coravin sparkling
+386. coravin eleven 2020
+387. coravin eller kummefryser del 3
+388. coravin eller kummefryser del 4
+389. coravin erogatore
+390. coravin fast pour needle
+391. coravin fast pour needle
+392. coravin fast pour needle
+393. coravin fast pour needle
+394. coravin fast pour needle
+395. coravin fast pour needle
+396. coravin fast pour needle
+397. coravin faster pour needle
+398. coravin faster pour needle
+399. coravin faster pour needle
+400. coravin faster pour needle x1
+401. coravin housse de voyage
+402. coravin hurtig hlde nal til coravin system
+403. coravin igla fast pour
+404. coravin igla standard
+405. coravin igla vintage
+406. coravin ii na
+407. coravin kapsula
+408. coravin kit dassortiment de 3 aiguilles
+409. coravin kit tres agulhas
+410. coravin large screw caps 6pk set
+411. coravin limited edition timeless six hermitage red wine preservation system
+412. coravin model 2
+413. coravin model 2
+414. coravin model 2
+415. coravin model 2 elite black matte
+416. coravin model 2 elite crveni
+417. coravin model 2 elite light gold
+418. coravin model 2 elite piano black system
+419. coravin model 2 elite red system
+420. coravin model 2 elite roza
+421. coravin model 2 elite silver system
+422. coravin model 2 plus
+423. coravin model 2 plus pack
+424. coravin model 2 plus pack
+425. coravin model 2 system
+426. coravin model 3
+427. coravin model 3
+428. coravin model 3
+429. coravin model 3
+430. coravin model 3 black
+431. coravin model 5
+432. coravin model 6
+433. coravin model 6 black
+434. coravin model 6 burgundy
+435. coravin model 6 limited edition
+436. coravin model 6 piano black
+437. coravin model eight wine system
+438. coravin model eleven collector
+439. coravin model eleven fast pour needle and spout kit
+440. coravin model eleven quick pour needle
+441. coravin model five
+442. coravin model five graphite avec 2 argon caps
+443. coravin model one
+444. coravin model one
+445. coravin model one black
+446. coravin model one blue and white
+447. coravin model one white
+448. coravin model six
+449. coravin model six
+450. coravin model six
+451. coravin model six
+452. coravin model six
+453. coravin model six
+454. coravin model six
+455. coravin model six
+456. coravin model six
+457. coravin model six black
+458. coravin model six black
+459. coravin model six black
+460. coravin model six burgundy
+461. coravin model six burgundy
+462. coravin model six burgundy
+463. coravin model six core silver
+464. coravin model six core silver
+465. coravin model six hermitage red edicao limitada
+466. coravin model six limited edition mica
+467. coravin model six limited edition mica
+468. coravin model six mist
+469. coravin model six mist limited edition
+470. coravin model six piano black
+471. coravin model six piano black
+472. coravin model six piano black
+473. coravin model six plus anthracite premium set
+474. coravin model six plus burgundy
+475. coravin model six plus hermitage red
+476. coravin model six plus silver
+477. coravin model six silver
+478. coravin model six silver
+479. coravin model six silver
+480. coravin model six silver
+481. coravin model six silver sistema de preservacao de vinhos
+482. coravin model sixplus pack
+483. coravin model three
+484. coravin model three
+485. coravin model three
+486. coravin model three
+487. coravin model three
+488. coravin model three
+489. coravin model three
+490. coravin model three 0
+491. coravin model three 2 capsule 1 screw caps
+492. coravin model three base
+493. coravin model three black
+494. coravin model three black
+495. coravin model three black accessories
+496. coravin model three black avec 2 argon caps
+497. coravin model three dobro de capsula
+498. coravin model three grey accessories
+499. coravin model three limited edition deep sea blue accessories
+500. coravin model three professional kit pro reserve kit pt
+501. coravin model three sl
+502. coravin model three sl grey
+503. coravin model three torres salmos 2017
+504. coravin model three value pack
+505. coravin model three wine lover pack
+506. coravin model timeless six burgundy
+507. coravin model timeless six piano black
+508. coravin model timeless six silver
+509. coravin model timeless three
+510. coravin model timeless three
+511. coravin model tree
+512. coravin model two
+513. coravin model two
+514. coravin model two bundle
+515. coravin model two elite plata
+516. coravin model two elite system in rose gold 2 capsule pack
+517. coravin model two elite system in rose gold 2 capsule pack
+518. coravin model two elite system in rose gold 2 capsule pack
+519. coravin model two elite wine preservation system
+520. coravin model two system in black 2 capsule pack
+521. coravin model twoelite pro midnight blue
+522. coravin modelo cinco
+523. coravin modelo tres
+524. coravin modelo tres plus
+525. coravin na
+526. coravin nadelsatz set 3teilig
+527. coravin nalesortiment til coravin system
+528. coravin navojni cep pack 4 mala2 velika
+529. coravin needle agulla
+530. coravin needle fast pour
+531. coravin needle fast pour
+532. coravin needle fast pourer
+533. coravin needle kit
+534. coravin needle kit
+535. coravin needle premium
+536. coravin needle standard
+537. coravin needle standard
+538. coravin needle standard
+539. coravin needle vintage
+540. coravin new standard replacement needle
+541. coravin or chest freezer part 1
+542. coravin pack bouchons a vis 6 larges
+543. coravin pack bouchons a vis 6 standards
+544. coravin para vinos modelo three pro
+545. coravin patroner 6 pack
+546. coravin patroner 6 stk coravin argon gas
+547. coravin pedestal base
+548. coravin pedestal base
+549. coravin pedestal base
+550. coravin piedestal base
+551. coravin piedestal base coravin
+552. coravin pivot
+553. coravin pivot
+554. coravin pivot
+555. coravin pivot
+556. coravin pivot
+557. coravin pivot
+558. coravin pivot
+559. coravin pivot
+560. coravin pivot
+561. coravin pivot
+562. coravin pivot
+563. coravin pivot
+564. coravin pivot
+565. coravin pivot
+566. coravin pivot
+567. coravin pivot
+568. coravin pivot areator
+569. coravin pivot black
+570. coravin pivot black
+571. coravin pivot black
+572. coravin pivot black
+573. coravin pivot black
+574. coravin pivot black
+575. coravin pivot black
+576. coravin pivot black noir
+577. coravin pivot coral
+578. coravin pivot grey
+579. coravin pivot negro
+580. coravin pivot plus
+581. coravin pivot plus
+582. coravin pivot plus
+583. coravin pivot pro device
+584. coravin pivot pro select kit
+585. coravin pivot professional kit
+586. coravin pivot stoppers pack de 6
+587. coravin pivot system
+588. coravin pivot teal
+589. coravin pivot tm
+590. coravin pivot tm premium bundle
+591. coravin pivot vinkonserveringssystem m 8pk gasspatroner
+592. coravin pivot vinkork 6pk
+593. coravin pivot vinlufter
+594. coravin pivot wijnbewaarsysteem
+595. coravin pivot wine by the glass system black
+596. coravin pivot wine by the glass system grey
+597. coravin pivot wine preservation system
+598. coravin pivot wine preservation system
+599. coravin pivot wine preservation system
+600. coravin pivottm
+601. coravin pivottm
+602. coravin pivottm wine preservation system
+603. coravin premium needle
+604. coravin premium needle
+605. coravin premium needle 1 stk
+606. coravin premium needle 1pack
+607. coravin pro argon capsules 12 pack large
+608. coravin pro pure capsule enkelt
+609. coravin pro reserve kit model three pro
+610. coravin pro reserve kit timeless three pro
+611. coravin pro select kit
+612. coravin pure aragon capsules
+613. coravin pure argon capsules
+614. coravin pure argon capsules
+615. coravin pure argon capsules 6 pack
+616. coravin pure argon capsules 6 stuks
+617. coravin pure argon capsules 65g 6 pack
+618. coravin pure argon capsules 6pack
+619. coravin pure argon capsules l six pack na
+620. coravin pure argon capsules single
+621. coravin pure capsulas recargas pack de 6
+622. coravin pure capsules 24pack
+623. coravin pure capsules 3 pak
+624. coravin pure capsules 6 pack
+625. coravin pure capsules 6 pak
+626. coravin pure capsules 6 pk 65g
+627. coravin pure capsules 6pack
+628. coravin pure capsules 6pk
+629. coravin pure capsules pack of 6
+630. coravin pure capsules single
+631. coravin pure ersatzpatrone
+632. coravin pure gasspatron 3pk 65g
+633. coravin pure gasspatron 6pk 65g
+634. coravin pure sparkling capsules
+635. coravin pure sparkling capsules
+636. coravin pure sparkling co2 6 pack
+637. coravin pure sparkling co2 6 pack
+638. coravin pure sparkling co2 capsule 6 pk
+639. coravin pure sparkling co2 capsules 6 pack
+640. coravin pure sparkling co2 capsules 6 stuks
+641. coravin pure sparkling co2 capsules 6pk set
+642. coravin pure sparkling co2 capsulespack of 6for coravin sparkling wine by the glass system
+643. coravin pure sparkling co2patronen 6er pack
+644. coravin pure sparkling co2patronen 6er pack
+645. coravin puretm argon capsules
+646. coravin puretm argon capsules 12 pack
+647. coravin puretm argon capsules 2 stk
+648. coravin puretm argon capsules 24 pack
+649. coravin puretm argon capsules 6 pack
+650. coravin puretm argon capsules 6 pack
+651. coravin puretm argon capsules 6 stk
+652. coravin puretm argon pro capsules 12 pack
+653. coravin puretm argon pro capsules 6 pack
+654. coravin puretm capsules 24pack
+655. coravin puretm capsules 6pack
+656. coravin puretm kapslid 6 tk
+657. coravin puretm professional capsules 12pack large
+658. coravin puretm sparkling co2
+659. coravin puretm sparkling co2 capsules 6 pack
+660. coravin puretm sparkling co2 capsules pack of 6
+661. coravin replacement needle pack 3
+662. coravin retail six forest green
+663. coravin schroefdop 6pack
+664. coravin schroefdoppen 6 stuks
+665. coravin screw cap
+666. coravin screw cap 1 unidade
+667. coravin screw cap 6 pack
+668. coravin screw cap 6pack standard size
+669. coravin screw cap pakke 6 stk standard strrelse
+670. coravin screw cap system accessory
+671. coravin screw cap variety 4 x standard and 2 x large
+672. coravin screw cap x6
+673. coravin screw caps 4 standard 2 large
+674. coravin screw caps 6 pack
+675. coravin screw caps 6 pack
+676. coravin screw caps 6 pack 1
+677. coravin screw caps 6 pack 4 small 2 large
+678. coravin screw caps 6 packs 4 small 2 large
+679. coravin screw caps 6 standard
+680. coravin screw caps sixpack
+681. coravin seis plus
+682. coravin seis plus burgundy
+683. coravin set 3 capsule di gas argon pure per sistema mescita coravin
+684. coravin set 6 capsule di gas argon pure per sistema mescita coravin
+685. coravin set di 3 capsule di gas argon puro
+686. coravin set van 3 naalden
+687. coravin sistema de preservacao de espumantes modelo sparkling
+688. coravin sistema de preservacao de vinhos modelo 2 elite piano preto
+689. coravin sistema de preservacao de vinhos modelo 3
+690. coravin sistema de preservacao de vinhos modelo 6 core piano preto
+691. coravin sistema de preservacao de vinhos modelo timeless 6 piano preto
+692. coravin sistema de preservacao de vinhos modelo timeless eleven
+693. coravin sistema de preservacao de vinhos pivot
+694. coravin sistema mescita timeless model six limited edition
+695. coravin six
+696. coravin six piano black
+697. coravin six piano silver
+698. coravin six refill argon canisters
+699. coravin six silver
+700. coravin six silver
+701. coravin skruelag 6 stk
+702. coravin snelschenk naald
+703. coravin sparkling
+704. coravin sparkling
+705. coravin sparkling
+706. coravin sparkling
+707. coravin sparkling
+708. coravin sparkling
+709. coravin sparkling
+710. coravin sparkling
+711. coravin sparkling
+712. coravin sparkling
+713. coravin sparkling
+714. coravin sparkling
+715. coravin sparkling
+716. coravin sparkling
+717. coravin sparkling
+718. coravin sparkling
+719. coravin sparkling
+720. coravin sparkling
+721. coravin sparkling
+722. coravin sparkling black
+723. coravin sparkling capsules
+724. coravin sparkling capsules 6
+725. coravin sparkling co2 capsules
+726. coravin sparkling co2 capsules 6 pack
+727. coravin sparkling co2 capsules x6
+728. coravin sparkling gas 6 pack capsules
+729. coravin sparkling geniet van je champagne per glas
+730. coravin sparkling gift set option 1
+731. coravin sparkling gift set option 2
+732. coravin sparkling kapsula co2
+733. coravin sparkling preserver
+734. coravin sparkling pure co2 capsules 6pack
+735. coravin sparkling set
+736. coravin sparkling sistema de preservacao de espumantes
+737. coravin sparkling stoperi
+738. coravin sparkling wijnbewaarsysteem
+739. coravin sparkling wine device launch
+740. coravin sparkling wine preservation system
+741. coravin sparkling wine preservation system
+742. coravin sparkling wine preservation system
+743. coravin sparkling wine preservation system
+744. coravin sparkling wine preservation system
+745. coravin sparkling wine preservation system
+746. coravin sparkling wine preservation system
+747. coravin sparkling wine preservation system
+748. coravin sparkling wine preservation system
+749. coravin sparkling wine preservation system
+750. coravin sparkling wine preservation system 7 parts
+751. coravin sparkling wine preservation system black
+752. coravin sparklingtm
+753. coravin sparklingtm
+754. coravin sparklingtm kit
+755. coravin sparklingtm wine preservation system
+756. coravin stainless model six
+757. coravin standaard naald
+758. coravin standard nal
+759. coravin standard nal til coravin system
+760. coravin standard needle
+761. coravin standard needle
+762. coravin standard needle
+763. coravin standard needle
+764. coravin standard needle
+765. coravin standard needle
+766. coravin standard needle
+767. coravin standard needle
+768. coravin standard needle
+769. coravin standard needle
+770. coravin standard needle x1
+771. coravin standard noel
+772. coravin standard replacement needle
+773. coravin standard screw cap 6pk
+774. coravin standard screw caps
+775. coravin standard screw caps
+776. coravin standard screw caps 6 pack
+777. coravin standard screw caps 6 pack
+778. coravin standard screw caps 6 pk
+779. coravin standard screw caps 6pk set
+780. coravin standard skrukork 6pk
+781. coravin standers screw caps 6packs
+782. coravin still wine argon gas capsules 3 pack
+783. coravin surtido de 3 agujas
+784. coravin system model two
+785. coravin system pivot
+786. coravin tapon pivot 6 unidades
+787. coravin tapon sparkling 2 unidades
+788. coravin three
+789. coravin three
+790. coravin three blacknoir
+791. coravin three deep sea blue
+792. coravin three needle assortment kit
+793. coravin three needle kit
+794. coravin three needle kit
+795. coravin three needle kit
+796. coravin three needle kit
+797. coravin three needle kit
+798. coravin three needle kit
+799. coravin three needle kit
+800. coravin three sl
+801. coravin three sl
+802. coravin three sl
+803. coravin three sl
+804. coravin three timeless
+805. coravin three timeless 12 capsulas
+806. coravin three timeless sl
+807. coravin timeless 3 needle assortment kit
+808. coravin timeless 3needle kit
+809. coravin timeless 6 2022 limited edition
+810. coravin timeless 6 anthracite premium set limited edition
+811. coravin timeless 6 hermitage red
+812. coravin timeless agulha premium
+813. coravin timeless agulha substituicao standard
+814. coravin timeless aireador
+815. coravin timeless eleven demomodel
+816. coravin timeless eleven standard needle and spout set
+817. coravin timeless eleven wine collector pack fully automatic bluetooth wine by the glass system
+818. coravin timeless fast pour needle
+819. coravin timeless fast pour needle
+820. coravin timeless kit 3 agulhas
+821. coravin timeless large screw caps 6 pcs
+822. coravin timeless model six
+823. coravin timeless model three sl
+824. coravin timeless needle
+825. coravin timeless premium needle
+826. coravin timeless six
+827. coravin timeless six
+828. coravin timeless six
+829. coravin timeless six
+830. coravin timeless six
+831. coravin timeless six
+832. coravin timeless six
+833. coravin timeless six 2024 edicao limitada forest green
+834. coravin timeless six anthracite premium set
+835. coravin timeless six argent
+836. coravin timeless six azul
+837. coravin timeless six black
+838. coravin timeless six bourgogne
+839. coravin timeless six burgundy
+840. coravin timeless six burgundy
+841. coravin timeless six burgundy
+842. coravin timeless six burgundy
+843. coravin timeless six burgundy
+844. coravin timeless six burgundy
+845. coravin timeless six burgundy
+846. coravin timeless six burgundy color
+847. coravin timeless six burgundy limited edition
+848. coravin timeless six burgundy red
+849. coravin timeless six forest green
+850. coravin timeless six forest green
+851. coravin timeless six green limited edition
+852. coravin timeless six hermitage red
+853. coravin timeless six hermitage red 2025 limited edition
+854. coravin timeless six hermitage red geniet van wijn per glas
+855. coravin timeless six hermitage red limited edition wijnsysteem
+856. coravin timeless six hermitage rouge
+857. coravin timeless six limited edition hermitage red
+858. coravin timeless six limited edition hermitage red
+859. coravin timeless six mist
+860. coravin timeless six piano black
+861. coravin timeless six piano black
+862. coravin timeless six piano black
+863. coravin timeless six piano black
+864. coravin timeless six piano black
+865. coravin timeless six piano black
+866. coravin timeless six piano black
+867. coravin timeless six piano black limited edition
+868. coravin timeless six piano negro
+869. coravin timeless six plata
+870. coravin timeless six plus
+871. coravin timeless six plus hermitage red
+872. coravin timeless six plus piano black
+873. coravin timeless six plus wine by the glass system burgundy
+874. coravin timeless six plus wine by the glass system piano black
+875. coravin timeless six plus wine by the glass system silver
+876. coravin timeless six premium set
+877. coravin timeless six premium set wijnbewaarsysteem
+878. coravin timeless six rouge
+879. coravin timeless six silver
+880. coravin timeless six silver
+881. coravin timeless six silver
+882. coravin timeless six silver limited edition
+883. coravin timeless six system
+884. coravin timeless six system
+885. coravin timeless six wijnbewaarsysteem
+886. coravin timeless six wijnbewaarsysteem
+887. coravin timeless six wijnbewaarsysteem hermitage red
+888. coravin timeless six wine preservation system
+889. coravin timeless six wine preservation system
+890. coravin timeless six wine system in antraciet
+891. coravin timeless six wine system in burgundy
+892. coravin timeless six wine system in zilver
+893. coravin timeless standard needle
+894. coravin timeless standard needle
+895. coravin timeless standard needle
+896. coravin timeless standard screw caps 6pcs
+897. coravin timeless standard screw caps box of 6
+898. coravin timeless three
+899. coravin timeless three
+900. coravin timeless three
+901. coravin timeless three
+902. coravin timeless three
+903. coravin timeless three
+904. coravin timeless three
+905. coravin timeless three
+906. coravin timeless three
+907. coravin timeless three
+908. coravin timeless three black
+909. coravin timeless three black
+910. coravin timeless three black
+911. coravin timeless three black
+912. coravin timeless three needle kit
+913. coravin timeless three needle kit
+914. coravin timeless three negro
+915. coravin timeless three plus
+916. coravin timeless three plus
+917. coravin timeless three plus
+918. coravin timeless three plus
+919. coravin timeless three plus black noir
+920. coravin timeless three plus wine bytheglass system
+921. coravin timeless three preservation system
+922. coravin timeless three pro device
+923. coravin timeless three pro reserve
+924. coravin timeless three pro unit cover
+925. coravin timeless three sl
+926. coravin timeless three sl grey
+927. coravin timeless three sl wein konservieren
+928. coravin timeless three sl wijnbewaarsysteem
+929. coravin timeless three sl winebytheglasssystem grey
+930. coravin timeless three system
+931. coravin timeless three system
+932. coravin timeless three wijnbewaarsysteem
+933. coravin timeless three wine preservation system
+934. coravin timeless three wine preservation system
+935. coravin timeless three wine preservation system
+936. coravin timeless three wine preservation system must
+937. coravin timeless three zwart
+938. coravin timeless vintage needle
+939. coravin timeless vintage needle
+940. coravin timeless vintage needle
+941. coravin timelesstm six
+942. coravin tres plus
+943. coravin tres sl
+944. coravin unit model 2 elite piano black
+945. coravin universal base
+946. coravin vinsystemnal 3pk
+947. coravin vintage naald
+948. coravin vintage needle
+949. coravin vintage needle
+950. coravin vintage needle
+951. coravin vintage needle
+952. coravin vintage needle
+953. coravin vintagenal til coravin system
+954. coravin wine bottle sleeve
+955. coravin wine system model 11
+956. coravin wine system model eleven automatico
+957. coravin wine system model one
+958. coravin wine system model three sl
+959. coravin wine system model timeless six burgundy
+960. coravin wine system model timeless six deep emerald
+961. coravin wine system model timeless six forest green
+962. coravin wine system model timeless six piano black
+963. coravin wine system model timeless six premium set lotus red
+964. coravin wine system model timeless three deep sea blue
+965. coravin wine system model two
+966. coravin wine system model two
+967. coravin zubehor belufter
+968. coravin zubehor belufter
+969. coravin zubehor puretm patronen
+970. coravin zubehor puretm patronen
+971. coravin zubehor schraubverschluss 6erset
+972. coravin zubehor schraubverschluss 6erset
+973. coravin zubehor standardnadel
+974. coravin zubehor standardnadel
+975. coravinkit und 1 kapsel
+976. coravinmodel 11
+977. coravintm capsule 1 pc
+978. coravintm capsules
+979. coravintm capsules set of 2
+980. coravintm carry case
+981. coravintm classic base
+982. coravintm faster pour needle
+983. coravintm gasskapsler 3pk
+984. coravintm model eleven wine collector pack
+985. coravintm model eleven wine collector set
+986. coravintm model one blue
+987. coravintm model six core
+988. coravintm model three
+989. coravintm model two
+990. coravintm model two elite plus pack
+991. coravintm model two elite silver
+992. coravintm model two pack
+993. coravintm pivot
+994. coravintm pivot sort
+995. coravintm pivot wine preservation system black
+996. coravintm pivot wine preservation system coral
+997. coravintm pivot wine preservation system grey
+998. coravintm pivot wine preservation system teal
+999. coravintm premium needle
+1000. coravintm premium pedestal
+23:30

@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. coteaux du layon les greffiers 2015 chateau de passavant
+2. coteaux du layon les quarts de juchepie oosterlinck 2017
+3. coteaux du layon les valaises 1988 cochard et fils
+4. coteaux du layon moelleux 2021
+5. coteaux du layon moelleux 2023
+6. coteaux du layon moelleux 2024
+7. coteaux du layon moelleux 2024 chateau de passavant bd
+8. coteaux du layon moelleux chaume 1er cru domaine de la bergerie
+9. coteaux du layon moulin touchais 1964 0750 loire frankrijk
+10. coteaux du layon moulin touchais 1968 0750 loire frankrijk
+11. coteaux du layon moulin touchais 1975 0750 loire frankrijk
+12. coteaux du layon moulin touchais 1976 0750 loire frankrijk
+13. coteaux du layon moulin touchais 1977 frankrijk loire wit
+14. coteaux du layon moulin touchais 1979 frankrijk loire wit
+15. coteaux du layon moulin touchais 1980 0750 loire frankrijk
+16. coteaux du layon moulin touchais 1981 0750 loire frankrijk
+17. coteaux du layon moulin touchais 1983 0750 loire frankrijk
+18. coteaux du layon moulin touchais 1984 0750 loire frankrijk
+19. coteaux du layon moulin touchais 1986 0750 loire frankrijk
+20. coteaux du layon moulin touchais 1987 0750 loire frankrijk
+21. coteaux du layon moulin touchais 1991 loire frankrijk
+22. coteaux du layon moulin touchais 1992 frankrijk loire wit
+23. coteaux du layon moulin touchais 1997
+24. coteaux du layon moulin touchais 1997 0750 loire frankrijk
+25. coteaux du layon moulin touchais 1998 0750 loire frankrijk
+26. coteaux du layon moulin touchais 2002 0750 loire frankrijk
+27. coteaux du layon moulin touchais 2003 0750 loire frankrijk
+28. coteaux du layon moulin touchais 2005 0750 loire frankrijk
+29. coteaux du layon moulin touchais 2006 0750 loire frankrijk
+30. coteaux du layon moulin touchais 2007 0750 loire frankrijk
+31. coteaux du layon moulin touchais 2009 0750 loire frankrijk
+32. coteaux du layon moulin touchais 2010 frankrijk loire wit
+33. coteaux du layon moulin touchais 2011 frankrijk loire wit
+34. coteaux du layon moulin touchais 2013 frankrijk loire wit
+35. coteaux du layon nouvelles confidences 2022 fief noir
+36. coteaux du layon patrimoine 2022
+37. coteaux du layon precieuse manon 2006 domaine de fiervaux
+38. coteaux du layon premier cru chaume aop
+39. coteaux du layon premier cru chaume by chateau de plaisance
+40. coteaux du layon prestige les terriades 2016
+41. coteaux du layon rochefort 2024
+42. coteaux du layon rochefort chateau grosset 1969
+43. coteaux du layon rouannieres 2021
+44. coteaux du layon saint aubin
+45. coteaux du layon saint aubin domaine des forges
+46. coteaux du layon saint aubin moelleux vin blanc 20212022
+47. coteaux du layon saint lambert 2009 domaine des epinaudiere
+48. coteaux du layon st aubin
+49. coteaux du layon st aubin 2024 domaine des forges
+50. coteaux du layon tradition 2019
+51. coteaux du layon tradition 2022 domaine de fiervaux
+52. coteaux du layon tri de vendange raymond morin dom du landreau
+53. coteaux du layon vieilles vignes 2006 rossignolerie
+54. coteaux du layon vielles vignes 1986 domaine de la soucherie
+55. coteaux du layon vignobles touchais 1985 frankrijk loire wit
+56. coteaux du layon vignobles touchais 1994 frankrijk loire wit
+57. coteaux du layon vignobles touchais 1996 frankrijk loire wit
+58. coteaux du layon vignobles touchais 1999 frankrijk loire wit
+59. coteaux du layon vignobles touchais 2000 frankrijk loire wit
+60. coteaux du layon vignobles touchais 2001 frankrijk loire wit
+61. coteaux du layon vignobles touchais 2004 frankrijk loire wit
+62. coteaux du layon vignobles touchais 2014 frankrijk loire wit
+63. coteaux du layon vignobles touchais 2015 frankrijk loire wit
+64. coteaux du liban blanc finesse 2023
+65. coteaux du liban cinsault selection 2022
+66. coteaux du liban rouge passion 2019
+67. coteaux du liban viognier selection 2024
+68. coteaux du loir pineau daunis domaine gigou
+69. coteaux du loir premices
+70. coteaux du loir rouge gorge domaine de belliviere
+71. coteaux du loir rouge hommage a louis derre
+72. coteaux du loir rouge hommage a louis derre domaine de belliviere
+73. coteaux du loir rouge pineau daunis bio
+74. coteaux du loir rouge rouge gorge
+75. coteaux du lyonnais antique bellum rouge 2022
+76. coteaux du lyonnais antique bellum rouge magnum 2022
+77. coteaux du lyonnais blanc traboules 2023 clusel roch
+78. coteaux du lyonnais chapitre 7 2024 yann fangeat domaine dyf
+79. coteaux du lyonnais coeur de lyonnais aligote blanc 2023
+80. coteaux du lyonnais coeur de lyonnais chardonnay blanc 2024
+81. coteaux du lyonnais coeur de lyonnais rose 2023
+82. coteaux du lyonnais cur de lyonnais rouge 2023
+83. coteaux du lyonnais galet 2018 domaine cluselroch
+84. coteaux du lyonnais galet 2019 domaine cluselroch
+85. coteaux du lyonnais le clos domaine de la petite gallee 2020
+86. coteaux du lyonnais les moraines 2023 domaine de la petite gallee
+87. coteaux du lyonnais lhecto 2015 clusel roch
+88. coteaux du lyonnais lhecto 2018 domaine cluselroch
+89. coteaux du lyonnais lhecto 2019 domaine cluselroch
+90. coteaux du lyonnais lhecto 2021 domaine cluselroch
+91. coteaux du lyonnais lor palatial rose 2024
+92. coteaux du lyonnais nouveau coeur de lyonnais rouge 2025
+93. coteaux du lyonnais or palatial blanc 2023
+94. coteaux du lyonnais or palatial rouge 2022
+95. coteaux du lyonnais reserve du grand prieur blanc 2023
+96. coteaux du lyonnais reserve du grand prieur rouge 2023
+97. coteaux du lyonnais traboules 2017 domaine cluselroch
+98. coteaux du lyonnais traboules 2018 domaine cluselroch
+99. coteaux du lyonnais traboules 2019 domaine cluselroch
+100. coteaux du lyonnais traboules 2020 domaine cluselroch
+101. coteaux du lyonnais traboules 2022 domaine cluselroch
+102. coteaux du lyonnais traboules 2023 clusel roch
+103. coteaux du lyonnais traboules 2023 domaine cluselroch
+104. coteaux du lyonnais vieilles vignes 2021 domaine de la petite gallee
+105. coteaux du lyonnais villages de lannee rouge 2022
+106. coteaux du pic cabernet sauvignon esprit cepage
+107. coteaux du pic merlot esprit cepage
+108. coteaux du pic viognier esprit cepage
+109. coteaux du pont du gard empusa 2022 by chateau de boucarut rhone france
+110. coteaux du salagou coste rousse 2022 domaine de ferrussac
+111. coteaux du sonnay 2020
+112. coteaux du tricastin 1979
+113. coteaux du tricastin 1981
+114. coteaux du tricastin superieure 1972
+115. coteaux du vendomois gris bag in box
+116. coteaux du vendomois gris montagne blanche
+117. coteaux du vendomois moelleux passerillage 2018
+118. coteaux du vendomois rouge montagne blanche
+119. coteaux et terrasses de montauban igp
+120. coteaux kante
+121. coteaux lardeche 7 sens
+122. coteaux les folies chardonnay 2019
+123. coteaux lyonnais espoir dy vin domaine prapin 2023
+124. coteaux oger
+125. coteaux riceys
+126. coteaux rouge 2021
+127. coteaux rouge pinot noir 2019
+128. coteaux varois domaine la rose des vents blanc 2023
+129. coteaux varois domaine la rose des vents rose 2025
+130. coteaux varois domaine la rose des vents rouge 2024
+131. coteaux varois domaine ramatuelle cuvee origine rose bio 2024
+132. coteaux varois domaine ramatuelle cuvee origine rouge 2024
+133. coteaux varois en provence aoc le pacha chateau de lescarelle 2022
+134. coteaux varois en provence aoc les 2 anges chateau de lescarelle 2022
+135. coteaux varois en provence aoc rumeurs de lescarelle chateau de lescarelle 2022
+136. coteaux varois en provence aop 2023 la clemenciere
+137. coteaux varois en provence aop les deux anges chateau de lescarelle 2020
+138. coteaux varois en provence chateau la calisse patricia ortelli red
+139. coteaux varois en provence chateau la calisse patricia ortelli white
+140. coteaux varois en provence chateau la calisse red
+141. coteaux varois en provence chateau la calisse rose
+142. coteaux varois en provence chateau la calisse white
+143. coteaux varois en provence reflet 2025 estandon
+144. coteaux varois en provence reflet 2025 estandon
+145. coteaux varois en provence reflet 2025 estandon
+146. coteaux varois en provence reflet 2025 estandon
+147. coteaux varois en provence reflet 2025 estandon
+148. coteaux varois en provence rose 2020
+149. coteaux varois en provence rouge saint jean de villecroze
+150. coteaux varois en provence terres nobles jas du roy rs
+151. coteaux varois rose chateau dollieres provence france 2022
+152. coteaux varois seigneur de broussan domaine la rose des vents blanc 2024
+153. coteaux varois seigneur de broussan domaine la rose des vents rose 2025
+154. coteaux varois seigneur de broussan domaine la rose des vents rouge 2022
+155. coteaux vendomois grille daunis 2020
+156. coteaux verzy rouge les champs brules 2018
+157. coteauxbourguignons bernard rion 2022 aoc
+158. coteauxdaixenprovence blanc bois des fees 2020
+159. coteauxdaixenprovence rose 2024
+160. coteauxdaixenprovence rose bio 2023
+161. coteauxdaixenprovence rose bio bois des fees 2023
+162. coteauxdaixenprovence rouge bio mon coeur violette 2020
+163. coteauxdechamplitte
+164. coteauxdechamplitte pinot noir 2017 red
+165. coteauxdugiennois
+166. coteauxdugiennois
+167. coteauxdugiennois blanc aoc 2022 domaine raimbault pineau
+168. coteauxdugiennois die punkte
+169. coteauxdugiennois les pointes
+170. coteauxduloir rouge gorge 2021 domaine de belliviere
+171. coteauxduloir rouge gorge 2021 domaine de belliviere
+172. coteauxduloir rouge gorge 2021 domaine de belliviere
+173. coteauxduloir rouge gorge 2021 domaine de belliviere
+174. coteauxvaroisenprovence 2021 a bouche que veuxtu blanc
+175. coteauxvaroisenprovence 2023 a bouche que veuxtu blanc
+176. cotecchino sausage with onions
+177. cotechino
+178. cotechino
+179. cotechino 500g
+180. cotechino cooked consorizo 18oz
+181. cotechino cooked pork sausage
+182. cotechino fini 500gr
+183. cotechino ibis 500g
+184. cotechino lampo negroni 500g
+185. cotechino modena levoni 500g dop
+186. cotechino plse med lg
+187. cotedebeaunevillages quinson fils 1992
+188. cotedebeaunevillages quinson fils 1992
+189. cotedebeaunevillages quinson fils 1992
+190. cotedebrouilly 2021 domaine rolland pferraud fils
+191. cotedebuf im clos du mont 10 september 2026
+192. cotedebuf im clos du mont 12 juni 2026
+193. cotedebuf im clos du mont 29 mai 2026
+194. cotedebuf im clos du mont 5 juni 2026
+195. cotedenuits villages clos f thurot monopole henri magnien 2023
+196. cotedenuits villages rouge
+197. cotedenuits villages rouge
+198. cotedenuits villages rouge mg
+199. cotedenuitsvillages 2016 domaine jean trapet pere fils
+200. cotedenuitsvillages vieille vignes 2021 domaine chopin fils
+201. cotedorokinawawine 49
+202. coteest 2022 domaine du kre
+203. coteis alicante bouschet tinto
+204. coteis grande escolha
+205. coteis grande escolha
+206. coteis grande escolha igt alentejo czerwone 0
+207. coteis grande escolha tinto
+208. coteis grande escolha vinho regional alentejano
+209. coteis grande escolha vinho regional alentejano 2020
+210. coterie by wildeberg cabernet franc malbec
+211. coterie by wildeberg cabernet franc malbec
+212. coterie by wildeberg cabernet franc malbec
+213. coterie by wildeberg cabernet franc malbec
+214. coterie by wildeberg cabernet franc malbec
+215. coterie by wildeberg cabernet franc malbec
+216. coterie by wildeberg cabernet franc malbec 2023 coastal region south africa 14
+217. coterie by wildeberg cabernet franc malbec coastal region
+218. coterie by wildeberg cabernet franc malbec wo coastal region 2022
+219. coterie by wildeberg cabernet franc malbec wo coastal region 2022
+220. coterie by wildeberg cabernet francmalbec
+221. coterie by wildeberg cabernet malbec 2023
+222. coterie by wildeberg chenin blanc grenache blanc
+223. coterie by wildeberg chenin blanc grenache blanc
+224. coterie by wildeberg chenin blanc grenache blanc
+225. coterie by wildeberg chenin blanc grenache blanc wo coastal region 2023
+226. coterie by wildeberg chenin blanc grenache blanc wo coastal region 2023
+227. coterie by wildeberg chenin grenache blanc 2023
+228. coterie by wildeberg cheningrenache blanc
+229. coterie by wildeberg cinsault rose
+230. coterie by wildeberg cinsault rose
+231. coterie by wildeberg cinsault rose
+232. coterie by wildeberg cinsault rose 2025 wo coastal region south africa 11
+233. coterie by wildeberg grenache syrah
+234. coterie by wildeberg grenache syrah
+235. coterie by wildeberg grenache syrah
+236. coterie by wildeberg grenache syrah
+237. coterie by wildeberg grenache syrah
+238. coterie by wildeberg grenache syrah 6 bottle case
+239. coterie by wildeberg grenache syrah wo coastal region 2022
+240. coterie by wildeberg grenache syrah wo coastal region 2022
+241. coterie by wildeberg grenachesyrah 2024
+242. coterie by wildeberg semillon sauvignon blanc
+243. coterie by wildeberg semillon sauvignon blanc
+244. coterie by wildeberg semillon sauvignon blanc
+245. coterie by wildeberg semillon sauvignon blanc
+246. coterie by wildeberg semillon sauvignon blanc
+247. coterie by wildeberg semillon sauvignon blanc
+248. coterie by wildeberg semillon sauvignon blanc
+249. coterie by wildeberg semillon sauvignon blanc 2020
+250. coterie by wildeberg semillon sauvignon blanc 2023
+251. coterie by wildeberg semillon sauvignon blanc 2024
+252. coterie cabernet franc malbec
+253. coterie cabernet franc malbec 2020 coastal region
+254. coterie cabernet franc malbec 2022
+255. coterie cabernet franc malbec 2022
+256. coterie cabernet franc malbec 2023
+257. coterie cabernet franc malbec wildeberg
+258. coterie cabernet francmalbec
+259. coterie cabernet francmalbec 145
+260. coterie cabernet francmalbec 2023 wildeberg coastal region 140
+261. coterie cabernet francmalbec wildeberg 2023
+262. coterie chenin blanc grenache blanc 2022
+263. coterie chenin blancgrenache blanc 135
+264. coterie chenin grenache blanc 2022
+265. coterie cinsault rose 125
+266. coterie cinsault rose wildeberg
+267. coterie grenache syrah 2023
+268. coterie grenache syrah 2024 wildeberg
+269. coterie grenache syrah wo coastal region 2022
+270. coterie grenachesyrah 14
+271. coterie semillon sauvignon 2024
+272. coterie semillon sauvignon blanc
+273. coterie semillon sauvignon blanc 2022
+274. coterie semillon sauvignon blanc 2023 coastal region
+275. coterie semillonsauvignon blanc 13
+276. coterie wildeberg grenache syrah 2023
+277. coterotie
+278. coterotie
+279. coterotie
+280. coterotie
+281. coterotie 1998 domaine jamet
+282. coterotie 1999 domaine jamet
+283. coterotie 2006 domaine jamet
+284. coterotie 2006 domaine stephane ogier
+285. coterotie 2011 domaine jamet
+286. coterotie 2012 domaine jamet
+287. coterotie 2013 domaine jamet
+288. coterotie 2015 domaine jamet
+289. coterotie 2016 domaine jamet
+290. coterotie 2017
+291. coterotie 2017
+292. coterotie 2017 domaine burgaud
+293. coterotie 2017 domaine jamet
+294. coterotie 2018
+295. coterotie 2018 domaine bott
+296. coterotie 2018 domaine jamet
+297. coterotie 2019
+298. coterotie 2019 domaine graeme julie bott
+299. coterotie 2019 domaine jamet
+300. coterotie 2020
+301. coterotie 2020 domaine graeme julie bott
+302. coterotie 2020 domaine graeme julie bott
+303. coterotie 2020 domaine jamet
+304. coterotie 2021 domaine graeme julie bott
+305. coterotie 2021 domaine jamet
+306. coterotie 2021 les grandes places jeanmichel gerin rouge
+307. coterotie 2022 domaine burgaud
+308. coterotie 2022 domaine gallet
+309. coterotie 2022 domaine gallet
+310. coterotie 2022 domaine graeme julie bott
+311. coterotie 2022 domaine jamet
+312. coterotie 2023 domaine jamet
+313. coterotie 5 lieux 2022 domaine cluselroch
+314. coterotie amethyste 2019 vignobles levet
+315. coterotie ampodium 2013 domaine rostaing
+316. coterotie ampodium 2016 domaine rostaing
+317. coterotie ampodium 2017 domaine rostaing
+318. coterotie ampodium 2018 domaine rostaing
+319. coterotie ampodium 2019 domaine rostaing
+320. coterotie ampodium 2020 domaine rostaing
+321. coterotie ampodium 2021 domaine rostaing
+322. coterotie ampodium 2022 domaine rostaing
+323. coterotie ampodium 2023 domaine rostaing
+324. coterotie ampodium rene rostaing 2021
+325. coterotie ampuis 2013 guigal
+326. coterotie and cornas mixed case
+327. coterotie aoc 2022
+328. coterotie aoc chateau de montlys domaine christophe semaska 2022
+329. coterotie aoc les grandes places domaine pichat 2018
+330. coterotie aoc les triotes domaine garon 2020
+331. coterotie aoc loss domaine pichat 2020
+332. coterotie aop promesse 2020 domaine christophe pichon
+333. coterotie barbarine 2015 domaine gangloff
+334. coterotie bassenon
+335. coterotie bassenon
+336. coterotie bassenon 2013 cave yves cuilleron
+337. coterotie bassenon 2015 cave yves cuilleron
+338. coterotie bassenon 2016 cave yves cuilleron
+339. coterotie bassenon 2017 cave yves cuilleron
+340. coterotie bassenon 2018
+341. coterotie bassenon 2018 cave yves cuilleron
+342. coterotie bassenon 2019 cave yves cuilleron
+343. coterotie bassenon cave yves cuilleron
+344. coterotie bassenon domaine yves cuilleron 2018
+345. coterotie belle helene 2001 domaine stephane ogier
+346. coterotie belle helene 2013 domaine stephane ogier
+347. coterotie bellissima
+348. coterotie bertholon 2016 domaine stephane ogier
+349. coterotie bertholon 2020 domaine stephane ogier
+350. coterotie blonde du seigneur 2011 domaine georges vernay
+351. coterotie blonde du seigneur 2015 domaine georges vernay
+352. coterotie blonde du seigneur 2016 domaine georges vernay
+353. coterotie blonde du seigneur 2017 domaine georges vernay
+354. coterotie blonde du seigneur 2018 domaine georges vernay
+355. coterotie blonde du seigneur 2020 domaine georges vernay
+356. coterotie blonde du seigneur 2021 domaine georges vernay
+357. coterotie blonde du seigneur 2021 domaine georges vernay
+358. coterotie blonde du seigneur 2022 domaine georges vernay
+359. coterotie blonde du seigneur 2022 domaine georges vernay
+360. coterotie blonde du seigneur 2022 domaine georges vernay
+361. coterotie blonde du seigneur 2022 domaine georges vernay
+362. coterotie blonde du seigneur 2022 domaine georges vernay
+363. coterotie blonde du seigneur 2022 magnum domaine georges vernay
+364. coterotie blonde du seigneur 2022 magnum domaine georges vernay
+365. coterotie blonde du seigneur 2022 magnum domaine georges vernay
+366. coterotie blonde du seigneur 2022 magnum domaine georges vernay
+367. coterotie blonde du seigneur 2023 domaine georges vernay
+368. coterotie blonde du seigneur georges vernay 2019
+369. coterotie bonniviere caves yves cuilleron
+370. coterotie bons arrets monopole 2015 domaine du monteillet
+371. coterotie bons arrets monopole 2020 domaine du monteillet
+372. coterotie bons arrets monopole 2022 domaine du monteillet
+373. coterotie bons arrets monopole 2023 domaine du monteillet
+374. coterotie brown blonde de guigal
+375. coterotie brune blonde de guigal
+376. coterotie brune et blonde 2010 guigal rhone frankrig
+377. coterotie brune et blonde de guigal
+378. coterotie brune et blonde rhone aoc 2017
+379. coterotie brune et blonde rhone aoc 2020
+380. coterotie but de mont 2010 domaine stephane ogier
+381. coterotie but de mont 2013 domaine stephane ogier
+382. coterotie but de mont 2020 domaine stephane ogier
+383. coterotie carmina 2016 domaine pierrejean villa
+384. coterotie carmina 2017 domaine pierrejean villa
+385. coterotie carmina 2018 domaine pierrejean villa
+386. coterotie carmina 2019 domaine pierrejean villa
+387. coterotie carmina 2020 domaine pierrejean villa
+388. coterotie carmina 2021 domaine pierrejean villa
+389. coterotie carmina 2022 domaine pierrejean villa
+390. coterotie carmina 2023 domaine pierrejean villa
+391. coterotie cedric parpette le plomb 2020
+392. coterotie champin le seigneur
+393. coterotie champin le seigneur 2014 domaine jeanmichel gerin
+394. coterotie champin le seigneur 2016 domaine jeanmichel gerin
+395. coterotie champin le seigneur 2017 domaine jeanmichel gerin
+396. coterotie champin le seigneur 2018 domaine jeanmichel gerin
+397. coterotie champin le seigneur 2019 domaine jeanmichel gerin
+398. coterotie champin le seigneur 2020 domaine jeanmichel gerin
+399. coterotie champin le seigneur 2021 domaine jeanmichel gerin
+400. coterotie champin le seigneur 2022 domaine jeanmichel gerin
+401. coterotie champin le seigneur 2023 domaine gerin
+402. coterotie champin le seigneur 2023 domaine gerin
+403. coterotie champin le seigneur 2023 domaine jeanmichel gerin
+404. coterotie champin le seigneur 2023 jeanmichel gerin rouge
+405. coterotie champin seigneur 2015 domaine jeanmichel gerin
+406. coterotie champon 2020 clusel roch
+407. coterotie champon 2020 domaine cluselroch
+408. coterotie chateau d ampuis 2022
+409. coterotie chateau d ampuis rhone aoc 2020
+410. coterotie chateau dampuis
+411. coterotie chateau dampuis 2011 eguigal
+412. coterotie chateau dampuis 2020
+413. coterotie classique 2009 domaine cluselroch
+414. coterotie classique 2011 domaine cluselroch
+415. coterotie classique 2012 domaine cluselroch
+416. coterotie classique 2014 domaine cluselroch
+417. coterotie classique 2015 domaine cluselroch
+418. coterotie cluselroch classique 2010
+419. coterotie cluselroch les grandesplaces 2020 mag
+420. coterotie colline du couzou 2014 domaine bonnefond
+421. coterotie corps de loup 2019
+422. coterotie cote blonde 2010 domaine rostaing
+423. coterotie cote blonde 2016 domaine rostaing
+424. coterotie cote blonde 2017 domaine rostaing
+425. coterotie cote blonde 2018 domaine lafoy
+426. coterotie cote blonde 2018 domaine rostaing
+427. coterotie cote blonde 2019 domaine rostaing
+428. coterotie cote blonde 2020 domaine rostaing
+429. coterotie cote blonde 2021 domaine rostaing
+430. coterotie cote blonde 2022 domaine rostaing
+431. coterotie cote blonde 2023 domaine rostaing
+432. coterotie cote brune 2013 domaine rostaing
+433. coterotie cote brune 2016 domaine rostaing
+434. coterotie cote brune 2017 domaine rostaing
+435. coterotie cote brune 2018 domaine rostaing
+436. coterotie cote brune 2019 domaine rostaing
+437. coterotie cote brune 2020 domaine rostaing
+438. coterotie cote brune 2022 domaine rostaing
+439. coterotie cote brune 2023 domaine rostaing
+440. coterotie cote rozier 2015 domaine bonnefond
+441. coterotie cote rozier 2016 domaine gangloff
+442. coterotie coteau de bassenon 2018 maison stephan
+443. coterotie coteau de tupin 2019 maison stephan
+444. coterotie coteau de tupin benoit roseau
+445. coterotie coteaux de tupin 2018 domaine duclaux
+446. coterotie coteaux de tupin 2022 maison stephan
+447. coterotie cotebodin 2016 domaine stephane ogier
+448. coterotie cotebodin 2018 domaine jeanmichel gerin
+449. coterotie cotebodin 2019 domaine jeanmichel gerin
+450. coterotie cotebodin 2020 domaine jeanmichel gerin
+451. coterotie cotebodin 2020 domaine stephane ogier
+452. coterotie cotebodin 2022 domaine jeanmichel gerin
+453. coterotie cotebodin 2023 domaine jeanmichel gerin
+454. coterotie cotebrune 2020 domaine jamet
+455. coterotie cotebrune 2021 domaine jamet
+456. coterotie cru la landonne 2018
+457. coterotie cru la landonne 2020
+458. coterotie cuvee fortis domaine du monteillet stephane montez 2022
+459. coterotie domaine bonserine 1996
+460. coterotie domaine bonserine 1996
+461. coterotie domaine bonserine 1996
+462. coterotie domaine bouchaud 2005
+463. coterotie domaine bouchaud 2005
+464. coterotie domaine bouchaud 2005
+465. coterotie domaine de bonserine 2022
+466. coterotie domaine des pierrelles 2020 paul jaboulet tilbud
+467. coterotie domaine duclaux maison rouge 2015
+468. coterotie domaine guigal la mouline 2005
+469. coterotie domaine guigal la turque 2006
+470. coterotie domaine jamet
+471. coterotie domaine pierre blanche 2023
+472. coterotie e guigal brune et blonde de guigal
+473. coterotie fongeant 2013 domaine stephane ogier
+474. coterotie fongeant 2016 domaine stephane ogier
+475. coterotie fongeant 2017 domaine pierrejean villa
+476. coterotie fongeant 2018 domaine pierrejean villa
+477. coterotie fongeant 2019 domaine pierrejean villa
+478. coterotie fongeant 2019 pierre jean villa
+479. coterotie fongeant 2020 domaine pierrejean villa
+480. coterotie fongeant 2020 domaine stephane ogier
+481. coterotie fongeant 2021 domaine pierrejean villa
+482. coterotie fongeant 2022 domaine graeme julie bott
+483. coterotie fongeant 2022 domaine pierrejean villa
+484. coterotie fongeant 2023 domaine pierrejean villa
+485. coterotie fortis 2015 domaine du monteillet
+486. coterotie fortis 2016 domaine du monteillet
+487. coterotie fortis 2017 domaine du monteillet
+488. coterotie fortis 2018 domaine du monteillet
+489. coterotie fortis 2019 domaine du monteillet
+490. coterotie fortis 2020 domaine du monteillet
+491. coterotie fortis 2021 domaine du monteillet
+492. coterotie fortis 2022 domaine du monteillet
+493. coterotie fortis 2023 domaine du monteillet
+494. coterotie fructus voluptas 2016 domaine jamet
+495. coterotie fructus voluptas 2018 domaine jamet
+496. coterotie fructus voluptas 2019 domaine jamet
+497. coterotie fructus voluptas 2020 domaine jamet
+498. coterotie fructus voluptas 2020 domaine jamet
+499. coterotie fructus voluptas 2021 domaine jamet
+500. coterotie fructus voluptas 2022 domaine jamet
+501. coterotie fructus voluptas 2023 domaine jamet
+502. coterotie fructus voluptas 2024 domaine jamet
+503. coterotie gallet blanc 2015 domaine francois villard
+504. coterotie grandes places 2010 domaine du monteillet
+505. coterotie grandes places 2012 domaine jeanmichel gerin
+506. coterotie grandes places 2014 domaine du monteillet
+507. coterotie grandes places 2015 domaine jm gerin 2015 domaine jeanmichel gerin
+508. coterotie ko dom de pierrelles paul jaboulet aine
+509. coterotie la barbarine
+510. coterotie la barbarine 2013 domaine gangloff
+511. coterotie la barbarine 2016 domaine gangloff
+512. coterotie la barbarine 2017 domaine gangloff
+513. coterotie la barbarine 2018 domaine gangloff
+514. coterotie la barbarine 2019 domaine gangloff
+515. coterotie la barbarine 2020 domaine gangloff
+516. coterotie la barbarine 2021 domaine gangloff
+517. coterotie la barbarine 2021 domaine gangloff
+518. coterotie la barbarine 2022 domaine gangloff
+519. coterotie la barbarine domaine yves gangloff 2023
+520. coterotie la belle helene
+521. coterotie la belle helene 1999 domaine stephane ogier
+522. coterotie la belle helene 2005 domaine stephane ogier
+523. coterotie la belle helene 2007 domaine stephane ogier
+524. coterotie la belle helene 2009 domaine stephane ogier
+525. coterotie la belle helene 2010 domaine stephane ogier
+526. coterotie la belle helene 2011 domaine stephane ogier
+527. coterotie la belle helene 2015 domaine stephane ogier
+528. coterotie la belle helene 2016 domaine stephane ogier
+529. coterotie la belle helene 2017 domaine stephane ogier
+530. coterotie la belle helene 2018 domaine stephane ogier
+531. coterotie la belle helene 2019 domaine stephane ogier
+532. coterotie la belle helene 2020 domaine stephane ogier
+533. coterotie la chana 2017 domaine duclaux
+534. coterotie la chavarine 2022 domaine chambeyron
+535. coterotie la chavarine 2023 domaine chambeyron
+536. coterotie la chavaroche levet 2018 magnum
+537. coterotie la chavaroche levet 2021
+538. coterotie la cote blonde 2015 domaine stephane ogier
+539. coterotie la cote blonde 2016 domaine stephane ogier
+540. coterotie la cote blonde 2017 domaine stephane ogier
+541. coterotie la garde 2010 domaine de bonserine
+542. coterotie la germine 2015 domaine duclaux
+543. coterotie la germine 2016 domaine duclaux
+544. coterotie la germine 2017 domaine duclaux
+545. coterotie la germine 2018 domaine duclaux
+546. coterotie la germine 2019 domaine duclaux
+547. coterotie la germine 2020 domaine duclaux
+548. coterotie la germine 2022
+549. coterotie la germine 2022 domaine duclaux
+550. coterotie la germine 2023 domaine duclaux
+551. coterotie la giroflarie 2015 domaine jasmin
+552. coterotie la landonne
+553. coterotie la landonne
+554. coterotie la landonne
+555. coterotie la landonne 2008 domaine eguigal
+556. coterotie la landonne 2008 eguigal
+557. coterotie la landonne 2009 domaine jeanmichel gerin
+558. coterotie la landonne 2011 domaine jeanmichel gerin
+559. coterotie la landonne 2011 domaine rostaing
+560. coterotie la landonne 2011 guigal
+561. coterotie la landonne 2012 guigal
+562. coterotie la landonne 2014 guigal
+563. coterotie la landonne 2015 2015 domaine jeanmichel gerin
+564. coterotie la landonne 2016 domaine jeanmichel gerin
+565. coterotie la landonne 2016 domaine rostaing
+566. coterotie la landonne 2017 domaine jeanmichel gerin
+567. coterotie la landonne 2017 domaine rostaing
+568. coterotie la landonne 2017 eguigal rouge
+569. coterotie la landonne 2018 domaine jamet
+570. coterotie la landonne 2018 domaine jeanmichel gerin
+571. coterotie la landonne 2018 domaine rostaing
+572. coterotie la landonne 2018 eguigal
+573. coterotie la landonne 2019 domaine jamet
+574. coterotie la landonne 2019 domaine jeanmichel gerin
+575. coterotie la landonne 2019 domaine rostaing
+576. coterotie la landonne 2020 domaine jeanmichel gerin
+577. coterotie la landonne 2020 domaine rostaing
+578. coterotie la landonne 2021 domaine jeanmichel gerin
+579. coterotie la landonne 2021 domaine rostaing
+580. coterotie la landonne 2022 domaine jamet
+581. coterotie la landonne 2022 domaine jeanmichel gerin
+582. coterotie la landonne 2022 domaine rostaing
+583. coterotie la landonne 2023 domaine jamet
+584. coterotie la landonne 2023 domaine jeanmichel gerin
+585. coterotie la landonne 2023 domaine rostaing
+586. coterotie la landonne notheque 2005 domaine rostaing
+587. coterotie la landonne notheque 2007 domaine rostaing
+588. coterotie la landonne notheque 2009 domaine rostaing
+589. coterotie la landonne notheque 2010 domaine rostaing
+590. coterotie la landonne notheque 2012 domaine rostaing
+591. coterotie la landonne notheque 2013 domaine rostaing
+592. coterotie la landonne rouge 2021 guigal
+593. coterotie la landonne rouge 2022 guigal
+594. coterotie la maison rouge 2019 domaine georges vernay
+595. coterotie la mouline 1976 domaine guigal
+596. coterotie la mouline 2011 guigal
+597. coterotie la mouline 2012 guigal
+598. coterotie la mouline 2014 domaine eguigal
+599. coterotie la mouline 2017 eguigal rouge
+600. coterotie la mouline rouge 2020 guigal
+601. coterotie la mouline rouge 2021 guigal
+602. coterotie la mouline rouge 2022 guigal
+603. coterotie la peroline 2019 vignobles levet
+604. coterotie la porchette 2016 julien pilon
+605. coterotie la porchette 2022 julien pilon
+606. coterotie la porchette 2023
+607. coterotie la porchette 2024 julien pilon
+608. coterotie la porchette rouge 2023 domaine julien pilon
+609. coterotie la porchette rouge 2024 domaine julien pilon
+610. coterotie la reynarde rouge 2022 guigal
+611. coterotie la sarrazine 2020 domaine bonserine
+612. coterotie la sarrazine 2021 domaine bonserine
+613. coterotie la sereine noire
+614. coterotie la sereine noire 2013 domaine gangloff
+615. coterotie la sereine noire 2016 domaine gangloff
+616. coterotie la sereine noire 2017 domaine gangloff
+617. coterotie la sereine noire 2018 domaine gangloff
+618. coterotie la sereine noire 2019 domaine gangloff
+619. coterotie la sereine noire 2020 domaine gangloff
+620. coterotie la sereine noire 2022 domaine gangloff
+621. coterotie la serine 2021
+622. coterotie la sybarine
+623. coterotie la turque 2008 domaine guigal
+624. coterotie la turque 2011 guigal
+625. coterotie la turque 2012 guigal
+626. coterotie la turque 2017 e guigal rouge
+627. coterotie la turque 2019 eguigal
+628. coterotie la turque domaine e guigal 1993 frankrijk rhone rood
+629. coterotie la viaillere 2019 domaine rostaing
+630. coterotie la viaillere 2020 domaine rostaing
+631. coterotie la vialliere
+632. coterotie la vialliere 2010 domaine jeanmichel gerin
+633. coterotie la vialliere 2011 domaine cluselroch
+634. coterotie la vialliere 2012 domaine cluselroch
+635. coterotie la vialliere 2013 domaine jeanmichel gerin
+636. coterotie la vialliere 2014 domaine jeanmichel gerin
+637. coterotie la vialliere 2015 domaine jeanmichel gerin
+638. coterotie la vialliere 2015 domaine stephane ogier
+639. coterotie la vialliere 2016 domaine rostaing
+640. coterotie la vialliere 2016 domaine stephane ogier
+641. coterotie la vialliere 2017 domaine jeanmichel gerin
+642. coterotie la vialliere 2018 domaine cluselroch
+643. coterotie la vialliere 2018 domaine jeanmichel gerin
+644. coterotie la vialliere 2019 domaine cluselroch
+645. coterotie la vialliere 2019 domaine jeanmichel gerin
+646. coterotie la vialliere 2020 domaine cluselroch
+647. coterotie la vialliere 2020 domaine jeanmichel gerin
+648. coterotie la vialliere 2020 domaine stephane ogier
+649. coterotie la vialliere 2021 domaine cluselroch
+650. coterotie la vialliere 2021 domaine jeanmichel gerin
+651. coterotie la vialliere 2022 domaine jeanmichel gerin
+652. coterotie la vialliere 2023 domaine jeanmichel gerin
+653. coterotie lancement
+654. coterotie lancement
+655. coterotie lancement
+656. coterotie lancement 2015 domaine stephane ogier
+657. coterotie lancement 2016 domaine stephane ogier
+658. coterotie lancement 2017 domaine garon
+659. coterotie lancement 2017 domaine stephane ogier
+660. coterotie langeline 2021 domaine chambeyron
+661. coterotie langeline 2022 domaine chambeyron
+662. coterotie langeline 2023 domaine chambeyron
+663. coterotie le champon 2010 domaine stephane ogier
+664. coterotie le champon 2016 domaine stephane ogier
+665. coterotie le champon 2020 domaine stephane ogier
+666. coterotie le gallet blanc 2018 domaine francois villard
+667. coterotie le gallet blanc 2020 domaine francois villard
+668. coterotie le gallet blanc 2021 0
+669. coterotie le gallet blanc 2022 0
+670. coterotie le gallet blanc 2022 francois villard
+671. coterotie les becasses mchapoutier
+672. coterotie les binardes 2020
+673. coterotie les binardes 2023 maison stephan
+674. coterotie les birnardes 2018
+675. coterotie les birnardes 2018
+676. coterotie les essartailles les vins de vienne 2022
+677. coterotie les grandes places
+678. coterotie les grandes places 2005 domaine du monteillet
+679. coterotie les grandes places 2008 domaine cluselroch
+680. coterotie les grandes places 2011 domaine cluselroch
+681. coterotie les grandes places 2011 domaine jeanmichel gerin
+682. coterotie les grandes places 2012 domaine cluselroch
+683. coterotie les grandes places 2013 domaine du monteillet
+684. coterotie les grandes places 2014 domaine cluselroch
+685. coterotie les grandes places 2016 domaine jeanmichel gerin
+686. coterotie les grandes places 2017 domaine cluselroch
+687. coterotie les grandes places 2017 domaine jeanmichel gerin
+688. coterotie les grandes places 2018 domaine cluselroch
+689. coterotie les grandes places 2018 domaine jeanmichel gerin
+690. coterotie les grandes places 2019 domaine cluselroch
+691. coterotie les grandes places 2019 domaine jeanmichel gerin
+692. coterotie les grandes places 2020 domaine cluselroch
+693. coterotie les grandes places 2020 domaine du monteillet
+694. coterotie les grandes places 2020 domaine jeanmichel gerin
+695. coterotie les grandes places 2021 domaine cluselroch
+696. coterotie les grandes places 2021 domaine jeanmichel gerin
+697. coterotie les grandes places 2022 domaine jeanmichel gerin
+698. coterotie les grandes places 2023 domaine cluselroch
+699. coterotie les grandes places 2023 domaine jeanmichel gerin
+700. coterotie les grandes places 2023 stephane pichat
+701. coterotie les grandes places cluselroch 2018
+702. coterotie les jumelles
+703. coterotie les meandres
+704. coterotie les rochains 2015 domaine bonnefond
+705. coterotie les rochins
+706. coterotie les rochins 2017 domaine garon
+707. coterotie les rochins 2018 domaine garon
+708. coterotie les rochins 2023 domaine garon
+709. coterotie les schistes 2016 domaine cluselroch
+710. coterotie les schistes 2017 domaine cluselroch
+711. coterotie les schistes 2018 domaine cluselroch
+712. coterotie les schistes 2019 domaine cluselroch
+713. coterotie les schistes 2020 clusel roch
+714. coterotie les schistes 2020 domaine cluselroch
+715. coterotie les schistes 2023 domaine cluselroch
+716. coterotie les terrasses 2019 jeanluc jamet
+717. coterotie les triotes
+718. coterotie les triotes
+719. coterotie les triotes 2017 domaine garon
+720. coterotie les triotes 2023 domaine garon
+721. coterotie levet les journaries 2022 mag
+722. coterotie lieudit bonniviere 2015 cave yves cuilleron
+723. coterotie lieudit bonnivieres 2016 cave yves cuilleron
+724. coterotie lieudit bonnivieres 2017 cave yves cuilleron
+725. coterotie lieudit bonnivieres 2018 cave yves cuilleron
+726. coterotie lieudit bonnivieres 2022 yves cuilleron
+727. coterotie lieudit chavaroche 2022 domaine chambeyron
+728. coterotie lieudit chavaroche 2023 domaine chambeyron
+729. coterotie lieudit cotebodin 2022
+730. coterotie lieudit fongeant 2022
+731. coterotie lieudit lancement 2022 magnum
+732. coterotie lieudit semons 2020
+733. coterotie lieudit semons 2022
+734. coterotie lultime 2021 maison stephan
+735. coterotie madiniere 2022 yves cuilleron
+736. coterotie maestria 2019 vignobles levet
+737. coterotie magnum 2020
+738. coterotie maison rouge 2012 domaine georges vernay
+739. coterotie maison rouge 2013 domaine georges vernay
+740. coterotie maison rouge 2015 domaine duclaux
+741. coterotie maison rouge 2015 domaine georges vernay
+742. coterotie maison rouge 2016
+743. coterotie maison rouge 2016 domaine duclaux
+744. coterotie maison rouge 2017 domaine duclaux
+745. coterotie maison rouge 2017 domaine georges vernay
+746. coterotie maison rouge 2018 domaine duclaux
+747. coterotie maison rouge 2018 domaine georges vernay
+748. coterotie maison rouge 2019 domaine duclaux
+749. coterotie maison rouge 2019 domaine georges vernay
+750. coterotie maison rouge 2020 domaine duclaux
+751. coterotie maison rouge 2020 domaine georges vernay
+752. coterotie maison rouge 2021 domaine georges vernay
+753. coterotie maison rouge 2022 domaine duclaux
+754. coterotie maison rouge 2022 domaine georges vernay
+755. coterotie maison rouge 2023 domaine duclaux
+756. coterotie mein dorf
+757. coterotie mes grands lieux 2015 domaine stephane ogier
+758. coterotie mes grands lieux 2016 domaine stephane ogier
+759. coterotie minha aldeia
+760. coterotie mon village 2015 domaine stephane ogier
+761. coterotie mon village 2016 domaine stephane ogier
+762. coterotie mon village 2017 domaine stephane ogier
+763. coterotie mon village 2020
+764. coterotie mon village 2020 domaine stephane ogier
+765. coterotie mon village 2021 domaine stephane ogier
+766. coterotie mon village 2022 domaine stephane ogier
+767. coterotie mon village 2023 domaine stephane ogier
+768. coterotie mon village dolina rodanu 2020 stephane ogier
+769. coterotie mon village domaine stephane ogier 2022
+770. coterotie montmain 2013 domaine stephane ogier
+771. coterotie montmain 2016 domaine stephane ogier
+772. coterotie montmain 2020 domaine stephane ogier
+773. coterotie montmain 2022 ferraton pere fils
+774. coterotie my village 2020
+775. coterotie ogier 1982 exclusieve rode wijn
+776. coterotie ogier 1982 exclusive red wine
+777. coterotie ogier 1982 exklusivt rott vin
+778. coterotie pierre gaillard
+779. coterotie pierrelles paul jaboulet aine
+780. coterotie prenelle 2023
+781. coterotie promesse domaine pichon
+782. coterotie reserve
+783. coterotie reserve 2011 domaine stephane ogier
+784. coterotie reserve 2013 domaine stephane ogier
+785. coterotie reserve 2015 domaine stephane ogier
+786. coterotie rose pourpre 2019 domaine pierre gaillard
+787. coterotie rozier 2017
+788. coterotie rozier 2019
+789. coterotie schistes 2023
+790. coterotie seigneur de maugiron
+791. coterotie seigneur de maugiron 2021
+792. coterotie seigneur de maugiron 2021
+793. coterotie seigneur de maugiron 2022
+794. coterotie sereine noire 2015 domaine gangloff
+795. coterotie sobrune 2023 maison stephan
+796. coterotie stephane ogier mes grands lieux 2013
+797. coterotie terre sombre 2013 cave yves cuilleron
+798. coterotie tupins 2018
+799. coterotie vialliere 2015 domaine cluselroch
+800. coterotie vieilles vignes 2017 maison tardieulaurent
+801. coterotie vieilles vignes 2018 maison tardieulaurent
+802. coterotie vieilles vignes 2019 maison tardieulaurent
+803. coterotie vieilles vignes tardieulaurent
+804. coterotie village
+805. coterotie village 2010 domaine stephane ogier
+806. coterro crianza
+807. cotes a bras domaine du penlois aoc chiroubles 2021
+808. cotes a cotes
+809. cotes a cotes arbois domaine de la touraize
+810. cotes aux pretres
+811. cotes aux pretres 2018
+812. cotes aux pretres 2019
+813. cotes bergerac moelleux novelum
+814. cotes blanches sancerre
+815. cotes blanches sancerre pinot noir red 2022 by nicolas millet
+816. cotes blanches sancerre white 2022 by nicolas millet
+817. cotes catalanes 100 carignan by terrassous
+818. cotes catalanes 100 phrases pour eventails 2020 domaine du clos des fees
+819. cotes catalanes 100 phrases pour eventails 2022 domaine du clos des fees
+820. cotes catalanes 100 phrases pour eventails 2023 domaine du clos des fees
+821. cotes catalanes 100 phrases pour eventails 2024 domaine du clos des fees
+822. cotes catalanes 2017 domaine de lhorizon
+823. cotes catalanes 2020 domaine de lhorizon
+824. cotes catalanes 2021 calcinaires blanc
+825. cotes catalanes 2021 domaine de lhorizon
+826. cotes catalanes 2023 calcinaires blanc
+827. cotes catalanes 2023 hommage a fernand parce freres blanc
+828. cotes catalanes aimer rever prier se taire 2016 domaine du clos des fees
+829. cotes catalanes aimer rever prier se taire 2018 domaine du clos des fees
+830. cotes catalanes aimer rever prier se taire 2019 domaine du clos des fees
+831. cotes catalanes aimer rever prier se taire 2020 domaine du clos des fees
+832. cotes catalanes blanc
+833. cotes catalanes blanc 2022 vieilles vignes
+834. cotes catalanes blanc 2024 domaine de majas
+835. cotes catalanes blanc 2024 domaine de majas
+836. cotes catalanes blanc coste 2018 domaine danjoubanessy
+837. cotes catalanes blanc cote floral 2025 domaine lafage tappo a vite
+838. cotes catalanes blanc cote floral 2025 domaine lafage tappo a vite
+839. cotes catalanes blanc cote floral 2025 domaine lafage tappo a vite
+840. cotes catalanes blanc cote floral 2025 domaine lafage tappo a vite
+841. cotes catalanes blanc cote floral 2025 domaine lafage tappo a vite
+842. cotes catalanes blanc d 18 2020 olivier pithon bd vin nature
+843. cotes catalanes blanc d 18 2020 olivier pithon bd vin nature
+844. cotes catalanes blanc domaine majas cotes du roussillon
+845. cotes catalanes blanc igp 2024 domaine de majas
+846. cotes catalanes blanc igp 2024 domaine de majas
+847. cotes catalanes blanc igp 2024 domaine de majas
+848. cotes catalanes blanc igp 2024 domaine de majas
+849. cotes catalanes blanc igp 2024 domaine de majas
+850. cotes catalanes blanc igp centenaire 2022 domaine lafage wine outlet
+851. cotes catalanes blanc igp centenaire 2025 domaine lafage
+852. cotes catalanes blanc igp centenaire 2025 domaine lafage
+853. cotes catalanes blanc igp centenaire 2025 domaine lafage
+854. cotes catalanes blanc igp centenaire 2025 domaine lafage
+855. cotes catalanes blanc igp centenaire 2025 domaine lafage
+856. cotes catalanes blanc igp jasse 2021 domaine gauby
+857. cotes catalanes blanc igp jasse 2021 domaine gauby
+858. cotes catalanes blanc igp jasse 2021 domaine gauby
+859. cotes catalanes blanc igp jasse 2021 domaine gauby
+860. cotes catalanes blanc igp jasse 2021 domaine gauby
+861. cotes catalanes blanc igp jasse 2021 domaine gauby
+862. cotes catalanes blanc igp jasse 2022 domaine gauby
+863. cotes catalanes blanc igp jasse 2022 domaine gauby
+864. cotes catalanes blanc igp jasse 2022 domaine gauby
+865. cotes catalanes blanc igp les calcinaires 2022 domaine gauby
+866. cotes catalanes blanc igp les calcinaires 2022 domaine gauby
+867. cotes catalanes blanc igp les calcinaires 2022 domaine gauby
+868. cotes catalanes blanc la truffiere 2016 domaine danjoubanessy
+869. cotes catalanes blanc la truffiere 2017 domaine danjoubanessy
+870. cotes catalanes blanc la truffiere 2018 domaine danjoubanessy
+871. cotes catalanes blanc lais 2019 olivier pithon bd vin nature
+872. cotes catalanes blanc lais 2021 olivier pithon bd vin nature
+873. cotes catalanes blanc lais 2022 olivier pithon bd vin nature
+874. cotes catalanes blanc llum roc des anges
+875. cotes catalanes blanc mon ptit pithon 2024 olivier pithon bd vin nature
+876. cotes catalanes blanc mon ptit pithon 2024 olivier pithon bd vin nature
+877. cotes catalanes blanc soula 2017 le soula bd vin nature
+878. cotes catalanes blanc soula 2017 le soula bd vin nature
+879. cotes catalanes blanc vieilles vignes igp 2023 domaine gauby
+880. cotes catalanes blanc vieilles vignes igp 2023 domaine gauby
+881. cotes catalanes blanc vieilles vignes igp 2023 domaine gauby
+882. cotes catalanes blanc vieilles vignes igp 2023 domaine gauby
+883. cotes catalanes blanc vieilles vignes igp 2023 domaine gauby
+884. cotes catalanes calcinaires 2024 domaine gauby rouge
+885. cotes catalanes calcinaires rouge 2024 domaine gauby
+886. cotes catalanes carignan 1903 2021 domaine le roc des anges
+887. cotes catalanes carignan 1903 2023 domaine le roc des anges
+888. cotes catalanes carignan cayrol 2024 domaine lafage
+889. cotes catalanes carignan cayrol 2024 domaine lafage
+890. cotes catalanes carignan cayrol 2024 domaine lafage
+891. cotes catalanes carignan cayrol 2024 domaine lafage
+892. cotes catalanes carignan cayrol 2024 domaine lafage
+893. cotes catalanes cau eden lulu
+894. cotes catalanes chat du marquis 2019 clos des fees
+895. cotes catalanes clos des escounils 2018 domaine danjoubanessy
+896. cotes catalanes clos des escounils 2020 domaine danjoubanessy
+897. cotes catalanes clos des escounils 2021 domaine danjoubanessy
+898. cotes catalanes clos des escounils 2022 domaine danjoubanessy
+899. cotes catalanes clos des escounils 2023 domaine danjoubanessy
+900. cotes catalanes col du loup clos du rouge gorge cyril fhal 2020
+901. cotes catalanes cortado
+902. cotes catalanes cortado 2023 domaine de majas
+903. cotes catalanes cortado 2023 domaine de majas
+904. cotes catalanes cortado domaine majas cotes du roussillon
+905. cotes catalanes coste 2019 domaine danjoubanessy
+906. cotes catalanes coste 2020 domaine danjoubanessy
+907. cotes catalanes coste 2021 domaine danjoubanessy
+908. cotes catalanes coste 2022 domaine danjoubanessy
+909. cotes catalanes coste 2023 domaine danjoubanessy
+910. cotes catalanes domaine boudau le petit closi red
+911. cotes catalanes domaine boudau le petit closi rose
+912. cotes catalanes domaine boudau petit closi muscat sec
+913. cotes catalanes domaine gauby muntada 2020
+914. cotes catalanes espurna 2018 domaine danjoubanessy
+915. cotes catalanes espurna 2020 domaine danjoubanessy
+916. cotes catalanes estaca 2015 domaine danjoubanessy
+917. cotes catalanes estaca 2018 domaine danjoubanessy
+918. cotes catalanes estaca 2019 domaine danjoubanessy
+919. cotes catalanes estaca 2020 domaine danjoubanessy
+920. cotes catalanes estaca 2021 domaine danjoubanessy
+921. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+922. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+923. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+924. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+925. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+926. cotes catalanes grenache noir vieilles vignes igp nicolas 2022 domaine lafage wine outlet
+927. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 domaine lafage
+928. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 domaine lafage
+929. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 domaine lafage
+930. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 magnum domaine lafage
+931. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 magnum domaine lafage
+932. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 magnum domaine lafage
+933. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 magnum domaine lafage
+934. cotes catalanes grenache noir vieilles vignes igp nicolas 2023 magnum domaine lafage
+935. cotes catalanes iglesia vella 2021 domaine le roc des anges
+936. cotes catalanes iglesia vella 2023 domaine le roc des anges
+937. cotes catalanes igp
+938. cotes catalanes igp
+939. cotes catalanes igp cote rose 2024 domaine lafage tappo a vite
+940. cotes catalanes igp cote rose 2024 domaine lafage tappo a vite
+941. cotes catalanes igp cote rose 2024 domaine lafage tappo a vite
+942. cotes catalanes igp cote rose 2025 domaine lafage tappo a vite
+943. cotes catalanes igp cote rose 2025 domaine lafage tappo a vite
+944. cotes catalanes igp cote rose 2025 domaine lafage tappo a vite
+945. cotes catalanes igp cote rose 2025 domaine lafage tappo a vite
+946. cotes catalanes igp cote rose 2025 domaine lafage tappo a vite
+947. cotes catalanes igp domaine de lhorizon blanc 2012 domaine de lhorizon
+948. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon
+949. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon
+950. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon
+951. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon
+952. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+953. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+954. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+955. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+956. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+957. cotes catalanes igp domaine de lhorizon blanc 2014 domaine de lhorizon wine outlet
+958. cotes catalanes igp domaine de lhorizon blanc 2015 domaine de lhorizon
+959. cotes catalanes igp domaine de lhorizon blanc 2015 domaine de lhorizon
+960. cotes catalanes igp domaine de lhorizon blanc 2015 domaine de lhorizon
+961. cotes catalanes igp domaine de lhorizon blanc 2015 domaine de lhorizon
+962. cotes catalanes igp domaine de lhorizon blanc 2016 domaine de lhorizon
+963. cotes catalanes igp domaine de lhorizon blanc 2022 domaine de lhorizon
+964. cotes catalanes igp domaine de lhorizon blanc 2022 domaine de lhorizon
+965. cotes catalanes igp domaine de lhorizon blanc 2022 domaine de lhorizon
+966. cotes catalanes igp domaine de lhorizon rose 2021 domaine de lhorizon
+967. cotes catalanes igp domaine de lhorizon rose 2021 domaine de lhorizon
+968. cotes catalanes igp domaine de lhorizon rose 2021 domaine de lhorizon
+969. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+970. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+971. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+972. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+973. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+974. cotes catalanes igp domaine de lhorizon rouge 2008 domaine de lhorizon wine outlet
+975. cotes catalanes igp domaine de lhorizon rouge 2012 domaine de lhorizon wine outlet
+976. cotes catalanes igp domaine de lhorizon rouge 2012 domaine de lhorizon wine outlet
+977. cotes catalanes igp domaine de lhorizon rouge 2012 domaine de lhorizon wine outlet
+978. cotes catalanes igp domaine de lhorizon rouge 2013 domaine de lhorizon wine outlet
+979. cotes catalanes igp domaine de lhorizon rouge 2013 domaine de lhorizon wine outlet
+980. cotes catalanes igp domaine de lhorizon rouge 2013 domaine de lhorizon wine outlet
+981. cotes catalanes igp domaine de lhorizon rouge 2018 domaine de lhorizon
+982. cotes catalanes igp domaine de lhorizon rouge 2018 domaine de lhorizon
+983. cotes catalanes igp domaine de lhorizon rouge 2018 domaine de lhorizon
+984. cotes catalanes igp domaine de lhorizon rouge 2018 domaine de lhorizon
+985. cotes catalanes igp domaine de lhorizon rouge 2019 domaine de lhorizon
+986. cotes catalanes igp domaine de lhorizon rouge 2019 domaine de lhorizon
+987. cotes catalanes igp esprit de lhorizon blanc 2022 domaine de lhorizon
+988. cotes catalanes igp esprit de lhorizon blanc 2022 domaine de lhorizon
+989. cotes catalanes igp esprit de lhorizon blanc 2022 domaine de lhorizon
+990. cotes catalanes igp esprit de lhorizon rouge 2020 domaine de lhorizon
+991. cotes catalanes igp esprit de lhorizon rouge 2020 domaine de lhorizon
+992. cotes catalanes igp esprit de lhorizon rouge 2020 domaine de lhorizon
+993. cotes catalanes igp esprit de lhorizon rouge 2020 domaine de lhorizon
+994. cotes catalanes igp fragment domaine paul meuniercenternach 2023
+995. cotes catalanes igp mar i muntanya 2022 domaine de lhorizon
+996. cotes catalanes igp mar i muntanya 2022 domaine de lhorizon
+997. cotes catalanes igp mar i muntanya 2022 domaine de lhorizon
+998. cotes catalanes igp mar i muntanya rose 2022 domaine de lhorizon
+999. cotes catalanes igp mar i muntanya rouge 2022 domaine de lhorizon
+1000. cotes catalanes igp matassa blanc 2022 magnum domaine matassa
+23:44

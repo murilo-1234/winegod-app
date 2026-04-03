@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. 2021 cannery row monterey county chardonnay
+2. 2021 cannery row monterey county chardonnay
+3. 2021 cannery row monterey county gewurztraminer
+4. 2021 cannery row monterey county gewurztraminer
+5. 2021 cannery row monterey county white blend
+6. 2021 cannery row monterey county white blend
+7. 2021 cannery row monterey county zinfandel
+8. 2021 cannery row monterey county zinfandel
+9. 2021 cannery row viognier
+10. 2021 cannery row viognier
+11. 2021 cannery row white blend
+12. 2021 cannery row white blend
+13. 2021 cannery row white blend
+14. 2021 cannubi barolo docg
+15. 2021 cantina del pino barbaresco
+16. 2021 cantina del pino barbaresco ovello
+17. 2021 cantina di negrar valpolicella ripasso doc classico superiore
+18. 2021 cantina di solopaca aglianico igp
+19. 2021 cantina di solopaca aglianico igp
+20. 2021 cantina di solopaca bianco igp
+21. 2021 cantina di solopaca bianco igp
+22. 2021 cantina di solopaca falanghina igp
+23. 2021 cantina di solopaca falanghina igp
+24. 2021 cantina di solopaca rosso igt
+25. 2021 cantina di solopaca rosso igt
+26. 2021 cantina margo
+27. 2021 cantina terlan terlaner i grande cuvee alto adige
+28. 2021 cantina terlan terlaner i grande cuvee alto adige future arrival
+29. 2021 cantina terlan terlaner nova domus riserva
+30. 2021 cantina terlano terlaner 1 grand cuvee
+31. 2021 cantine antonio caggiano greco di tufo devon future arrival
+32. 2021 cantine paolini gurgo frappato syrah 2021
+33. 2021 canus friuli colli orientali ribolla gialla nov 24 somm6 club
+34. 2021 capanna moscadello di montalcino tuscany italy
+35. 2021 caparsa chianti classico
+36. 2021 cape blend
+37. 2021 cappellano barbera dalba
+38. 2021 caraccioli pinot noir santa lucia highlands escolle vineyard
+39. 2021 carboniste pinot grigio pet nat brut nature california usa
+40. 2021 carignan libre domaine terre ensems
+41. 2021 carillon dangelus saintemilion grand cru
+42. 2021 carillon dangelus saintemilion grand cru
+43. 2021 carillon dangelus saintemilion grand cru future arrival
+44. 2021 carmenere clone 2
+45. 2021 carmenere ivan s
+46. 2021 carmenere roccolo igt
+47. 2021 carmenere syrah mourvedre
+48. 2021 carmes de rieussec sauternes
+49. 2021 carmes de rieussec sauternes
+50. 2021 carmes de rieussec sauternes
+51. 2021 carmes de rieussec sauternes 1
+52. 2021 carmes de rieussec sauternes future arrival
+53. 2021 carmes de rieussec sauternes future arrival
+54. 2021 caroline morey beaune premier cru les greves rouge
+55. 2021 caroline morey beaune premier cru les greves rouge
+56. 2021 caroline morey chassagnemontrachet chambrees
+57. 2021 caroline morey chassagnemontrachet premier cru
+58. 2021 caroline morey chassagnemontrachet premier cru
+59. 2021 caroline morey chassagnemontrachet rouge
+60. 2021 caroline morey chassagnemontrachet rouge
+61. 2021 caroline morey chassagnemontrachet rouge future arrival
+62. 2021 caroline morey santenay rouge
+63. 2021 caroline morey santenay rouge
+64. 2021 caroline parent clos de vougeot grand cru future arrival
+65. 2021 carpineto brunello di montalcino future arrival
+66. 2021 carruades de lafite
+67. 2021 carruades de lafite
+68. 2021 carruades de lafite
+69. 2021 carruades de lafite
+70. 2021 carruades de lafite pauillac
+71. 2021 carruades de lafite pauillac
+72. 2021 carruades de lafite pauillac
+73. 2021 carruades de lafite pauillac
+74. 2021 carruades de lafite pauillac
+75. 2021 carruades de lafite pauillac future arrival
+76. 2021 carsten saalwachter
+77. 2021 carte blanche cabernet sauvignon missouri hopper
+78. 2021 casa castillo las gravas jumilla
+79. 2021 casa de la luna reserva de seleccion chardonnay
+80. 2021 casa de la luna reserva de seleccion chardonnay
+81. 2021 casa de la luna seleccion de enologo red blend
+82. 2021 casa de la luna seleccion de enologo red blend
+83. 2021 casa de la luna seleccion de enologo sauvignon blanc
+84. 2021 casa de la luna seleccion de enologo sauvignon blanc
+85. 2021 casa del pinaculo malbec
+86. 2021 casa del pinaculo malbec
+87. 2021 casa lapostolle clos apalta proprietary red
+88. 2021 casa lapostolle le petit clos colchagua valley
+89. 2021 casanova di neri brunello di montalcino
+90. 2021 casanova di neri brunello di montalcino future arrival
+91. 2021 casanova di neri brunello di montalcino giovanni neri
+92. 2021 casanova di neri brunello di montalcino giovanni neri future arrival
+93. 2021 casanova di neri brunello di montalcino tenuta nuova
+94. 2021 casanova di neri brunello di montalcino tenuta nuova
+95. 2021 casanova di neri brunello di montalcino tenuta nuova
+96. 2021 casanova di neri brunello di montalcino tenuta nuova future arrival
+97. 2021 casanova di neri brunello di montalcino tenuta nuova future arrival
+98. 2021 casanova di neri toscana pietradonice
+99. 2021 casanova di neri toscana pietradonice cabernet sauvignon tuscany italy
+100. 2021 casanova di neri toscana pietradonice future arrival
+101. 2021 cascina delle rose marcorino barbaresco docg italy
+102. 2021 cascina delle rose tre stelle barbaresco docg italy
+103. 2021 cascina fontana barolo falletto castiglione
+104. 2021 cascina fontana barolo falletto castiglione future arrival
+105. 2021 cascina fontana barolo falletto castiglione future arrival
+106. 2021 cascina fornace
+107. 2021 cascina lieto
+108. 2021 cascina roccalini barbaresco nebbiolo
+109. 2021 cascina tiole
+110. 2021 case casebianco
+111. 2021 cassagne et vitailles les crouzets
+112. 2021 cassagne et vitailles les crouzets
+113. 2021 castagnoli chianti classico future arrival
+114. 2021 castagnoli chianti classico js91
+115. 2021 castellano rosso piceno doc superiore 2022 magnum 1
+116. 2021 castellare chianti classico docg italian red wine
+117. 2021 castellare di castellina sodi san niccolo igt future arrival
+118. 2021 castello dei rampolla chianti classico future arrival
+119. 2021 castello dei rampolla liu toscana
+120. 2021 castello dei rampolla toscana sangiovese santa lucia igt future arrival
+121. 2021 castello della sala antinori bramito della salla umbria
+122. 2021 castello di ama apparita toscana
+123. 2021 castello di ama apparita toscana future arrival
+124. 2021 castello di ama chianti classico riserva montebuoni
+125. 2021 castello di ama chianti classico riserva montebuoni future arrival
+126. 2021 castello di ama chianti classico vigneto bellavista gran selezione
+127. 2021 castello di ama chianti classico vigneto bellavista gran selezione future arrival
+128. 2021 castello di ama chianti classico vigneto casuccia gran selezione
+129. 2021 castello di ama chianti classico vigneto casuccia gran selezione future arrival
+130. 2021 castello di ama haiku igt
+131. 2021 castello di ama haiku igt future arrival
+132. 2021 castello di ama san lorenzo chianti classico gran selezione
+133. 2021 castello di ama san lorenzo chianti classico gran selezione
+134. 2021 castello di ama san lorenzo chianti classico gran selezione docg
+135. 2021 castello di ama san lorenzo chianti classico gran selezione docg italy
+136. 2021 castello di bolgheri bolgheri superiore
+137. 2021 castello di bolgheri bolgheri superiore
+138. 2021 castello di bolgheri bolgheri superiore tuscany italy
+139. 2021 castello di bolgheri bolgheri varvara
+140. 2021 castello di meleto chianti classico tuscany italy
+141. 2021 castello di meleto chianti classico ws93js91v91jd90we90
+142. 2021 castello di monsanto chianti classico riserva
+143. 2021 castello di monsanto chianti classico riserva
+144. 2021 castello di monsanto chianti classico riserva future arrival
+145. 2021 castello di verduno barbaresco
+146. 2021 castello romitorio brunello di montalcino
+147. 2021 castello romitorio brunello di montalcino filo di seta
+148. 2021 castello romitorio brunello di montalcino filo di seta future arrival
+149. 2021 castello romitorio brunello di montalcino future arrival
+150. 2021 castillo de monseran garnacha
+151. 2021 castle grand vin
+152. 2021 castoro cellars zinfandel paso robles usa
+153. 2021 catena alta malbec historic rows mendoza
+154. 2021 catena alta malbec wa93we93ws91
+155. 2021 catena malbec
+156. 2021 catena zapata adrianna vineyard mundus bacillus terrae malbec uco valley future arrival
+157. 2021 catena zapata alta malbec
+158. 2021 catena zapata nicasia vineyard malbec
+159. 2021 catena zapata nicolas catena zapata mendoza
+160. 2021 catena zapata nicolas catena zapata mendoza future arrival
+161. 2021 cathiard vineyard estate red napa valley future arrival
+162. 2021 cauro rosso
+163. 2021 cavallotto barbera dalba superiore vigna cuculo piedmont italy
+164. 2021 cavallotto barolo bricco boschis
+165. 2021 cavallotto barolo bricco boschis
+166. 2021 cavallotto barolo bricco boschis future arrival
+167. 2021 caves desclans whispering angel cotes de provence rose
+168. 2021 caymus cabernet sauvignon napa valley
+169. 2021 caymus cabernet sauvignon napa valley
+170. 2021 caymus napa valley cabernet sauvignon
+171. 2021 caymus vineyards cabernet sauvignon
+172. 2021 caymus vineyards cabernet sauvignon napa valley usa
+173. 2021 caymussuisun grand durif petite sirah california
+174. 2021 caymussuisun grand durif suisun valley usa
+175. 2021 cedar crest margaret river sauvignon blancsemillon
+176. 2021 cedar crest margaret river sauvignon blancsemillon
+177. 2021 cedar crest sauvignon blanc
+178. 2021 cedar crest sauvignon blanc
+179. 2021 cederberg five generations cabernet sauvignon western cape
+180. 2021 cedric bouchard roses de jeanne cote de val vilaine
+181. 2021 cedric bouchard roses de jeanne cote de val vilaine
+182. 2021 cedric bouchard roses de jeanne cote de val vilaine
+183. 2021 cedric bouchard roses de jeanne cote de val vilaine future arrival
+184. 2021 cedric bouchard roses de jeanne urles ursules blanc de noirs champagne france
+185. 2021 celene saphir rose brut 2021
+186. 2021 cellier saint benoit chardonnay la marcette
+187. 2021 central otago pinot noir
+188. 2021 cerasuolo di vittoria
+189. 2021 cerbaia chianti classico
+190. 2021 cerbaia chianti classico future arrival
+191. 2021 cerbaiona brunello di montalcino
+192. 2021 cerbaiona brunello di montalcino
+193. 2021 cerbaiona brunello di montalcino future arrival
+194. 2021 cerbaiona brunello di montalcino future arrival
+195. 2021 ceres hautmedoc
+196. 2021 ceres hautmedoc future arrival
+197. 2021 ceretto barbaresco wa94js93we92
+198. 2021 ceretto barolo bricco rocche
+199. 2021 ceretto barolo future arrival
+200. 2021 ceritas cuvee chloe pinot noir sonoma coast future arrival
+201. 2021 ceritas elliott vineyard pinot noir sonoma coast
+202. 2021 ceritas elliott vineyard pinot noir sonoma coast
+203. 2021 ceritas elliott vineyard pinot noir sonoma coast
+204. 2021 ceritas occidental vineyard pinot noir sonoma coast
+205. 2021 ceritas occidental vineyard pinot noir sonoma coast
+206. 2021 ceritas occidental vineyard pinot noir sonoma coast
+207. 2021 ceritas occidental vineyard pinot noir sonoma coast
+208. 2021 ceritas peter martin ray vineyard cabernet sauvignon santa cruz mountains
+209. 2021 ceritas peter martin ray vineyard cabernet sauvignon santa cruz mountains
+210. 2021 ceritas peter martin ray vineyard cabernet sauvignon santa cruz mountains
+211. 2021 ceritas peter martin ray vineyard cabernet sauvignon santa cruz mountains future arrival
+212. 2021 ceritas peter martin ray vineyard cabernet sauvignon santa cruz mountains usa
+213. 2021 cesare bussolo barolo fossati
+214. 2021 cesare bussolo barolo fossati future arrival
+215. 2021 ch angludet margaux mg
+216. 2021 ch daiguilhe cotes castillon
+217. 2021 ch darmailhac pauillac 5 cru
+218. 2021 chablis
+219. 2021 chablis
+220. 2021 chablis 1er cru fourchaume vieilles vignes
+221. 2021 chablis 1er cru vaulorent
+222. 2021 chablis grand cru grenouilles
+223. 2021 chablis grand cru les clos
+224. 2021 chablis la sereine
+225. 2021 chablis la sereine
+226. 2021 chablis premier beauroy
+227. 2021 chablis premier cru cote de lechet
+228. 2021 chablis premier cru cote de savant
+229. 2021 chablis vaudesir
+230. 2021 chalkstone vermentino
+231. 2021 chalmers nero davola heathcote australia
+232. 2021 chalmers wines nero davola heathcote victoria australia
+233. 2021 chambeyron
+234. 2021 champagne marguet
+235. 2021 champagne marguet
+236. 2021 champagne marguet
+237. 2021 chandon de briailles savignylesbeaune 1er cru les lavieres
+238. 2021 chantereves bourgogne aligote bas des ees
+239. 2021 chapelle dausone saintemilion grand cru
+240. 2021 chapelle dausone saintemilion grand cru
+241. 2021 chapelle dausone saintemilion grand cru
+242. 2021 chapelle dausone saintemilion grand cru
+243. 2021 chapelle dausone saintemilion grand cru
+244. 2021 chapelle dausone saintemilion grand cru future arrival
+245. 2021 chapelle de blagny pulignymontrachet premier cru hameau de blagny
+246. 2021 chapelle de blagny pulignymontrachet premier cru hameau de blagny future arrival
+247. 2021 chapelle st theodoric chateauneufdupape le grand pin
+248. 2021 chapelle st theodoric chateauneufdupape le grand pin future arrival
+249. 2021 chappellet pritchard hill cabernet sauvignon napa valley usa
+250. 2021 chardonnay
+251. 2021 chardonnay
+252. 2021 chardonnay
+253. 2021 chardonnay
+254. 2021 chardonnay
+255. 2021 chardonnay
+256. 2021 chardonnay
+257. 2021 chardonnay
+258. 2021 chardonnay 500 vdpgutswein
+259. 2021 chardonnay block 2
+260. 2021 chardonnay block 6
+261. 2021 chardonnay carneros
+262. 2021 chardonnay carneros select
+263. 2021 chardonnay colombard ultramineral
+264. 2021 chardonnay dozen rrp
+265. 2021 chardonnay estate grown
+266. 2021 chardonnay fermo
+267. 2021 chardonnay gavin vineyard
+268. 2021 chardonnay macvin
+269. 2021 chardonnay manic pixie dream
+270. 2021 chardonnay nobilis ried rettenberg sudsteiermark dac
+271. 2021 chardonnay oaked single vineyard
+272. 2021 chardonnay premier voyage
+273. 2021 chardonnay primera
+274. 2021 chardonnay sanct valentin sudtirol italien
+275. 2021 chardonnay sonoma coast
+276. 2021 chardonnay trocken
+277. 2021 chardonnay trocken im holzfass gereift
+278. 2021 chardonnay trocken qba
+279. 2021 chardonnay unoaked
+280. 2021 chardonnay unoaked single vineyard
+281. 2021 chardonnay weingut hirtl
+282. 2021 chardonnay weingut hirtl 0
+283. 2021 chariot red wine
+284. 2021 chariot red wine
+285. 2021 charlene et laurent pinson preuses grand cru chablis future arrival
+286. 2021 charles dufour vin de comptoir l2182 vdf future arrival
+287. 2021 charles lachaux nuitssaintgeorges premier cru aux argillas
+288. 2021 charles lachaux nuitssaintgeorges premier cru aux argillas
+289. 2021 charles lachaux nuitssaintgeorges premier cru aux argillas future arrival
+290. 2021 charles lachaux nuitssaintgeorges premier cru aux argillas future arrival
+291. 2021 charles melton the father in law shiraz
+292. 2021 charles van canneyt chambertin clos de beze gc
+293. 2021 charles van canneyt chambertinclos de beze grand cru
+294. 2021 charles van canneyt chambertinclos de beze grand cru
+295. 2021 charles van canneyt chambertinclos de beze grand cru
+296. 2021 charles van canneyt chambertinclos de beze grand cru future arrival
+297. 2021 charles van canneyt charmeschambertin grand cru
+298. 2021 charles van canneyt charmeschambertin grand cru
+299. 2021 charles van canneyt corton grand cru
+300. 2021 charles van canneyt corton grand cru
+301. 2021 charles van canneyt corton grand cru future arrival
+302. 2021 charles van canneyt griottechambertin grand cru
+303. 2021 charles van canneyt griottechambertin grand cru
+304. 2021 charles van canneyt griottechambertin grand cru
+305. 2021 charles van canneyt griottechambertin grand cru future arrival
+306. 2021 charles van canneyt moreysaintdenis 1er cru les sorbets
+307. 2021 charles woodsons intercept red blend
+308. 2021 charlotte pinot noir grande reserve
+309. 2021 charta riesling
+310. 2021 chassagnemontrachet blanc
+311. 2021 chaste shiraz 5 year cellar release
+312. 2021 chateau andron blanquet saintestephe future arrival
+313. 2021 chateau angelus
+314. 2021 chateau angelus
+315. 2021 chateau angelus premier grand cru classe a saintemilion grand cru
+316. 2021 chateau angelus premier grand cru classe a saintemilion grand cru
+317. 2021 chateau angelus premier grand cru classe a saintemilion grand cru
+318. 2021 chateau angelus premier grand cru classe a saintemilion grand cru
+319. 2021 chateau angelus premier grand cru classe a saintemilion grand cru future arrival
+320. 2021 chateau angelus saintemilion 1er grand cru classe a
+321. 2021 chateau angludet margaux
+322. 2021 chateau angludet margaux
+323. 2021 chateau angludet margaux future arrival
+324. 2021 chateau angludet margaux future arrival
+325. 2021 chateau ausone
+326. 2021 chateau ausone
+327. 2021 chateau ausone
+328. 2021 chateau ausone chapelle dausone
+329. 2021 chateau ausone premier grand cru classe a saintemilion grand cru
+330. 2021 chateau ausone premier grand cru classe a saintemilion grand cru
+331. 2021 chateau ausone premier grand cru classe a saintemilion grand cru future arrival
+332. 2021 chateau ausone premier grand cru classe a saintemilion grand cru future arrival
+333. 2021 chateau barbier clos mogador priorat doc
+334. 2021 chateau barbier clos mogador priorat doc
+335. 2021 chateau barbier clos mogador priorat doc
+336. 2021 chateau barde haut grand cru classe saintemilion grand cru future arrival
+337. 2021 chateau batailley 5eme cru classe pauillac
+338. 2021 chateau batailley 5eme cru classe pauillac
+339. 2021 chateau batailley 5eme cru classe pauillac
+340. 2021 chateau batailley 5eme cru classe pauillac
+341. 2021 chateau batailley 5eme cru classe pauillac
+342. 2021 chateau batailley 5eme cru classe pauillac future arrival
+343. 2021 chateau batailley 5eme cru classe pauillac future arrival
+344. 2021 chateau beaucastel chateauneuf du pape magnum
+345. 2021 chateau beaumont hautmedoc
+346. 2021 chateau beauregard pomerol
+347. 2021 chateau beauregard pomerol
+348. 2021 chateau beauregard pomerol
+349. 2021 chateau beauregard pomerol
+350. 2021 chateau beauregard pomerol
+351. 2021 chateau beauregard pomerol bio grand vin de pomerol
+352. 2021 chateau beauregard pomerol future arrival
+353. 2021 chateau beauregard pomerol future arrival
+354. 2021 chateau beauregard pomerol future arrival
+355. 2021 chateau beauregard pomerol future arrival
+356. 2021 chateau beausejour becot
+357. 2021 chateau beausejour becot premier grand cru classe b saintemilion grand cru
+358. 2021 chateau beausejour becot premier grand cru classe b saintemilion grand cru
+359. 2021 chateau beausejour becot premier grand cru classe b saintemilion grand cru
+360. 2021 chateau beausejour duffau lagarrosse saint emilion
+361. 2021 chateau beausejour duffaulagarosse saintemilion 1er grand cru classe b
+362. 2021 chateau beausejour duffaulagarrosse premier grand cru classe b saintemilion grand cru
+363. 2021 chateau beausejour duffaulagarrosse premier grand cru classe b saintemilion grand cru
+364. 2021 chateau beausejour duffaulagarrosse premier grand cru classe b saintemilion grand cru future arrival
+365. 2021 chateau belairmonange
+366. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+367. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+368. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+369. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+370. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+371. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru
+372. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru future arrival
+373. 2021 chateau belairmonange premier grand cru classe b saintemilion grand cru future arrival
+374. 2021 chateau belgrave 5eme cru classe hautmedoc
+375. 2021 chateau belgrave 5eme cru classe hautmedoc future arrival
+376. 2021 chateau bellefontbelcier grand cru classe saintemilion grand cru
+377. 2021 chateau bellefontbelcier grand cru classe saintemilion grand cru future arrival
+378. 2021 chateau bellefontbelcier grand cru classe saintemilion grand cru future arrival
+379. 2021 chateau bellefontbelcier grand cru classe saintemilion grand cru future arrival
+380. 2021 chateau bellefontbelcier grand cru classe saintemilion grand cru future arrival
+381. 2021 chateau bellegrave pauillac
+382. 2021 chateau bellegrave pauillac future arrival
+383. 2021 chateau bellegrave pomerol
+384. 2021 chateau bellegrave pomerol future arrival
+385. 2021 chateau bellegrave pomerol future arrival
+386. 2021 chateau bellevue grand cru classe saintemilion grand cru
+387. 2021 chateau bellevue grand cru classe saintemilion grand cru future arrival
+388. 2021 chateau bellevuemondotte saintemilion grand cru
+389. 2021 chateau bellevuemondotte saintemilion grand cru
+390. 2021 chateau berliquet grand cru classe saintemilion grand cru
+391. 2021 chateau berliquet grand cru classe saintemilion grand cru
+392. 2021 chateau berliquet grand cru classe saintemilion grand cru
+393. 2021 chateau berliquet grand cru classe saintemilion grand cru
+394. 2021 chateau berliquet grand cru classe saintemilion grand cru future arrival
+395. 2021 chateau berliquet grand cru classe saintemilion grand cru future arrival
+396. 2021 chateau beychevelle 4eme cru classe saintjulien
+397. 2021 chateau beychevelle 4eme cru classe saintjulien
+398. 2021 chateau beychevelle 4eme cru classe saintjulien
+399. 2021 chateau beychevelle 4eme cru classe saintjulien
+400. 2021 chateau beychevelle 4eme cru classe saintjulien
+401. 2021 chateau beychevelle 4eme cru classe saintjulien
+402. 2021 chateau beychevelle 4eme cru classe saintjulien
+403. 2021 chateau beychevelle 4eme cru classe saintjulien
+404. 2021 chateau beychevelle 4eme cru classe saintjulien
+405. 2021 chateau beychevelle 4eme cru classe saintjulien future arrival
+406. 2021 chateau beychevelle 4eme cru classe saintjulien future arrival
+407. 2021 chateau beychevelle 4eme cru classe saintjulien future arrival
+408. 2021 chateau beychevelle saint julien
+409. 2021 chateau bourgneuf pomerol
+410. 2021 chateau bourgneuf pomerol
+411. 2021 chateau bourgneuf pomerol
+412. 2021 chateau bourgneuf pomerol
+413. 2021 chateau bourgneuf pomerol famille vayron vignerons a pomerol
+414. 2021 chateau bourgneuf pomerol future arrival
+415. 2021 chateau bourgneuf pomerol future arrival
+416. 2021 chateau bourgneuf pomerol future arrival
+417. 2021 chateau bouscaut blanc cru classe pessacleognan
+418. 2021 chateau bouscaut blanc cru classe pessacleognan future arrival
+419. 2021 chateau bouscaut pessacleognan france
+420. 2021 chateau bouscaut rouge cru classe pessacleognan
+421. 2021 chateau bouscaut rouge cru classe pessacleognan future arrival
+422. 2021 chateau boydcantenac 3eme cru classe margaux
+423. 2021 chateau boydcantenac 3eme cru classe margaux
+424. 2021 chateau boydcantenac 3eme cru classe margaux
+425. 2021 chateau boydcantenac 3eme cru classe margaux
+426. 2021 chateau boydcantenac 3eme cru classe margaux future arrival
+427. 2021 chateau boydcantenac 3eme cru classe margaux future arrival
+428. 2021 chateau branaireducru
+429. 2021 chateau branaireducru 4eme cru classe saintjulien
+430. 2021 chateau branaireducru 4eme cru classe saintjulien
+431. 2021 chateau branaireducru 4eme cru classe saintjulien
+432. 2021 chateau branaireducru 4eme cru classe saintjulien
+433. 2021 chateau branaireducru 4eme cru classe saintjulien
+434. 2021 chateau branaireducru 4eme cru classe saintjulien
+435. 2021 chateau branaireducru 4eme cru classe saintjulien
+436. 2021 chateau branaireducru 4eme cru classe saintjulien future arrival
+437. 2021 chateau branaireducru 4eme cru classe saintjulien future arrival
+438. 2021 chateau branaireducru 4eme cru classe saintjulien future arrival
+439. 2021 chateau branaireducru 4eme cru classe saintjulien future arrival
+440. 2021 chateau branas grand poujeaux moulis en medoc
+441. 2021 chateau branas grand poujeaux moulis en medoc future arrival
+442. 2021 chateau branecantenac 2eme cru classe margaux
+443. 2021 chateau branecantenac 2eme cru classe margaux
+444. 2021 chateau branecantenac 2eme cru classe margaux
+445. 2021 chateau branecantenac 2eme cru classe margaux
+446. 2021 chateau branecantenac 2eme cru classe margaux future arrival
+447. 2021 chateau branecantenac 2eme cru classe margaux future arrival
+448. 2021 chateau branecantenac 2eme cru classe margaux future arrival
+449. 2021 chateau branecantenac 2eme cru classe margaux future arrival
+450. 2021 chateau branecantenac margaux france
+451. 2021 chateau branecantenac margaux france
+452. 2021 chateau brown blanc pessacleognan
+453. 2021 chateau brown blanc pessacleognan future arrival
+454. 2021 chateau brown rouge pessacleognan
+455. 2021 chateau brown rouge pessacleognan future arrival
+456. 2021 chateau calon segur
+457. 2021 chateau calon segur 3eme cru classe saintestephe
+458. 2021 chateau calon segur 3eme cru classe saintestephe
+459. 2021 chateau calon segur 3eme cru classe saintestephe
+460. 2021 chateau calon segur 3eme cru classe saintestephe
+461. 2021 chateau calon segur 3eme cru classe saintestephe future arrival
+462. 2021 chateau calon segur 3eme cru classe saintestephe future arrival
+463. 2021 chateau calon segur 3eme cru classe saintestephe future arrival
+464. 2021 chateau calon segur saint estephe
+465. 2021 chateau calonsegur
+466. 2021 chateau calonsegur
+467. 2021 chateau calonsegur saintestephe
+468. 2021 chateau canon
+469. 2021 chateau canon la gaffeliere
+470. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru
+471. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru
+472. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru
+473. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru
+474. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+475. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+476. 2021 chateau canon la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+477. 2021 chateau canon pecresse canonfronsac future arrival
+478. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+479. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+480. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+481. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+482. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+483. 2021 chateau canon premier grand cru classe b saintemilion grand cru
+484. 2021 chateau canon premier grand cru classe b saintemilion grand cru future arrival
+485. 2021 chateau canon premier grand cru classe b saintemilion grand cru future arrival
+486. 2021 chateau canon premier grand cru classe b saintemilion grand cru future arrival
+487. 2021 chateau canon saint emilion
+488. 2021 chateau canon saintemilion grand cru classe
+489. 2021 chateau canon st emilion
+490. 2021 chateau canonla gaffeliere stemilion
+491. 2021 chateau cantemerle 5eme cru classe hautmedoc
+492. 2021 chateau cantemerle 5eme cru classe hautmedoc
+493. 2021 chateau cantemerle 5eme cru classe hautmedoc
+494. 2021 chateau cantemerle 5eme cru classe hautmedoc future arrival
+495. 2021 chateau cantemerle 5eme cru classe hautmedoc future arrival
+496. 2021 chateau cantemerle hautmedoc 2021
+497. 2021 chateau cantenac brown 3eme cru classe margaux
+498. 2021 chateau cantenac brown 3eme cru classe margaux
+499. 2021 chateau cantenac brown 3eme cru classe margaux
+500. 2021 chateau cantenac brown 3eme cru classe margaux
+501. 2021 chateau cantenac brown 3eme cru classe margaux future arrival
+502. 2021 chateau cantenac brown 3eme cru classe margaux future arrival
+503. 2021 chateau cantenac brown 3eme cru classe margaux future arrival
+504. 2021 chateau cantenac brown margaux
+505. 2021 chateau cantenac brown margaux 3eme grand cru classe
+506. 2021 chateau cap de faugeres castilloncotes de bordeaux
+507. 2021 chateau cap de faugeres castilloncotes de bordeaux future arrival
+508. 2021 chateau cap leon veyrin listracmedoc
+509. 2021 chateau cap leon veyrin listracmedoc future arrival
+510. 2021 chateau cap st george saintgeorgessaintemilion future arrival
+511. 2021 chateau capbern saintestephe
+512. 2021 chateau capbern saintestephe
+513. 2021 chateau capbern saintestephe future arrival
+514. 2021 chateau capbern saintestephe future arrival
+515. 2021 chateau capbern saintestephe future arrival
+516. 2021 chateau carbonnieux blanc pessacleognan cru classe
+517. 2021 chateau carbonnieux blanc prearrival
+518. 2021 chateau carbonnieux pessac leognan grand cru classe blanc
+519. 2021 chateau carbonnieux pessacleognan grand cru classe de graves blanc we95v94js93wa91ws90
+520. 2021 chateau carbonnieux rouge cru classe pessacleognan
+521. 2021 chateau carbonnieux rouge cru classe pessacleognan
+522. 2021 chateau carbonnieux rouge cru classe pessacleognan future arrival
+523. 2021 chateau carbonnieux rouge cru classe pessacleognan future arrival
+524. 2021 chateau carbonnieux rouge cru classe pessacleognan future arrival
+525. 2021 chateau certan de may
+526. 2021 chateau certan de may
+527. 2021 chateau certan de may pomerol
+528. 2021 chateau certan de may pomerol
+529. 2021 chateau certan de may pomerol
+530. 2021 chateau certan de may pomerol future arrival
+531. 2021 chateau chassespleen bordeaux blanc de chassespleen
+532. 2021 chateau chassespleen bordeaux blanc de chassespleen future arrival
+533. 2021 chateau chassespleen moulis en medoc
+534. 2021 chateau chassespleen moulis en medoc
+535. 2021 chateau chassespleen moulis en medoc
+536. 2021 chateau chassespleen moulis en medoc future arrival
+537. 2021 chateau chassespleen moulis en medoc future arrival
+538. 2021 chateau chassespleen moulis en medoc future arrival
+539. 2021 chateau chassespleen moulisenmedoc
+540. 2021 chateau chassespleen moulisenmedoc grand vin du medoc
+541. 2021 chateau chauvin grand cru classe saintemilion grand cru
+542. 2021 chateau chauvin grand cru classe saintemilion grand cru future arrival
+543. 2021 chateau cheval blanc
+544. 2021 chateau cheval blanc
+545. 2021 chateau cheval blanc
+546. 2021 chateau cheval blanc le petit cheval blanc bordeaux
+547. 2021 chateau cheval blanc le petit cheval blanc bordeaux
+548. 2021 chateau cheval blanc le petit cheval blanc bordeaux
+549. 2021 chateau cheval blanc le petit cheval rouge saintemilion grand cru future arrival
+550. 2021 chateau cheval blanc le petit cheval saintemilion grand cru
+551. 2021 chateau cheval blanc le petit cheval saintemilion grand cru
+552. 2021 chateau cheval blanc petit cheval
+553. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+554. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+555. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+556. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+557. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+558. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru
+559. 2021 chateau cheval blanc premier grand cru classe a saintemilion grand cru future arrival
+560. 2021 chateau cheval blanc saint emilion
+561. 2021 chateau cheval blanc saintemilion rp97pts
+562. 2021 chateau citran hautmedoc future arrival
+563. 2021 chateau clarisse puisseguinsaintemilion
+564. 2021 chateau clementpichon hautmedoc future arrival
+565. 2021 chateau clementpichon hautmedoc future arrival
+566. 2021 chateau clerc milon 5eme cru classe pauillac
+567. 2021 chateau clerc milon 5eme cru classe pauillac
+568. 2021 chateau clerc milon 5eme cru classe pauillac
+569. 2021 chateau clerc milon 5eme cru classe pauillac
+570. 2021 chateau clerc milon 5eme cru classe pauillac
+571. 2021 chateau clerc milon 5eme cru classe pauillac
+572. 2021 chateau clerc milon 5eme cru classe pauillac
+573. 2021 chateau clerc milon 5eme cru classe pauillac future arrival
+574. 2021 chateau clerc milon grand cru classe pauillac
+575. 2021 chateau clercmilon
+576. 2021 chateau clercmilon pauillac 5eme grand cru classe
+577. 2021 chateau clinet
+578. 2021 chateau clinet pomerol
+579. 2021 chateau clinet pomerol
+580. 2021 chateau clinet pomerol
+581. 2021 chateau clinet pomerol
+582. 2021 chateau clinet pomerol
+583. 2021 chateau clinet pomerol
+584. 2021 chateau clinet pomerol future arrival
+585. 2021 chateau clinet pomerol future arrival
+586. 2021 chateau clinet pomerol future arrival
+587. 2021 chateau corbin grand cru classe saintemilion grand cru
+588. 2021 chateau corbin grand cru classe saintemilion grand cru future arrival
+589. 2021 chateau corbin grand cru classe saintemilion grand cru future arrival
+590. 2021 chateau cos destournel
+591. 2021 chateau cos destournel
+592. 2021 chateau cos destournel 2eme cru classe saintestephe
+593. 2021 chateau cos destournel 2eme cru classe saintestephe
+594. 2021 chateau cos destournel blanc
+595. 2021 chateau cos destournel blanc
+596. 2021 chateau cos destournel saintestephe 2eme grand cru classe
+597. 2021 chateau cos destournel saintestephe 2eme grand cru classe
+598. 2021 chateau cos destournel saintestephe france
+599. 2021 chateau cos destournel saintestephe we98pts
+600. 2021 chateau cos labory 5eme cru classe saintestephe
+601. 2021 chateau cos labory 5eme cru classe saintestephe
+602. 2021 chateau cos labory 5eme cru classe saintestephe future arrival
+603. 2021 chateau cos labory 5eme cru classe saintestephe future arrival
+604. 2021 chateau cos labory 5eme cru classe saintestephe future arrival
+605. 2021 chateau cos labory 5eme cru classe saintestephe future arrival
+606. 2021 chateau cosdestournel
+607. 2021 chateau cosdestournel blanc
+608. 2021 chateau couhins blanc cru classe pessacleognan future arrival
+609. 2021 chateau coutet premier cru classe barsac
+610. 2021 chateau coutet premier cru classe barsac
+611. 2021 chateau coutet premier cru classe barsac
+612. 2021 chateau coutet premier cru classe barsac future arrival
+613. 2021 chateau coutet saint emilion grand cru
+614. 2021 chateau coutet saint emilion grand cru cuvee demoiselle
+615. 2021 chateau croix de labrie saintemilion future arrival
+616. 2021 chateau croix de labrie saintemilion grand cru
+617. 2021 chateau croix de labrie saintemilion grand cru
+618. 2021 chateau croixmouton bordeaux superieur
+619. 2021 chateau croixmouton bordeaux superieur future arrival
+620. 2021 chateau croizetbages 5eme cru classe pauillac
+621. 2021 chateau croizetbages 5eme cru classe pauillac
+622. 2021 chateau croizetbages 5eme cru classe pauillac future arrival
+623. 2021 chateau croque michotte saintemilion future arrival
+624. 2021 chateau croque michotte saintemilion future arrival
+625. 2021 chateau daiguilhe castilloncotes de bordeaux
+626. 2021 chateau daiguilhe castilloncotes de bordeaux future arrival
+627. 2021 chateau daiguilhe castilloncotes de bordeaux future arrival
+628. 2021 chateau dalem fronsac
+629. 2021 chateau dalem fronsac future arrival
+630. 2021 chateau dalem fronsac future arrival
+631. 2021 chateau dalem fronsac future arrival
+632. 2021 chateau darmailhac 5eme cru classe pauillac
+633. 2021 chateau darmailhac 5eme cru classe pauillac
+634. 2021 chateau darmailhac 5eme cru classe pauillac
+635. 2021 chateau darmailhac 5eme cru classe pauillac
+636. 2021 chateau darmailhac 5eme cru classe pauillac
+637. 2021 chateau darmailhac 5eme cru classe pauillac
+638. 2021 chateau darmailhac 5eme cru classe pauillac future arrival
+639. 2021 chateau darmailhac pauillac
+640. 2021 chateau darsac margaux future arrival
+641. 2021 chateau dassault grand cru classe saintemilion grand cru future arrival
+642. 2021 chateau dauzac 5eme cru classe margaux
+643. 2021 chateau dauzac 5eme cru classe margaux future arrival
+644. 2021 chateau de beaucastel chateauneuf du pape roussanne vv
+645. 2021 chateau de beaucastel chateauneufdupape
+646. 2021 chateau de beaucastel chateauneufdupape
+647. 2021 chateau de beaucastel chateauneufdupape blanc
+648. 2021 chateau de beaucastel chateauneufdupape rouge bio
+649. 2021 chateau de beaucastel coudoulet de beaucastel cotesdurhone
+650. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+651. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+652. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+653. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+654. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+655. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+656. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+657. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape
+658. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape future arrival
+659. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape future arrival
+660. 2021 chateau de beaucastel hommage a jacques perrin chateauneufdupape future arrival
+661. 2021 chateau de beaucastel rouge
+662. 2021 chateau de beaucastel rouge chateauneufdupape
+663. 2021 chateau de beaucastel rouge chateauneufdupape
+664. 2021 chateau de beaucastel rouge chateauneufdupape
+665. 2021 chateau de beaucastel rouge chateauneufdupape future arrival
+666. 2021 chateau de beaucastel roussanne vieilles vignes chateauneufdupape
+667. 2021 chateau de beaucastel roussanne vieilles vignes chateauneufdupape
+668. 2021 chateau de beaucastel roussanne vieilles vignes chateauneufdupape
+669. 2021 chateau de beaucastel roussanne vieilles vignes chateauneufdupape future arrival
+670. 2021 chateau de beru
+671. 2021 chateau de beru aligote
+672. 2021 chateau de beru chablis clos beru monopole burgundy france
+673. 2021 chateau de beru chablis terrois de beru
+674. 2021 chateau de beru chablis terrois de beru
+675. 2021 chateau de beru chablis terrois de beru
+676. 2021 chateau de beru clos beru chablis monopole
+677. 2021 chateau de beru cote aux pretres chablis burgundy france
+678. 2021 chateau de beru terroirs de beru chablis burgundy france
+679. 2021 chateau de camensac 5eme cru classe hautmedoc
+680. 2021 chateau de camensac 5eme cru classe hautmedoc future arrival
+681. 2021 chateau de chantegrive caroline graves future arrival
+682. 2021 chateau de ferrand grand cru classe saintemilion grand cru future arrival
+683. 2021 chateau de ferrand grand cru classe saintemilion grand cru future arrival
+684. 2021 chateau de fieuzal blanc pessacleognan
+685. 2021 chateau de fieuzal blanc pessacleognan
+686. 2021 chateau de fieuzal blanc pessacleognan future arrival
+687. 2021 chateau de fieuzal rouge cru classe pessacleognan
+688. 2021 chateau de fieuzal rouge cru classe pessacleognan future arrival
+689. 2021 chateau de fosseseche arcane saumur blanc
+690. 2021 chateau de fosseseche eolithe future arrival
+691. 2021 chateau de fosseseche saumur eolithe
+692. 2021 chateau de fosseseche saumur gondwana future arrival
+693. 2021 chateau de france blanc pessacleognan future arrival
+694. 2021 chateau de france rouge pessacleognan future arrival
+695. 2021 chateau de janicon graves rouge
+696. 2021 chateau de la cour dargent bordeaux superieur future arrival
+697. 2021 chateau de la dauphine fronsac
+698. 2021 chateau de la dauphine fronsac future arrival
+699. 2021 chateau de la font du loup chateauneufdupape rhone france
+700. 2021 chateau de la maltroye batard montrachet grand cru
+701. 2021 chateau de la maltroye bourgogne chardonnay blanc
+702. 2021 chateau de la maltroye bourgogne chardonnay blanc
+703. 2021 chateau de la maltroye chassagne montrachet 1er cru clos du chateau blanc monopole
+704. 2021 chateau de la maltroye chassagne montrachet 1er cru clos du chateau rouge monopole
+705. 2021 chateau de la maltroye chassagne montrachet 1er cru dent de chien
+706. 2021 chateau de la maltroye chassagne montrachet 1er cru grandes ruchotte
+707. 2021 chateau de la maltroye chassagne montrachet 1er cru morgeot vigne blanche
+708. 2021 chateau de la maltroye chassagne montrachet blanc
+709. 2021 chateau de la maltroye chassagne montrachet blanc
+710. 2021 chateau de la maltroye chassagne montrachet la dent de chien
+711. 2021 chateau de la maltroye chassagne montrachet morgeot vignes blanches
+712. 2021 chateau de la riviere fronsac future arrival
+713. 2021 chateau de la riviere fronsac future arrival
+714. 2021 chateau de lamarque hautmedoc future arrival
+715. 2021 chateau de meursault meursault premier cru charmes future arrival
+716. 2021 chateau de montmirail vacqueyras les deux freres
+717. 2021 chateau de pez saintestephe we94js93d92v91wa90
+718. 2021 chateau de pressac grand cru classe saintemilion grand cru future arrival
+719. 2021 chateau de rayne vigneau premier cru classe sauternes
+720. 2021 chateau de rayne vigneau premier cru classe sauternes
+721. 2021 chateau de rayne vigneau premier cru classe sauternes future arrival
+722. 2021 chateau de respide rouge graves future arrival
+723. 2021 chateau de saint cosme gigondas hominis fides
+724. 2021 chateau de saint cosme gigondas hominis fides future arrival
+725. 2021 chateau de saint cosme gigondas le claux
+726. 2021 chateau de saint cosme gigondas le claux
+727. 2021 chateau de saint cosme gigondas le claux future arrival
+728. 2021 chateau de saint cosme gigondas le claux jd9597d96
+729. 2021 chateau de sales pomerol
+730. 2021 chateau de sales pomerol future arrival
+731. 2021 chateau de villeneuve saumur cormiers
+732. 2021 chateau de villeneuve saumur cormiers future arrival
+733. 2021 chateau des bachelards saintamour comtesse de vazeilles future arrival
+734. 2021 chateau des tours cotes du rhone rouge
+735. 2021 chateau des tours cotes du rhone rouge rhone valley france
+736. 2021 chateau desclans garrus rose
+737. 2021 chateau desclans rock angel cotes de provence
+738. 2021 chateau desclans rose esclans cotes de provence
+739. 2021 chateau desclans rose esclans cotes de provence
+740. 2021 chateau desclans rose esclans cotes de provence future arrival
+741. 2021 chateau desclans whispering angel cotes de provence
+742. 2021 chateau desclans whispering angel cotes de provence future arrival
+743. 2021 chateau desclans whispering angel cotes de provence rose
+744. 2021 chateau desmirail 3eme cru classe margaux
+745. 2021 chateau desmirail 3eme cru classe margaux
+746. 2021 chateau desmirail 3eme cru classe margaux
+747. 2021 chateau desmirail 3eme cru classe margaux
+748. 2021 chateau desmirail 3eme cru classe margaux future arrival
+749. 2021 chateau desmirail 3eme cru classe margaux future arrival
+750. 2021 chateau destieux grand cru classe saintemilion grand cru future arrival
+751. 2021 chateau deyrem valentin margaux future arrival
+752. 2021 chateau dissan 3eme cru classe margaux
+753. 2021 chateau dissan 3eme cru classe margaux
+754. 2021 chateau dissan 3eme cru classe margaux
+755. 2021 chateau dissan 3eme cru classe margaux
+756. 2021 chateau dissan 3eme cru classe margaux
+757. 2021 chateau dissan 3eme cru classe margaux future arrival
+758. 2021 chateau dissan 3eme cru classe margaux future arrival
+759. 2021 chateau dissan 3eme cru classe margaux future arrival
+760. 2021 chateau dissan blason dissan
+761. 2021 chateau dissan hautmedoc
+762. 2021 chateau dissan margaux
+763. 2021 chateau dissan margaux france
+764. 2021 chateau du glana saintjulien future arrival
+765. 2021 chateau du moulinavent moulinavent couvent des thorins beaujolais france
+766. 2021 chateau du retout hautmedoc
+767. 2021 chateau du retout hautmedoc prearrival
+768. 2021 chateau du tertre 5eme cru classe margaux
+769. 2021 chateau du tertre 5eme cru classe margaux
+770. 2021 chateau du tertre 5eme cru classe margaux
+771. 2021 chateau du tertre 5eme cru classe margaux
+772. 2021 chateau du tertre 5eme cru classe margaux future arrival
+773. 2021 chateau du vieux marronnier cotes du bourg bordeaux rouge
+774. 2021 chateau du vieux marronnier cotes du bourg bordeaux rouge
+775. 2021 chateau ducru beaucaillou saintjulien 2eme cru classe
+776. 2021 chateau ducrubeaucaillou
+777. 2021 chateau ducrubeaucaillou grand cru classe st julien
+778. 2021 chateau ducrubeaucaillou saintjulien 2eme grand cru classe
+779. 2021 chateau ducrubeaucaillou saintjulien france
+780. 2021 chateau duhartmilon
+781. 2021 chateau duhartmilon 4eme cru classe pauillac
+782. 2021 chateau duhartmilon 4eme cru classe pauillac
+783. 2021 chateau duhartmilon 4eme cru classe pauillac
+784. 2021 chateau duhartmilon 4eme cru classe pauillac
+785. 2021 chateau duhartmilon 4eme cru classe pauillac
+786. 2021 chateau duhartmilon 4eme cru classe pauillac
+787. 2021 chateau duhartmilon 4eme cru classe pauillac future arrival
+788. 2021 chateau duhartmilon 4eme cru classe pauillac future arrival
+789. 2021 chateau duhartmilon 4eme cru classe pauillac future arrival
+790. 2021 chateau duhartmilon pauillac grand cru classe
+791. 2021 chateau durfort vivens
+792. 2021 chateau durfortvivens 2eme cru classe margaux
+793. 2021 chateau durfortvivens 2eme cru classe margaux
+794. 2021 chateau durfortvivens 2eme cru classe margaux
+795. 2021 chateau durfortvivens 2eme cru classe margaux
+796. 2021 chateau durfortvivens 2eme cru classe margaux
+797. 2021 chateau durfortvivens 2eme cru classe margaux
+798. 2021 chateau durfortvivens 2eme cru classe margaux future arrival
+799. 2021 chateau durfortvivens 2eme cru classe margaux future arrival
+800. 2021 chateau durfortvivens 2eme cru classe margaux future arrival
+801. 2021 chateau dutruch grand poujeaux moulis en medoc
+802. 2021 chateau dutruch grand poujeaux moulis en medoc future arrival
+803. 2021 chateau dyquem
+804. 2021 chateau dyquem 1er grand cru classe en 1855
+805. 2021 chateau dyquem premier cru superieur sauternes
+806. 2021 chateau dyquem premier cru superieur sauternes
+807. 2021 chateau dyquem premier cru superieur sauternes
+808. 2021 chateau dyquem premier cru superieur sauternes
+809. 2021 chateau dyquem premier cru superieur sauternes
+810. 2021 chateau dyquem premier cru superieur sauternes
+811. 2021 chateau dyquem premier cru superieur sauternes
+812. 2021 chateau dyquem premier cru superieur sauternes 6
+813. 2021 chateau dyquem premier cru superieur sauternes bordeaux france
+814. 2021 chateau dyquem premier cru superieur sauternes bordeaux france
+815. 2021 chateau dyquem premier cru superieur sauternes future arrival
+816. 2021 chateau dyquem premier cru superieur sauternes future arrival
+817. 2021 chateau dyquem premier cru superieur sauternes future arrival
+818. 2021 chateau dyquem sauternes
+819. 2021 chateau dyquem sauternes 1er grand cru classe superieur demie
+820. 2021 chateau dyquem sauternes magnum
+821. 2021 chateau dyquem ygrec
+822. 2021 chateau dyquem ygrec
+823. 2021 chateau enclos tourmaline pomerol future arrival
+824. 2021 chateau faugeres grand cru classe saintemilion grand cru
+825. 2021 chateau ferrande blanc graves
+826. 2021 chateau ferrande blanc graves future arrival
+827. 2021 chateau ferrande rouge graves future arrival
+828. 2021 chateau ferriere 3eme cru classe margaux
+829. 2021 chateau ferriere 3eme cru classe margaux
+830. 2021 chateau ferriere 3eme cru classe margaux
+831. 2021 chateau ferriere 3eme cru classe margaux
+832. 2021 chateau ferriere 3eme cru classe margaux future arrival
+833. 2021 chateau ferriere 3eme cru classe margaux future arrival
+834. 2021 chateau ferriere 3eme cru classe margaux future arrival
+835. 2021 chateau ferriere bio 3 cru classe margaux
+836. 2021 chateau feytitclinet pomerol
+837. 2021 chateau feytitclinet pomerol
+838. 2021 chateau feytitclinet pomerol
+839. 2021 chateau feytitclinet pomerol future arrival
+840. 2021 chateau feytitclinet pomerol future arrival
+841. 2021 chateau figeac
+842. 2021 chateau figeac
+843. 2021 chateau figeac premier grand cru classe
+844. 2021 chateau figeac premier grand cru classe
+845. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+846. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+847. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+848. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+849. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+850. 2021 chateau figeac premier grand cru classe b saintemilion grand cru
+851. 2021 chateau figeac premier grand cru classe b saintemilion grand cru future arrival
+852. 2021 chateau figeac premier grand cru classe b saintemilion grand cru future arrival
+853. 2021 chateau figeac saint emilion
+854. 2021 chateau figeac saint emilion grand cru classe
+855. 2021 chateau figeac saintemilion 1er grand cru classe
+856. 2021 chateau figeac saintemilion grand cru france
+857. 2021 chateau figeac st emilion
+858. 2021 chateau fombrauge grand cru classe saintemilion grand cru
+859. 2021 chateau fombrauge grand cru classe saintemilion grand cru
+860. 2021 chateau fombrauge grand cru classe saintemilion grand cru future arrival
+861. 2021 chateau larrivet hautbrion blanc pessacleognan future arrival
+862. 2021 chateau les carmes hautbrion pessacleognan future arrival
+863. 2021 chateau pichon longueville comtesse de lalande
+864. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+865. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+866. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+867. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+868. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+869. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+870. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+871. 2021 chateau pichon longueville comtesse de lalande 2eme cru classe pauillac
+872. 2021 chateau pichonlongueville comtesse de lalande pauillac
+873. 2021 chateau pichonlonguevillecomtesse de lalande
+874. 2021 chateau picque caillou pessacleognan blanc bordeaux france
+875. 2021 chateau plince pomerol
+876. 2021 chateau plince pomerol future arrival
+877. 2021 chateau plince pomerol future arrival
+878. 2021 chateau pontet canet 5e gr cru classe
+879. 2021 chateau pontetcanet
+880. 2021 chateau pontetcanet 5eme cru classe pauillac
+881. 2021 chateau pontetcanet 5eme cru classe pauillac
+882. 2021 chateau pontetcanet 5eme cru classe pauillac
+883. 2021 chateau pontetcanet 5eme cru classe pauillac
+884. 2021 chateau pontetcanet 5eme cru classe pauillac
+885. 2021 chateau pontetcanet 5eme cru classe pauillac
+886. 2021 chateau pontetcanet 5eme cru classe pauillac
+887. 2021 chateau pontetcanet 5eme cru classe pauillac
+888. 2021 chateau pontetcanet 5eme cru classe pauillac
+889. 2021 chateau pontetcanet 5eme cru classe pauillac future arrival
+890. 2021 chateau pontetcanet 5eme cru classe pauillac future arrival
+891. 2021 chateau pontetcanet 5eme cru classe pauillac future arrival
+892. 2021 chateau pontetcanet pauillac
+893. 2021 chateau pontetcanet pauillac 5eme grand cru classe
+894. 2021 chateau pontetcanet pauillac grand cru classe
+895. 2021 chateau pontetcanet pauillac grand cru classe
+896. 2021 chateau potensac medoc
+897. 2021 chateau potensac medoc
+898. 2021 chateau potensac medoc
+899. 2021 chateau potensac medoc future arrival
+900. 2021 chateau potensac medoc future arrival
+901. 2021 chateau pouget 4eme cru classe margaux future arrival
+902. 2021 chateau poujeaux moulis en medoc
+903. 2021 chateau poujeaux moulis en medoc future arrival
+904. 2021 chateau poujeaux moulis en medoc future arrival
+905. 2021 chateau poujeaux moulis en medoc future arrival
+906. 2021 chateau prieurelichine 4eme cru classe margaux
+907. 2021 chateau prieurelichine 4eme cru classe margaux
+908. 2021 chateau prieurelichine 4eme cru classe margaux
+909. 2021 chateau prieurelichine 4eme cru classe margaux
+910. 2021 chateau prieurelichine 4eme cru classe margaux future arrival
+911. 2021 chateau prieurelichine 4eme cru classe margaux future arrival
+912. 2021 chateau puygueraud blanc francscotes de bordeaux
+913. 2021 chateau puygueraud francscotes de bordeaux blanc
+914. 2021 chateau quinault lenclos grand cru classe saintemilion grand cru
+915. 2021 chateau quinault lenclos grand cru classe saintemilion grand cru
+916. 2021 chateau quinault lenclos grand cru classe saintemilion grand cru future arrival
+917. 2021 chateau quinault lenclos grand cru classe saintemilion grand cru future arrival
+918. 2021 chateau quinault lenclos grand cru saintemilion grand cru
+919. 2021 chateau quintus saintemilion grand cru
+920. 2021 chateau quintus saintemilion grand cru
+921. 2021 chateau quintus saintemilion grand cru
+922. 2021 chateau quintus saintemilion grand cru
+923. 2021 chateau quintus saintemilion grand cru
+924. 2021 chateau quintus saintemilion grand cru future arrival
+925. 2021 chateau quintus saintemilion grand cru future arrival
+926. 2021 chateau rahoul rouge graves future arrival
+927. 2021 chateau rauzan segla
+928. 2021 chateau rauzan segla
+929. 2021 chateau rauzangassies 2eme cru classe margaux
+930. 2021 chateau rauzangassies 2eme cru classe margaux
+931. 2021 chateau rauzangassies 2eme cru classe margaux
+932. 2021 chateau rauzangassies 2eme cru classe margaux future arrival
+933. 2021 chateau rauzangassies 2eme cru classe margaux future arrival
+934. 2021 chateau rauzangassies 2eme cru classe margaux future arrival
+935. 2021 chateau rauzansegla
+936. 2021 chateau rauzansegla
+937. 2021 chateau rauzansegla
+938. 2021 chateau rauzansegla 2eme cru classe margaux
+939. 2021 chateau rauzansegla 2eme cru classe margaux
+940. 2021 chateau rauzansegla 2eme cru classe margaux
+941. 2021 chateau rauzansegla 2eme cru classe margaux
+942. 2021 chateau rauzansegla 2eme cru classe margaux
+943. 2021 chateau rauzansegla 2eme cru classe margaux
+944. 2021 chateau rauzansegla 2eme cru classe margaux
+945. 2021 chateau rauzansegla 2eme cru classe margaux
+946. 2021 chateau rauzansegla 2eme cru classe margaux future arrival
+947. 2021 chateau rauzansegla 2eme cru classe margaux future arrival
+948. 2021 chateau rauzansegla 2eme cru classe margaux future arrival
+949. 2021 chateau rauzansegla 2eme cru classe margaux future arrival
+950. 2021 chateau rauzansegla 2eme grand cru classe 1855
+951. 2021 chateau rauzansegla margaux
+952. 2021 chateau rauzansegla margaux v97d96js95jd94
+953. 2021 chateau reysson hautmedoc future arrival
+954. 2021 chateau rieussec premier cru classe sauternes
+955. 2021 chateau rieussec premier cru classe sauternes future arrival
+956. 2021 chateau rieussec sauternes
+957. 2021 chateau rieussec sauternes 1er grand cru classe
+958. 2021 chateau rieussec sauternes jd97v9496js94wa93
+959. 2021 chateau ripeau grand cru classe saintemilion grand cru future arrival
+960. 2021 chateau rouget pomerol
+961. 2021 chateau rouget pomerol
+962. 2021 chateau rouget pomerol france
+963. 2021 chateau rouget pomerol future arrival
+964. 2021 chateau rouget pomerol future arrival
+965. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru
+966. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru
+967. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru
+968. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru future arrival
+969. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru future arrival
+970. 2021 chateau saint georges cote pavie grand cru classe saintemilion grand cru future arrival
+971. 2021 chateau sainteeulalie minervois la liviniere la cantilene
+972. 2021 chateau saintpierre 4eme cru classe saintjulien
+973. 2021 chateau saintpierre 4eme cru classe saintjulien
+974. 2021 chateau saintpierre 4eme cru classe saintjulien future arrival
+975. 2021 chateau senejac hautmedoc
+976. 2021 chateau senejac hautmedoc future arrival
+977. 2021 chateau siaurac lalande de pomerol future arrival
+978. 2021 chateau simone blanc palette
+979. 2021 chateau simone blanc palette future arrival
+980. 2021 chateau simone palette blanc
+981. 2021 chateau siran
+982. 2021 chateau siran margaux
+983. 2021 chateau siran margaux
+984. 2021 chateau siran margaux future arrival
+985. 2021 chateau smith haut lafitte blanc
+986. 2021 chateau smith haut lafitte blanc pessacleognan
+987. 2021 chateau smith haut lafitte blanc pessacleognan
+988. 2021 chateau smith haut lafitte blanc pessacleognan future arrival
+989. 2021 chateau smith haut lafitte pessacleognan france
+990. 2021 chateau smith haut lafitte rouge cru classe pessacleognan
+991. 2021 chateau smith haut lafitte rouge cru classe pessacleognan
+992. 2021 chateau smith haut lafitte rouge cru classe pessacleognan future arrival
+993. 2021 chateau smith haut lafitte rouge cru classe pessacleognan future arrival
+994. 2021 chateau smith haut lafitte rouge cru classe pessacleognan future arrival
+995. 2021 chateau smith haut lafitte rouge cru classe pessacleognan future arrival
+996. 2021 chateau smith haut lafitte rouge pessacleognan
+997. 2021 chateau smith hautlafitte grand cru classe de graves
+998. 2021 chateau sociandomallet hautmedoc
+999. 2021 chateau sociandomallet hautmedoc
+1000. 2021 chateau sociandomallet hautmedoc
+23:21

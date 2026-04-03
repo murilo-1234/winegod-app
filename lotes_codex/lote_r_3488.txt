@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. adelsheim breaking ground pinot noir 2021
+2. adelsheim breaking ground pinot noir
+3. adelsheim breaking grnd pn
+4. adelsheim boulder bluff vineyard pinot noir 6 cs 2022
+5. adelsheim artist series rose 2023
+6. adelphos vermentino igp puglia cantina angiulli
+7. adelphos verdeca vivo angiuli donato
+8. adelphos verdeca igp puglia 2024
+9. adelphos verdeca igp puglia 2022
+10. adelphos traminer aromatico cantina angiulli
+11. adelphos susumaniello rose
+12. adelphos susumaniello rosato igp puglia 2022
+13. adelphos primitivo di gioia del colle
+14. adelphos greco igp puglia angiulli donato
+15. adelphos bombino rosato vivo igp puglia
+16. adelphos bombino nero rosato igp puglia 2025
+17. adelphos bombino nero rosato igp puglia 2024
+18. adelphis speyside 10 year old
+19. adelphis private stock blend
+20. adelphis private stock blend
+21. adelphis highland 10 year old
+22. adelphis breath of the isles 16 year old 2007
+23. adelphia domaine de kre vin de france rose 2023
+24. adelphia 2023 domaine du kre
+25. adelphi white peak 5 year old 2019
+26. adelphi white peak 5 ars 20192024 cask 29 578
+27. adelphi white peak
+28. adelphi westland 2017 cask 578
+29. adelphi westland 2017 8 year old 7578 509
+30. adelphi westland 2017
+31. adelphi tobermory 18 year old 1994 cask 675031
+32. adelphi the sandebud fusion ardnamurchan high coast 6 year old
+33. adelphi the sandebud
+34. adelphi the glover 8 ars ardnamurchan and chichibu 564
+35. adelphi the glover 10th anniversary edition 545
+36. adelphi the ek 5yo
+37. adelphi the cargill ardnamurchan and cardrona
+38. adelphi teaninich 32yo
+39. adelphi teaninich 2010 15yo 706546 594
+40. adelphi teaninich 2010 12 years old
+41. adelphi teaninich 15 years 20102026
+42. adelphi teaninich 13 year old 2007 taiwan exclusive cask 301265
+43. adelphi teaninich 11 year old 2010 cask 709000
+44. adelphi st killian 2017 cask 1868 58
+45. adelphi st kilian 6 ars 58
+46. adelphi st kilian 2017
+47. adelphi speyside 10 year old 46
+48. adelphi smogen 10 year old 2013
+49. adelphi selections springbank 21 year old
+50. adelphi selection zuidam 1999 19yo cask 2574
+51. adelphi selection mortlach 17yo
+52. adelphi selection jura 2009
+53. adelphi selection inchgower 13y
+54. adelphi selection dailuaine 13 year old 2009
+55. adelphi selection craigellachie 2007
+56. adelphi selection caol ila distillery aged 10 years
+57. adelphi pulteney 2008 17yo 11 516
+58. adelphi pulteney 17 years 2008 2026
+59. adelphi private stock reserve 46
+60. adelphi private stock reserve
+61. adelphi private stock blend 40
+62. adelphi private stock blend
+63. adelphi private stock blend
+64. adelphi private stock 40
+65. adelphi private stock 40
+66. adelphi private reserve blend
+67. adelphi penderyn 8 years old 2015
+68. adelphi penderyn 2015
+69. adelphi mortlach 2003 17yo 566
+70. adelphi mortlach 1989
+71. adelphi macleans nose
+72. adelphi macduff 16y
+73. adelphi macduff 16 ars 573
+74. adelphi longmorn 1992
+75. adelphi lochlea 7 years 2018 2026
+76. adelphi lochlea 5 year old 1st fill asb 2018
+77. adelphi lochlea 2018 7yo 113 579
+78. adelphi lochlea 2018
+79. adelphi linkwood aged 15 years 1982 cask 4593 658 abv slightly low fill
+80. adelphi linkwood 2015 10 year old 312009 578
+81. adelphi linkwood 1993 25yo
+82. adelphi linkwood 14 ars 20082023 cask 805185 509
+83. adelphi linkwood 11 year old 2008 taiwan exclusive cask 308339
+84. adelphi linkwood 11 year old 2008 cask 308341
+85. adelphi linkwood 10y 599
+86. adelphi linkwood 10 ars 20122022 cask 305947 599
+87. adelphi knockdhu 2007 18yo 13818 562
+88. adelphi knockdhu 18 years 2007 2026
+89. adelphi jura 13 ars 20092022 cask 700072 551
+90. adelphi isle of arran 9 ans
+91. adelphi islay 10 year old 46
+92. adelphi invergordon 43 yo 422 cask 57150
+93. adelphi inchgower 2007 13 ars 587
+94. adelphi inchgower 14 year old 2010 cask 809891
+95. adelphi inchgower 14 ars 577
+96. adelphi inchgower 13 year old 2007 cask 800651
+97. adelphi inchgower 13 ars
+98. adelphi inchgower 12yo
+99. adelphi highland 10 year old 46
+100. adelphi high coast 10 year old 2013
+101. adelphi glenrothes 2007 15yo sherry cask
+102. adelphi glenrothes 2007 13 years old sherry cask
+103. adelphi glenrothes 2007 13 ars 598
+104. adelphi glenrothes 1991 25yo
+105. adelphi glenrothes 13 year old 2007 cask 10237
+106. adelphi glenlossie 2013 10yr
+107. adelphi glenlossie 2013 10 year
+108. adelphi glenlossie 13 ars 589
+109. adelphi glen grant 1988 29yo
+110. adelphi glen garioch 2011 12yr
+111. adelphi glen garioch 2011
+112. adelphi glen garioch 11 ars 583
+113. adelphi distillery invergordon 1972 57161
+114. adelphi distillery glenrothes 1991 5770
+115. adelphi distillery glenlossie 2009 594
+116. adelphi distillery bunnahabhain 1998 5340
+117. adelphi dailuaine 9 year single cask
+118. adelphi dailuaine 2009 13yo sherry cask
+119. adelphi dailuaine 2009
+120. adelphi dailuaine 13 ars 20092023 cask 313238 555
+121. adelphi dailuaine 12 year old firstfill sherry cask batch 3
+122. adelphi dailuaine 10 years 2015 2026
+123. adelphi dailuaine 10 year old 2015 cask 300973
+124. adelphi clynelish 2015 1st fill asb exclusive uk
+125. adelphi chichibu 8 ars 20142024 cask 3822 564
+126. adelphi chichibu 2018 cask 9197
+127. adelphi chichibu 2018 6 year old 9197 561
+128. adelphi chichibu 2018
+129. adelphi caol ila 2010 12yo sherry cask
+130. adelphi caol ila 2008 12yr 6 case
+131. adelphi caol ila 12y 574
+132. adelphi caol ila 10yo 20122022 302779 sherry 511
+133. adelphi caol ila 10 year old 2014 cask 325994
+134. adelphi caol ila 10 ars 582
+135. adelphi bunnahabhain 1998 23yo
+136. adelphi bunnahabhain 10 year old 2009 firstfill sherry cask 900021
+137. adelphi breath of the isles 16yo sherry cask
+138. adelphi breath of the isles 13yo sherry cask
+139. adelphi breath of the isles 11yo sherry cask
+140. adelphi breath of the highlands 2009 12 year old 2022 release
+141. adelphi breath of the highlands 12 year old single malt
+142. adelphi breath of speyside glenfarclas 18 year old 1991 cask 5145
+143. adelphi breath of highlands 12 ars 20092022 552
+144. adelphi benrinnes 2011 14 year old 305258 562
+145. adelphi benrinnes 14 ars 20092023 cask no 300940 553
+146. adelphi benrinnes 13yo 20062019 305389 1st fill oloroso sherry 556 wb8791
+147. adelphi benriach 12 20122024 cask 37 586
+148. adelphi bas armagnac 1994 25 years old
+149. adelphi aultmore 1992 25yo
+150. adelphi ardnamurchan 5 year old maclean bruce limited
+151. adelphi ardnamurchan 5 ars maclean bruce 20182024 58
+152. adelphi ardnamurchan 2018 maclean and bruce 58
+153. adelphi ardnamurchan 2015 5 year old for mclean and bruce
+154. adelphi ardmore 7 ars 20162024 cask 1051 611
+155. adelphi ardmore 2009
+156. adelphi ardmore 2008 709226 destilleret 23122008 12 ar 547
+157. adelphi ardmore 2002
+158. adelphi akkeshi 3 year single cask
+159. adelphi akkeshi 2018 3 year old peated cask 1004 577
+160. adelphi 2018 m b
+161. adelphi 12 anos from glenrothes
+162. adelmax plus d native 100 capsulas
+163. adello mineralwasser ohne kohlensaure pet
+164. adello mineralwasser mit kohlensaure pet
+165. adelle trapeze dress
+166. adelis classic strawberry pastila 200g
+167. adelis classic plum pastila 200g
+168. adelis classic apricot pastila 200g
+169. adeline rose 2023
+170. adeline rose
+171. adeline pays doc rose 2024 france
+172. adeline pays doc rose 2023 france
+173. adeline estate shiraz 2022
+174. adeline estate shiraz 2022
+175. adeline cap classique blanc de blancs 2012
+176. adeline cap classique blanc de blancs 2011 elegant mousserende vin
+177. adeline aude valley rose 2023
+178. adeline
+179. adelina wines grenache
+180. adelina wines 2008 shiraz
+181. adelina smith family vineyard polish hill riesling 2024 12 bottles
+182. adelina shiraz mataro clare valley 2021
+183. adelina shiraz mataro 2022 clare valley south australia
+184. adelina shiraz mataro 2022 12 bottles
+185. adelina shiraz mataro 2022
+186. adelina shiraz mataro 2022
+187. adelina shiraz mataro
+188. adelina ruchioch riesling 2022
+189. adelina ruchioch riesling 2022
+190. adelina ruchioch riesling
+191. adelina ruchioch riesling
+192. adelina polish hill river riesling 2025
+193. adelina polish hill river riesling 2022
+194. adelina polish hill riesling clare valley sa 2025
+195. adelina polish hill riesling 2024 12 bottles
+196. adelina polish hill riesling 2023 organic keto low preservative clare valley south australia
+197. adelina polish hill riesling 2022
+198. adelina polish hill riesling 2022
+199. adelina polish hill riesling 2022
+200. adelina nebbiolo 2019 clare valley south australia
+201. adelina molettieri don michele aglianico 2021
+202. adelina mclaren shiraz 2022
+203. adelina mclaren shiraz 2022
+204. adelina grenache 2020
+205. adelina field blend 2021
+206. adelina estate shiraz mataro 2023
+207. adelina estate shiraz malbec 2022
+208. adelina estate shiraz 2023 12 bottles
+209. adelina estate shiraz 2022 organic keto vegan clare valley south australia
+210. adelina estate shiraz 2021
+211. adelina estate shiraz 2021
+212. adelina estate shiraz 2020
+213. adelina estate shiraz
+214. adelina estate introspect 2022
+215. adelina estate introspect 2022
+216. adelina estate grenache 2023 12 bottles
+217. adelina estate grenache 2022
+218. adelina estate grenache 2022
+219. adelina estate grenache 2021
+220. adelina estate grenache
+221. adelina estate field blend 2023 12 bottles
+222. adelina estate 2022 shiraz mataro
+223. adelina clare valley shiraz mataro 2020
+224. adelina clare valley estate shiraz 2022
+225. adelina clare valley estate shiraz 2021
+226. adelina clair valley estate introspect field blend 2022
+227. adelina cabernet franc 2022 organic vegan gluten free clare valley south australia
+228. adelina cabernet franc 2022 12 bottles
+229. adelina cabernet franc
+230. adelina arneis 2023 organic low preservative keto clare valley south australia
+231. adelina arneis
+232. adelina 2006 clare valley shiraz
+233. adelina 2006 clare valley grenache
+234. adelia bag nypd
+235. adelia bag nypd
+236. adelholzener mineralwasser sanft 12x 075 liter mehrweg
+237. adelholzener mineralwasser naturell 12x 075 liter mehrweg
+238. adelholzener mineralwasser classic 12x 075 liter mehrweg
+239. adelheid pinot cabernet 2023
+240. adelheid pinot cabernet
+241. adelheid 2022
+242. adelheid
+243. adelgazante hierbas medicinales laboratorio homeoaleman
+244. adelgazante hierba nuestra salud
+245. adelgazamiento por cavitacion
+246. adelfio ventresca di tonno rosso
+247. adelfio tonno rosso limited edition
+248. adelfio tonno rosso
+249. adelfio tonno del mediterraneo
+250. adelfio tonno con pistacchio
+251. adelfio tonno con mentuccia
+252. adelfio sugo di pesce spada
+253. adelfio filetti di pesce spada
+254. adelfio bottarga di tonno grattugiata
+255. adeletto prosecco
+256. adele wrap top
+257. adele sud ovest laurent cazottes gaillac
+258. adele sous voile 2011
+259. adele rouze quincy 2024
+260. adele rouze quincy
+261. adele rouze quincy
+262. adele musella percorsi fiano 2019 igp
+263. adele musella percorsi cuvee spumante extra dry
+264. adele musella percorsi aglianico 2019 igp
+265. adele musella percorsi aglianico 2017 igp
+266. adele musella ma cre rosso 2019 igp
+267. adele musella ma cre rosato 2019 igp
+268. adele musella ma cre gragnano 2020
+269. adele musella ma cre bianco 2019 igp
+270. adele musella ciaurro riserva 2015 dop
+271. adele musella arecca riserva 2015 dop
+272. adele las historias detras de las canciones
+273. adele eric texier 2024
+274. adele 2024 eric texier
+275. adele 2024 eric texier
+276. adele 2023 cote du rhone blanc eric texier
+277. adele 2022
+278. adele 2022
+279. adele 2020
+280. adelbodner mineral still grun pet ew 24 x 050 liter 103495
+281. adelbodner mineral prickelnd blau mit kohlensaure pet 6 x 1 liter
+282. adelbodner mineral prickelnd blau mit kohlensaure 6 x 150 liter pet ew 3855
+283. adelbodner mineral prickelnd blau mit kohlensaure 24 x 050 liter pet ew 103494
+284. adelbodner mineral mit kohlensaure pet
+285. adelbodner mineral mit kohlensaure pet
+286. adelbodner mineral mit kohlensaure glas
+287. adelbodner mineral cristal ohne kohlensaeure glas 12 x 1 liter
+288. adelbodner mineral cristal mit kohlensaeure glas 12 x 1 liter
+289. adelbodner holunderbluten ew 6 x 150 liter pet 103487
+290. adelbodner holunderbluten ew 6 x 050 liter 103486
+291. adelbodner crystal ohne kohlensaure pet
+292. adelbodner crystal ohne kohlensaure glas
+293. adelbodner bargtee thymian 6 x 050 liter pet ew 103230
+294. adelbodner bargtee thymian
+295. adelbodner bargtee pfefferminzzitrone 6 x 050 liter pet ew 103229
+296. adelbodner bargtee minze
+297. adelbodner apfelschorle 6 x 150 liter pet ew 103201
+298. adelbodner 1559 still grun 20 x 040 liter mwglas
+299. adelbodner 1559 still grun 12 x 080 liter mwglas
+300. adelbodner 1559 prickelnd blau 20 x 040 liter mwglas
+301. adelbodner 1559 prickelnd blau 12 x 080 liter mwglas
+302. adelberts triple b cans
+303. adelberts travelin man cans
+304. adelberts travelin man 1 2 barrel kegs
+305. adelberts scratchin hippo cans
+306. adelberts philosophizer saison cans
+307. adelberts naked nun wit cans
+308. adelberts naked nun wit 1 2 barrel keg
+309. adelberts hibiscus saison cans
+310. adelante old vines malbec la consulta
+311. adelante old vines malbec
+312. adelante malbec mendoza 2022
+313. adelante malbec mendoza 2022
+314. adelante malbec
+315. adelante la consulta vineyard old vines malbec valle de uco mendoza argentina 2022
+316. adelaides coconut
+317. adelaides carmel mocha
+318. adelaide tributa 1866 quinta vallado
+319. adelaide hills wine region map
+320. adelaide hills truffle brie 230280g
+321. adelaide hills truffle brie 180g
+322. adelaide hills triple cream brie 200250g
+323. adelaide hills pinot syrah 2022
+324. adelaide hills pinot noir 2023
+325. adelaide hills m3 chardonnay 2022 shaw smith
+326. adelaide hills m3 chardonnay 2022 shaw smith
+327. adelaide hills distillery rosso vermouth
+328. adelaide hills distillery rosso vermouth
+329. adelaide hills distillery rose vermouth
+330. adelaide hills distillery rose vermouth
+331. adelaide hills distillery orange bitters aperitif
+332. adelaide hills distillery orange bitters aperitif
+333. adelaide hills distillery italian small batch bitter orange aperitif
+334. adelaide hills distillery gunnery
+335. adelaide hills distillery estate negroni pack set of x 3
+336. adelaide hills distillery estate negroni pack
+337. adelaide hills distillery dry vermouth
+338. adelaide hills distillery dry vermouth
+339. adelaide hills distillery bitter orange aperitif
+340. adelaide hills distillery barrel aged pastrey
+341. adelaide hills distillery 78 degrees dry vermouth
+342. adelaide hills distillery 78 degrees bitter orange aperitif
+343. adelaide hills chardonnay 2023
+344. adelaide hills chardonnay 2022
+345. adelaide hills chardonnay 2022
+346. adelaide hills chardonnay
+347. adelaide hills chardonnay
+348. adelaide hills ash brie 200g
+349. adelaide hills 78 degrees pastrey
+350. adelaide chardonnay igt veronese
+351. adelaide apa flea
+352. adelaide 2014
+353. adelaide 2013 barolo fossati
+354. adelaide 2013 barolo cannubi
+355. adelaide
+356. adelaide
+357. adelaide
+358. adelaide
+359. adelaide
+360. adelaida zinfandel estate 2020
+361. adelaida zinfandel 2018
+362. adelaida zinfandel
+363. adelaida viognier annas vineyard 2020
+364. adelaida vineyards hmr estate vineyard adelaida district pinot noir 2021
+365. adelaida touriga 2012
+366. adelaida syrah viking estate 2008
+367. adelaida syrah reserve glenrose 2007
+368. adelaida syrah reserve chelle mountain 2007
+369. adelaida pinot noir hmr estate vineyard 2021
+370. adelaida pinot noir hmr 2020
+371. adelaida pinot noir estate 2020
+372. adelaida pinot noir 2022
+373. adelaida pinot noir
+374. adelaida nebbiolo 2012
+375. adelaida keeper 2020
+376. adelaida hmr pinot noir estate vineyard paso robles 1999
+377. adelaida hmr estate pinot noir
+378. adelaida chardonnay hmr estate vineyard 2023
+379. adelaida chardonnay hmr 2021
+380. adelaida chardonnay hmr 2020
+381. adelaida cellars zinfandel
+382. adelaida cabernet sauvignon reserve 2007
+383. adelaida cabernet sauvignon paso robles 2023
+384. adelaida cabernet sauvignon 2023
+385. adelaida cabernet sauvignon 2023
+386. adelaida cabernet sauvignon 2020
+387. adelaida cabernet sauvignon
+388. adelaida cabernet sauvignon
+389. adelaida annas estate vineyard white wine paso robles 2023
+390. adela sparkling cabernet sauvignon
+391. adel cuvee
+392. adel 90 tabletas hahnemann
+393. adel 2023
+394. adel 180 tabletas hahnermann
+395. adegasguimaro tinto joven 2023
+396. adegasguimaro camino real 2022
+397. adegas valminor serra da estrela albarino 2024
+398. adegas valminor minius godello 2021
+399. adegas valminor albarino o rosal 2024
+400. adegas valminor albarino
+401. adegas tollodouro tollodouro rias baixas 2022 white dry 125 075
+402. adegas tollodouro rias baixas albarino 2023
+403. adegas tollodouro pontellon albarino
+404. adegas terrae pepa porter godello monterrei spain 2022
+405. adegas terrae barbadelo mencia ribeira sacra spain 2021
+406. adegas laureatus reveleste albarino 2023
+407. adegas laudesfinca agochada
+408. adegas laudes ribeiro
+409. adegas guimaro tinto joven mencia galicia spain
+410. adegas guimaro tinto joven 2023
+411. adegas guimaro ribeira sacra tinto
+412. adegas guimaro finca capelinos 2022
+413. adegas guimaro blanco 2023
+414. adegas gran vinum seleccion especial albarino 2024
+415. adegas gran vinum seleccion especial albarino 2024
+416. adegas gran vinum nessa albarino 2024
+417. adegas gran vinum nessa albarino
+418. adegas gran vinum mar de vinas albarino 2024
+419. adegas gran vinum esencia divina albarino 2024
+420. adegas galegas serra da estrela albarino 2024 rias baixas spain
+421. adegas galegas pazo la maza albarino 2024
+422. adegas galegas don pedro de soutomaior albarino 2024 rias baixas spain
+423. adegas galegas andaina godello 2024
+424. adegas galegas albarino veigadares 2022
+425. adegas francisco fernandez terra minei ribeiro spain 2021
+426. adegas cooperativa guimaraes vinho verde doc
+427. adegas belem arinto portugal
+428. adegas arousa valdemonxes albarino rias baixas spain 2024 case of 12 bottles
+429. adegas arousa pazo da boucina albarino rias baixas spain 2024 case of 12 bottles
+430. adegas
+431. adegamae whiteblend reserva
+432. adegamae whiteblend
+433. adegamae viosinho white wine
+434. adegamae viosinho
+435. adegamae viosinho
+436. adegamae viognier branco 2021
+437. adegamae viognier branco 2017
+438. adegamae viognier 2017
+439. adegamae viognier
+440. adegamae vinhas velhas white wine
+441. adegamae vinhas velhas vital branco 2018
+442. adegamae vinhas velhas branco 2019
+443. adegamae vinhas velhas 2019
+444. adegamae touriga nacional tinto
+445. adegamae touriga nacional red wine
+446. adegamae touriga nacional
+447. adegamae touriga nacional
+448. adegamae touriga nacional
+449. adegamae touriga franca tinto 2020
+450. adegamae touriga franca red wine
+451. adegamae touriga franca 2016
+452. adegamae touriga franca
+453. adegamae tinto atlantico red wine
+454. adegamae tinto atlantico pinot noir 2018
+455. adegamae terroir tinto red wine
+456. adegamae terroir tinto 2016
+457. adegamae terroir tinto 2015
+458. adegamae terroir tinto 2015
+459. adegamae terroir red
+460. adegamae terroir branco 2018
+461. adegamae terroir branco 2017
+462. adegamae terroir branco 2016
+463. adegamae terroir branco 2014
+464. adegamae terroir 2016
+465. adegamae terroir 2015
+466. adegamae special editions visita e prova de vinhos
+467. adegamae sparkling pinot noir
+468. adegamae sparkling brut nature
+469. adegamae sparkling blanc de blancs
+470. adegamae silver visita e prova de vinhos
+471. adegamae sauvignon blanc branco 2020
+472. adegamae sauvignon blanc branco
+473. adegamae sauvignon blanc 2019
+474. adegamae sauvignon blanc
+475. adegamae sauvignon blanc
+476. adegamae roseblend
+477. adegamae rose
+478. adegamae riesling branco 2020
+479. adegamae riesling branco 2015
+480. adegamae riesling branco
+481. adegamae riesling 2016
+482. adegamae riesling
+483. adegamae riesling
+484. adegamae reserva white
+485. adegamae reserva tinto 2019
+486. adegamae reserva tinto 2017
+487. adegamae reserva tinto 2017
+488. adegamae reserva red
+489. adegamae reserva branco 2020
+490. adegamae reserva branco 2019
+491. adegamae reserva branco 2019
+492. adegamae redblend reserva ic lisboa 2023
+493. adegamae redblend reserva
+494. adegamae redblend reserva
+495. adegamae redblend
+496. adegamae redblend
+497. adegamae pinta negra tinto x
+498. adegamae pinta negra tinto x
+499. adegamae pinta negra tinto blend
+500. adegamae pinta negra reserva tinto x
+501. adegamae pinta negra reserva tinto x
+502. adegamae pinta negra reserva tinto blend x
+503. adegamae pinta negra reserva tinto blend
+504. adegamae pinta negra reserva blanco blend x
+505. adegamae pinta negra reserva blanco blend
+506. adegamae pinta negra lisboa tinto
+507. adegamae pinta negra brut sparkling wine
+508. adegamae pinta negra branco white wine bag in box
+509. adegamae pinta negra branco white wine
+510. adegamae pinot noir tinto 2019
+511. adegamae pinot noir tinto 2017
+512. adegamae pinot noir tinto
+513. adegamae pinot noir 2019
+514. adegamae petit verdot
+515. adegamae petit verdot
+516. adegamae parcela amarela
+517. adegamae old vines vital
+518. adegamae merlot tinto
+519. adegamae merlot
+520. adegamae marlindo ic lisboa 2024
+521. adegamae late harvest 2021 37
+522. adegamae late harvest
+523. adegamae gold visita e prova de vinhos
+524. adegamae dory vinho tinto portugal 2021
+525. adegamae dory tinto x
+526. adegamae dory tinto x
+527. adegamae dory tinto 2023
+528. adegamae dory tinto 2020
+529. adegamae dory tinto
+530. adegamae dory tinto
+531. adegamae dory reserva white
+532. adegamae dory reserva white
+533. adegamae dory reserva red
+534. adegamae dory red
+535. adegamae dory lisboa tinto 2021
+536. adegamae dory branco 2024
+537. adegamae dory branco 2021
+538. adegamae dory branco
+539. adegamae dory blend tinto x
+540. adegamae dory blend tinto
+541. adegamae dory blend rosado x
+542. adegamae dory blend rosado
+543. adegamae dory blanco
+544. adegamae chardonnay branco 2020
+545. adegamae chardonnay branco 2018
+546. adegamae chardonnay branco
+547. adegamae chardonnay 2019
+548. adegamae chardonnay
+549. adegamae chardonnay
+550. adegamae castelao
+551. adegamae cabernet sauvignon tinto 2018
+552. adegamae cabernet sauvignon red wine
+553. adegamae cabernet sauvignon 2017
+554. adegamae cabernet sauvignon
+555. adegamae bronze visita e prova de vinhos
+556. adegamae blanc de blancs
+557. adegamae bio white
+558. adegamae bio red
+559. adegamae atlantico tinto 2020
+560. adegamae atlantico 2020
+561. adegamae atlantic pinot noir
+562. adegamae arinto branco 2019
+563. adegamae arinto branco
+564. adegamae arinto 2019
+565. adegamae arinto
+566. adegamae alvarinho white wine
+567. adegamae alvarinho
+568. adegamae 221 white
+569. adegamae 221 alvarinho 2016
+570. adega viuva gomes white 2020
+571. adega viuva gomes viticultores tinto 2022
+572. adega viuva gomes viticultores red 2022
+573. adega viuva gomes vinho tinto colares doc portugal 2015
+574. adega viuva gomes vinho branco colares doc portugal 2021
+575. adega viuva gomes tinto colares doc portugal 1965
+576. adega viuva gomes tinto 1967
+577. adega viuva gomes reserva tinto colares doc portugal 1969
+578. adega viuva gomes reserva tinto colares doc portugal 1967
+579. adega viuva gomes reserva red 1969
+580. adega viuva gomes reserva collares branco 1969 11
+581. adega viuva gomes reserva colares tinto 1969 11
+582. adega viuva gomes red 2015
+583. adega viuva gomes pirata tuttifruti tinto 2021 colares portugal
+584. adega viuva gomes pirata da viuva tuttifruti portugal 2021
+585. adega viuva gomes pirata da viuva tutti frutti 2021 doc colar portugal 12
+586. adega viuva gomes pirata da viuva castelao portugal 2021
+587. adega viuva gomes collares reserva velho tinto rotulo branco
+588. adega viuva gomes collares reserva velho tinto
+589. adega viuva gomes collares branco malvasia 2022
+590. adega viuva gomes collares branco
+591. adega viuva gomes colares tinto 2022
+592. adega viuva gomes 2022 colares branco
+593. adega viuva gomes 2021 pirata castelao tinto
+594. adega viuva gomes 2021 colares reserva branco
+595. adega viuva gomes 2020 pirata tutti frutti tinto
+596. adega viuva gomes 2020 pirata malvasia branco
+597. adega viuva gomes 2020 pirata castelao tinto
+598. adega viuva gomes 2020 branco colares
+599. adega viuva gomes 2017 colares tinto
+600. adega viuva gomes 2017 colares branco
+601. adega viuva gomes 2015 colares tinto
+602. adega viuva gomes 2014 tinto colares
+603. adega viuva gomes 2013 tinto colares
+604. adega viuva gomes 1994 collares ramisco
+605. adega viuva gomes 1969 tinto colares
+606. adega viuva gomes 1965 tinto colares
+607. adega viuva gomes 1960 tinto colares
+608. adega viuva gomes 1931 tinto colares
+609. adega viuva gomes 1924 tinto colares
+610. adega vila real vila real douro reserva 2019 case only
+611. adega vila real tinto
+612. adega vila real rose
+613. adega vila real reserva tinto
+614. adega vila real reserva branco
+615. adega vila real grande reserva tinto
+616. adega vila real grande reserva
+617. adega vila real douro reserva branco 2015
+618. adega vila real douro premium red 2013
+619. adega vila real branco
+620. adega vila real blanco
+621. adega venax 7831 piubella 24 garrafas abertura para direita preta
+622. adega vella in memoriam brancellao 2021
+623. adega vella 2024 caja 6 botellas
+624. adega velha xo 6 anos
+625. adega velha xo 12 anos
+626. adega velha reserva 6 anos 0
+627. adega velha 6 anos reserva
+628. adega velha 6 anos
+629. adega velha 30 years xo
+630. adega velha 30 anos xo
+631. adega velha 13 anos duplo estagio
+632. adega velha 13 anos double aging
+633. adega velha 12 years xo
+634. adega velha 12 anos xo
+635. adega velha 12 anos
+636. adega terreiro vinho tinto alma do tejo syrah
+637. adega suspensa members mark 1
+638. adega suggar lyon digital 13 garrafas preto inox 220v ad1522ix
+639. adega suggar lyon 13 garrafas preta inox 110v ad1511ix
+640. adega suggar cannes 18 garrafas preta 110v ad1811pt
+641. adega suggar ad2711ix climatizada toulouse 29 garrafas inox
+642. adega silgueiros white 2021
+643. adega silgueiros red 2021
+644. adega sidrondpieiga blanco
+645. adega sernande vertixe mencia 2019
+646. adega sernande vertixe mencia
+647. adega sernande so what red ribeira sacra spain
+648. adega sernande orly lumbreras 2018 ribeira sacra vertixe
+649. adega sernande orly lumbreras 2018 ribeira sacra mil vueltas
+650. adega sameiras ribeiro blanco 2021 galicia spain
+651. adega sainas silente mencia
+652. adega sainas silente 2020
+653. adega sainas ribeira sacra tinto secreto 2021
+654. adega rewards 5 estrelas
+655. adega rewards 4 estrelas
+656. adega rewards 3 estrelas
+657. adega regional de colares chao rijo white blend lisboa
+658. adega regional de colares castelao chao rijo tinto lisboa 2015
+659. adega regional de colares arenae malvasia 2017 branco
+660. adega regional de colares arenae malvasia 2016 branco
+661. adega regional de colares 2020 arenae branco
+662. adega regional de colares 2017 arenae branco
+663. adega regional de colares 2016 arenae ramisco tinto
+664. adega regional de colares 2014 arenae tinto
+665. adega regional de colares 2010 arenae tinto
+666. adega regional 1962
+667. adega ramon do casar ribeiro 2019
+668. adega portugal guia de vinhos 2025
+669. adega portugal guia de vinhos 2024
+670. adega portugal guia de vinhos 2023 digital
+671. adega portugal guia de vinhos 2023
+672. adega portugal guia de vinhos 2022
+673. adega portugal guia de vinhos 2021
+674. adega portalegre conventual branco white
+675. adega ponte de lima vinho verde loureiro
+676. adega ponte de lima vinho verde branco
+677. adega ponte de lima tinto vinho verde 2024 red dry 11 075
+678. adega ponte de lima tinto vinho verde
+679. adega ponte de lima solos de xisto
+680. adega ponte de lima loureiro
+681. adega ponte de lima loureiro
+682. adega ponte de lima branco vinho verde
+683. adega ponte de lima adamado vinho ver
+684. adega ponte de lima
+685. adega ponte de boga godello do ribeira sacre galicia
+686. adega ponte dabarca
+687. adega ponte da boga pizarras y esquistos mencia ribeira sacra
+688. adega ponte da boga mencia
+689. adega ponte da boga godello g ribeira sacra
+690. adega ponte da boga godello
+691. adega ponte da boga godello
+692. adega ponte da boga albarino ribeira sacra 2024
+693. adega ponte da boga albarino
+694. adega ponte da barca vinhao reserva
+695. adega ponte da barca reserva dos socios alvarinho castanho 2019
+696. adega ponte da barca reserva dos socio loureiro 2018
+697. adega ponte da barca passatempo vinho verde 2024
+698. adega ponte da barca loureiro alvarinho
+699. adega ponte da barca las lilas vinho verde rose 2024
+700. adega ponte da barca las lilas vinho verde rose 2023
+701. adega ponte da barca grande escolha
+702. adega ponte da barca electium pentnat white nv
+703. adega ponte da barca electium pentnat rose nv
+704. adega ponte da barca blanco
+705. adega ponte da barca alvarinho reserva vinho verde portugal
+706. adega ponte da barca 80s white riot in a can
+707. adega ponte da barca 500 anos branco
+708. adega ponte da barca
+709. adega pombal a lanzada mytilus rias baixas albarino 2022
+710. adega pombal a lanzada arcan albarino
+711. adega pequena blanc baginbox 11vol
+712. adega pena das donas almalarga godello 2018
+713. adega pedralonga tinto doumia 2022
+714. adega pedralonga terra de godos rias baixas galicia albarino 2024
+715. adega pedralonga terra de godos rias baixas albarino 2024
+716. adega pedralonga terra de godos albarino
+717. adega pedralonga terra de godos 2025 13
+718. adega pedralonga rias baixas albarino terra de godos 2019
+719. adega pedralonga rias baixas albarino 2019
+720. adega pedralonga doumia tinto rias baixas 2022
+721. adega pedralonga doumia mencia 12
+722. adega pedralonga albarino barrica 2023 13
+723. adega pedralonga albarino 2024
+724. adega para vinho venax 59 s preto 127v ref ngv 200
+725. adega para vinho venax 24 s preto 127v ref ngv 100
+726. adega para vinho de mesa mor empilhavel de aco para 6 garrafas preta
+727. adega para vinho brastemp 33 s 220v ref zb33be
+728. adega palmela reserva premium
+729. adega moor rua da betesga reserva tinto 2020
+730. adega moor pata choca tinto 2020
+731. adega moor pata choca branco 2022
+732. adega moor calcada velha tinto 2018
+733. adega monte branco x tinto 2014
+734. adega monte branco trincadeira tinto
+735. adega monte branco prova com o enologo portugal by wine experiencias info
+736. adega monte branco prova com o enologo
+737. adega monte branco mestico mesticopt produtores
+738. adega monte branco descontente com nome do processo observador 20140731 adegamontebran
+739. adega monte branco criticas preco 2026 winalist winalistpt alentejo adegas borba
+740. adega monte branco 10 anos tinto 2014 gourmet da vila vinhos portugueses
+741. adega monte branco 10 anos tinto 2014
+742. adega moncao muralhas de moncao rose bot
+743. adega moncao muralhas de moncao bot
+744. adega moncao escolha bot
+745. adega moncao alvarinho deuladeu bot
+746. adega moncao alvarinho bot
+747. adega moncao alvarinho
+748. adega mayor verdelho branco
+749. adega mayor verdelho 2022
+750. adega mayor verdelho
+751. adega mayor tripack amalias
+752. adega mayor touriga nacional tinto 2021
+753. adega mayor touriga nacional tinto
+754. adega mayor touriga nacional 2022
+755. adega mayor selecao branco
+756. adega mayor selecao branco
+757. adega mayor selecao branco
+758. adega mayor selecao bio 2022
+759. adega mayor selecao bio 2021
+760. adega mayor reserva tinto 2017
+761. adega mayor reserva tinto
+762. adega mayor reserva tinto
+763. adega mayor reserva tinto
+764. adega mayor reserva tinto
+765. adega mayor reserva tinto
+766. adega mayor reserva tinto
+767. adega mayor reserva selecao
+768. adega mayor reserva magnum 2021
+769. adega mayor reserva do comendador tinto magnum 2019 1
+770. adega mayor reserva do comendador tinto 2021
+771. adega mayor reserva do comendador tinto 2021
+772. adega mayor reserva do comendador tinto 2018
+773. adega mayor reserva do comendador tinto 2018
+774. adega mayor reserva do comendador tinto
+775. adega mayor reserva do comendador tinto
+776. adega mayor reserva do comendador branco 2022
+777. adega mayor reserva do comendador branco 2022
+778. adega mayor reserva do comendador branco
+779. adega mayor reserva do comendador altitude tinto 2022
+780. adega mayor reserva do comendador altitude tinto
+781. adega mayor reserva do comendador altitude branco 2023
+782. adega mayor reserva do comendador altitude branco
+783. adega mayor reserva do comendador altitude
+784. adega mayor reserva do comendador
+785. adega mayor reserva branco
+786. adega mayor reserva branco
+787. adega mayor reserva
+788. adega mayor reserva
+789. adega mayor pinot noir 2024
+790. adega mayor pai chao grande reserva tinto 2020
+791. adega mayor pai chao grande reserva tinto 2020
+792. adega mayor pai chao grande reserva tinto 2018
+793. adega mayor pai chao grande reserva tinto 2018
+794. adega mayor pai chao grande reserva branco 2022
+795. adega mayor pai chao grande reserva 2020
+796. adega mayor pai chao grande reserva
+797. adega mayor pack 2 garrafas reserva do comendador
+798. adega mayor momentos pack 2 garrafas reserva
+799. adega mayor merlot tinto 2020
+800. adega mayor maestro riesling branco magnum 2019 1
+801. adega mayor maestro rabigato branco
+802. adega mayor maestro petit verdot tinto magnum 2018 1
+803. adega mayor maestro petit verdot
+804. adega mayor maestro chardonnay branco magnum 2019 1
+805. adega mayor maestro chardonnay branco
+806. adega mayor maestro chardonnay
+807. adega mayor grande reserva pai chao tinto 2020
+808. adega mayor grande reserva pai chao branco 2022
+809. adega mayor grande reserva pai chao
+810. adega mayor gouveio 2020
+811. adega mayor flor mayor tinto
+812. adega mayor flor mayor branco
+813. adega mayor esquissos pinot noir tinto 2021
+814. adega mayor esquissos 2021
+815. adega mayor espumante grande reserva bruto nv
+816. adega mayor espumante grande reserva
+817. adega mayor espumante bruto
+818. adega mayor espumante bruto
+819. adega mayor espumante
+820. adega mayor entre tantos tinto
+821. adega mayor edicao especial pack 2 espumantes grande reserva
+822. adega mayor caiado rose
+823. adega mayor caiado colheita selecionada
+824. adega mayor caiado branco
+825. adega mayor caiado 2023
+826. adega mayor caiado 2022
+827. adega mayor caiado
+828. adega mayor baga tinto 2020
+829. adega mayor baga tinto
+830. adega mayor arinto branco
+831. adega mayor arinto
+832. adega mayor arinto
+833. adega mayor antao vaz branco
+834. adega mayor amalias tripack tinto 2023
+835. adega mayor amalias reserva tinto 2022
+836. adega mayor amalias reserva tinto
+837. adega mayor amalias pack 3 garrafas
+838. adega mayor amalias 2022
+839. adega mayor amalias 100
+840. adega mayor altitude reserva do comendador tinto 2022
+841. adega mayor
+842. adega mascarello niagara suave
+843. adega mascarello niagara
+844. adega mascarello bordo suave
+845. adega mascarello bordo
+846. adega marel tonico vinho de talha tinto 2021
+847. adega marel tonico tinto 2021
+848. adega marel tonico branco 2021
+849. adega marel tonico 2020 tinto
+850. adega marel tinto 2019
+851. adega marel manolito tinto 2020
+852. adega marel manolito branco 2021
+853. adega marel ilustre tinto 2021
+854. adega marel ilustre branco 2021
+855. adega marel branco 2023
+856. adega marel branco 2021
+857. adega manuel formigo 2023
+858. adega manuel formigo
+859. adega mae viosinho 2021
+860. adega mae viosinho
+861. adega mae viognier
+862. adega mae vinhas velhas vital branco 2020
+863. adega mae vinhas velhas
+864. adega mae touriga nacional
+865. adega mae touriga franca 2021
+866. adega mae touriga franca
+867. adega mae tinto atlantico 2020
+868. adega mae terroir
+869. adega mae sauvignon blanc branco lisboa
+870. adega mae sauvignon blanc
+871. adega mae riesling
+872. adega mae reserva branco 2021
+873. adega mae reserva
+874. adega mae pinta negra tinto 2024
+875. adega mae pinot noir rose extra brut
+876. adega mae pinot noir
+877. adega mae pinot noir
+878. adega mae petit verdot
+879. adega mae organic regenerative branco 2022
+880. adega mae merlot
+881. adega mae late harvest 2021
+882. adega mae chardonnay
+883. adega mae castelao 2018
+884. adega mae cabernet sauvignon tinto lisboa
+885. adega mae cabernet sauvignon
+886. adega mae cabernet sauvignon
+887. adega mae brut nature
+888. adega mae blanc de blancs brut
+889. adega mae bio
+890. adega mae atlantico pinot noir
+891. adega mae alvarinho 221
+892. adega mae alvarinho
+893. adega mae 221 alvarinho 2020
+894. adega mae 2020 pinot noir
+895. adega loureiroalvarinho
+896. adega loureiroalvarinho
+897. adega kanakaris notos moschofilero igp peloponeso branco 2023
+898. adega jose de sousa tinto reserva artisanal 2021
+899. adega jose de sousa tinto artisanal 2023
+900. adega jose de sousa branco artisanal 2023
+901. adega jose de sousa artisanal tinto
+902. adega jose de sousa artisanal reserva tinto
+903. adega jose de sousa artisanal branco
+904. adega guimares vinho verde 2024
+905. adega guimaraes vinho verde 2024
+906. adega guimaraes vinho verde
+907. adega guimaraes vinho verde
+908. adega granja amareleja piteira amphora branco 2017
+909. adega grande tinto
+910. adega grande tinto
+911. adega grande rose
+912. adega grande reserva tinto bag in box
+913. adega grande reserva tinto 2022
+914. adega grande reserva branco bag in box
+915. adega grande reserva branco 2022
+916. adega grande reserva
+917. adega grande mesa tinto bag in box 2022
+918. adega grande mesa tinto 2022
+919. adega grande mesa rose 2022
+920. adega grande mesa branco 2022
+921. adega grande escolha
+922. adega grande escolha
+923. adega grande doc do tejo
+924. adega grande doc 2022
+925. adega grande branco
+926. adega grande branco
+927. adega gomes castelao
+928. adega galegas veigadares albarino
+929. adega galegas pazo la maza albarino
+930. adega fundao selecao tinto tn 2021
+931. adega fundao selecao siria 2021
+932. adega fugas vinho da madeira blandys alvada 5 anos
+933. adega espanha guia de vinhos 2025
+934. adega espanha guia de vinhos 2024
+935. adega espanha guia de vinhos 2023 digital
+936. adega espanha guia de vinhos 2023
+937. adega espanha guia de vinhos 2022
+938. adega espanha guia de vinhos 2021
+939. adega entre os rios komokabras albarino 2022
+940. adega entre os rios komokabras albarino 2019
+941. adega entre os rios komokabras 2019
+942. adega electrolux wdf29 29 garrafas preta
+943. adega electrolux 24 garrafas wsf24 preta 110v 01242wba135
+944. adega dos eidos eidos de padrinan albarino rias baixas spain 2023 case
+945. adega dos eidos eidos de padrinan albarino 2021
+946. adega dos eidos eidos de padrinan 2024
+947. adega dos eidos 2024 albarino eidos de padrinan rias baixas spain
+948. adega do vulcao pe do monte branco 2023
+949. adega do vulcao pe do monte arinto reserva 2021
+950. adega do vulcao ameixambar branco 2022
+951. adega do vulcao ameixambar branco
+952. adega do vulcao ameixambar 2023
+953. adega do vulcao ameixambar 2020 azores portugal
+954. adega do vulcao 2023 clarete
+955. adega do vulcao 2022 pe do monte arinto dos acores branco
+956. adega do vulcao 2021 ameixambar arinto dos acores branco
+957. adega do volcao ameixambar acores 2020
+958. adega do vimbio vimbio albarino 2023
+959. adega do vimbio teimosia 2018
+960. adega do vimbio teimosia 2018
+961. adega do vimbio o acordo 2022
+962. adega do vimbio encoiros albarino 2021
+963. adega do vimbio encoiros 2022
+964. adega do vale cabernet sauvignon
+965. adega do sossego alvarinho 2023 vinho verde branco
+966. adega do sor reserva tinto
+967. adega do passo tinto 2018
+968. adega do passo tinto
+969. adega do passo tinto
+970. adega do passo reserva tinto 2015
+971. adega do passo branco
+972. adega do passo branco
+973. adega do passo alentejano red
+974. adega do passo
+975. adega do monte vinho tinto reserva 2015
+976. adega do monte vinho tinto colheita 2016
+977. adega do monte branco x anos 2014 tinto
+978. adega do monte branco alento rose 2023 wineexpert gourmet vinho rose alentejo
+979. adega do monte branco
+980. adega do mato selected harvest branco 2023
+981. adega do mato rose
+982. adega do mato escolha white blend 2023
+983. adega do mato escolha rose blend 2023
+984. adega do mato escolha arinto white 2023
+985. adega do mato colheita selecionada alvarinho white 2023
+986. adega do mato arinto branco 2023
+987. adega do mato alvarinho
+988. adega do marques vinho verde
+989. adega do marques tinto vinho regional tejo
+990. adega do marques tinto douro doc
+991. adega do marques tinto dao doc
+992. adega do marques branco vinho verde doc
+993. adega do joa trasosmontes
+994. adega do fundaoalpedrinha superior
+995. adega do fundao vinho licoroso 2019
+996. adega do fundao siria branco 2023 cx 3 uni
+997. adega do fundao reserva tinto 2019 cx 3uni
+998. adega do fundao reserva tinto
+999. adega do fundao private selection tinto 2020
+1000. adega do fundao private selection edition tinto

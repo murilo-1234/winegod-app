@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. terre forti nero davola terre siciliana igt
+2. terre forti nero davola sicilia doc 2023
+3. terre forti nero davola sicilia doc 2023
+4. terre forti negroamaro igt puglia
+5. terre forti montepulciano dabruzzo igt 2023
+6. terre forti montepulciano dabruzzo igt
+7. terre forti montepulciano dabruzzo doc 2024
+8. terre forti montepulciano dabruzzo doc 2024
+9. terre forti montepulciano dabruzzo doc
+10. terre forti bianco ditalia
+11. terre forti bianco ditalia
+12. terre forti bianco ditala
+13. terre forti bianco 2023
+14. terre forti bianco
+15. terre forte rouge 2023
+16. terre forte rouge
+17. terre forte rose
+18. terre forte origine blanc
+19. terre fideles cotes du roussillon villa 2023
+20. terre fideles collioure 2022
+21. terre fauve les semilions 2020
+22. terre fauve au vent mauvais qui memporte 2020
+23. terre exotique winemakers salt 80g
+24. terre exotique white sarawak pepper poivre blanc de sarawak 1kg
+25. terre exotique white penja pepper 70g
+26. terre exotique viking smoked salt 225g
+27. terre exotique viking salt sel viking 225g
+28. terre exotique veal base 100g
+29. terre exotique tonka beans feve tonka 500g
+30. terre exotique tonka beans 50g
+31. terre exotique tajine paste 85g
+32. terre exotique star anise 30g
+33. terre exotique saffron negine filaments safran neguine en filaments
+34. terre exotique raz el hanout 500g
+35. terre exotique pink peppercorn baie rose 500g
+36. terre exotique pink peppercorn 35g
+37. terre exotique pimiento de espelette dop 40 g
+38. terre exotique pimienta negra ahumada molida 60g
+39. terre exotique orange powder 70g
+40. terre exotique nutmeg with mace 40g
+41. terre exotique natural fleur de sel fleur de sel nature 1kg
+42. terre exotique mezcla de pita griega 30g
+43. terre exotique mezcla de pimientas para quesos 60g
+44. terre exotique mezcla de pimientas del vinador inspiracion chenin 60g
+45. terre exotique madras curry mix 60g
+46. terre exotique juniper berry baie de genievre 500g
+47. terre exotique harissa 85g
+48. terre exotique habanero chili pepper piment habanero 150g
+49. terre exotique green cardamom 40g
+50. terre exotique grapefruit powder 60g
+51. terre exotique geurande fleur de sel 90g
+52. terre exotique garam masala powder 60g
+53. terre exotique fleur de sel with yuzu 90g
+54. terre exotique fleur de sel with saffron 90g
+55. terre exotique five peppercorns blend assemblage cinq baies 1kg
+56. terre exotique five peppercorns blend 60g
+57. terre exotique fish base 100g
+58. terre exotique fine red salt sel rouge fin 300g
+59. terre exotique fine red salt 300g
+60. terre exotique fine diamond salt diamant de sel en poudre 280g
+61. terre exotique dukkah 40g
+62. terre exotique cumin 50g
+63. terre exotique crushed chipotle chili pepper piment chipotle en morceaux 150g
+64. terre exotique crushed ancho chili pepper piment ancho en morceaux 150g
+65. terre exotique coriander 40g
+66. terre exotique cloves 50g
+67. terre exotique christmas fleur de sel 90g
+68. terre exotique caja truffe exquise 300g
+69. terre exotique bon vivant tomato twists 60g
+70. terre exotique blue poppy seed 80g
+71. terre exotique black tellicherry pepper poivre noir de tellicherry 1kg
+72. terre exotique black sarawak pepper 70g
+73. terre exotique black salt sel noir 290g
+74. terre exotique bergamot powder 60g
+75. terre exotique angel hair chilli pepper 10g
+76. terre exotique angel hair chili pepper piment cheveux dange 150g
+77. terre exotique allspice berry 60g
+78. terre exotique 50
+79. terre exotique 5 peppercorn blend
+80. terre exotique 3 peppers 75g
+81. terre eulalie chardonnay boise
+82. terre et laves 2019
+83. terre et laves 2018
+84. terre ensems vdf sans rien cest bien 20222023
+85. terre ensems vdf libertat 2024
+86. terre ensems vdf insoumise 2022
+87. terre ensems vdf fallait oser 2023
+88. terre emoi sauvignon voordeelpakket 6fl
+89. terre emoi sauvignon actiepakket 6 flessen onze eigen tuin
+90. terre emoi sauvignon
+91. terre emoi merlot voordeelpakket 6fl
+92. terre emoi merlot grenache voordeelpakket 6fl
+93. terre emoi merlot grenache
+94. terre emoi merlot
+95. terre emoi chardonnay voordeelpakket 6fl
+96. terre emoi chardonnay
+97. terre du sud 2021
+98. terre du sud 2020
+99. terre du soleil sauvignon blanc pays doc
+100. terre du soleil pays doc sauvignon blanc 2024
+101. terre du soleil pays doc sauvignon blanc 2024
+102. terre du soleil pays doc merlot 2024
+103. terre du soleil merlot pays doc
+104. terre du soleil merlot 2024 pays doc
+105. terre du soleil merlot 2024
+106. terre du mieru puglia rosso appassimento 17 gradi
+107. terre du lion saintjulien
+108. terre du lias domaine de la borde
+109. terre du lias
+110. terre du levant von marrenon
+111. terre dovalie rouge
+112. terre dovalie rose
+113. terre doriente rosso doc colli di luni riserva
+114. terre dor sauvignon blanc 2023
+115. terre dombre mont caume bandol
+116. terre dombre mont caume
+117. terre dombre langlore vin de france rouge 2024
+118. terre dombre langlore 2022
+119. terre dombre 2024 rouge
+120. terre dombre 2024 awai 2
+121. terre dombre 2024
+122. terre dombre 2023 awai 2
+123. terre dombre 2023
+124. terre dombre 2021
+125. terre dombre
+126. terre dombre
+127. terre dombra 2015
+128. terre doltrepo pinot nero san saluto doc 2023
+129. terre doltrepo la versa spumante testarossa docg 2017
+130. terre doltrepo la versa spumante brut 1905 docg nv
+131. terre doliviers les flacons rouge 2022
+132. terre docra moscato bianco igt vin linistit
+133. terre doc tisane fruitee bio saveur framboise fleur de sureau et grenade
+134. terre doc tisane fruitee bio saveur fleur doranger passiflore et mandarine
+135. terre doc tisane fruitee bio peche verveine et orange sanguine
+136. terre doc the vert bio glace coco framboise avec verre
+137. terre doc the vert a la peche bio du roussillon
+138. terre doc the noir glace bio saveur peche de vigne avec verre
+139. terre doc rooibos glace bio saveur mangue passion
+140. terre doc rooibos glace bio mangue passion avec verre
+141. terre doc rooibos bio mangue passion
+142. terre dobus vdf alexandre bain 2020
+143. terre dobus
+144. terre dobus
+145. terre dob mois
+146. terre dob alexandre bain
+147. terre dob
+148. terre dob
+149. terre do sul
+150. terre ditalia
+151. terre dinnocence bergerac 2011
+152. terre dieu sauvignon blanc
+153. terre dieu merlot syrah cabernet sauvignon
+154. terre dieu grenache syrah
+155. terre di zagara nero davola rod
+156. terre di vita libellula sicily nero davola
+157. terre di vita libellula sicily grillo 2024
+158. terre di vita libellula sicily grillo
+159. terre di vita libellula nero davola 2024
+160. terre di vico toscana igt rosso 2016
+161. terre di vico toscana igt rosso 2015
+162. terre di vico toscana igt rosso 2013
+163. terre di venticano 2021
+164. terre di venticano 2018 tenuta vincenzo nardone
+165. terre di valter taurasi docg bot
+166. terre di valter greco di tufo 2024
+167. terre di valter greco di tufo 2024
+168. terre di valter greco di tufo 2023
+169. terre di valter fiano di avellino docg bot
+170. terre di valter falanghina igp bot
+171. terre di valter aglianico iripinia doc bot
+172. terre di valter aglianico 2024
+173. terre di valter 2023 falanghina
+174. terre di valfredda pinot grigio trentino
+175. terre di tufi toscana bianco igt 2021 teruzzi
+176. terre di tufi toscana bianco igt 2021 teruzzi
+177. terre di tufi toscana bianco igt 2017
+178. terre di tufi toscana bianco
+179. terre di tufi teruzzi
+180. terre di trezzi russo longo
+181. terre di trentre nerello mascalese 2007
+182. terre di toscana acqua di bolgheri
+183. terre di talamo vermentino igt
+184. terre di talamo vento vermentino toscana
+185. terre di talamo vento teso toscana igt
+186. terre di talamo vento forte igt toscana bianco 2021 vino bianco
+187. terre di talamo tempo morellino di scansano riserva docg
+188. terre di talamo tempo morellino di scansa
+189. terre di talamo talamo toscana igt
+190. terre di talamo talamo ammare igt toscana rosso 2018 vino rosso
+191. terre di talamo rosato piano piano 2018
+192. terre di talamo morellino di scansano tempo morellino di scansano docg 2021 vino rosso
+193. terre di talamo morellino di scansano docg tempo toscana italy
+194. terre di talamo morellino di scansano docg tempo 2021
+195. terre di sovernaja vernaccia di san gimignano viti sparse 2020
+196. terre di sovernaja vernaccia di san gimignano viti sparse 2020
+197. terre di sovernaja vernaccia di san gimignano viti sparse 2020
+198. terre di sovernaja vernaccia di san gimignano riserva assola 2020
+199. terre di sovernaja vernaccia di san gimignano riserva assola 2020
+200. terre di sovernaja piaggia a ponente rosato 2020
+201. terre di sovernaja piaggia a ponente rosato 2020
+202. terre di sovernaja coi botto 2021
+203. terre di sovernaja coi botto 2021
+204. terre di sovernaja chianti colli senesi 2020
+205. terre di sovernaja chianti colli senesi 2020
+206. terre di sovernaja chianti colli senesi 2020
+207. terre di sovernaja anime 9 2019
+208. terre di sovernaja anime 9 2019
+209. terre di serrapetrona vernaccia spumante secco docg
+210. terre di serrapetrona vernaccia spumante dolce docg
+211. terre di serrapetrona sommo passito vernaccia marche igt cl75
+212. terre di serrapetrona serrapetrona doc robbione 2016
+213. terre di serrapetrona robbione serrapetrona doc
+214. terre di serrapetrona collequanto serrapetrona doc 2017
+215. terre di serrapetrona collequanto serrapetrona doc
+216. terre di serrapetrona collequanto serrapetrona doc
+217. terre di serrapetrona blink rose brut
+218. terre di sera vino ditalia
+219. terre di sera rosso
+220. terre di sera bianco
+221. terre di sava lamadoro primitivo puglia igt x 6 bottles
+222. terre di sava domodo trebbiano puglia igt x 6 bottles
+223. terre di sava domodo sangiovese puglia igt x 6 bottles
+224. terre di sava domodo pinot grigio puglia igt x 6 bottles
+225. terre di sava domodo montepulciano dabruzzo puglia igt x 6 bottles
+226. terre di sarizzola derthona timorasso 2022 piedmont italy
+227. terre di santalberto tenet prosecco di treviso brut
+228. terre di santalberto prosecco doc tenet brut nv
+229. terre di san vincenzo sette spezie sussumaniello salento igp 2020
+230. terre di san vincenzo sette spezie primitivo 2018
+231. terre di san vincenzo sette spezie negroamaro salento igp 2019
+232. terre di san vincenzo la nave primitivo igp 2020
+233. terre di san vincenzo la nave primitivo igp 2020
+234. terre di san vincenzo la nave pinot grigio igpdetalhes
+235. terre di san vincenzo la nave pinot grigio igp 2020
+236. terre di san mauro olio extra vergine di oliva bio di olearia san giorgio
+237. terre di san leonardo vignetti delle dolomiti
+238. terre di san leonardo vigneti delle dolomiti igt 2020
+239. terre di san leonardo trentino 2018 red dry 13 075
+240. terre di san leonardo tenuta san leonardo trentino italy 2021
+241. terre di san leonardo tenuta san leonardo rosso
+242. terre di san leonardo tenuta san leonardo
+243. terre di san leonardo san leonardo
+244. terre di san leonardo rosso 2020
+245. terre di san leonardo italy
+246. terre di san leonardo igt dolomiti tenuta san leonardo 2020
+247. terre di san leonardo igt dolomiti 2020 rdvin tilbud
+248. terre di san leonardo igt
+249. terre di san leonardo 2024
+250. terre di san leonardo 2023 tenuta san leonardo
+251. terre di san leonardo 2023 magnum tenuta san leonardo
+252. terre di san leonardo 2022 tenute san leonardo
+253. terre di san leonardo 2022 tenuta san leonardo
+254. terre di san leonardo 2022 magnum tenuta san leonardo
+255. terre di san leonardo 2022
+256. terre di san leonardo 2021 tenuta san leonardo igt vigneti delle dolomiti trentinoalto adige italy
+257. terre di san leonardo 2021 tenuta san leonardo
+258. terre di san leonardo 2021 magnum tenuta san leonardo
+259. terre di san leonardo 2021
+260. terre di san leonardo 2021
+261. terre di san leonardo 2020 tenuta san leonardo
+262. terre di san leonardo 2019 tenuta san leonardo
+263. terre di san leonardo 2018 tenuta san leonardo
+264. terre di san leonardo 2018 magnum tenuta san leonardo
+265. terre di san leonardo
+266. terre di san leonardo
+267. terre di san leonardo
+268. terre di san leonardo
+269. terre di san leonardo
+270. terre di san leonardo
+271. terre di romena pinot nero 2023
+272. terre di romagna nocino tenuta villa rovere
+273. terre di rai valdobbiadene prosecco superiore millesimato extra dry nv
+274. terre di rai sauvignon blanc
+275. terre di rai prosecco valdobbiadene docg brut
+276. terre di rai prosecco rose extradry docg
+277. terre di rai prosecco extradry docg
+278. terre di rai prosecco extra dry
+279. terre di rai prosecco doc extra dry nv
+280. terre di rai prosecco brut docg
+281. terre di rai pinot grigio doc delle venezie 2023
+282. terre di rai pinot grigio delle venezie igt italy 2021
+283. terre di rai pinot grigio blush 2024
+284. terre di rai pinot grigio 2024
+285. terre di rai chardonnay
+286. terre di rai 931 vino rosso nv
+287. terre di rai 931 rosso borgo palazzi
+288. terre di rai 931 novetrentuno vino rosso
+289. terre di rai 931 appassimento 2021
+290. terre di puglia tarallini sfarinati tomato and oregano100gr
+291. terre di prenzano chianti classico docg
+292. terre di pra cabernet sauvignon doc
+293. terre di poggio pecorino 2024
+294. terre di poggio montepulciano d abruzzo 2017
+295. terre di poggio montep d abruzzo
+296. terre di pietra vigna del peste valpolicella superiore 2015 veneto italy
+297. terre di pietra vigna del peste valpolicella superiore 2015
+298. terre di pietra vigna del peste 2018
+299. terre di pietra vigna del peste 2017
+300. terre di pietra vigna del peste 2017
+301. terre di pietra vigna del peste 2017
+302. terre di pietra vigna del peste 2017
+303. terre di pietra vigna del peste
+304. terre di pietra testa calda 2020
+305. terre di pietra tempesta bag in a box
+306. terre di pietra tempesta 2021
+307. terre di pietra tempesta
+308. terre di pietra rosson docg amarone della valpolicella classico
+309. terre di pietra rosson amarone della valpolicella docg 2015
+310. terre di pietra piccola peste 2021
+311. terre di pietra piccola peste 2020
+312. terre di pietra piccola peste 2020
+313. terre di pietra piccola peste 2020
+314. terre di pietra piccola peste 2020
+315. terre di pietra piccola peste
+316. terre di pietra piccola peste
+317. terre di pietra mesal valpolicella superiore 2013 veneto italy
+318. terre di pietra mesal valpolicella superiore 2013
+319. terre di pietra ellezero 2021
+320. terre di pietra diecicentomille
+321. terre di pietra cizero 2019
+322. terre di pietra amarone rosson 2013
+323. terre di pietra amarone rosson 2013
+324. terre di perseto wood wine box for magnum bottle
+325. terre di ottavia pinot noir tenuta budonetto sicilia igt 2003
+326. terre di montelusa primitivo puglia rotwein veganer wein trocken igt italien
+327. terre di montelusa primitivo puglia rotwein veganer wein trocken igt italien
+328. terre di montelusa primitivo puglia rotwein veganer wein trocken igt italien
+329. terre di montelusa primitivo altopiano puglia
+330. terre di montelusa primitivo 2024
+331. terre di montelusa primitivo
+332. terre di montelusa nero di troia rosato puglia rosewein veganer wein halbtrocken igt italien
+333. terre di montelusa nero di troia rosato puglia rosewein veganer wein halbtrocken igt italien
+334. terre di montelusa nero di troia rosato
+335. terre di montelusa nero davola sicilia rotwein veganer wein trocken doc italien
+336. terre di montelusa nero davola sicilia rotwein veganer wein trocken doc italien
+337. terre di montelusa nero davola sicilia rotwein veganer wein trocken doc italien
+338. terre di montelusa brindisi riserva rotwein veganer wein trocken igt italien
+339. terre di montelusa brindisi riserva rotwein veganer wein trocken igt italien
+340. terre di montelusa brindisi riserva rotwein veganer wein trocken igt italien
+341. terre di montelusa brindisi riserva
+342. terre di montelusa brindisi riserva
+343. terre di montelusa altopiano nero di troia puglia rotwein wein trocken igt italien
+344. terre di monteforte soave classico cantina di monteforte veneto italy
+345. terre di monteforte soave classico
+346. terre di montalto etna rosso 2022
+347. terre di montalcino brunello di montalcino 2020
+348. terre di montalcino brunello di montalcino 2019
+349. terre di montalcino brunello di montalcino
+350. terre di montalcino brunello
+351. terre di mmelazzano chianti classico docg riserva 2017
+352. terre di melazzano chianti classico docg biologico 2018
+353. terre di melazzano chianti classico docg 2019 senza solfiti
+354. terre di matraja rosso 2019
+355. terre di mario vino rossoabboccato 2018
+356. terre di mario vino rossoabboccato
+357. terre di mario vino rosso wochy 0
+358. terre di mario vino rosato wochy 0
+359. terre di mario vino bianco wochy 0
+360. terre di mario rosso sangiovese cuvee
+361. terre di mario rosso
+362. terre di mario rosso
+363. terre di mario rood
+364. terre di mario pinot grigio wochy 0
+365. terre di mario montepulciano dabruzzo wochy 0
+366. terre di mario montepulciano dabruzzo
+367. terre di mario bianco chardonnay cuvee
+368. terre di mario bianco
+369. terre di mario
+370. terre di marca prosecco rose nv
+371. terre di marca prosecco rose bio extra dry
+372. terre di marca prosecco millesimato bio 2024 case only
+373. terre di marca prosecco millesimato bio 2022 case only
+374. terre di marca prosecco millesimato
+375. terre di marca prosecco doc treviso extra dry millesimato biologico
+376. terre di marca prosecco doc rose extra dry millesimato corvezzo italien bio vegan
+377. terre di marca prosecco doc corvezzo italien bio vegan
+378. terre di marca prosecco col fondo nv case only
+379. terre di marca prosecco col fondo nv
+380. terre di marca prosecco bio extra dry
+381. terre di marca prosecco
+382. terre di marca prosecco
+383. terre di marca prosecco
+384. terre di marca organic prosecco doc millesimato extra dry 0
+385. terre di marca 2024 prosecco millesimato
+386. terre di libarna timorasso
+387. terre di leone valpolicella classico superiore ripasso il re pazzo doc 2018
+388. terre di leone valpolicella classico superiore ripasso doc 2014
+389. terre di leone valpolicella classico superiore 2017 doc
+390. terre di leone valpolicella classico il re pazzo doc 2018
+391. terre di leone valpolicella classico il re pazzo 2022 doc
+392. terre di leone valpolicella classico doc superiore
+393. terre di leone ripasso della valpolicella classico
+394. terre di leone re pazzo valpolicella classico doc ripasso superiore
+395. terre di leone re pazzo valpolicella classico
+396. terre di leone il re pazzo valpolicella classico doc
+397. terre di leone il re pazzo amarone della valpolicella classico docg
+398. terre di leone dedicatum igt rosso veronese
+399. terre di leone dedicatum igt 2015
+400. terre di leone amarone della valpolicella riserva
+401. terre di leone amarone della valpolicella classico il re pazzo doc 2015
+402. terre di leone amarone della valpolicella classico il re pazzo doc 2011
+403. terre di leone amarone della valpolicella classico doc
+404. terre di leone
+405. terre di lavinia 2023
+406. terre di lava
+407. terre di kama grillo
+408. terre di kama cerasuolo di vittoria
+409. terre di gudo rosso merlot ticino doc
+410. terre di gudo merlot ticino doc
+411. terre di gudo bianco merlot ticino doc
+412. terre di gudo bianco di merlot ticino doc
+413. terre di gudo bianco 2023
+414. terre di grassaga venum 2020
+415. terre di grassaga primo podere 48 2018
+416. terre di grassaga passito rosso 2020
+417. terre di grassaga passito bianco 2020
+418. terre di grassaga merlot riserva 56 2019
+419. terre di grassaga merlot 56 2019
+420. terre di grassaga merlot 56 2019
+421. terre di grassaga merlot 56 2015
+422. terre di grassaga manzoni bianco 08 2017
+423. terre di grassaga cuvee oro 07 brutdoos van 6
+424. terre di grassaga cinquantasei merlot magnum 2010
+425. terre di gnirega amarone delle valpolicella docg
+426. terre di gloria primitivo igt puglia
+427. terre di gloria pinot grigio igt puglia
+428. terre di giurfo syrah ronna 2016
+429. terre di giurfo suliccenti 2016
+430. terre di giurfo suliccenti 2013
+431. terre di giurfo maskaria cerasuolo di vittoria docg
+432. terre di giurfo frappato vittoria belsito
+433. terre di giurfo cerasuolo di vittoria maskaria 2014
+434. terre di giurfo cerasuolo di vittoria maskaria 2012
+435. terre di giumara frappato nerello mascalese terre sisiliane
+436. terre di giumara 2022 by caruso minini sicily italy case
+437. terre di giotto toscana pinot nero gattaia 2020
+438. terre di giotto pam pet nat 2021
+439. terre di giotto gattaia rosso 2019
+440. terre di giotto gattaia bianco 2019
+441. terre di giano ciliegiolo umbria rosso 2022
+442. terre di giafar kat arrat bianco
+443. terre di giafar kat arrat bianco
+444. terre di giafar kat arrat bianco
+445. terre di giafar kat arrat bianco
+446. terre di giafar kat arrat bianco
+447. terre di giafar kat arrat bianco
+448. terre di gerace igt calabria rosso di barone macri
+449. terre di gerace igt calabria rosato di barone macri
+450. terre di gerace igt calabria bianco di barone macri
+451. terre di ger limine 2022
+452. terre di ger el masut igp organic piwi red wine 2021
+453. terre di franciacorta doc 1998
+454. terre di fiori vermentino maremma toscana doc 2021
+455. terre di fiori robur merlot igt 2016
+456. terre di fiori robur italiensk rdvin
+457. terre di fiori banshee italiensk rdvin
+458. terre di fiori acanto magnum italiensk rdvin
+459. terre di fiori 3003 toscano 2016
+460. terre di faiano rosso igp
+461. terre di faiano primitivo salento kologisk rdvin 2022 puglia italien
+462. terre di faiano primitivo salento igt organic bio
+463. terre di faiano primitivo
+464. terre di faiano primitivo
+465. terre di faiano organic spumante brut
+466. terre di faiano nero di troia southern italy
+467. terre di faiano nero di troia igp organic bio
+468. terre di faiano nero di troia gold medal winning wine
+469. terre di faiano nero di troia
+470. terre di faiano nero di troia
+471. terre di faiano nero di troia
+472. terre di faiano nero davola appassimento
+473. terre di faiano nero davola appass
+474. terre di faiano nero davola
+475. terre di cosenza doc pollino 2021 calabrese
+476. terre di cosenza doc pollino 2021 calabrese
+477. terre di cosenza doc pollino 2021 calabrese
+478. terre di cosenza doc pollino 2021 calabrese
+479. terre di cosenza doc pollino 2021 calabrese
+480. terre di corzano chianti
+481. terre di corzano chianti
+482. terre di confine lintero rosso 2021
+483. terre di confine lincontro bianco 2021
+484. terre di chietti roccaventosa cabernet sauvignon igt 2019
+485. terre di chietizitepecorino 0 spinelli
+486. terre di chieti trebbiano dabruzzo riserva doc 2023 marina cvetic
+487. terre di chieti rosso igt castello di semivicoli 2020 masciarelli
+488. terre di chieti rosso igt castello di semivicoli 2020 masciarelli
+489. terre di chieti rosso igt castello di semivicoli 2020 masciarelli
+490. terre di chieti pecorino tenuta ulisse
+491. terre di chieti pecorino igt riseis 2025 agriverde
+492. terre di chieti pecorino igt riseis 2025 agriverde
+493. terre di chieti pecorino igt riseis 2025 agriverde
+494. terre di chieti pecorino igt riseis 2025 agriverde
+495. terre di chieti pecorino igt riseis 2025 agriverde
+496. terre di chieti pecorino igt riseis 2025 agriverde
+497. terre di chieti pecorino igt 2025 cascina del colle
+498. terre di chieti pecorino igt 2025 cascina del colle
+499. terre di chieti pecorino igt 2025 cascina del colle
+500. terre di chieti pecorino igt 2025 cascina del colle
+501. terre di chieti pecorino igt 2025 cascina del colle
+502. terre di chieti passerina igt villa medoro
+503. terre di chieti passerina igt riseis 2025 agriverde
+504. terre di chieti passerina igt riseis 2025 agriverde
+505. terre di chieti passerina igt riseis 2025 agriverde
+506. terre di chieti passerina igt riseis 2025 agriverde
+507. terre di chieti passerina igt riseis 2025 agriverde
+508. terre di chieti passerina igt riseis 2025 agriverde
+509. terre di chieti madregale igp rosso 2022
+510. terre di chieti igt sangiovese valentino mucci
+511. terre di chieti igt pecorino organic wine
+512. terre di chieti igt merlot rose
+513. terre di chieti igt bianco
+514. terre di chieti igp pecorino agronika
+515. terre di chieti cococciola igt riseis 2024 agriverde
+516. terre di chieti cococciola igt riseis 2024 agriverde
+517. terre di chieti cococciola igt riseis 2024 agriverde
+518. terre di chieti cabernet sauvignon igt lupaia 2020 castorani
+519. terre di chieti cabernet sauvignon igt lupaia 2020 castorani
+520. terre di chieti cabernet sauvignon igt lupaia 2020 castorani
+521. terre di chieti 1910 rosso case only
+522. terre di chiesina supertoskaner tenuta giacomelli
+523. terre di casole sangiovese doc macchie 2019 tenuta delle macchie
+524. terre di casole sangiovese doc macchie 2019 tenuta delle macchie
+525. terre di casole sangiovese doc macchie 2019 tenuta delle macchie
+526. terre di casole sangiovese doc macchie 2019 tenuta delle macchie
+527. terre di casole sangiovese doc macchie 2019 tenuta delle macchie
+528. terre di cariano amarone della valpolicella classico riserva
+529. terre di cariano amarone
+530. terre di campo sasso primitivo di manduria doc
+531. terre di borgano chianti
+532. terre di bo terre di bo barbaresco 2021
+533. terre di bo chianti riserva
+534. terre di bo chianti riserva
+535. terre di bo chianti riserva
+536. terre di bo chianti reserva
+537. terre di bo chianti
+538. terre di bo brunello di montalcino
+539. terre di bo barolo 2020
+540. terre di bo barolo
+541. terre di bo barolo
+542. terre di bo barbaresco docg 2021
+543. terre di bo barbaresco
+544. terre di bo barbaresco
+545. terre di bo amarone della valpolicella 2021
+546. terre di bo amarone della valpolicella
+547. terre di bo amarone della valpolicella
+548. terre di bo amarone
+549. terre di bo 2020 barolo
+550. terre di bacco cabernet sauvignon 2020
+551. terre di ala igp semillon sauvignon blanc
+552. terre dhermes edt h
+553. terre dhermes edt
+554. terre dhermes eau de toilette
+555. terre dexpression fortes tetes rose
+556. terre dexpression fortes tetes blanc
+557. terre dexpression aop corbieresboutenac rouge 2016
+558. terre dexpression aop corbieresboutenac rouge 2016
+559. terre dexpression aop corbieresboutenac rouge 2016
+560. terre detoiles champagne brut lamiable
+561. terre detoiles brut grand cru persoonlijke aanbeveling
+562. terre detoiles brut grand cru
+563. terre detoiles brut
+564. terre des sages
+565. terre des rangoux 2022
+566. terre des olivettes rouge 2022 125
+567. terre des olivettes rose 2024 125 vol
+568. terre des olivettes marquis de lissac blanc
+569. terre des olivettes blanc 2024 125 vol
+570. terre des moutonnes chardonnay 2022
+571. terre des mauges 2020 rouge
+572. terre des mauges 2020 blanc
+573. terre des launes 2017
+574. terre des fontaines chardonnay vin de france
+575. terre des fontaines cabernet sauvignon vin de france
+576. terre des dames lunique 2021 nyhet
+577. terre des dames lunique 2020
+578. terre des dames lunique 2019
+579. terre des dames lunique
+580. terre des dames la diva rouge
+581. terre des dames la diva blanche 2024 nyhet
+582. terre des dames la diva blanche 2024
+583. terre des dames la diva 2021
+584. terre des dames la diva 2021
+585. terre des dames la diva 2021
+586. terre des dames la diva 2019
+587. terre des dames la diva 2019
+588. terre des dames la diva
+589. terre des dames la dame rouge 2022
+590. terre des dames la dame blanche 2022
+591. terre des dames la dame 2023 nyhet
+592. terre des dames la dame 2023
+593. terre des dames la dame 2022
+594. terre des dames la dame
+595. terre des dames diva rose 2022 nyhet
+596. terre des dames diva rose
+597. terre des dames diva blanche 2021
+598. terre des dames diva blanche
+599. terre des dames discovery 6pack
+600. terre des dames dame blanche 2024 nyhet
+601. terre des dames dame blanche
+602. terre des chardons marginal costieres de nimes rhone france
+603. terre des chardons le chardon masque 2024
+604. terre des chardons discret
+605. terre des chardons costieres de nimes bien lune rhone france
+606. terre des chardons bien lune 2023
+607. terre des chardons 2023 costieres de nimes rosee dete
+608. terre des chardons 2023 costieres de nimes bien lune
+609. terre des chardons 2022 costieres de nimes marginal
+610. terre des chardons 2021 clairette de bellegarde jm
+611. terre des chardons 2016 chardon marie costieres de nimes
+612. terre des chardons
+613. terre des buissons gc blanc de blanc
+614. terre des anonymes blanc 2015
+615. terre des anonymes 2015 la sorga
+616. terre des anges sauvignon vin de pays doc 2023
+617. terre des anges rose vin de pays doc 2024
+618. terre des anges pinot noir 2020
+619. terre des anges chardonnay vin de pays doc 2024
+620. terre des anges cabernet sauvignon vin de pays doc 2022
+621. terre des anges cabernet sauvignon 2020
+622. terre des amoureuses touriga 2015
+623. terre des aines gigondas von domaine montirius
+624. terre des aines gigondas rouge aoc 2018 14 bio
+625. terre des 2 sources terrasses du larzac 2020 caprices
+626. terre des 2 sources terrasses du larzac 2017 caprices
+627. terre depices dom de grangeneuve 2019
+628. terre depices dom de grangeneuve
+629. terre depice rouge 2021
+630. terre deole prestige picpoul de pinet languedoc france
+631. terre demotions blanc de noirs
+632. terre delle civette chianti docg
+633. terre delle baronie rosso sicilia igt 2007
+634. terre dellangelo 3 bottiglie
+635. terre dellangelo 3 bottiglie
+636. terre dellabate pecorino
+637. terre dellabate passerina
+638. terre dellabate montepulciano doc
+639. terre dellabate cerasuolo doc
+640. terre della rocca ysola spumante metodo classico dosaggio zero
+641. terre della rocca ysola spumante metodo classico dosaggio zero
+642. terre della rocca ysola spumante metodo classico dosaggio zero
+643. terre della rocca ysola spumante metodo classico dosaggio zero
+644. terre della rocca sangiovese superiore la furha del basino 2021
+645. terre della rocca sangiovese superiore il trinzano del basino 2021
+646. terre della rocca sangiovese superiore il trinzano del basino 2021
+647. terre della rocca romagna sangiovese superiore il graben del trinzano 2022
+648. terre della rocca romagna sangiovese superiore il graben del trinzano 2022
+649. terre della rocca alle dodici a monte tondo 2023
+650. terre della rocca alle dodici a monte tondo 2023
+651. terre della baronia sicilia rosso dop 2019 azienda agricola gmilazzo
+652. terre della baronia sicilia rosso dop 2019 azienda agricola gmilazzo
+653. terre della baronia sicilia rosato dop 2022 azienda agricola gmilazzo
+654. terre della baronia sicilia rosato dop 2022 azienda agricola gmilazzo
+655. terre della baronia sicilia bianco dop 2022 azienda agricola gmilazzo
+656. terre della baronia sicilia bianco dop 2022 azienda agricola gmilazzo
+657. terre della baronia rosso milazzo
+658. terre della baronia rosso dop milazzo
+659. terre della baronia rosso
+660. terre della baronia rosato dop
+661. terre della baronia bianco milazzo
+662. terre della baronia bianco dop white g milazzo
+663. terre del vulcano lava aglianico beneventano igt 2020
+664. terre del vulcano fiano beneventano 2022
+665. terre del volturno rosso sabbie di sopra il bosco r12
+666. terre del volturno prea casavecchia 2010
+667. terre del volturno igt settimo 2020 michele alois
+668. terre del volturno igt pallagrello nero sabbie al vento 2023 teresa mincione
+669. terre del volturno igt pallagrello nero il tempo 2020 terre dellangelo
+670. terre del volturno igt pallagrello bianco la luna e il ventaglio 2024 teresa mincione
+671. terre del volturno igt nulla e per caso 2022 teresa mincione
+672. terre del volturno igt morrone 2018 michele alois
+673. terre del volturno igt cunto 2020 michele alois
+674. terre del volturno igt caiati 2022 michele alois
+675. terre del volturno igp pallagrello bianco la volta 2023 terre dellangelo
+676. terre del volturno igp miglio 25 pallagrello nero 2022 tenuta tralice
+677. terre del volturno igp cirasa rosato 2023 tenuta tralice
+678. terre del volturno igp casavecchia l arca 2021 terre dellangelo
+679. terre del volturno igp calamai pallagrello nero 2021 tenuta tralice
+680. terre del volturno igp 14 vie pallagrello bianco 2023 tenuta tralice
+681. terre del volturno 2013 nanni cope
+682. terre del volturno 2011 sabbie di sopra il bosco
+683. terre del volturno 2009 sabbie di sopra il bosco
+684. terre del vescovo rena vota iprinia campi taurasini 2016 case only
+685. terre del vescovo kisteis campania coda di volpe 2020
+686. terre del vescovo kisteis campania coda di volpe 2019
+687. terre del vento montepulciano dabruzzo 2024 gold
+688. terre del vento montepulciano dabruzzo 2024 gold
+689. terre del vento montepulciano dabruzzo 2024 gold
+690. terre del vento montepulciano dabruzzo 2024 gold
+691. terre del vento montepulciano dabruzzo 2024 gold
+692. terre del vento montepulciano dabruzzo 2024 gold
+693. terre del vento montepulciano dabruzzo 2024
+694. terre del vento montepulciano dabruzzo 2024
+695. terre del vento montepulciano dabruzzo 2024
+696. terre del vento montepulciano dabruzzo 2024
+697. terre del vento montepulciano dabruzzo 2024
+698. terre del vento montepulciano dabruzzo 2024
+699. terre del vento montepulciano dabruzzo 2023 gold
+700. terre del vento montepulciano dabruzzo 2023 gold
+701. terre del vento montepulciano dabruzzo 2023 gold
+702. terre del vento montepulciano dabruzzo 2023 gold
+703. terre del vento montepulciano dabruzzo 2023 gold
+704. terre del vento montepulciano dabruzzo 2023
+705. terre del vento montepulciano dabruzzo 2023
+706. terre del vento montepulciano dabruzzo 2023
+707. terre del vento montepulciano dabruzzo 2023
+708. terre del vento montepulciano dabruzzo 2023
+709. terre del vento montepulciano dabruzzo 2023
+710. terre del vento montepulciano dabruzzo 2022 gold
+711. terre del vento montepulciano dabruzzo 2022 gold
+712. terre del vento montepulciano dabruzzo 2022 gold
+713. terre del vento montepulciano dabruzzo 2022 gold
+714. terre del vento montepulciano dabruzzo 2022
+715. terre del vento montepulciano dabruzzo 2022
+716. terre del vento montepulciano dabruzzo 2022
+717. terre del vento montepulciano dabruzzo 2022
+718. terre del vento cerasuolo dabruzzo rosato 2025 gold
+719. terre del vento cerasuolo dabruzzo rosato 2025 gold
+720. terre del vento cerasuolo dabruzzo rosato 2025 gold
+721. terre del vento cerasuolo dabruzzo rosato 2025 gold
+722. terre del vento cerasuolo dabruzzo rosato 2025 gold
+723. terre del vento cerasuolo dabruzzo rosato 2025 gold
+724. terre del vento cerasuolo dabruzzo rosato 2025
+725. terre del vento cerasuolo dabruzzo rosato 2025
+726. terre del vento cerasuolo dabruzzo rosato 2025
+727. terre del vento cerasuolo dabruzzo rosato 2025
+728. terre del vento cerasuolo dabruzzo rosato 2025
+729. terre del vento cerasuolo dabruzzo rosato 2025
+730. terre del vento cerasuolo dabruzzo rosato 2024 gold
+731. terre del vento cerasuolo dabruzzo rosato 2024 gold
+732. terre del vento cerasuolo dabruzzo rosato 2024 gold
+733. terre del vento cerasuolo dabruzzo rosato 2024 gold
+734. terre del vento cerasuolo dabruzzo rosato 2024 gold
+735. terre del vento cerasuolo dabruzzo rosato 2024
+736. terre del vento cerasuolo dabruzzo rosato 2024
+737. terre del vento cerasuolo dabruzzo rosato 2024
+738. terre del vento cerasuolo dabruzzo rosato 2024
+739. terre del vento cerasuolo dabruzzo rosato 2024
+740. terre del vento cerasuolo dabruzzo rosato 2024
+741. terre del vento 2022
+742. terre del sommacco sicilia doc
+743. terre del sommacco rosso sicilia doc mandrarossa 2016
+744. terre del sindic langhe favorita doc 2025
+745. terre del sindic langhe doc favorita 2025
+746. terre del principato issara taurasi rod
+747. terre del poliziano morellino di scansano lohsa 2021
+748. terre del palio vino nobile di montepulciano 6 case
+749. terre del palio rosso di montalcino 6 case
+750. terre del noce teroldego
+751. terre del noce pinot grigio rose 2025
+752. terre del noce pinot grigio rose 2024
+753. terre del noce pinot grigio rose 2024
+754. terre del noce pinot grigio rose 12
+755. terre del noce pinot grigio rose
+756. terre del noce pinot grigio rose
+757. terre del noce pinot grigio rose
+758. terre del noce pinot grigio rose
+759. terre del noce pinot grigio rose
+760. terre del noce pinot grigio rose
+761. terre del noce pinot grigio rose
+762. terre del noce pinot grigio rosato igt vigneti delle dolomiti 2023
+763. terre del noce pinot grigio rosato igt vigneti delle dolomiti 2021
+764. terre del noce pinot grigio italy
+765. terre del noce pinot grigio igt vigneti delle dolomiti 2022
+766. terre del noce pinot grigio dolomiti 2025
+767. terre del noce pinot grigio dolomiti 2024
+768. terre del noce pinot grigio dolomiti
+769. terre del noce pinot grigio delle dolomiti 2024 trentino italy 12
+770. terre del noce pinot grigio 2024
+771. terre del noce pinot grigio 12
+772. terre del noce pinot grigio
+773. terre del noce pinot grigio
+774. terre del noce pinot grigio
+775. terre del noce pinot grigio
+776. terre del noce pinot grigio
+777. terre del noce pinot grigio
+778. terre del noce pinot grigio
+779. terre del noce pinot grigio
+780. terre del noce pinot grigio
+781. terre del noce pinot grigio
+782. terre del noce pinot grigio
+783. terre del noce merlot dolomiti
+784. terre del noce merlot 2025
+785. terre del noce merlot 2024
+786. terre del noce merlot 2024
+787. terre del noce merlot 125
+788. terre del noce merlot
+789. terre del noce merlot
+790. terre del noce merlot
+791. terre del noce merlot
+792. terre del noce merlot
+793. terre del noce igt vigneti delle dolomiti merlot 2022
+794. terre del noce igt vigneti delle dolomiti chardonnay
+795. terre del noce chardonnay italy
+796. terre del noce chardonnay 2024
+797. terre del noce chardonnay 12
+798. terre del noce chardonnay
+799. terre del noce chardonnay
+800. terre del noce chardonnay
+801. terre del noce chardonnay
+802. terre del noce chardonnay
+803. terre del noce cabernet sauvignon
+804. terre del noce bianco igt vigneti delle dolomiti 2019
+805. terre del noce
+806. terre del moro valpolicella ripasso
+807. terre del moro amarone della valpolicella classico 2021
+808. terre del moro amarone
+809. terre del moro 2018 valpolicella classico superiore ripasso 145
+810. terre del moro 2016 amarone della valpolicella 16
+811. terre del marchesato emilio primo rosso bolgheri doc
+812. terre del marchesato aldone merlot 2018
+813. terre del gufo timpamara calabria igt 2017
+814. terre del gufo portapiana terre di cosenza doc 2019
+815. terre del gufo kaulos calabria igt 2019
+816. terre del gufo chiaroscuro terre di cosenza dop 2019
+817. terre del grifo appassimento 2018 cantina di ruva puglia italien
+818. terre del grifo 2019 cantina di ruva puglia italien
+819. terre del fohn pinot grigio
+820. terre del fohn pinot grigio
+821. terre del fohn pinot grigio
+822. terre del fohn chardonnay
+823. terre del faet uve autoctone collio doc 2022
+824. terre del faet ribolla gialla igt 2023
+825. terre del faet pinot bianco collio doc 2023
+826. terre del faet pinot bianco 2022 collio doc
+827. terre del faet malvasia collio doc 2022
+828. terre del faet malvasia collio doc 2021
+829. terre del faet friulano collio doc 202
+830. terre del faet decimo vino bianco
+831. terre del fae valdobbiadene docg canevel
+832. terre del doge spumante bianco brut
+833. terre del doge prosecco brut
+834. terre del conte roero arneis docg 2025
+835. terre del conte roero arneis docg 2025
+836. terre del conte roero arneis docg
+837. terre del conte roero arneis
+838. terre del buontalenti vermentino ansonica 2024
+839. terre del buontalenti chianti docg 2024
+840. terre del buontalenti
+841. terre del buantalenti organic vermentino ansonica
+842. terre del bruno riserva poggio ai falchi chianti
+843. terre del bruno poggio ai falchi chianti riserva docg
+844. terre del bruno poggio ai falchi chianti riserva 2021 135 0
+845. terre del bruno le more nere igt 2019
+846. terre del bruno le more nere
+847. terre del bruno gorgoli igt 2021 magnum 13 1
+848. terre del bruno gorgoli
+849. terre del bruno chianti docg 2023 13 0
+850. terre del bruno chianti docg
+851. terre del bruno albore toscana bianco
+852. terre del barolo vinum vita est verduno pelaverga 2018
+853. terre del barolo vinum vita est barolo docg 2017
+854. terre del barolo undicicomuni arnaldo rivera barolo piedmont italy
+855. terre del barolo undicicomuni arnaldo rivera barolo piedmont italy
+856. terre del barolo terre del barolo langhe arneis
+857. terre del barolo terre del barolo langhe arneis
+858. terre del barolo terre del barolo barolo 2021
+859. terre del barolo terre del barolo barolo
+860. terre del barolo terre del barolo barolo
+861. terre del barolo riserva numerata magnum 1967
+862. terre del barolo riserva 2009
+863. terre del barolo riserva
+864. terre del barolo ravera 2012
+865. terre del barolo produttori del barolo barolo
+866. terre del barolo produttori del barolo barolo
+867. terre del barolo monvigliero 2010
+868. terre del barolo langhe nebbiolo doc
+869. terre del barolo langhe doc chardonnay
+870. terre del barolo gavi 2021
+871. terre del barolo gavi 2021
+872. terre del barolo dolcetto di diano dalba docg
+873. terre del barolo cantina terre del barolo barolo 2021
+874. terre del barolo cantina terre del barolo barolo 2020
+875. terre del barolo barolo vignarionda arnaldo rivera 2017
+876. terre del barolo barolo undicicomuni arnaldo rivera 2018
+877. terre del barolo barolo rocche di castiglione arnaldo rivera 2015
+878. terre del barolo barolo riserva premier brich magnum 1967
+879. terre del barolo barolo riserva premier birch 1967 magnum
+880. terre del barolo barolo riserva 2016
+881. terre del barolo barolo riserva 1982
+882. terre del barolo barolo riserva 1980 1
+883. terre del barolo barolo riserva 1980
+884. terre del barolo barolo riserva 1968
+885. terre del barolo barolo riserva 1967
+886. terre del barolo barolo riserva 1962
+887. terre del barolo barolo riserva
+888. terre del barolo barolo regular
+889. terre del barolo barolo ravera 2008
+890. terre del barolo barolo ravera 2008
+891. terre del barolo barolo ravera 2008
+892. terre del barolo barolo docg
+893. terre del barolo barolo castello arnaldo rivera 2017
+894. terre del barolo barolo cannubi arnaldo rivera 2020
+895. terre del barolo barolo 2017 case only
+896. terre del barolo barolo 2011
+897. terre del barolo barolo 2010
+898. terre del barolo barolo 2009
+899. terre del barolo barolo 2006
+900. terre del barolo barolo 2001
+901. terre del barolo barolo 1997
+902. terre del barolo barolo 1996
+903. terre del barolo barolo 1995
+904. terre del barolo barolo 1994
+905. terre del barolo barolo 1992
+906. terre del barolo barolo 1990 1
+907. terre del barolo barolo 1988
+908. terre del barolo barolo 1987
+909. terre del barolo barolo 1985
+910. terre del barolo barolo 1983
+911. terre del barolo barolo 1979
+912. terre del barolo barolo 1974
+913. terre del barolo barolo 1973
+914. terre del barolo barolo 1971
+915. terre del barolo barolo 1970
+916. terre del barolo barolo
+917. terre del barolo barolo
+918. terre del barolo barolo
+919. terre del barolo barbera dalba doc
+920. terre del barolo barbera dalba 2021
+921. terre del barolo barbera dalba
+922. terre del barolo barbaresco riserva 2017
+923. terre del barolo barbaresco riserva
+924. terre del barolo barbaresco 2005
+925. terre del barolo arnaldo rivera undicicomuni 2020
+926. terre del barolo 2020 barolo
+927. terre del barolo 2019 barolo
+928. terre del barolo 2001
+929. terre del barolo 2000 barolo
+930. terre del barolo 2000
+931. terre del barolo 1985 barolo
+932. terre dei tufi teruzzi puthod san gimignano
+933. terre dei tufi teruzzi puthod san gimignano
+934. terre dei trulli taralli with tomato and orega
+935. terre dei trulli taralli with rosemary
+936. terre dei trulli taralli with chilli 250g
+937. terre dei trulli taralli with chilli
+938. terre dei santi nebbiolo albugnano
+939. terre dei santi malvasia di castelnuovo don bosco doc
+940. terre dei santi freisa di chieri doc spumante dolce
+941. terre dei santi freisa dasti doc frizzante
+942. terre dei rumi 2023 feudi bizantini
+943. terre dei rotari roero arneis 2021
+944. terre dei preti 2022 collecapretta
+945. terre dei miti frappato doc sicilia 2023
+946. terre dei miti frappato doc 2022 sicily italy
+947. terre dei miti etna rosso doc 2021
+948. terre dei miti etna rosso doc 2020
+949. terre dei miti etna rosso 2021
+950. terre dei miti etna bianco doc 2023
+951. terre dei miti etna bianco 2023
+952. terre dei larame langhe favorita doc
+953. terre dei grifi frascati doc superiore
+954. terre dei dogi ribolla gialla
+955. terre dei dogi ribolla
+956. terre dei dogi pinot grigio
+957. terre dei dogi merlot dop
+958. terre dei dogi merlot dop
+959. terre dei dogi la squero refosco
+960. terre dei dogi cabernet sauvignon dop
+961. terre dei ciliegi rosso verona igt 2023
+962. terre dei buth treviso prosecco frizzante
+963. terre dei buth spumante blanc de noir brut nature 2023
+964. terre dei buth spumante bianco special cuvee organic nv
+965. terre dei buth spumante bianco brut special cuvee org nv 11 ck
+966. terre dei buth special cuvee bianco
+967. terre dei buth rose spumante prosecco doc
+968. terre dei buth rose prosecco spumante brut 2021
+969. terre dei buth prosecco veneto 2022 white extra dry 11 075
+970. terre dei buth prosecco spumante rose
+971. terre dei buth prosecco spumante brut nv case
+972. terre dei buth prosecco spumante brut nv
+973. terre dei buth prosecco rose spumante brut 2022
+974. terre dei buth prosecco doc tappo spago
+975. terre dei buth prosecco doc spumante extra dry org nv 11 ck
+976. terre dei buth prosecco doc spumante extra dry org nv
+977. terre dei buth prosecco doc spumante brut org nv 11 ck
+978. terre dei buth prosecco doc spumante brut nv
+979. terre dei buth prosecco doc spumante brut
+980. terre dei buth prosecco doc spumante brut
+981. terre dei buth prosecco doc spumante brut
+982. terre dei buth prosecco doc spumante brut
+983. terre dei buth prosecco doc rose spumante brut org 2024 11 ck
+984. terre dei buth prosecco doc organic frizzante nv
+985. terre dei buth prosecco doc frizzante org string closure nv 105 ck
+986. terre dei buth prosecco doc frizzante
+987. terre dei buth pinot noir spumante blanc de noir brut nature org 2023 12 ck
+988. terre dei buth pinot grigio rose
+989. terre dei buth pinot grigio doc delle venezie 2025 org 125 sc
+990. terre dei buth pinot grigio delle venezie 2024
+991. terre dei buth pinot grigio blush doc delle venezie 2025 org 125 sc
+992. terre dei buth pinot grigio blush doc delle venezie 2024 org 125 sc
+993. terre dei buth pinot grigio 2024
+994. terre dei buth pinot grigio
+995. terre dei buth organic prosecco frizzante crown cap
+996. terre dei buth organic frizzante rose
+997. terre dei buth frizzante rose tappo spago
+998. terre dei buth frizzante rose org string closure nv 105 ck
+999. terre dei buth frizzante rose org nv
+1000. terre dei buth frizzante rose nv

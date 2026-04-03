@@ -1310,6 +1310,64 @@ C:\winegod-app\mistral_batches\     (ou scripts\lotes_llm\)
 
 Controle de status fica no banco (tabela `y2_lotes_log`), nao em arquivo JSON.
 
+### Codex (OpenAI) — Job externo de classificacao
+
+O Codex (CLI da OpenAI, plano Plus do fundador) roda como job externo paralelo aos navegadores. Classifica vinhos e salva em arquivos que depois sao inseridos no banco pelo script `salvar_respostas_codex.py`.
+
+**IMPORTANTE: Codex usa o plano Plus do fundador, NAO a API. NUNCA usar OPENAI_API_KEY.**
+
+#### Dois prompts diferentes
+
+1. **Prompt B v2** (`scripts/lotes_llm/prompt_B_v2.txt`) — usado pelas IAs no navegador (Mistral, Qwen, Grok, GLM, ChatGPT, Claude, Gemini). Cola direto no chat. 72 linhas.
+
+2. **Prompt Codex V2** (`prompts/PROMPT_CODEX_BASE_V2.md`) — usado pelo Codex. Contem o MESMO conteudo de classificacao do prompt B v2, mas com regras extras necessarias pro Codex:
+   - "NAO crie arquivos .py .ps1 .js .bat" (Codex tenta criar scripts em vez de classificar)
+   - "NAO copie de outros arquivos de resposta" (Codex copia respostas antigas)
+   - "FACA EM BLOCOS DE 250" (1000 de uma vez e demais pro Codex)
+   - "PRODUTOR — CAMPO MAIS IMPORTANTE (NUNCA deixe ??)" com 9 exemplos concretos
+   - Lista expandida de uvas por cor (pinot gris = w, pinot noir = r, etc.)
+   - Regra rigorosa de duplicatas (safra diferente = NAO e duplicata)
+
+**Historico do prompt Codex:**
+- V1 (prompt simples): 73% dos vinhos ficaram SEM produtor — inuteis pro match
+- V2 (com exemplos de produtor): 100% dos vinhos com produtor preenchido
+- A correcao esta documentada em `prompts/CORRECAO_PROMPT_CODEX.md`
+
+#### Como o Codex funciona
+
+1. **Gerar lotes**: `python scripts/gerar_lotes_codex.py N` — gera N lotes de 1000 em `lotes_codex/`
+2. **Gerar prompts por aba**: cada prompt referencia os lotes e o PROMPT_CODEX_BASE_V2.md
+3. **Rodar**: abrir abas do Codex e colar:
+   ```
+   REGRA ABSOLUTA: NAO crie arquivos .py .ps1 .js .bat. NAO copie de outros arquivos.
+   Leia C:/winegod-app/prompts/PROMPT_CODEX_V2_R6_ABA_N.md e siga as instrucoes. NAO pare entre lotes.
+   ```
+4. **Salvar no banco**: `python scripts/salvar_respostas_codex.py` — detecta todos os `resposta_*.txt` e insere na y2_results com `fonte_llm = 'codex_gpt54mini'`
+
+#### Problemas conhecidos do Codex
+
+1. **Cria scripts em vez de classificar** — solucao: "NAO crie .py .ps1" na primeira frase do prompt + "REGRA ABSOLUTA" no comando
+2. **Copia respostas de outros lotes** — solucao: mover respostas prontas pra outra pasta ou deletar antes de rodar
+3. **Duplicatas excessivas** — prompt V1 tinha 20-45% dups, V2 caiu pra 0-15%. Regra rigorosa de safra ajudou
+4. **Produtor vazio** — RESOLVIDO no prompt V2 (de 73% vazio pra 0%)
+
+#### Scripts do Codex
+
+| Script | O que faz |
+|---|---|
+| `scripts/gerar_lotes_codex.py` | Gera lotes de 1000 em ordem Z→A (ou por letra) |
+| `scripts/gerar_prompts_codex.py` | Gera prompts por aba com N lotes cada |
+| `scripts/salvar_respostas_codex.py` | Parseia respostas e insere na y2_results + y2_lotes_log |
+| `scripts/comparar_ias.py` | Compara respostas de IAs vs Mistral (referencia) |
+| `prompts/PROMPT_CODEX_BASE_V2.md` | Prompt base do Codex (com exemplos de produtor) |
+| `prompts/CORRECAO_PROMPT_CODEX.md` | Documentacao da correcao do produtor vazio |
+
+#### Capacidade testada
+
+- 15 abas simultaneas, 25 lotes por aba = 375K itens por rodada
+- Cada lote de 1000 demora ~5-10 min no Codex (em blocos de 250)
+- Codex processa letras Z→A (navegadores vao A→Z) — sem conflito via LEFT JOIN + ON CONFLICT DO NOTHING
+
 ### Match Vivino (Fase 2)
 
 Apos a classificacao, o `trgm_fast.py` roda nos registros com status='pending_match':
@@ -1325,3 +1383,236 @@ Os 748K ja processados pelo Gemini API ficam como estao. Motivos:
 - Campos novos (uva, regiao, etc.) serao NULL pra esses registros
 - Quando o match existe, os dados vem do Vivino mesmo
 - Reprocessar gastaria ~750 rodadas sem necessidade
+
+---
+
+### GUIA OPERACIONAL CODEX — Passo a passo para o CTO
+
+Este guia documenta exatamente como operar o Codex para classificacao de vinhos. Seguir na ordem.
+
+#### Passo 1: Gerar lotes
+
+```bash
+cd C:\winegod-app
+python scripts/gerar_lotes_codex.py 100   # gera 100 lotes de 1000 itens
+```
+
+O script:
+- Busca itens pendentes (LEFT JOIN y2_results WHERE IS NULL)
+- Ordena Z→A (navegadores vao A→Z, sem conflito)
+- Gera `lotes_codex/lote_r_NNNN.txt` (prompt B v2 + itens) e `lote_r_NNNN_ids.txt`
+- Pode filtrar por letra se necessario (modificar query com WHERE LEFT = 'v')
+
+**CUIDADO:** se rodar o gerador 2x sem salvar, ele sobrescreve os lotes anteriores com os mesmos itens. Sempre salvar no banco ANTES de regenerar.
+
+#### Passo 2: Gerar prompts por aba
+
+Cada prompt referencia o `PROMPT_CODEX_BASE_V2.md` (regras de classificacao) + lista de lotes especificos.
+
+Estrutura do prompt por aba:
+```
+[conteudo do PROMPT_CODEX_BASE_V2.md SEM a secao "FACA EM BLOCOS"]
+
+## FACA EM BLOCOS DE 250
+
+### LOTE 1 (lote_r_0700)
+1. Leia C:/winegod-app/lotes_codex/lote_r_0700.txt
+2. Classifique em blocos de 250, salve em C:/winegod-app/lotes_codex/resposta_r_0700.txt
+3. NAO copie de outros arquivos.
+
+### LOTE 2 (lote_r_0701)
+...
+
+## COMECE AGORA. NAO PARE ATE TERMINAR TODOS OS LOTES.
+```
+
+**Capacidade testada:** ate 25 lotes por aba. 10 lotes e seguro, 25 funciona mas algumas abas falham (~80% completam).
+
+#### Passo 3: Colar nas abas do Codex
+
+Abrir N abas do Codex (testado ate 15 simultaneas). Em cada uma, colar:
+
+```
+REGRA ABSOLUTA: NAO crie arquivos .py .ps1 .js .bat. NAO copie de outros arquivos. Leia C:/winegod-app/prompts/PROMPT_CODEX_V2_R6_ABA_N.md e siga as instrucoes. NAO pare entre lotes.
+```
+
+**IMPORTANTE — Truques que funcionam:**
+- A frase "REGRA ABSOLUTA: NAO crie arquivos .py .ps1" TEM que ser a primeira coisa. Sem isso o Codex cria scripts.
+- "NAO copie de outros arquivos" evita que ele copie respostas de lotes anteriores.
+- Se o Codex criar um script (.py ou .ps1), PARE, apague o script, e mande: "ERRADO. Voce criou um script. Apague e classifique VOCE MESMO."
+- Se o Codex copiar respostas antigas, MOVA ou DELETE as respostas prontas da pasta antes de rodar.
+- Abas que falham podem ser remandadas — o prompt referencia os mesmos lotes.
+- O Codex NAO numera as linhas de resposta (diferente do navegador). O parser trata ambos os formatos.
+
+#### Passo 4: Verificar qualidade
+
+Apos cada aba terminar, verificar:
+
+```python
+# Contar linhas e distribuicao
+lines = open('lotes_codex/resposta_r_0700.txt').readlines()
+w = sum(1 for l in lines if 'W|' in l)
+x = sum(1 for l in lines if l.strip() == 'X')
+# Checar produtor preenchido
+w_prod = sum(1 for l in lines if l.startswith('W|') and l.split('|')[1].strip() not in ('','??'))
+print(f'{len(lines)} lin | W={w} X={x} | prod={w_prod}/{w}')
+```
+
+**Metricas esperadas (prompt V2):**
+- Produtor: 99-100%
+- Vinho: 99-100%
+- Safra: 100%
+- Cor: 83-92%
+- Pais: 17-93% (varia com o tipo de item)
+- Duplicatas: 0-15%
+
+#### Passo 5: Salvar no banco
+
+```bash
+python scripts/salvar_respostas_codex.py              # salva TODOS os resposta_*.txt pendentes
+python scripts/salvar_respostas_codex.py 700 701 702  # salva lotes especificos
+```
+
+O script:
+- Detecta arquivos `resposta_[a-z]_NNN.txt` ou `resposta_r_NNNN.txt`
+- Parseia cada linha (W|..., X, S, =N)
+- Insere na y2_results com `fonte_llm = 'codex_gpt54mini'`
+- ON CONFLICT DO NOTHING (se clean_id ja existe, pula)
+- Registra no y2_lotes_log
+- Aceita linhas com ou sem numero na frente ("1. W|..." ou "W|...")
+
+#### Passo 6: Repetir
+
+Gerar novos lotes (passo 1) — a query exclui automaticamente os ja salvos. Nao precisa se preocupar com duplicatas entre rodadas.
+
+#### Erros comuns e solucoes
+
+| Problema | Causa | Solucao |
+|---|---|---|
+| Codex cria .py/.ps1 | Natureza do agente de codigo | "REGRA ABSOLUTA" na primeira frase |
+| Codex copia respostas | Ve arquivos existentes na pasta | Mover/deletar respostas prontas |
+| Produtor vazio (73%) | Prompt sem exemplos | Usar PROMPT_CODEX_BASE_V2.md |
+| Duplicatas excessivas (>20%) | Regra de dup frouxa | "Safra diferente = NAO e duplicata" |
+| Lote incompleto (<1000 linhas) | Codex perdeu contexto | Remandar a aba |
+| varchar(20) overflow | Campo corpo/docura longo demais | Ignorar (4 em 8000, desprezivel) |
+
+#### Pasta de trabalho
+
+```
+C:\winegod-app\lotes_codex\
+  lote_r_0700.txt          — prompt + 1000 itens (input)
+  lote_r_0700_ids.txt      — 1000 clean_ids (vincular resposta ao banco)
+  resposta_r_0700.txt      — 1000 linhas classificadas (output do Codex)
+  ...
+```
+
+**NAO misturar** respostas prontas com lotes em andamento. Se necessario, mover respostas ja salvas para subpasta `respostas_prontas/` (mas cuidado — o Codex pode copiar de la).
+
+#### Como salvar respostas do Codex na base
+
+Apos as abas do Codex terminarem, rodar:
+
+```bash
+cd C:\winegod-app
+
+# Salvar TODOS os resposta_*.txt pendentes
+python scripts/salvar_respostas_codex.py
+
+# Ou salvar lotes especificos
+python scripts/salvar_respostas_codex.py 700 701 702
+```
+
+O script:
+- Detecta `resposta_[a-z]_NNN.txt` e `resposta_r_NNNN.txt`
+- Encontra o `_ids.txt` correspondente automaticamente
+- Parseia cada linha (aceita com ou sem numero: "1. W|..." ou "W|...")
+- INSERT na y2_results com `fonte_llm = 'codex_gpt54mini'`
+- ON CONFLICT DO NOTHING (se clean_id ja existe, pula)
+- Registra no y2_lotes_log
+
+**Mapeamento dos campos no parser:**
+```
+W|[1]produtor|[2]vinho|[3]pais|[4]cor|[5]uva|[6]regiao|[7]subregiao|[8]safra|[9]abv|[10]classificacao|[11]corpo|[12]harmonizacao|[13]docura
+```
+
+Banco: `postgresql://postgres:postgres123@localhost:5432/winegod_db`
+
+#### Como verificar total na base
+
+```bash
+python -c "
+import psycopg2
+conn = psycopg2.connect(host='localhost', port=5432, dbname='winegod_db', user='postgres', password='postgres123')
+cur = conn.cursor()
+cur.execute(\"SELECT COUNT(*) FROM y2_results WHERE fonte_llm = 'codex_gpt54mini'\")
+print(f'Total Codex: {cur.fetchone()[0]}')
+cur.execute(\"SELECT classificacao, COUNT(*) FROM y2_results WHERE fonte_llm = 'codex_gpt54mini' GROUP BY classificacao ORDER BY COUNT(*) DESC\")
+for r in cur.fetchall(): print(f'  {r[0] or \"NULL\"}: {r[1]}')
+conn.close()
+"
+```
+
+#### Como verificar qualidade dos campos
+
+```bash
+python -c "
+import psycopg2
+conn = psycopg2.connect(host='localhost', port=5432, dbname='winegod_db', user='postgres', password='postgres123')
+cur = conn.cursor()
+cur.execute('''
+    SELECT COUNT(*) as total,
+        SUM(CASE WHEN prod_banco IS NOT NULL AND prod_banco != '' THEN 1 ELSE 0 END) as prod,
+        SUM(CASE WHEN vinho_banco IS NOT NULL AND vinho_banco != '' THEN 1 ELSE 0 END) as vinho,
+        SUM(CASE WHEN safra IS NOT NULL AND safra != '' THEN 1 ELSE 0 END) as safra,
+        SUM(CASE WHEN cor IS NOT NULL AND cor != '' THEN 1 ELSE 0 END) as cor,
+        SUM(CASE WHEN corpo IS NOT NULL AND corpo != '' THEN 1 ELSE 0 END) as corpo
+    FROM y2_results WHERE fonte_llm = 'codex_gpt54mini' AND classificacao = 'W'
+''')
+r = cur.fetchone()
+t = r[0]
+print(f'Vinhos (W): {t}')
+for campo, val in zip(['produtor','vinho','safra','cor','corpo'], r[1:]):
+    print(f'  {campo}: {val}/{t} ({val/t*100:.0f}%)')
+conn.close()
+"
+```
+
+**Metricas esperadas (prompt V2):** produtor 99-100%, vinho 99-100%, safra 100%, cor 83-92%, corpo 83-87%.
+**Se produtor < 90%:** o prompt usado esta errado. Verificar se foi usado o PROMPT_CODEX_BASE_V2.md.
+
+#### Como verificar quais abas faltam
+
+```bash
+python -c "
+import os
+for i in range(START, END):
+    f = f'lotes_codex/resposta_r_{i:04d}.txt'
+    if not os.path.exists(f): print(f'  FALTA: {i}')
+"
+```
+(trocar START e END pelos numeros da rodada)
+
+#### Documentos de referencia para operacao Codex
+
+| Documento | O que contem |
+|---|---|
+| `prompts/PROMPT_CODEX_BASE_V2.md` | Prompt base com exemplos de produtor — o que vai pro Codex |
+| `prompts/HANDOFF_CODEX_OPERACAO.md` | Visao geral da operacao, estado atual, proximos passos |
+| `prompts/HANDOFF_SALVAR_LOTES_BASE.md` | Como salvar na base, verificar total e qualidade |
+| `prompts/HANDOFF_ROTINA_CODEX_LOTES_DB.md` | Rotina operacional criada por abas que completaram com sucesso |
+| `prompts/PROMPT_ROTINA_CLASSIFICACAO_LOTES_R0973_R0974.md` | Heuristicas detalhadas de classificacao |
+| `prompts/CORRECAO_PROMPT_CODEX.md` | Documentacao do bug do produtor vazio e como foi corrigido |
+
+#### Delegando para outro chat do Claude Code
+
+Para delegar a tarefa de salvar lotes na base para outra aba do Claude Code:
+
+```
+Leia C:/winegod-app/prompts/HANDOFF_SALVAR_LOTES_BASE.md e execute: salve todos os lotes pendentes na base. Depois mostre o total do Codex na base e a qualidade dos campos.
+```
+
+Para delegar a geracao de novos lotes e prompts:
+
+```
+Leia C:/winegod-app/prompts/HANDOFF_CODEX_OPERACAO.md. Gere 150 lotes com python scripts/gerar_lotes_codex.py 150. Depois gere 15 prompts com 10 lotes cada, usando o PROMPT_CODEX_BASE_V2.md como base. Salve como PROMPT_CODEX_V2_R7_ABA_1.md a R7_ABA_15.md.
+```

@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. allouchery perseval champagne 1er cru millesime 2015 extra brut laurent perrier brut millesime 2015
+2. allouchery perseval champagne 1er cru millesime 2016 extra brut
+3. allouchery perseval champagne le tradition 1er cru blanc de noirs brut
+4. allouchery perseval champagne le tradition 1er cru blanc de noirs brut
+5. alloucherydeguerne blanc de blancs base 2022 extra brut
+6. alloucherydeguerne blanc de noirs base 2022 extra brut
+7. alloucherydeguerne blanc de noirs brut
+8. alloucherydeguerne coteaux champenois blanc 1er cru le bois vilmet 2023
+9. alloucherydeguerne coteaux champenois blanc 1er cru le caquerey 2023
+10. alloucherydeguerne rose 2022 brut
+11. alloucherydeguerne selection 2020 extra brut
+12. alloucherydeguerne selection extra brut 1er cru
+13. alloucherydeguerne smagekasse
+14. alloucherydeguerne smagekasse 8 flasker
+15. allover print polo bright white
+16. allover print recycled string bikini
+17. alloy 2022
+18. alloy chasselas nature vully aoc
+19. allozo angel pintado 2020
+20. allozo by angel pintado
+21. allozo crianza
+22. allozo crianza 2019
+23. allozo crianza 2020
+24. allozo crianza 2020
+25. allozo gran reserva
+26. allozo gran reserva 2014
+27. allozo gran reserva 2016
+28. allozo gran reserva 2018 0
+29. allozo luna 2017
+30. allozo luna 2018
+31. allozo reserva
+32. allozo reserva 2017
+33. allozo reserva 2019
+34. allozo roble
+35. allozo rosado
+36. allozo tempranillo tinto 2022
+37. allozo tempranillo tinto 2024 0
+38. allozo verdejo
+39. allozo verdejo 2022
+40. allozo verdejo 2024 0
+41. allpress art espresso capsules
+42. allpress decaf blend capsules 10pk
+43. allpress espresso blend capsules 10pk
+44. allpress espresso capsules art espresso roast nespresso compatible x10 54g
+45. allpress espresso capsules haus decaf blend nespresso compatible x10 54g
+46. allpress x newcomer
+47. allpurpose cleaner moonflower parallel import
+48. allpurpose glue stick
+49. allpurpose moisture balm
+50. allram blauer zweigelt red
+51. allram blauer zweigelt rose
+52. allram estates kamptal masterclass monday 6th february
+53. allram gaisberg premier cru riesling
+54. allram gaisberg riesling kamptal
+55. allram gruner veltliner
+56. allram gruner veltliner 2023 strass kamptal
+57. allram gruner veltliner alte reben
+58. allram gruner veltliner hasel 2024
+59. allram gruner veltliner hasel bio 2024
+60. allram gruner veltliner qualitatswein 2023 1 lit bottle
+61. allram gruner veltliner ried gaisberg 1 otw 2022 autriche
+62. allram gruner veltliner ried gaisberg erste lage 2022
+63. allram gruner veltliner strass
+64. allram gruner veltliner strass
+65. allram gruner veltliner strass
+66. allram gruner veltliner strass 2018
+67. allram gruner veltliner strass 2021
+68. allram gruner veltliner strass 2023
+69. allram gruner veltliner strass 2023
+70. allram gruner veltliner strass kamptal
+71. allram gruner veltliner strass kamptal
+72. allram gruner veltliner strass kamptal 125vol 2023
+73. allram gruner veltliner strass kamptal austria vegan friendly 2020 125 vol
+74. allram gruner veltliner strassert white
+75. allram ried gaisberg gruner veltliner kamptal
+76. allram ried renner 2022
+77. allram riesling gaisberg erste lage 2021
+78. allram riesling heiligenstein erste lage 2017
+79. allram riesling ried gaisberg 1otw
+80. allram riesling strass 2021
+81. allram riesling strassertaler 20172018 hvidvin med fylde
+82. allram strass gruner veltliner 2023
+83. allram strass gruner veltliner 2023
+84. allram villa haas zweigelt
+85. allram villa strass zweigelt 2017
+86. allreds mixed 6pack special 25 off
+87. allround
+88. allround 33
+89. allround creme basis sensitiv lavera naturkosmetik
+90. allround krydderi
+91. allround tasting glass 56
+92. alls fair in love war
+93. allsidig bresele til baby for nyfdte og smabarn og baby t skjorte holder
+94. allsidige hot cold packs
+95. allsidige motstandsband med drings ankelmansjetter
+96. allspice basil powder 50g
+97. allspice berries 75gr
+98. allspice cardamom 50g
+99. allspice clove powder 50g
+100. allspice coriander seeds 50g
+101. allspice cumin seeds 50g
+102. allspice essentia 90g
+103. allspice fennel seeds 50g
+104. allspice grains essentia 60g
+105. allspice ground
+106. allspice ground 156g
+107. allspice ground essentia 90g
+108. allspice mace powder 30g
+109. allspice parsley powder 50g
+110. allspice powder
+111. allspice powder 50g
+112. allspice star anise powder 50g
+113. allspice thyme leaves 50g
+114. allspice thyme powder 50g
+115. allspice whole lidkon 20g
+116. allspicejamaica pepperpimenta
+117. allspicery sac valley basket
+118. allspices
+119. allspins quick play and instant wins for the speedobsessed gambler
+120. allstar
+121. allstar minibottle gift set
+122. allston cabernet sauvignon
+123. allston estates cabernet sauvignon
+124. allston estates chardonnay
+125. allston estates chardonnay
+126. allston estates pinot noir
+127. allston estates pinot noir
+128. allstone titan halvcirkelduschvagg 9090 cm
+129. allstore
+130. allswell bottle drink plum restore
+131. allswell golden pear aloe vera
+132. allswell golden pear sims
+133. allswell longan red date
+134. allswell longan red date
+135. allswell longan red date sims
+136. allswell longan red date sims
+137. allswell star fruit sims
+138. allswell starfruit
+139. allswell water chestnut sims
+140. allswellstarfruit
+141. allt a bhaine connoisseurs choice gordon macphail astucciato
+142. allt a bhainne
+143. allt a bhainne single cask 21 yo 2000
+144. allt gleann
+145. allt gleann cask strength
+146. allt gleann cask strength legacy series 611
+147. allt gleann the legacy series torabhaig
+148. allt som ar ish
+149. alltabhainne 19962025 28 yo justinos madeira wine cask finish murray mcdavid
+150. alltabhainne 19982025 26 year old club qing 142272 the golden age
+151. alltabhainne 2000 21 year old signatory cask strength collection cask no 6
+152. alltabhainne 2006 gordon macphail connoisseurs choice
+153. alltabhainne 20132024 11 yo 1st fill sherry butt hart brothers
+154. alltabhainne 26 eves olorosored wine mission gold murray mcdavid 07 416
+155. alltech town branch rye
+156. alltid provence av peter mayle
+157. alltid provence en resa genom peter mayles varld
+158. alltiett middagstallrikar
+159. alltiett presentset for kvinnor
+160. alltiett vaxtskarningsverktyg for tradgard och dagis
+161. alltime favorites cheesebox
+162. alltopbargains 12 ball pump lot hand air inflate basketball volleyball football soccer needle
+163. alltopbargains 6 sports ball manual hand air pump inflate basketball football volleyball needle
+164. allu sweet 500 gr vivir
+165. allulose blend
+166. allulose sweetener usa
+167. allulose sweetener usa
+168. allulose vivir
+169. allume cabernet franc
+170. allume cabernet sauvignon
+171. allume chardonnay 2021
+172. allume chardonnay pizzato
+173. allume pinot noir
+174. allume pinot noir 2022
+175. allume pinot noir pizzato
+176. allume pizzato chardonnay
+177. allume pizzato pinot noir
+178. allume sauvignon blanc
+179. allumea grillo chardonnay sicilia dop organic
+180. allumea nero d avola merlot sicily 135
+181. allumea nero davola merlot sicilia dop organic
+182. allumea organic grillo chardonnay
+183. allumea organic nero davola merlot
+184. allumea sicily dop grillochardonnay 2023
+185. allumea sicily dop nero davolamerlot 2023
+186. allumea vino rosso
+187. allumee blouge 2022
+188. allumee orange nv
+189. allumettes de speck 120g
+190. allupuretm allulose for frozen desserts ice cream applications
+191. allupuretm allulose for frozen desserts ice cream applications
+192. allure alkoholmentesitett feher borbol 963 keszult alkoholmentes ital 0 betetdijas a termek ara tartalmazza
+193. allure alkoholmentesitett feher desszertbor
+194. allure alkoholmentesitett roze borbol 957 keszult alkoholmentes ital 0 betetdijas a termek ara tartalmazza
+195. allure alkoholmentesitett roze desszertbor
+196. allure amusant bubbly pink moscato
+197. allure bubbly mango
+198. allure chardonnay
+199. allure dealcoholised sparkling
+200. allure dealcoholised sparkling wine
+201. allure dealcoholised sparkling wine
+202. allure earrings
+203. allure lowalcoholic sparkling wine
+204. allure merlot rose
+205. allure merlot rose 11 diamond edition
+206. allure moscato
+207. allure moscato
+208. allure nonalcoholic sparkling wine
+209. allure nonalcoholic sparkling wine
+210. allure oltrepo pavese docg metodo classico pinot nero rose brut
+211. allure orkide portakal cicegi yasemin cubuklu oda kokusu
+212. allure peach moscato
+213. allure peach moscato
+214. allure pink moscato
+215. allure pink pinot grigio
+216. allure pinot grigio 075 ltr 12
+217. allure pinot grigio diamond edition 11
+218. allure premium secco rose diamond edition 105
+219. allure primitivo
+220. allure sauvignon blanc
+221. allure series capacity 20 btls
+222. allure series capacity 40 btls
+223. allure series capacity 90 btls
+224. allure sparkling 05 by graham beck
+225. alluria 2018 135 075
+226. alluria 2018 14 075
+227. alluria the beauty white wine armenia 2023
+228. alluria the beauty white wine armenia 2023
+229. alluria the classic 2022
+230. alluria the rose 2023
+231. alluria the rose wine armenia 2023
+232. alluria the rose wine armenia 2023
+233. alluria the special n1 2022
+234. alluria the special reserve 2019
+235. alluring kundan bhaiya bhabhi rakhi
+236. alluring kundan bhaiya bhabhi rakhi for international shipping
+237. alluring mixed flowers arrangement in brown stand
+238. alluring mixed flowers glass vase
+239. alluring mixed preserved flowers designer vase
+240. alluvia lisa south africa
+241. alluvions blanc 2025 joe chandellier
+242. alluvions rose 2025 joe chandellier
+243. alluvions rouge 2025 joe chandellier
+244. alluvius
+245. alluxion alliance spirit of truffles
+246. allvanyos csapos szolo
+247. allvanyos teleszkop gyerekeknek
+248. allvegetable shortening baking sticks 567g
+249. allways aloe vera
+250. allways argan
+251. allways babywipes with aloe 72p
+252. allways lavanda
+253. allways mandorle
+254. allways melograno
+255. allways moramuschio
+256. allways muschio bianco
+257. allways rosa
+258. allways vaniglia
+259. allwise oolong mead
+260. ally cardigan
+261. ally knit top
+262. ally knit top charcoal gray
+263. allyouneed personalized utility bag set
+264. allyourfavorites
+265. allzweckwaffe trocken 2024
+266. alma
+267. alma
+268. alma
+269. alma
+270. alma
+271. alma 2021
+272. alma 2022
+273. alma 2022
+274. alma 2023
+275. alma 2024
+276. alma 4 almacita brut nv
+277. alma 4 almacita rose sparkling pinot noir nv
+278. alma 4 almacita sparkling rose nv
+279. alma 4 blanc de blanc
+280. alma 4 blanc de blancs 2022
+281. alma 4 sparkling chardonnay
+282. alma 4 sparkling chardonnay blanc de blanc 2019
+283. alma 4 sparkling chardonnay roble uco valley argentina
+284. alma 4 sparkling chardonnay roble uco valley argentina 2020
+285. alma 4 sparkling chardonnay valle de uco 2020
+286. alma 4 valle de uco blanc de blancs 2019
+287. alma alquimista malbec
+288. alma alquimista rose pinot noir
+289. alma alquimista rose pinot noir
+290. alma alquimista sauvignon blanc
+291. alma alquimista sauvignon blanc
+292. alma alquimista tempranillo
+293. alma alta langa extra brut
+294. alma andina malbec
+295. alma andina malbec
+296. alma andina malbec
+297. alma andina malbec
+298. alma andina malbec reserva 2023
+299. alma andina malbec reserve 2022
+300. alma andina reserve malbec
+301. alma andina reserve malbec
+302. alma andina reserve malbec
+303. alma andina reserve malbec 2023
+304. alma andina reserve malbec 2024
+305. alma assemblage 1 bellavista franciacorta docg
+306. alma assemblage 1 bellavista franciacorta docg astucciato
+307. alma assemblage 1 bellavista franciacorta docg cofanetto regalo 2 bottiglie
+308. alma assemblage 1 bellavista franciacorta docg cofanetto regalo 3 bottiglie
+309. alma assemblage 1 bellavista franciacorta docg mezza bottiglia
+310. alma assemblage 1 extra brut docg franciacorta bellavista
+311. alma assemblage 1 extra brut franciacorta
+312. alma assemblage 1 extra brut franciacorta docg
+313. alma assemblage 1 jeroboam bellavista franciacorta docg in cassa legno
+314. alma assemblage 1 magnum bellavista franciacorta docg
+315. alma assemblage 1 magnum bellavista franciacorta docg astucciato
+316. alma assemblage 2 bellavista franciacorta docg
+317. alma assemblage 2 bellavista franciacorta docg astucciato
+318. alma assemblage 2 bellavista franciacorta docg mezza bottiglia
+319. alma assemblage 2 extra brut docg franciacorta magnum bellavista
+320. alma assemblage 2 franciacorta bellavista
+321. alma assemblage 2 franciacorta bellavista astuccio cofanetto
+322. alma assemblage 2 franciacorta bellavista extra brut
+323. alma assemblage 2 magnum bellavista franciacorta docg
+324. alma assemblage 2 magnum bellavista franciacorta docg astucciato
+325. alma assemblage franciacorta docg magnum 1
+326. alma assemblage frianciacorta docg
+327. alma assemblage frianciacorta docg jeroboam w pudeku drewnianym
+328. alma atlantica albarino
+329. alma atlantica albarino
+330. alma atlantica albarino
+331. alma atlantica albarino godello frizzante martin codax
+332. alma atlantica blanco albarino godello
+333. alma atlantica brut albarino espumoso
+334. alma atlantica godello albarino
+335. alma atlantica mencia rose
+336. alma atlantica mencia rose
+337. alma atlantica mencia rose
+338. alma atlantica mencia rose
+339. alma atlantica rosado
+340. alma atlantica rose
+341. alma atlantica rose mencia
+342. alma atlantica rose mencia espumoso
+343. alma atlantica sangria
+344. alma atlantica sangria rose
+345. alma aurea
+346. alma austral vinho assemblage barrel series 2021
+347. alma austral vinho cabernet sauvignon
+348. alma austral vinho cabernet sauvignon barrel series
+349. alma austral vinho malbec 2020
+350. alma austral vinho malbec 2023
+351. alma austral vinho malbec barrel series
+352. alma austral vinho pinot noir barrel series
+353. alma austral vinho torrontes 2024
+354. alma austral vinho vineyard selection blend
+355. alma autor tinto
+356. alma azteca joven gold 35 0
+357. alma barolo
+358. alma barricas
+359. alma belguim halva wafer 200g
+360. alma belguim lemon wafer 250g
+361. alma bileklik
+362. alma blanco
+363. alma bohemia de altanza 2023
+364. alma brava blend supreme tinto
+365. alma brava vinho branco
+366. alma brut assemblage
+367. alma brut sparkling wine
+368. alma calme
+369. alma carraovejas aiurri landua 2021
+370. alma carraovejas landua tinto
+371. alma carraovejas o gran mein castes branca
+372. alma cercius felin noir premium blanc
+373. alma cercius felin noir premium rouge
+374. alma cercius vermentino
+375. alma cersius alicante
+376. alma cersius alicante bouschet 2022
+377. alma cersius blanc moulin de pletanne 2024
+378. alma cersius cercius sauvignon blanc 2023 igp coteaux de beziers
+379. alma cersius cercius viognier 2023 igp coteaux de beziers
+380. alma cersius chardonnay recreation
+381. alma cersius gardian
+382. alma cersius gardian rose
+383. alma cersius igp coteaux de beziers blanc 2020
+384. alma cersius igp coteaux de beziers blanc 2020
+385. alma cersius igp coteaux de beziers blanc 2020
+386. alma cersius igp coteaux de beziers blanc 2020
+387. alma cersius igp coteaux de beziers rouge 2020
+388. alma cersius igp coteaux de beziers rouge 2020
+389. alma cersius igp coteaux de beziers rouge 2020
+390. alma cersius les pins sacres
+391. alma cersius miss alma
+392. alma cersius miss alma rose 2024 verleidelijke rose
+393. alma cersius red
+394. alma cersius rouge
+395. alma cersius rouge moulin de pletanne 2024
+396. alma cersius terra patres 2019
+397. alma cersius terre des moutonnes chardonnay
+398. alma cersius vermentino
+399. alma cersius vermentino 2023
+400. alma cersius viognier
+401. alma classic individual wafer 24pc
+402. alma classic lemon wafer 200g
+403. alma claw ballerina
+404. alma coated clasic wafer box 400g
+405. alma colors vinho rose
+406. alma contador 2021
+407. alma contador 2022
+408. alma contador rioja 2020
+409. alma csatni
+410. alma cuvee brut franciacorta nv bellavista
+411. alma da ponte 2020
+412. alma da ponte branco
+413. alma da ponte branco 2022 cx 3uni
+414. alma da ponte tinto 2021 cx 3uni
+415. alma da vinha
+416. alma das donas almalarga godello 2021
+417. alma das donas almalarga godello 2022
+418. alma das donas almanova mencia 2024
+419. alma das donas almanova mencia 2024
+420. alma de acos 2017
+421. alma de agave blanco 38 075
+422. alma de autor blanco
+423. alma de autor godello
+424. alma de autor godello
+425. alma de autor godello 2024
+426. alma de autor godello bco 34
+427. alma de autor godello blanco
+428. alma de autor godello do monterrei 2020
+429. alma de autor godello pazo das tapias
+430. alma de autor mencia
+431. alma de autor mencia 2022
+432. alma de autor mencia tinto
+433. alma de autor weisswein 2025
+434. alma de azafran
+435. alma de blanco
+436. alma de blanco
+437. alma de blanco 2011 monterrei ddo
+438. alma de blanco godello
+439. alma de blanco godello
+440. alma de blanco godello 2024
+441. alma de blanco godello 2025
+442. alma de blanco godello 34
+443. alma de cantaro bobal
+444. alma de cantaro bobal 2022
+445. alma de casa spainish blend
+446. alma de castano
+447. alma de cattleya 2022 cabernet sauvignon napa vly
+448. alma de cattleya 2022 pinot noir sonoma
+449. alma de cattleya 2023 alma de cattleya chardonnay sonoma cst
+450. alma de cattleya 2023 alma de cattleya sauv blanc son cty
+451. alma de cattleya 2023 pinot noir sonoma city
+452. alma de cattleya cabernet sauvignon rutherford ca 23
+453. alma de cattleya chardonnay 23
+454. alma de cattleya chardonnay sonoma county
+455. alma de cattleya pinot noir
+456. alma de cattleya pinot noir 23
+457. alma de cattleya pinot noir sonoma 2019
+458. alma de cattleya pinot noir sonoma county
+459. alma de cattleya pinot noir sonoma county 2022
+460. alma de cattleya red blend
+461. alma de cattleya rose of pinot noir
+462. alma de cattleya sauvignon blanc
+463. alma de cattleya sauvignon blanc
+464. alma de cattleya sauvignon blanc
+465. alma de cattleya sauvignon blanc
+466. alma de cattleya sauvignon blanc 24
+467. alma de cattleya sonoma county pinot noir
+468. alma de cattleya sonoma county pinot noir
+469. alma de cattleya sonoma county sauvignon blanc 2023
+470. alma de cattleya syrah sonoma 23
+471. alma de cerron with red wine
+472. alma de chile cabernet sauvignon
+473. alma de chile cabernet savignon czerwone wytrawne
+474. alma de chile carmenere czerwone wytrawne
+475. alma de chile chardonnay biae wytrawne
+476. alma de chile gran reserva carmenere
+477. alma de chile merlot czerwone wytrawne
+478. alma de chile reserva cabernet sauvignon czerwone wytrawne
+479. alma de chile reserva chardonnay biae wytrawne
+480. alma de chile reserva merlot czerwone wytrawne
+481. alma de chile reserva sauvignon blanc
+482. alma de chile sauvignon blanc biae wytrawne
+483. alma de chile sauvignon blanc reserva
+484. alma de compostela albarino 2022
+485. alma de contador
+486. alma de contador 2020 rioja
+487. alma de espadan 2021
+488. alma de espadan 2023
+489. alma de forcada
+490. alma de gildo 2020
+491. alma de la marciana 2020
+492. alma de la marciana blanco
+493. alma de la marciana blanco
+494. alma de la marciana blanco 2023
+495. alma de la marciana rioja
+496. alma de la marciana tinto
+497. alma de la marciana tinto
+498. alma de la marciana tinto
+499. alma de la marciana tinto 2022
+500. alma de lisboa branco
+501. alma de lisboa branco
+502. alma de lisboa branco 2022
+503. alma de lisboa branco portugal
+504. alma de lisboa reserva arinto
+505. alma de lisboa reserva branco 2021
+506. alma de lisboa reserva tinto 2019
+507. alma de lisboa reserva touriga nacional
+508. alma de lisboa rose
+509. alma de lisboa rose
+510. alma de lisboa rose
+511. alma de lisboa rose 2022
+512. alma de lisboa tinto
+513. alma de lisboa tinto
+514. alma de lisboa tinto
+515. alma de lisboa tinto 2023
+516. alma de lisboa tinto 2023 51 karton
+517. alma de lisboa tto
+518. alma de lisboa tto
+519. alma de los andes cabernet sauvignon 12375
+520. alma de los andes cabernet sauvignon 12750
+521. alma de los andes cabernet sauvignon 6750
+522. alma de los andes cabernet sauvignon reserve
+523. alma de los andes carmenere 12375
+524. alma de los andes carmenere 12750
+525. alma de los andes carmenere 6750
+526. alma de los andes chardonnay 12375
+527. alma de los andes chardonnay 6750
+528. alma de los andes clos dargentine malbec reserva 2014 case only
+529. alma de los andes infinito cabernet wine makers selection 2018
+530. alma de los andes malbec reserva 2022case only
+531. alma de los andes malbec reserve 2019 case only
+532. alma de los andes merlot 12750
+533. alma de los andes merlot 6750
+534. alma de los andes pinot noir 6750
+535. alma de los andes red blend 6750
+536. alma de los andes reserva malbec
+537. alma de los andes sauvignon blanc 12375
+538. alma de los andes sauvignon blanc 6750
+539. alma de los andes syrah 12750
+540. alma de los andes syrah 6750
+541. alma de luzon
+542. alma de luzon
+543. alma de luzon
+544. alma de luzon
+545. alma de luzon
+546. alma de luzon 2010
+547. alma de luzon 2021
+548. alma de luzon jumilla
+549. alma de luzon monastrell syrah 2020
+550. alma de luzon monastrellsyrah 2020
+551. alma de magno
+552. alma de magno
+553. alma de magno
+554. alma de magno
+555. alma de magno gran reserva
+556. alma de mar 2023 bodegas albamar rias baixas spanien
+557. alma de mar rias baixas white 2020
+558. alma de mecenas cabernet sauvignon
+559. alma de mecenas garnacha
+560. alma de mecenas rosado garnacha
+561. alma de mecenas verdejo
+562. alma de mecenas verdejo
+563. alma de pias branco
+564. alma de pias tinto
+565. alma de senorans
+566. alma de senorans aguardiente envejecido
+567. alma de tejo tinto 2019
+568. alma de tinto
+569. alma de tinto
+570. alma de tinto mencia
+571. alma de tinto mencia 2024
+572. alma de tobia seleccion de autor 2019
+573. alma de trabanco quinquina en rama
+574. alma de trabanco quinquina en rama
+575. alma de trabanco quinquina en rama
+576. alma de trabanco quinquina en rama
+577. alma de trabanco quinquina en rama aperitif
+578. alma de trabanco quinquina en rama aperitif 1 liter
+579. alma de trabanco quinquina en rama asturias spain nv
+580. alma de trabanco quinquina en rama edicion especial
+581. alma de trabanco quinquina en rama spain
+582. alma de trabanco quinquina en rama spain nv
+583. alma de trabanco quniquina en rama
+584. alma de unx blanco in kist
+585. alma de unx garnacha
+586. alma de valdeguerra 2021
+587. alma de valdeguerra blanco semidulce
+588. alma de valdeguerra semidulce 2024
+589. alma de vid blanco
+590. alma de vid blanco 2025
+591. alma de vid blanco semidulce
+592. alma de vid bobal suave 2024
+593. alma de vid brut
+594. alma de vid brut
+595. alma de vid cabernet sauvignon
+596. alma de vid chardonnay
+597. alma de vid merlot
+598. alma de vid moscatel
+599. alma de vid rosado
+600. alma de vid tempranillo suave 2024
+601. alma de vid tinto
+602. alma de vid tinto
+603. alma de vid tinto semidulce
+604. alma de viento coleccion de vinedos corte 2022
+605. alma de viento coleccion de vinedos malbec 2022
+606. alma del jaguar anejo
+607. alma del jaguar anejo
+608. alma del jaguar anejo
+609. alma del jaguar anejo barricas series collection
+610. alma del jaguar anejo barricas series collection
+611. alma del jaguar anejo barricas series mizunara oak cask
+612. alma del jaguar anejo barricas series ruby wine cask
+613. alma del jaguar anejo barricas series vino de naranja cask
+614. alma del jaguar barricas anejo mizunara oak finish
+615. alma del jaguar barricas reposado pear wood cask finish
+616. alma del jaguar barricas series anejo calvados cask
+617. alma del jaguar barricas series anejo finished in mizunara cask
+618. alma del jaguar barricas series anejo mizunara cask
+619. alma del jaguar barricas series anejo ruby port cask
+620. alma del jaguar barricas series anejo vino de naranja cask
+621. alma del jaguar barricas series reposado finished in pear wood
+622. alma del jaguar barricas series reposado pear wood cask
+623. alma del jaguar blanco
+624. alma del jaguar blanco
+625. alma del jaguar blanco
+626. alma del jaguar blanco
+627. alma del jaguar blanco
+628. alma del jaguar nocturna
+629. alma del jaguar nocturna
+630. alma del jaguar nocturna high proof blanco
+631. alma del jaguar nocturnal blanco high proof
+632. alma del jaguar reposado
+633. alma del jaguar reposado
+634. alma del jaguar reposado
+635. alma del jaguar reposado
+636. alma del jaguar reposado
+637. alma del jaguar reposado
+638. alma del jaguar reposado barricas series pear wood cask
+639. alma del jaguar tasting glass
+640. alma del moral
+641. alma del vivar
+642. alma delos andes malbec
+643. alma ditriaclassic grapes
+644. alma ditriato discover
+645. alma do mar port ruby
+646. alma do mar ruby port
+647. alma do mar ruby port porto
+648. alma do tejo
+649. alma do tejo branco 2018
+650. alma do tejo regional tejo 2017
+651. alma do tejo reserva 2023 cervene vino
+652. alma do tejo syrah 2023
+653. alma do vello tesouro 2022
+654. alma douro reserva
+655. alma douro reserva
+656. alma e coracao branco 2023
+657. alma e coracao rose 2024
+658. alma e coracao tinto 2023
+659. alma es homoktovis dzsusz 100
+660. alma festiva
+661. alma finca
+662. alma finca liqueur
+663. alma finca mexican orange liqueur
+664. alma finca orange liqueur
+665. alma finca orange liqueur
+666. alma finca orange liqueur
+667. alma finca orange liqueur
+668. alma finca orange liqueur
+669. alma finca orange liqueur
+670. alma finca orange liqueur
+671. alma finca orange liqueur 80
+672. alma finca orange liqueur 80
+673. alma finca orange liqueur 80
+674. alma finca orange liqueur de mexico
+675. alma formaju stresszlabda zold szinben
+676. alma franciacorta gran cuvee brut docg bellavista
+677. alma fria chardonnay plural sonoma 2014
+678. alma fria mendocino ridge sparkling pinot noir rose
+679. alma fria pinot noir dona margarita sonoma 2014
+680. alma fria pinot noir holterman sonoma 2015
+681. alma fria pinot noir plural sonoma 2015
+682. alma fria san luis obispo coast stolo syrah
+683. alma fria sonoma coast campbell ranch chardonnay
+684. alma fria sonoma coast holtermann pinot noir
+685. alma fria sonoma coast plural cabernet sauvignon
+686. alma fria sonoma coast sparkling chardonnay
+687. alma fria west sonoma coast plural pinot noir
+688. alma fria west sonoma coast richardson ranch pinot noir
+689. alma fuerte salomones plasencia
+690. alma gallega
+691. alma gemela bonarda 2022
+692. alma gemela bonarda bot
+693. alma gemela cabernet franc bot
+694. alma gemela carignan
+695. alma gemela field blend
+696. alma gemela garnacha
+697. alma gemela garnacha de chacayes 2020
+698. alma gemela organico monastrell bot
+699. alma gemela white field blend
+700. alma gemela white field blend 2020
+701. alma gemela white field blend los chacayes uco valley mendoza argentina
+702. alma gemela white field blend onofri mendoza argentina 2023 135 vol
+703. alma gemela whitefield bot
+704. alma godello
+705. alma godello 6 bottle case
+706. alma gran cuvee brut
+707. alma gran cuvee magnum nv franciacorta docg
+708. alma gran cuvee non dosato franciacorta docg
+709. alma gran cuvee nv franciacorta docg
+710. alma grand cuvee bellavista cl75
+711. alma grand cuvee brut bellavista jeroboam
+712. alma grand cuvee brut bellavista magnum astucciato
+713. alma grande cuvee brut
+714. alma grande cuvee brut franciacorta docg
+715. alma grande cuvee rose
+716. alma inquieta
+717. alma inquieta blend
+718. alma inquieta blend alfredo roca
+719. alma inquieta cabernet franc
+720. alma jovem malbec
+721. alma joven chardonnaysauvignon blanc
+722. alma joven rose cabernet franc
+723. alma joven tannatmerlot
+724. alma kolye
+725. alma larga godello
+726. alma m
+727. alma m
+728. alma m champenoise brut 24 meses
+729. alma m champenoise brut 24 meses
+730. alma magnum
+731. alma malbec resv
+732. alma mater
+733. alma mater 2022
+734. alma mater 2022
+735. alma mater amphore
+736. alma mater cesanese
+737. alma mater jeanclaude lapalu vin de france rouge 2021
+738. alma mater vdf 2019 jeanclaude lapalu bd vin nature
+739. alma mater vdf 2019 jeanclaude lapalu bd vin nature
+740. alma mater vin de france jeanclaude lapalu 2014 0750 vin de france frankrijk
+741. alma mater vin de france jeanclaude lapalu 2014 1500 vin de france frankrijk
+742. alma mater vin de france jeanclaude lapalu 2015 0750 vin de france frankrijk
+743. alma mater vin de france jeanclaude lapalu 2016 0750 vin de france frankrijk
+744. alma mater vin de france jeanclaude lapalu 2017 0750 vin de france frankrijk
+745. alma mia anejo
+746. alma mia blanco
+747. alma mia reposado
+748. alma minha branco
+749. alma mistica muscat
+750. alma mora 2024 reserva malbec san juan argentina
+751. alma mora box
+752. alma mora cabernet sauvignon
+753. alma mora cabernet sauvignon 750 mlt 135
+754. alma mora chardonnay
+755. alma mora espumante extra brut
+756. alma mora malbec
+757. alma mora malbec
+758. alma mora malbec
+759. alma mora malbec
+760. alma mora malbec
+761. alma mora malbec
+762. alma mora malbec
+763. alma mora malbec
+764. alma mora malbec 2023 12 bottles
+765. alma mora malbec 750 mlt 135
+766. alma mora malbec vino tinto
+767. alma mora pinot grigio
+768. alma mora pinot grigio
+769. alma mora pinot grigio 2022 12 bottles
+770. alma mora red blend
+771. alma mora rosado de syrah
+772. alma mora sauvignon blanc
+773. alma negra
+774. alma negra
+775. alma negra
+776. alma negra
+777. alma negra
+778. alma negra argentina tinto 2022
+779. alma negra blanc de blancs sparkling wine by ernesto catena 6 bottles
+780. alma negra blanco
+781. alma negra blanco
+782. alma negra blanco
+783. alma negra blanco x
+784. alma negra blend
+785. alma negra blend
+786. alma negra blend blanco
+787. alma negra blend tinto
+788. alma negra branco
+789. alma negra brut nature
+790. alma negra brut nature rose
+791. alma negra brut nature rose
+792. alma negra brut nature rose mendoza
+793. alma negra brut nature rose nv
+794. alma negra brut nature rose sparkling
+795. alma negra corte secreto
+796. alma negra ernesto catena mendoza x
+797. alma negra ernesto catena uco valley rose brut nature nv
+798. alma negra espumante blanc de blancs
+799. alma negra espumante blanc de blancs
+800. alma negra espumante brut nature rose
+801. alma negra espumante rose
+802. alma negra espumante rose x
+803. alma negra gran alma 2018
+804. alma negra gran alma 2018
+805. alma negra gran alma negra 2016
+806. alma negra m blend
+807. alma negra m blend
+808. alma negra m blend
+809. alma negra m blend
+810. alma negra m blend
+811. alma negra m blend
+812. alma negra m blend
+813. alma negra m blend
+814. alma negra m blend
+815. alma negra m blend 2021
+816. alma negra m blend 2021
+817. alma negra m blend 2021
+818. alma negra m blend 2022
+819. alma negra m blend 2022
+820. alma negra m blend 2022
+821. alma negra m blend 2023 tikal
+822. alma negra m blend mendoza
+823. alma negra m blend mendoza
+824. alma negra m red blend
+825. alma negra mendoza brut rose
+826. alma negra mendoza m red blend
+827. alma negra misterio
+828. alma negra misterio
+829. alma negra misterio
+830. alma negra misterio
+831. alma negra misterio
+832. alma negra misterio 2021
+833. alma negra misterio i tikal 2022 importacao oficial
+834. alma negra misterio rose
+835. alma negra naranja
+836. alma negra orange
+837. alma negra orange
+838. alma negra orange
+839. alma negra orange
+840. alma negra orange
+841. alma negra orange
+842. alma negra orange by ernesto catena 2536oz 6 bottles
+843. alma negra orange x
+844. alma negra pinot noir 2023 tikal
+845. alma negra pinot noir 4x de sem juros ou a vista com 3 de desconto no pix
+846. alma negra red blend
+847. alma negra red blend by ernesto catena 6 bottles
+848. alma negra red wine 750
+849. alma negra rosado orange
+850. alma negra rose brut
+851. alma negra rose sparkling wine by ernesto catena 6 bottles
+852. alma negra sparkling malbec rose
+853. alma negra sparkling rose
+854. alma negra sparkling rose
+855. alma negra sparkling rose nv
+856. alma negra tinto
+857. alma negra tinto
+858. alma negra tinto
+859. alma negra tinto 2021
+860. alma negra tinto x
+861. alma negra white by ernesto catena 2536oz 6 bottles
+862. alma noble cinsault rose
+863. alma noble cinsault rose
+864. alma non dosato assemblage
+865. alma non dosato assemblage 1 bellavista franciacorta docg
+866. alma non dosato assemblage 1 bellavista franciacorta docg astucciato
+867. alma non dosato assemblage 2 bellavista franciacorta docg
+868. alma non dosato assemblage 2 bellavista franciacorta docg astucciato
+869. alma non dosato assemblage 2 franciacorta bellavista
+870. alma non dosato franciacorta bellavista astuccio
+871. alma non dosato grand cuvee
+872. alma non dosato magnum assemblage 1 bellavista franciacorta docg
+873. alma non dosato magnum assemblage 1 bellavista franciacorta docg astucciato
+874. alma non dosato magnum assemblage 2 bellavista franciacorta docg
+875. alma non dosato magnum assemblage 2 bellavista franciacorta docg in cofanetto
+876. alma nostalgia armonia y otros relatos sobre las palabras
+877. alma nova mencia 2018
+878. alma origem
+879. alma parrillera
+880. alma pinot bianco
+881. alma portuguesa tinto 2019
+882. alma pura
+883. alma raminga arbolle 2023
+884. alma raminga arbolle pozzo 2020
+885. alma raminga armischiu 2022
+886. alma raminga carmu 2022
+887. alma raminga decco 2022
+888. alma raminga llue 2021
+889. alma raminga sgorbiu 2022
+890. alma raminga vini erranti arbolle
+891. alma raminga vini erranti armischiu
+892. alma raminga vini erranti carmu
+893. alma raminga vini erranti decco
+894. alma raminga vini erranti llue
+895. alma raminga vini erranti sgorbiu
+896. alma romana bianco
+897. alma romana pinot grigio 075
+898. alma romana rosso
+899. alma rosa chardonnay 2022
+900. alma rosa chardonnay 2023
+901. alma rosa chardonnay 2023
+902. alma rosa chardonnay el jabali vineyard 2022
+903. alma rosa chardonnay el jabali vineyard sta rita hills 2022
+904. alma rosa chardonnay el jabali vineyard sta rita hills 2022
+905. alma rosa chardonnay santa rita hills 2023
+906. alma rosa chardonnay sta rita hills santa barbara california 2023
+907. alma rosa chardonnay sta rita hills santa barbara california 2023
+908. alma rosa el jabali pinot noir sta rita hills santa barbara california 2021
+909. alma rosa el jabali pinot noir sta rita hills santa barbara california 2021
+910. alma rosa pinot caracol sta rita hills 2021
+911. alma rosa pinot noir caracol sta rita hills 2021
+912. alma rosa pinot noir el jabali vineyard 2021
+913. alma rosa pinot noir el jabali vineyard sta rita hills 2021
+914. alma rosa pinot noir la encantada vineyard sta rita hills 2022
+915. alma rosa pinot noir rancho la vina vineyard sta rita hills 2022
+916. alma rosa pinot noir santa rita hills 2023
+917. alma rosa pinot noir santa rita hills 6case
+918. alma rosa sta rita hill chardonnay 2021
+919. alma rosa sta rita hills chardonnay 2022
+920. alma rosa sta rita hills pinot noir 2021
+921. alma rosa sta rita hills pinot noir 2022
+922. alma rose assemblage
+923. alma rose assemblage 1 bellavista franciacorta docg
+924. alma rose assemblage 1 bellavista franciacorta docg astucciato
+925. alma rose assemblage 1 franciacorta docg bellavista
+926. alma rose assemblage 2
+927. alma rose assemblage 2 bellavista franciacorta docg
+928. alma rose assemblage 2 bellavista franciacorta docg astucciato
+929. alma rose assemblage 2 magnum bellavista franciacorta docg astucciato
+930. alma rose grand cuvee
+931. alma rosso riserva doc friuliaquileia safra 2020
+932. alma serena barrica
+933. alma serena crianza
+934. alma serena reserva
+935. alma serena verdejo 2023
+936. alma solar
+937. alma spritz
+938. alma super hazel wafer new pack 24pc
+939. alma super wafer 40pc
+940. alma surfer pet nat 2024
+941. alma surfer rose 2023
+942. alma surfer rose 2024
+943. alma tepec chile liqueur
+944. alma tepec chile pasilla mixe
+945. alma tepec chile pasilla mixe
+946. alma tepec chile pasilla mixe chili peppper liquer
+947. alma tepec pasilla mixe
+948. alma terroir
+949. alma terroir
+950. alma tierra cabernet franc 2022
+951. alma tierra cabernet sauvignon 2018
+952. alma tierra cabernet sauvignon 2022
+953. alma tierra carmenere 2022
+954. alma tierra do valle de cachapoal cabernet franc 2018
+955. alma tierra do valle de curico carignan 2022
+956. alma tierra do valle de curico carmenere 2018
+957. alma tierra syrah 2022
+958. alma tobia
+959. alma tobia
+960. alma tobia 1998
+961. alma tobia 2012 rosado barrique bodegas tobia rioja spanien
+962. alma tobia blanco 2016 bodegas tobia rioja spanien
+963. alma tobia blanco 2019 bodegas tobia rioja spanien
+964. alma tobia unico 2020
+965. alma tobia unico 2020
+966. alma unica quatro castas
+967. alma unica shiraz s8 ultra premium cabernet sauvignon
+968. alma valley
+969. alma valley cabernet sauvignon reserve
+970. alma valley chardonnay
+971. alma valley chardonnay reserve 2022 white dry 125 075
+972. alma valley favourites cabernet sauvignon
+973. alma valley favourites chardonnay
+974. alma valley favourites merlo
+975. alma valley favourites sauvignon blanc
+976. alma valley kokur crimea 2021 white dry 14 075
+977. alma valley pinot blanc
+978. alma vinhos
+979. alma vino bianco bio svizzera igt
+980. alma vitis arinto reserva
+981. alma vitis caladoc
+982. alma vitis caladoc
+983. alma vitis doc torres vedras branco
+984. alma vitis doc torres vedras tinto
+985. alma vitis reserva
+986. alma vitis rose
+987. alma vitis syrah vinho regional lisboa 2021
+988. alma vitis tinto
+989. alma vlley
+990. alma wafer rolim black white cream 80g
+991. alma wafer rolim hazelnut cream 120g
+992. alma wafer rolim vanilla cream 120g
+993. alma win gel curatare wc
+994. alma3once barrica 2019
+995. alma3once mencia barrica 2023
+996. alma4 rose 2020
+997. almacava
+998. almacava
+999. almacen de la capilla bodega ubicada en una zona llamada colonia estrella a 3 kmts de la ciudad de carmelo se encuentra en la 5ta generacion de la familia cordano cultivando uvas de alta calidad
+1000. almacen de la capilla winery located in colonia estrella just 3 km from the city of carmelo now in its 5th generation the cordano family continues to cultivate grapes of the highest oenological

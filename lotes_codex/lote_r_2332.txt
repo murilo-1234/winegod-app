@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. hasher family wines cyriel cabernet franc 2023
+2. hasher family wines cyriel cabernet franc 2023 3 liter
+3. hasher family wines cyriel cabernet franc 2023 5 liter
+4. hasher family wines ernest pinot noir 2023
+5. hasher family wines ernest pinot noir 2023
+6. hasher family wines ernest pinot noir 2023 3 liter wooden box
+7. hasher family wines ernest pinot noir 2023 5 liter wooden box
+8. hasher family wines marimist chardonnay 2022
+9. hasher family wines marimist chardonnay 2022
+10. hasher family wines marimist chardonnay 2023
+11. hasher family wines marimist chardonnay 2023 5 liter
+12. hasher family wines nauticus sauvignon blanc 2023
+13. hasher family wines nauticus sauvignon blanc 2024
+14. hasher family wines nauticus sauvignon blanc 2024
+15. hasher family wines nauticus sauvignon blanc 2024 3 liter
+16. hasher family wines nauticus sauvignon blanc 2024 5 liter
+17. hasher family wines pinot noir 2024
+18. hasher marimist chardonnay 2023
+19. hasher marimist chardonnay 2023
+20. hasher marimist chardonnay 2023
+21. hasher marimist chardonnay 2023
+22. hasher marmist chardonnay 2022
+23. hasher nauticus sauvignon blanc 2024
+24. hasher nauticus sauvignon blanc 2024
+25. hasher nauticus sauvignon blanc 2024
+26. hasher pinot nouveau
+27. hasher sauvignon blanc 2024
+28. hashimoto sweet boiled red bean 200g
+29. hashtag neszmely
+30. hashtag neszmely szaraz feherbor
+31. hashtag sauvignon italia
+32. hashtag wine
+33. hashtagtivismo los efectos politicos del ni una menos
+34. hask 5 en 1 curl 178 gr
+35. hask aceite capilar argan oil
+36. hask aceite capilar argan oil
+37. hask aceite capilar monoi coconut
+38. hask acondicionador blonder
+39. hask acondicionador coconut
+40. hask acondicionador keratin
+41. hask argan oil 5 in 1 leave in spray 6oz
+42. hask argan oil deep cond jar 6oz
+43. hask argan oil repairing conditioner
+44. hask biotin conditioner
+45. hask coco 5in1 leave in spray 6oz
+46. hask curl conditioner
+47. hask deep conditioner argan oil 50 gr
+48. hask deep conditioner coconout 50 gr
+49. hask keratin 5in1 leave in spray 6oz
+50. haskap
+51. haskap oak barrel
+52. haskell dombeya fenix 2014
+53. haskell dombeya fenix 2017
+54. haskell dombeya sauvblanc
+55. haskell ii
+56. haskell ii 2018
+57. haskell iv 2007
+58. haskell iv 2020
+59. haskell magnum chardonnay the swan song
+60. haskell pillars shiraz 2018
+61. haskell pillars syrah
+62. haskell rose organic 2023
+63. haslev vinen primitivo puglia 2020 145
+64. hasmet tursuluk biber tohumu10 adet
+65. hasmonean prutah widows mite
+66. hasparren sparkling brut nature
+67. haspengouw bizbarr dom cuvelier 2021
+68. haspengouw lunchbox
+69. haspengouw sauvignon blanc dom cuvelier 2023
+70. hass avocado
+71. hass avocado australia appx 500gm 600gm 12pcs
+72. hass avocado imp
+73. hass avocado large
+74. hass to have case
+75. hassaku pomelo liquor
+76. hassaku rocks
+77. hassan
+78. hassan
+79. hassan cantina tenuta asinara
+80. hassan isola dei nuraghi igt 2020 tenuta asinara
+81. hassan isola dei nuraghi igt riserva ml 1500 asinara cod asi13
+82. hassan passito
+83. hassan passito
+84. hassan passito cannonau di sardegna passito doc 2016 tenuta asinara
+85. hassel riesling brut nature grosse lage vdpwein und sekthaus barth biowein
+86. hassel riesling gg vdpwein und sekthaus barth biowein
+87. hasselback potatoes
+88. hasselnd kaffe
+89. hasselnd kaffe kaffe med smag af hasselnd
+90. hasselnd ko 1883 sirup kologisk hasselnd bedst fr 01102025
+91. hasselndchokolade nocciolata
+92. hasselnddecreme cremanovi obs bedst fr 28022026
+93. hasselnddemix hasselndder med chokolade overtrk
+94. hasselndder hvid karamel flowpack elmelund
+95. hasselndder hvid karamel flowpack elmelund
+96. hasselndder hvid lakrids flowpack elmelund
+97. hasselndder hvid lakrids flowpack elmelund
+98. hasselndder m hvid chokolade og hindbr flowpack elmelund
+99. hasselndder m hvid chokolade og hindbr flowpack elmelund
+100. hasselndder m nougatchokolade vlg variant
+101. hasselndder ristede
+102. hasselnotsfylld radjurspate fran frankrike
+103. hasselnotsolja la tourangelle
+104. hasselntt maldon
+105. hasselntter kologisk 1 kg
+106. hasselntter kologisk 400 g
+107. hasselntter ristet skrellet kologisk 400 g
+108. hasselnttsmr ristet kologisk 300 g
+109. hasselt kaffe fryns 070 ltr
+110. hasselt kaffee likeur
+111. hasselt smeets 1 liter 30 alc
+112. hasseltse koffie 18
+113. hasseltse koffie frijns
+114. hassen 8000 dry sparkling
+115. hassen hanaomoi40 junmai daiginjo
+116. hassen isaribi tokubetsu junmai
+117. hassen kijoshu
+118. hassen kijoshu
+119. hassen pink label ginjo
+120. hassen red label tokubetsu junmai
+121. hassen tokubetsu junmai
+122. hassenblage
+123. hassenblage 2022
+124. hasseroder perfect draft keg
+125. hassets
+126. hassets biscuits
+127. hassetts
+128. hassetts luxury biscuit box 450g
+129. hassie espadrilles dark blue
+130. hassie espadrilles light natural
+131. hassig 2025 rose
+132. hasso branco
+133. hasso branco
+134. hasso branco
+135. hasso branco 2022
+136. hasso branco 2023
+137. hasso branco 2023
+138. hasso branco douro doc kranemann wine estates 2021
+139. hasso red
+140. hasso tinto
+141. hasso tinto
+142. hasso tinto
+143. hasso tinto 2020
+144. hasso tinto 2024
+145. hasso tinto 2024
+146. hasso tinto douro doc kranemann wine estates 2019
+147. hasso vinho branco
+148. hasso white
+149. hasta agotar stock los mas vendidos en una sola caja seleccion chileanwines
+150. hasta el jolly
+151. hasta encontrar una salida
+152. hasta la vizsla 2020 sonshine lisanne van son
+153. hasta luego y gracias por el pescado
+154. hasta pronto west coast pils aniversario 7 fiesta
+155. hasta que empieza a brillar
+156. hasta quemar el cielo por vivir
+157. hastala vizsla pet nat
+158. hastalis montecucco vermentino doc begnardi
+159. haste central 70cm para espeto giratorio rotary
+160. haste flexiveis mili com 75
+161. haste flexivel com pontas de algodao cartucho 75 unidades
+162. haste flexivel cotonetes com 75 unidades
+163. haste flexivel topz 150u
+164. hastes cottonbaby flexiveis 75 unidades
+165. hastes flexiveis anjonete azul com 75 unidades
+166. hastes flexiveis baby lolly 50 unidades
+167. hastes flexiveis com pontas de algodao paw patrol topz baby caixa 75 unidades
+168. hastes flexiveis com pontas de algodao topz caixa 75 unidades
+169. hastes flexiveis cotonete johnson 75 unidades
+170. hastes flexiveis cotonete johnsons com 150 unidades
+171. hastes flexiveis cotonete johnsons com 150 unidades
+172. hastes flexiveis cotonetes 75 unidades
+173. hastes flexiveis cotonetes caixa 150 unidades embalagem economica
+174. hastes flexiveis cotonetes com 150 unidades
+175. hastes flexiveis cotonetes com 150unidades
+176. hastes flexiveis cotonetes com 75unidades
+177. hastes flexiveis cotonetes johnson johnson 75 unidades
+178. hastes flexiveis cotonetes johnson johnson caixa com 75 unidades
+179. hastes flexiveis cotonetes johnson johnson com 150 unidades
+180. hastes flexiveis cotonetes johnsons com 75 unidades
+181. hastes flexiveis cotonetes johnsons com 75 unidades
+182. hastes flexiveis cotton line family care c 150 unid
+183. hastes flexiveis cottonbaby
+184. hastes flexiveis cottonbaby c 75 unid
+185. hastes flexiveis cottonbaby caixa 150 unidades
+186. hastes flexiveis cottonbaby caixa 75 unidades
+187. hastes flexiveis cottonbaby caixa c 150 unid
+188. hastes flexiveis cremer 75 unidades
+189. hastes flexiveis daaz 150 unidades
+190. hastes flexiveis daaz tradicionais 75 unidades
+191. hastes flexiveis dengo com 75un
+192. hastes flexiveis johnson johnson cotonetes 150 unidades
+193. hastes flexiveis johnson johnson cotonetes caixa 75 unidades
+194. hastes flexiveis johnson johnson cotonetes caixa com 300 unidades
+195. hastes flexiveis johnsonjohnson cotonetes com 75 unidades
+196. hastes flexiveis johnsons com 150 unid
+197. hastes flexiveis mili care
+198. hastes flexiveis mili care com 75 unidades
+199. hastes flexiveis mili com 75un
+200. hastes flexiveis palinetes york 75 unidades
+201. hastes flexiveis piquitucho
+202. hastes flexiveis piquitucho c 68 unid
+203. hastes flexiveis piquitucho com 68 unidades
+204. hastes flexiveis topz
+205. hastes flexiveis topz c 75 unid
+206. hastes flexiveis topz c150 unid
+207. hastes flexiveis topz com 150 unidades
+208. hastes flexiveis topz com 75 unid
+209. hastes flexiveis york c 75 unid
+210. hastex flexiveis topz com pontas de algodao contem 150 unidades
+211. hastings
+212. hastings distillers albertine
+213. hastings distillers albertine 47
+214. hastings distillers aubyn orange dry vermouth
+215. hastings distillers aubyn orange dry vermouth 17
+216. hastings distillers barrel aged negroni
+217. hastings distillers barrel aged negroni 27 alc
+218. hastings distillers barrelaged negroni 2023
+219. hastings distillers bitter lopera
+220. hastings distillers constance
+221. hastings distillers constance aperitif
+222. hastings distillers constance aperitif
+223. hastings distillers constance aperitif 17
+224. hastings distillers east block 200
+225. hastings distillers lopera
+226. hastings distillers lopera
+227. hastings distillers lopera bitter orange
+228. hastings distillers lopera bitter orange aperitif
+229. hastings distillers lopera bitter orange aperitif 24
+230. hastings distillers lopera bitter orange apertif
+231. hastings distillers lopera bitter orange liqueur 24
+232. hastings distillers lopera organic bitter orange aperitif
+233. hastings distillers lopera organic bitter orange aperitif case
+234. hastings distillers mille fleurs elderflower liqueur 20
+235. hastings distillers rubis
+236. hastings distillers rubis rouge sweet vermouth
+237. hastings distillers rubis rouge sweet vermouth 17
+238. hastings distillers rubis rouge vermouth
+239. hastings distillers rubis rouge vermouth
+240. hastings distillers rubis sweet vermouth
+241. hastings distillers sweet vermouth rubis
+242. hastings distillers the count negroni
+243. hastings distillers the count negroni
+244. hastings distillers the count negroni
+245. hastings distillers the count negroni
+246. hastings distillery constance aperitif 17
+247. hastio antologia deliciosa del sinsabor
+248. hasutes cotes de beaune nerthus
+249. haswell
+250. haswell
+251. hasznalt 3 literes tolgyfa hordobol keszult palinkas keszlet
+252. hasznos infok
+253. hasztag wildalokalny dizajn
+254. hat and mitts pack of 2
+255. hat box con 30 tulipanes
+256. hat box girasoles
+257. hat box pasion 48 rosas
+258. hat ch
+259. hat ch
+260. hat collection
+261. hat connectors
+262. hat dace52 f2576 combod
+263. hat dad
+264. hat fr vcfllo r black
+265. hat fr vcfllo r gold
+266. hat fr vcfllo r royalblue
+267. hat fr vcflsig black
+268. hat fr vcflsig kellygreen
+269. hat spy24a ecru
+270. hat trick tinto 2020
+271. hat trucker
+272. hata kosen drink blueberry
+273. hata kosen drink lychee
+274. hata kosen drink melon
+275. hata kosen drink pineapple
+276. hata ramune blue cola
+277. hata ramune blueberry
+278. hata ramune drink blueberry jp
+279. hata ramune drink lychee jp
+280. hata ramune drink yuzu
+281. hata ramune drinkmelon jp
+282. hata ramune drinkorange jp
+283. hata ramune drinkstrawberry jp
+284. hata ramune lychee
+285. hata ramune original
+286. hata ramune strawberry
+287. hata shuzo daijiro junmai yamahai namazake
+288. hatakosen christmas chanmery drink strawberry flavor bottle
+289. hatakosen ramune melon
+290. hatakosen ramune orange
+291. hatalmas interaktiv baba keszlet
+292. hatalmas interaktiv konyha kek szinben
+293. hatalmas kek interaktiv jatekkonyha kiegeszitokkel
+294. hatalmas megtiszteltetes hogy a royal tokaji ujra felkerult es az 50 helyet foglalja el a drinks international magazin altal osszeallitott the worlds most admired wine brands listajan
+295. hatalmas taviranyitos monster auto
+296. hatalmas teli villa 280 kiegeszitovel
+297. hatalmas versenypalya 2 autoval es nagy hurkokkal
+298. hatalmas versenypalya auto es vonat taviranyitos tobb mint 6m hossz
+299. hatam 200
+300. hatam 350
+301. hatam 400
+302. hatam 530
+303. hatari 2020
+304. hatari hot habenero chilli pot
+305. hatari mellow aji chilli pot
+306. hatay homemade tomato paste 500g
+307. hatay inegol meatball mix 100g
+308. hatay izgara meatball mix 100g
+309. hatay meatball seasoning 100g
+310. hatay mixed dried vegetables seasoning 50g
+311. hatay olive seasoning 50g
+312. hatay onion powder 75g
+313. hatay samandag pepper pul biber 75g
+314. hatay sumac 100g
+315. hatay whole sumac 70g
+316. hatch barossa st johns shiraz
+317. hatch eden valley riesling 2024
+318. hatch jalapenos sliced
+319. hatchet apocalypse amber 16oz cans
+320. hatchet death machine 16oz cans
+321. hatchet granny heartbreak healer botanical mixer 12 oz
+322. hatchet limited release 16oz cans
+323. hatchet seasonal 16oz cans
+324. hatchett texas mesquite firewood
+325. hatcho miso natures glory 350g organic na 8131p best before approx 1 year
+326. hatcho miso one project 345gr
+327. hateau de flaugercue folia languedoc 2019 red dry 13 075
+328. hateau guibeau a la vie
+329. hatful of hollow
+330. hathi bamboo tableware set offwhite
+331. hathi brass cocktail stirrers
+332. hatomugi
+333. haton blanc de blancs branco
+334. haton brut classic champagne
+335. haton brut reserve
+336. haton filles solo de meunier
+337. haton gran cru extra brut
+338. haton prawn chrackers hot spicy 70g
+339. haton pure brut nature branco
+340. haton reserve brut branco
+341. hatos diszlada
+342. hatos karton valogatas harsleveluolaszrizling
+343. hatos karton valogatas olaszrizling
+344. hatozaki 12 small batch
+345. hatozaki 12 year old umeshu finish
+346. hatozaki 12 years old small batch umeshu cask
+347. hatozaki 12 years old umeshu cask finish
+348. hatozaki 12yr small batch umeshu cask finish
+349. hatozaki blended
+350. hatozaki blended
+351. hatozaki blended
+352. hatozaki blended
+353. hatozaki blended
+354. hatozaki blended
+355. hatozaki blended 0 40
+356. hatozaki blended japanese
+357. hatozaki blended kaikyo distillery
+358. hatozaki blended malt
+359. hatozaki finest
+360. hatozaki finest blend
+361. hatozaki finest blended
+362. hatozaki finest japanese
+363. hatozaki japanese blended
+364. hatozaki japanese pure malt
+365. hatozaki japanese pure malt
+366. hatozaki omakase pure malt
+367. hatozaki pure malt
+368. hatozaki pure malt
+369. hatozaki pure malt
+370. hatozaki pure malt
+371. hatozaki pure malt
+372. hatozaki pure malt
+373. hatozaki pure malt
+374. hatozaki pure malt 40 07
+375. hatozaki pure malt gift box 07 07 8 99999 11 250
+376. hatozaki pure malt gift box 40 07
+377. hatozaki small batch
+378. hatozaki small batch pure malt
+379. hatozaki small batch pure malt
+380. hatozaki small batch pure malt
+381. hatozaki small batch pure malt
+382. hatozaki small batch pure malt
+383. hatozaki triple cask reserve
+384. hatozaki triple cask reserve 46
+385. hatozaki triple cask reserve gift box 40 07
+386. hatozaki umeshu cask 12yo 07ll
+387. hatozaki umeshu cask finish
+388. hatputtonyos tokaji aszu 2016
+389. hatputtonyos tokaji aszu 2019
+390. hats off table flowers
+391. hats off to dad 2022 west coast exclusive dads hat pennsylvania rye barrel pick
+392. hats pack of 2 311 years
+393. hatsu te
+394. hatsu te blanco carambolo y flor de loto
+395. hatsu te blanco flor de cerezo
+396. hatsu te blanco granada y mora
+397. hatsu te blanco mangostino
+398. hatsu te negro limon
+399. hatsukoi no kaori
+400. hatsukoi no kaori
+401. hatsukoi no kaori1ssr
+402. hatsukoi no kaori2
+403. hatsumago junmai
+404. hatsumago junmai daiginjo
+405. hatsumago kimoto junmai
+406. hatsumine
+407. hatsumomidi harada gengetsu junmai daiginjo muroka genshu
+408. hatsumomidi harada seiryu junmai ginjo
+409. hatsumomidi junmai daiginjo 50 muroka namagenshu yamdanishiki
+410. hatsune miku variety
+411. hatsune mikus four seasons
+412. hatsuyuki 2024
+413. hatsuyuki sparkling nv
+414. hatt et soner champagne sabel
+415. hatt et soner grand cuvee brut 2009
+416. hatt et soner jeroboam gr cuvee brut 3l
+417. hatt et soner le grandpere brut omnes 2012 2edition
+418. hatt et soner le grandpere brut omnes 2013 1edition
+419. hatt et soner le grandpere brut omnes 2014 1edition
+420. hatt et soner le grandpere dignitas 2007 brut
+421. hatt et soner le grandpere dignitas 2008 brut
+422. hatt et soner le grandpere dignitas 2011 brut
+423. hatt et soner le grandpere dignitas brut 2009
+424. hatt et soner le grandpere prestige 2004
+425. hatt et soner les matines 2008
+426. hatt et soner les matines brut nature 2012
+427. hatt et soner les matines brut nature 2013
+428. hatt et soner les matines brut nature 2014
+429. hatt et soner les matines brut nature 2015
+430. hatt et soner les matines brut nature 2017
+431. hatt et soner quattuor blanc de blancs premier cru mg 2015
+432. hatt et soner vintage collection omnes no 1 2016
+433. hatt med myggnett
+434. hattemheimengelmannsbergrieslingtrockenbalthasarressgermany
+435. hattenheim nussbrunnen riesling gg trocken
+436. hattenheim pfaffenberg riesling gg
+437. hattenheim pfaffenberg riesling spatlese
+438. hattenheim riesling feinherb
+439. hattenheim riesling feinherb 2023
+440. hattenheim riesling trocken
+441. hattenheimer hassel grosse lage eiswein
+442. hattenheimer hassel pinot noir vdp grosses gewachs
+443. hattenheimer hassel riesling gg
+444. hattenheimer hassel riesling kabinett
+445. hattenheimer nussbrunnen riesling beerenauslese
+446. hattenheimer nussbrunnen riesling beerenauslese
+447. hattenheimer nussbrunnen riesling spatlese grosses gewachs
+448. hattenheimer pfaffenberg riesling spatlese
+449. hattenheimer riesling
+450. hattenheimer schutzenhaus balthasar ress 2021
+451. hattenheimer schutzenhaus riesling kabinett germany
+452. hattenheimer wisselbrunnen gg 2016 balthasar ress
+453. hattenheimer wisselbrunnen riesling kabinett feinherb
+454. hattenheimer wisselbrunnen riesling vdpgrosses gewachs 2022
+455. hattenheimer wisselbrunnen spatlese trocken
+456. hattenheimnussbrunnenrieslingauslesehalfbalthasar ress
+457. hattesen konfekt 10 ars jubilums ske
+458. hattesen konfekt brun
+459. hattesen konfekt gul
+460. hattesen konfekt rd
+461. hattesen paskeg
+462. hattesen paskeg 2026
+463. hattesens konfekt blabr stikkelsbr og jordbr
+464. hattesens konfekt lakrids chokolade og mokka
+465. hattesens konfektfabrik 2025 julekalender
+466. hattesens konfektfabrik brun lakridschokolademokka 125g
+467. hattesens konfektfabrik brun ske
+468. hattesens konfektfabrik brun ske
+469. hattesens konfektfabrik forarsske
+470. hattesens konfektfabrik gul ske
+471. hattesens konfektfabrik gul ske
+472. hattesens konfektfabrik jubilums ske
+473. hattesens konfektfabrik julekalender
+474. hattesens konfektfabrik julekalender
+475. hattesens konfektfabrik julekalender 2024
+476. hattesens konfektfabrik konfektstykker chokolade
+477. hattesens konfektfabrik lakridskonfekt med blabr stikkelsbr og jordbr
+478. hattesens konfektfabrik lakridskonfekt med friisholm chokolade og appelsinskal
+479. hattesens konfektfabrik lakridskonfekt med lakrids chokolade og mokka
+480. hattesens konfektfabrik lakridskonfekt med mint chokolade ingefr blodappelsin
+481. hattesens konfektfabrik paskeg 2025
+482. hattesens konfektfabrik paskeg 2026
+483. hattesens konfektfabrik paskeg med lakridskonfekt
+484. hattesens konfektfabrik pose appelsin
+485. hattesens konfektfabrik pose chokolade
+486. hattesens konfektfabrik pose jordbr
+487. hattesens konfektfabrik pose lakrids
+488. hattesens konfektfabrik rd blabrstikkelsbrjordbr 125g
+489. hattesens konfektfabrik rd ske
+490. hattesens konfektfabrik rd ske
+491. hattesens konfektfabrik rstang ananas
+492. hattesens konfektfabrik rstang ananas kokos
+493. hattesens konfektfabrik rstang chokolade
+494. hattesens konfektfabrik rstang chokolade
+495. hattesens konfektfabrik rstang chokoladepebermynte
+496. hattesens konfektfabrik rstang grapefrugt
+497. hattesens konfektfabrik rstang hindbr
+498. hattesens konfektfabrik rstang lakrids
+499. hattesens konfektfabrik rstang lakrids
+500. hattesens konfektfabrik rstang lakrids
+501. hattesens konfektfabrik vinter ske 2025
+502. hattesens konfektfabrik vinter ske 2025 limited edition
+503. hattesens s konfektfabrik gul citronappelsingrapefrugt 125g
+504. hattesenss konfektfabrik rstang ananaskokos
+505. hatteso 2015 amarone della valpolicella riserva garbole
+506. hatteso amarone della valpolicella riserva 2012
+507. hatteso amarone della valpolicella riserva docg 2013
+508. hatteso amarone della valpolicella riserva dop
+509. hatteso amarone della valpolicella riserva garbole 2013
+510. hatthaways cocktail onions
+511. hattie hedgehog clips
+512. hattie hedgehog ponies
+513. hattingley brut rose
+514. hattingley classic reserve brut
+515. hattingley classic reserve d96we92wa90
+516. hattingley classic reserve nv
+517. hattingley classic reserve sparkling
+518. hattingley glass flutes
+519. hattingley luxury celebration gift set
+520. hattingley still chardonnay
+521. hattingley tote bag
+522. hattingley valley 18 rose 6 2018
+523. hattingley valley blanc de blanc 2015
+524. hattingley valley blanc de blanc 2018
+525. hattingley valley blanc de blancs
+526. hattingley valley blanc de blancs 2013
+527. hattingley valley blanc de blancs 2014
+528. hattingley valley blanc de blancs 2014
+529. hattingley valley blanc de blancs 2015
+530. hattingley valley blanc de blancs 2018
+531. hattingley valley blanc de blancs magnum 2015
+532. hattingley valley blanc de blancs magnum 2017
+533. hattingley valley classic cuvee
+534. hattingley valley classic cuvee 2013
+535. hattingley valley classic cuvee brut champagne blend
+536. hattingley valley classic english reserve nv
+537. hattingley valley classic reserve
+538. hattingley valley classic reserve
+539. hattingley valley classic reserve brut
+540. hattingley valley classic reserve brut in gift box nv
+541. hattingley valley classic reserve brut magnum nv
+542. hattingley valley classic reserve brut nv
+543. hattingley valley classic reserve brut nv
+544. hattingley valley classic reserve english brut
+545. hattingley valley classic reserve gift boxed nv
+546. hattingley valley classic reserve magnum nv
+547. hattingley valley classic reserve nv
+548. hattingley valley classic reserve nv
+549. hattingley valley classic reserve nv
+550. hattingley valley classic reserve nv
+551. hattingley valley classic reserve nv
+552. hattingley valley classic reserve sparkling nv
+553. hattingley valley classic reserve uk
+554. hattingley valley demisec 2013
+555. hattingley valley entice
+556. hattingley valley entice dessert wine
+557. hattingley valley entice nv
+558. hattingley valley kings cuvee
+559. hattingley valley kings cuvee
+560. hattingley valley kings cuvee 2014
+561. hattingley valley kings cuvee 2017
+562. hattingley valley kings cuvee rose 2015
+563. hattingley valley kings rose
+564. hattingley valley rose 2019
+565. hattingley valley rose 2020
+566. hattingley valley rose brut 2018
+567. hattingley valley rose brut 2021
+568. hattingley valley rose gift box 2015
+569. hattingley valley rose nv
+570. hattingley valley sparkling rose 2019
+571. hattingley valley sparkling wine claw
+572. hattingley valley still rose 2020
+573. hattingley valley the english gent
+574. hattingley valley the english gent 2021
+575. hattingley valley vintage cuvee
+576. hattingley valley wines the english gent 2021
+577. hattingley valley wines the english gent 2021
+578. hattingley valley wines the english gent 2021 12 ib ck
+579. hattingley valley wines vintage cuvee 2019
+580. hattingley valley wines vintage cuvee 2019 12 ib ck
+581. hattingley valley x downton abbey viewing night in box
+582. hattingley vintage cuvee
+583. hattingley vintage cuvee 2019
+584. hattingly vly classic reserve
+585. hatton daniels ceccini vineyard malvasia bianca 2020
+586. hatton daniels pinot noir 2017
+587. hatton daniels roberts road vineyard pinot noir 2017
+588. hattyus pince tokaji 6 puttonyos aszu 2002
+589. hatul im taalul
+590. hatun willakuy
+591. hatzakis banana chips 120g
+592. hatzakis dried apricots 250g
+593. hatzakis dried cranberries 200g
+594. hatzakis dried dates 200g
+595. hatzakis dried fruit cocktail 250g
+596. hatzakis dried goji berries 130g
+597. hatzakis dried kiwis 200g
+598. hatzakis dried mango 140g
+599. hatzakis dried pineapple 200g
+600. hatzakis dried pitted prunes 250g
+601. hatzakis flaxseed 150g
+602. hatzakis pumpkin seeds roasted salted 150gr
+603. hatzakis pumpkin seeds roasted unsalted 100gr
+604. hatzakis roasted hazelnuts 150g
+605. hatzakis roasted pistachios 200gr
+606. hatzakis tropical fruitsalad 170g
+607. hatzakou strudelteig fur kataifi 450g
+608. hatzidaki nikteri santorini assyrtiko 2020
+609. hatzidaki skitali assyrtiko santorini 2019
+610. hatzidakis 2013 vinsanto
+611. hatzidakis aidani 2022
+612. hatzidakis aidani cyclades greece 2023
+613. hatzidakis aidani santorini greece 2022
+614. hatzidakis assyrtiko
+615. hatzidakis assyrtiko 2015
+616. hatzidakis assyrtiko aidani
+617. hatzidakis assyrtiko de louros 2020
+618. hatzidakis assyrtiko de louros 2020
+619. hatzidakis assyrtiko familia
+620. hatzidakis assyrtiko familia
+621. hatzidakis assyrtiko nykteri 2023
+622. hatzidakis assyrtiko nykteria
+623. hatzidakis assyrtiko rampelia 2021
+624. hatzidakis assyrtiko skitali
+625. hatzidakis assyrtiko skitali
+626. hatzidakis assyrtiko skitali 2023
+627. hatzidakis assyrtiko vinsanto 20 years in oak santorini greece 2004
+628. hatzidakis familia assyrtiko
+629. hatzidakis familia assyrtiko
+630. hatzidakis familia assyrtiko santorini 2023
+631. hatzidakis familia santorini 2022
+632. hatzidakis familia santorini greece 2022
+633. hatzidakis mandilaria rosette 2023
+634. hatzidakis mavrotragano
+635. hatzidakis mavrotragano 2017
+636. hatzidakis mavrotragano 2022
+637. hatzidakis mavrotragano 2022
+638. hatzidakis nykteri santorini assyrtiko 2020
+639. hatzidakis santorini
+640. hatzidakis santorini 2016
+641. hatzidakis santorini aidani 2023
+642. hatzidakis santorini assyrtiko familia 2024
+643. hatzidakis santorini familia
+644. hatzidakis santorini familia
+645. hatzidakis santorini familia 2024
+646. hatzidakis santorini familia 2024 140 abv
+647. hatzidakis santorini familia 2024 6 2024
+648. hatzidakis santorini nykteri
+649. hatzidakis santorini nykteri 2020
+650. hatzidakis santorini skitali 2023 6 2023
+651. hatzidakis skitali
+652. hatzidakis skitali assyrtiko
+653. hatzidakis skitali santorini 2019
+654. hatzidakis vin santo
+655. hatzidakis vin santo 16 assyrtiko aidani
+656. hatzidakis vinarstvi nykteri santorini pdo 2019 recko obdivovana klasika z ostrova santorini vino ktere nevidelo denni svetlo
+657. hatzidakis vinsanto 20 half 2004
+658. hatzidakis vinsanto 20 years in oak 2004 6 2004
+659. hatzidakis winery mavrotragano 2022
+660. hatzimichalis cab sauv 2005
+661. hatzimichalis cabernet sauv
+662. hatzimichalis chardonnay
+663. hatzimichalis estate cabernet
+664. hatzimichalis estate cabernet
+665. hatzimichalis estate chardonnay
+666. hatzimichalis estate chardonnay
+667. hatzimichalis lefkos blanc sec
+668. hatzimichalis red varietal dry wine
+669. hatzimichalis rose 2022
+670. hatzimichalis rose sec
+671. hatzimichalis white varietal dry wine
+672. hatzis winery dodekatos xinomavro blanc 2023 6 2023
+673. hatziyannis santorini greece
+674. hatziyiannis mavrodaphne
+675. hatziyiannis mavrodaphne
+676. hatziyiannis roditis rose
+677. hatziyiannis roditis rose
+678. hatziyiannis spyros retsina
+679. hatziyiannis spyros retsina
+680. hatziyiannis spyros saint george
+681. hatziyiannis spyros saint george
+682. hatziyiannis white spyros moschofilero
+683. hatziyiannis white spyros moschofilero
+684. hauck 2023 spatburgunder pinot noir
+685. hauck 2024 blanc de noir
+686. hauck 2024 riesling trocken
+687. hauck 2024 silvaner hildegard
+688. hauck grauer burgunder trocken liter
+689. hauck kunststuck pur silvaner trocken
+690. hauck pinot brut 2022
+691. hauck riesling spatlese alte reben stare kere ryzlink rynsky suche
+692. hauck riesling vom kalkmergel trocken 2024
+693. hauck scheurebe lieblich
+694. hauck silvaner hildegard 2024
+695. hauck spatburgunder reserve kachelberg 2022
+696. hauck weier burgunder trocken liter
+697. hauer kekfrankos classic 2022
+698. hauer kekfrankos valogatas 2022
+699. hauer kiralyleanyka 2024
+700. hauer kiralyleanyka biae cuvee
+701. hauer roze kekfrankos 2024
+702. hauer roze kekfrankos 2025
+703. hauerinnung rheinriesling spatlese
+704. haugarot esberit 2024
+705. haugarot terre a terre 2023
+706. haugsdorfer tradition rotweincuvee 2023
+707. haukibriossi 10 kpl
+708. hauksson
+709. haulashore nelson sauvignon blanc 2022
+710. haulin class truck
+711. hauller riesling grand cru muenchberg
+712. haumoana riesling 2025
+713. hauner 2016 hiera rosso terre siciliane igt red
+714. hauner carlo hauner terre siciliane igt 2023 vino bianco
+715. hauner carlo hauner terre siciliane igt 2024 vino bianco
+716. hauner hiera rose terre siciliane igt 2019 vino rose
+717. hauner hiera sicilia rosso 2018
+718. hauner iancura 2021
+719. hauner iancura 2023
+720. hauner iancura 2024
+721. hauner malvasia delle lipari 2011
+722. hauner malvasia delle lipari 2017
+723. hauner malvasia delle lipari 2018
+724. hauner malvasia delle lipari 2020
+725. hauner malvasia delle lipari 2022
+726. hauner malvasia delle lipari 2022
+727. hauner malvasia delle lipari malvasia delle lipari doc 2021 vino dolce
+728. hauner malvasia delle lipari malvasia delle lipari doc 2023 vino dolce
+729. hauner malvasia delle lipari passito 2022
+730. hauner malvasia delle lipari passito 2023
+731. hauner malvasia delle lipari passito malvasia delle lipari doc passito 2022 vino dolce
+732. hauner malvasia delle lipari passito malvasia delle lipari doc passito 2023 vino dolce
+733. hauner malvasia delle lipari passito riserva carlo hauner 2020
+734. hauner salina bianco 2019
+735. hauner salina bianco carlo hauner 2020
+736. hauner salina bianco igp 2020
+737. hauner salina bianco igt 2024
+738. hauner salina bianco terre siciliane igt 2021 vino bianco
+739. hauner salina bianco terre siciliane igt 2025 vino bianco
+740. hauner salina rosso 2014
+741. hauner salina rosso 2018
+742. hauner salina rosso 2020
+743. hauner salina rosso antonello 2018
+744. hauner terre siciliane iancura 2021
+745. hauner terre siciliane rosso hiera 2022
+746. haunted closets
+747. haunted heart
+748. haupold black
+749. haupt julekalender
+750. haupt lakrits svenskjavlar 250gr
+751. hauptsache mild 6er weinpaket
+752. haurio docg 2022
+753. haury schaeffer grenache petite edition 2011
+754. haus aperitif grapefruit jalapeno flavor sonoma county
+755. haus aperitif strawberry basil flavor sonoma county
+756. haus chacha mildiani
+757. haus citrus flowe cocktail rtd
+758. haus fondue
+759. haus grapefruit cocktail rtd
+760. haus grapefruit jalapeno
+761. haus grapefruit jalapeno aperitif
+762. haus gupi capharnaum 2020
+763. haus gupi el fayoum gutedel 2022
+764. haus gupi gres rose
+765. haus gupi gres rose 2019
+766. haus gupi la boheme gutedel 2022
+767. haus gupi schneider
+768. haus hugo
+769. haus hugo sparkling wine can
+770. haus klosterberg 2023
+771. haus klosterberg 2023
+772. haus klosterberg auslese fruchtsuss
+773. haus klosterberg chardonnay gelbe kapsel
+774. haus klosterberg cuvee sekt brut
+775. haus klosterberg gs 2021
+776. haus klosterberg pinot blanc
+777. haus klosterberg pinot blanc
+778. haus klosterberg pinot blanc 075 ltr
+779. haus klosterberg pinot blanc dq
+780. haus klosterberg pinot blanc dry 2018
+781. haus klosterberg pinot blanc gelbe kapsel
+782. haus klosterberg pinot blanc markus molitor 2023
+783. haus klosterberg pinot blanc markus molitor 2023
+784. haus klosterberg pinot noir
+785. haus klosterberg pinot noir
+786. haus klosterberg pinot noir
+787. haus klosterberg pinot noir
+788. haus klosterberg pinot noir dq
+789. haus klosterberg pinot noir rose
+790. haus klosterberg pinot noir rose
+791. haus klosterberg pinot noir rote kapsel
+792. haus klosterberg reasling
+793. haus klosterberg riesling 2023 markus molitor
+794. haus klosterberg riesling auslese goldene kapsel
+795. haus klosterberg riesling dq
+796. haus klosterberg riesling feinher
+797. haus klosterberg riesling feinherb
+798. haus klosterberg riesling feinherb
+799. haus klosterberg riesling feinherb grune kapsel
+800. haus klosterberg riesling goldene kapsel
+801. haus klosterberg riesling grune kapsel
+802. haus klosterberg riesling grune kapsel
+803. haus klosterberg riesling grune kapsel liter
+804. haus klosterberg riesling grune kapsel liter
+805. haus klosterberg riesling qualitatswein trocken
+806. haus klosterberg riesling qualitatswein trocken 2022 85 z
+807. haus klosterberg riesling sekt brut
+808. haus klosterberg riesling sekt brut
+809. haus klosterberg riesling sekt brut markus molitor
+810. haus klosterberg riesling trocken
+811. haus klosterberg riesling trocken 07
+812. haus klosterberg riesling trocken 075ltr
+813. haus klosterberg riesling trocken markus molitor 2023
+814. haus klosterberg riesling troken 2022 markus molitor
+815. haus klosterberg riesling weie kapsel 2023
+816. haus klosterberg riesling weie kapsel liter
+817. haus klosterberg riesling weisse kapsel
+818. haus klosterberg rose
+819. haus klosterberg rose 2023
+820. haus klosterberg sekt cuvee brut 0 weingut markus molitor
+821. haus klosterberg spatlese fruchtsuss
+822. haus klosterberg tradition pinot blanc hunfelds favorit dq
+823. haus klosterberg traubensaft alkohol free
+824. haus of babylon babylon spritz
+825. haus of babylon babylon spritz aperitif
+826. haus of babylon babylon spritz nonalcoholic cocktail
+827. haus of babylon babylon spritzer
+828. haus pomegranate cocktail rtd
+829. haus pomegranate rosemary
+830. haus pomegranate rosemary aperitif
+831. haus rework
+832. haus rosato
+833. haus rosato
+834. haus rosato sparkling wine can
+835. haus rose aperitif
+836. haus rose rose aperitif
+837. haus rose rose cocktail rtd
+838. haus secco
+839. haus secco
+840. haus secco sparkling wine can
+841. haus wein 2022
+842. haus wines chardonnay 2020
+843. haus wines shiraz 2019
+844. hausbrandt caffe hausbrandt oro casa italien 1 x 500g
+845. hausbrandt caffe hausbrandt oro casa italien 3 x 500g
+846. hausbrandt caffe hausbrandt oro casa italien 6 x 500g
+847. hausbrandt caffe hausbrandt rosso italien 1 x 1kg
+848. hausbrandt caffe hausbrandt rosso italien 1 x 250g
+849. hausbrandt caffe hausbrandt rosso italien 1 x 500g
+850. hausbrandt caffe hausbrandt rosso italien 3 x 1kg
+851. hausbrandt caffe hausbrandt rosso italien 3 x 250g
+852. hausbrandt caffe hausbrandt rosso italien 3 x 500g
+853. hausbrandt caffe hausbrandt rosso italien 6 x 1kg
+854. hausbrandt caffe hausbrandt rosso italien 6 x 250g
+855. hausbrandt caffe hausbrandt rosso italien 6 x 500g
+856. hausbrandt espresso academia
+857. hausbrandt espresso gourmet
+858. hausbrandt espresso hh
+859. hausbrandt espresso tin 250gr
+860. hausbrandt espresso traditional
+861. hausbrandt glazent panettone glassato 1kgr
+862. hausbrandt gourmet columbus espresso tin 250gr
+863. hausbrandt gourmet espresso tin 250gr
+864. hausbrandt qualita rossa szemes kave 1kg
+865. hausbrauerei zur sonne zunft trunk naturtrubes kellerbier
+866. hauser afonyabor 075 85
+867. hauser bodza 0 85 csatos
+868. hauser bodzabor 075 85
+869. hauser eperbor 075 85
+870. hauser meggybor 0 csatos
+871. hauser meggybor 075 85
+872. hauser sangria 8 x 1
+873. hauser szederbor 075 85
+874. hausgemachte fours schokoladencreme
+875. hausgemachte fours tarte aux citron
+876. hausgemachtes birchermusli
+877. hausgemachtes lachstatar canape
+878. hausgnost gruner veltliner mitanaund
+879. hausgnost gruner veltliner mitanaund
+880. hausgnost gruner veltliner mitanaund fuchs
+881. hauskraft kit para vinho 4 pecas
+882. hausle 2023
+883. hausmacher homestyle liverwurst 65 oz 184g
+884. hausmacher leberwurst
+885. hausmacher salat
+886. hausmacher senf su
+887. hausmann bereich nahe rivaner qba 075
+888. hausmann riesling classic
+889. hausmann rivaner
+890. hausmann rivaner
+891. hausmann rivaner nahe
+892. hausmann rivaner nahe 2024
+893. hausmann spatburgunder trocken
+894. hausmannhof riserva 2015
+895. hausmarke rose
+896. hausmarke rose cuvee c metzger
+897. hausmarke rot 2020 gober freinbichler 0
+898. hausmarke rot 2022 130 vol
+899. hausmarke s21 solera weingut moric
+900. hausmarke solera s21 moric burgenland
+901. hausmarke weiss
+902. hausmarke weiss 2023 075 liter
+903. hausmesse no 4 am 15112026
+904. hausmischung
+905. hausschnaps fruchtig 34 vol spirituose mit marillengeschmack
+906. haussmann bordeaux superieur red
+907. haussmann cabernet sauvignon
+908. haussmann chardonnay
+909. haussmann merlot
+910. haussmann oh01 riesling dry
+911. haussmann oh01 riesling semi sweet
+912. haussmann pinot noir
+913. haussmann pinot noir rose
+914. haussmann sauvignon
+915. haussmann sauvignon blanc
+916. haussmann syrah rose
+917. haustorte glutenfree celebration cake
+918. haustorte walnut cake gluten free
+919. hauswein
+920. hauswein 001 003
+921. hauswein 002 002
+922. hauswein 003 001
+923. hauswein 004 001
+924. hauswein 005 001
+925. hauswein 006 001
+926. hauswein 007 001
+927. hauswein 23 kobatl
+928. hauswein feinherb wei passt immer
+929. hauswein feinherb weiweinpaket 12 flaschen weingut dieter kuntz
+930. hauswein rose
+931. hauswein rot der einfache suffige literrotwein
+932. hauszwetsche
+933. haut art wines janesko limited selection artist series zinfandel
+934. haut bages liberal
+935. haut bages liberal
+936. haut bages liberal 1975
+937. haut bages liberal 1982
+938. haut bages liberal 1982
+939. haut bages liberal 1986
+940. haut bages liberal 1989 pauillac
+941. haut bages liberal 2000 pauillac
+942. haut bages liberal 2001
+943. haut bages liberal 2003
+944. haut bages liberal 2005
+945. haut bages liberal 2009
+946. haut bages liberal 2010
+947. haut bages liberal 2012 pauillac
+948. haut bages liberal 2014 pauillac
+949. haut bages liberal 2016
+950. haut bages liberal 2019 5 cru classe
+951. haut bages liberal 2019 pauillac
+952. haut bages liberal 2020
+953. haut bages liberal 2020 cb6 pauillac
+954. haut bages liberal 2022 mag cb6 pauillac
+955. haut bages liberal aop pauillac rouge 2016
+956. haut bages liberal aop pauillac rouge 2016
+957. haut bages liberal aop pauillac rouge 2016
+958. haut bages liberal mid shoulder 1978
+959. haut bages liberal pauillac 2012
+960. haut bages liberal pauillac 2012
+961. haut bages liberal pauillac 2017
+962. haut bages liberal pauillac 2017
+963. haut bages liberal pauillac 5eme cru 2005
+964. haut bages liberal pauillac magnum 1 2022
+965. haut bages monpleou 2016
+966. haut bailly
+967. haut bailly
+968. haut bailly
+969. haut bailly
+970. haut bailly
+971. haut bailly 1982
+972. haut bailly 1995
+973. haut bailly 1998
+974. haut bailly 2000
+975. haut bailly 2003
+976. haut bailly 2004 pessac leognan
+977. haut bailly 2005
+978. haut bailly 2005
+979. haut bailly 2006
+980. haut bailly 2006 pessac leognan
+981. haut bailly 2008 pessac leognan
+982. haut bailly 2009
+983. haut bailly 2010
+984. haut bailly 2010
+985. haut bailly 2010
+986. haut bailly 2012
+987. haut bailly 2014 pessac leognan
+988. haut bailly 2015
+989. haut bailly 2015
+990. haut bailly 2015 pessac leognan
+991. haut bailly 2016
+992. haut bailly 2016
+993. haut bailly 2016
+994. haut bailly 2017
+995. haut bailly 2018
+996. haut bailly 2018
+997. haut bailly 2018
+998. haut bailly 2018 cb6 pessac
+999. haut bailly 2019
+1000. haut bailly 2019

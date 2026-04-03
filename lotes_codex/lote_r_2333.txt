@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. haut bailly 2019
+2. haut bailly 2019
+3. haut bailly 2019 cb6 pessac
+4. haut bailly 2020
+5. haut bailly 2020
+6. haut bailly 2020 cb6 pessac
+7. haut bailly 2021
+8. haut bailly 2021 cb3 pessac
+9. haut bailly 2021 cb6 pessac
+10. haut bailly an exceptional terroir by jane anson
+11. haut bailly cru classe de graves pessacleognan 2006
+12. haut bailly cru classe de graves pessacleognan 2010
+13. haut bailly cru classe de graves pessacleognan 2011
+14. haut bailly cru classe de graves pessacleognan 2011
+15. haut bailly cru classe de graves pessacleognan 2017
+16. haut bailly cru classe de graves pessacleognan 2020
+17. haut bailly cru classe de graves pessacleognan 2021
+18. haut bailly cru classe de graves pessacleognan 2021
+19. haut bailly cru classe de graves pessacleognan magnum 1 2021
+20. haut bailly cru classe de graves pessacleognan magnum 1 2021
+21. haut bailly cru classe de graves pessacleognan magnum 1 2022
+22. haut bailly cru classe de graves pessacleognan magnum 1 2022
+23. haut bailly ii 2018 cb6 pessac
+24. haut bailly ii 2019
+25. haut bailly ii 2019 cb6 pessac
+26. haut bailly ii 2019 mag cb6 pessac
+27. haut bailly ii 2020 cb6 pessac
+28. haut bailly ii 6 case pessac leognan
+29. haut bailly ii pessac leognan
+30. haut bailly ii pessac leognan 1978
+31. haut bailly ii pessac leognan 2018
+32. haut bailly ii pessac leognan 2018
+33. haut bailly ii pessac leognan 2019
+34. haut bailly ii pessac leognan 2019
+35. haut bailly ii pessac leognan rouge
+36. haut bailly ii pessacleognan 2018
+37. haut bailly ii pessacleognan aoc bordeaux france 2020
+38. haut bailly ii pessacleognan grand vin 2019
+39. haut bailly ii two pessac leognan
+40. haut bailly pessac leognan 2012
+41. haut bailly pessac leognan 2021
+42. haut bailly pessac leognan 2021
+43. haut bailly pessac leognan 2021
+44. haut bailly pessacleognan grand cru classe 2021
+45. haut bailly upper shoulder fill 1970
+46. haut balmont
+47. haut baradieu saintestephe bordeaux 2016
+48. haut batailley
+49. haut batailley
+50. haut batailley 1978
+51. haut batailley 1989
+52. haut batailley 1995
+53. haut batailley 1996
+54. haut batailley 1996 pauillac
+55. haut batailley 1998
+56. haut batailley 2000
+57. haut batailley 2005
+58. haut batailley 2005
+59. haut batailley 2006
+60. haut batailley 2016
+61. haut batailley 2017
+62. haut batailley 2018
+63. haut batailley 2018
+64. haut batailley 2019
+65. haut batailley 2020
+66. haut batailley 5 eme grand cru classe pauillac 1982
+67. haut batailley 5 eme grand cru classe pauillac double magnum 2017
+68. haut batailley pauillac 2016
+69. haut batailley pauillac 2019
+70. haut batailley pauillac bordeaux 2018
+71. haut batailley verso 2017
+72. haut batailley verso 2018
+73. haut batailley verso 2020
+74. haut batailley verso 2022
+75. haut batailley verso pauilac
+76. haut batailley verso pauillac 2017
+77. haut batailley verso pauillac 2018
+78. haut batailley verso pauillac 2019
+79. haut batailley verso pauillac 2020
+80. haut batailley verso pauillac 2020
+81. haut batailley verso pauillac aop
+82. haut batailley verso pauillac aop 2018
+83. haut batailley verso pauillac aop 2019
+84. haut batailley verso pauillac rouge chateau haut batailley 2019
+85. haut batailley verso rouge pauillac wood
+86. haut batatilley 2013
+87. haut beausejour 2010
+88. haut benauge 2022
+89. haut benauge 2024
+90. haut benauge blanc 2023
+91. haut berba
+92. haut berba
+93. haut berba
+94. haut bergeron l ilot sauternes 2016
+95. haut bergeron lilot sauternes 2021
+96. haut bergey
+97. haut bergey 2000
+98. haut bergey 2000
+99. haut bergey 2005
+100. haut bergey 2005
+101. haut bergey 2005 pessac leognan
+102. haut bergey 2008
+103. haut bergey 2008 pessac leognan
+104. haut bergey 2009
+105. haut bergey 2015
+106. haut bergey 2015 c12 rouge pessac
+107. haut bergey blanc 2000
+108. haut bergey pessacleognan 2018
+109. haut bernones union medoc haut medoc 2019
+110. haut beyzac hautmedoc
+111. haut blagnac cabernet sauvignon pays doc 2020
+112. haut blanville chardonnayroussanne
+113. haut blanville grande reserve pinot noir
+114. haut blanville grande rserve pinot noir 2021
+115. haut blanville muse 2015
+116. haut bourg muscadet cotes de grandlieu origine du haut bourg
+117. haut bourg muscadet cotes de grandlieu origine du haut bourg 2015
+118. haut bourg muscadet cotes de grandlieu sur lie domaine
+119. haut brion
+120. haut brion
+121. haut brion
+122. haut brion
+123. haut brion
+124. haut brion
+125. haut brion 13 products
+126. haut brion 1945 pessac leognan top shoulder
+127. haut brion 1961
+128. haut brion 1964
+129. haut brion 1964 pessac leognan top shoulder
+130. haut brion 1970
+131. haut brion 1974 pessac leognan torn label
+132. haut brion 1979
+133. haut brion 1981
+134. haut brion 1982
+135. haut brion 1982
+136. haut brion 1982
+137. haut brion 1983
+138. haut brion 1984
+139. haut brion 1985
+140. haut brion 1985
+141. haut brion 1985 pessac leognan blanc
+142. haut brion 1986
+143. haut brion 1986
+144. haut brion 1987
+145. haut brion 1988
+146. haut brion 1988
+147. haut brion 1989
+148. haut brion 1989
+149. haut brion 1989
+150. haut brion 1989 pessac leognan
+151. haut brion 1990
+152. haut brion 1990
+153. haut brion 1990
+154. haut brion 1990
+155. haut brion 1990 pessac leognan
+156. haut brion 1990 slightly nicked label
+157. haut brion 1991
+158. haut brion 1991
+159. haut brion 1992
+160. haut brion 1993
+161. haut brion 1993
+162. haut brion 1993 vsdl
+163. haut brion 1994
+164. haut brion 1995
+165. haut brion 1995
+166. haut brion 1995
+167. haut brion 1996
+168. haut brion 1997
+169. haut brion 1998
+170. haut brion 1999
+171. haut brion 1999
+172. haut brion 1999
+173. haut brion 1999
+174. haut brion 1999 pessac leognan
+175. haut brion 1er growth 2016
+176. haut brion 2000
+177. haut brion 2000
+178. haut brion 2000
+179. haut brion 2001
+180. haut brion 2001
+181. haut brion 2002 pessac leognan
+182. haut brion 2003
+183. haut brion 2003 pessac leognan
+184. haut brion 2004
+185. haut brion 2004
+186. haut brion 2005
+187. haut brion 2005
+188. haut brion 2005
+189. haut brion 2005 rp100
+190. haut brion 2006
+191. haut brion 2007
+192. haut brion 2008
+193. haut brion 2009
+194. haut brion 2009
+195. haut brion 2009
+196. haut brion 2009
+197. haut brion 2010
+198. haut brion 2010
+199. haut brion 2010
+200. haut brion 2011
+201. haut brion 2012
+202. haut brion 2012 blanc
+203. haut brion 2013
+204. haut brion 2013 blanc cb6 pessac
+205. haut brion 2014
+206. haut brion 2014
+207. haut brion 2015
+208. haut brion 2016
+209. haut brion 2016
+210. haut brion 2016 6pack owc
+211. haut brion 2016 mag
+212. haut brion 2016 pessac leognan
+213. haut brion 2017
+214. haut brion 2017
+215. haut brion 201720212022
+216. haut brion 2018
+217. haut brion 2018
+218. haut brion 2018 pessac leognan
+219. haut brion 2018 rouge cb6 pessac
+220. haut brion 2019
+221. haut brion 2019
+222. haut brion 2019
+223. haut brion 2019 pessac leognan
+224. haut brion 2019 rouge cb6 pessac
+225. haut brion 2020
+226. haut brion 2020
+227. haut brion 2020
+228. haut brion 2020
+229. haut brion 2020 rouge pessac cb3
+230. haut brion 2021
+231. haut brion 2021
+232. haut brion 2021
+233. haut brion 2021
+234. haut brion 2021
+235. haut brion 2021 rouge cb6 pessac
+236. haut brion 2021 rouge pessac cb3
+237. haut brion 2022
+238. haut brion 2022 rouge pessac cb1
+239. haut brion 2022 rouge pessac cb3
+240. haut brion 24cm fills 1970
+241. haut brion 3cm 1966
+242. haut brion blanc
+243. haut brion blanc
+244. haut brion blanc
+245. haut brion blanc
+246. haut brion blanc
+247. haut brion blanc 1978
+248. haut brion blanc 1989
+249. haut brion blanc 1996
+250. haut brion blanc 1999
+251. haut brion blanc 2000
+252. haut brion blanc 2006
+253. haut brion blanc 2009
+254. haut brion blanc 2010
+255. haut brion blanc 2010
+256. haut brion blanc 2012
+257. haut brion blanc 2012
+258. haut brion blanc 2013
+259. haut brion blanc 2013
+260. haut brion blanc 2015
+261. haut brion blanc 2015
+262. haut brion blanc 2022
+263. haut brion blanc pessac leognan 1989
+264. haut brion blanc pessac leognan 1989
+265. haut brion blanc pessac leognan 2014
+266. haut brion blanc pessac leognan 2017
+267. haut brion blanc pessacleognan 2016
+268. haut brion damaged label 1982
+269. haut brion damaged label 1990
+270. haut brion damaged label 2000
+271. haut brion damaged label 2009
+272. haut brion la clarte de haut brion 2019 13 0
+273. haut brion le clarence de haut brion pessac leognan 2019
+274. haut brion mid shoulder 1956
+275. haut brion mid shoulder fill 1952
+276. haut brion pessac leognan 1989
+277. haut brion pessac leognan 1998
+278. haut brion pessac leognan 1998
+279. haut brion pessac leognan 1er cru 2010
+280. haut brion pessac leognan 1er grand cru classe 2004
+281. haut brion pessac leognan 1er grand cru classe 2004
+282. haut brion pessac leognan 1er grand cru classe 2017
+283. haut brion pessac leognan 1er grand cru classe 2017
+284. haut brion pessac leognan 1er grand cru classe 2018
+285. haut brion pessac leognan 1er grand cru classe 2018
+286. haut brion pessac leognan 2016
+287. haut brion pessac leognan 2019
+288. haut brion pessac leognan 2019
+289. haut brion pessac leognan 2020
+290. haut brion pessac leognan 2020
+291. haut brion pessac leognan 2021
+292. haut brion pessac leognan 2021
+293. haut brion pessac leognan 2022
+294. haut brion pessac leognan 2022
+295. haut brion pessac leognan 2022
+296. haut brion pessac leognan blanc 2003 1
+297. haut brion pessac leognan blanc 2004 1
+298. haut brion pessacleognan 2005 1
+299. haut brion pessacleognan blanc 1999 1
+300. haut brion pessacleognan graves 1996
+301. haut brion sbl 1989
+302. haut brion soiled label 1988
+303. haut brissan 2019 domaine saladin
+304. haut brissan 2023
+305. haut brisson
+306. haut brisson 10 haut brisson res 11 and 12
+307. haut brisson 2011
+308. haut brisson 2015 saint emilion
+309. haut brisson estate release 2006
+310. haut brisson la reserve 2006
+311. haut brisson reserve
+312. haut buis rouge costa caoude
+313. haut carles 2006
+314. haut carles fronsac 2018
+315. haut castanet
+316. haut chamblard m chapoutier
+317. haut chamblard m chapoutier
+318. haut charmes
+319. haut charmes 2003 sauternes
+320. haut charmes sauternes
+321. haut charmes sauternes
+322. haut charmes sauternes
+323. haut charmes sauternes half bottle
+324. haut clos cherry tomato on vine france appx 100gm 200gm
+325. haut colombier 2018 mg c6
+326. haut colombier 2019 mg c6
+327. haut colombier 2019 rr c6
+328. haut colombier 2022 12 c12
+329. haut colombier 2022 rr c6
+330. haut comme 3 pommes coteaux de beziers igp blanc
+331. haut comme 3 pommes coteaux de beziers igp rose
+332. haut comme 3 pommes coteaux de beziers igp rouge
+333. haut comte rouge 2022
+334. haut condissas 2006 chateau haut condissas
+335. haut condissas 2007 chateau haut condissas
+336. haut condissas 2009 chateau haut condissas
+337. haut condissas 2010 chateau haut condissas
+338. haut condissas 2011 chateau haut condissas
+339. haut condissas le cadet 2002
+340. haut cote de fruit
+341. haut cote de fruit natural
+342. haut cotes de beaune 1971 bouchard pere et fils
+343. haut coustias 2020
+344. haut coustias 2020
+345. haut d eole blanc igp coteaux du pont du gard 2024
+346. haut dambert cuvee clemence bordeaux superiore
+347. haut dambert cuvee clemence bordeaux superiore blanc
+348. haut dambert cuvee clemence bordeaux superiore magnum
+349. haut das bordeaux rose
+350. haut das bordeaux rouge
+351. haut de balmont rouge 2013
+352. haut de barville rouge
+353. haut de bel air
+354. haut de buisson aop cotes du rhone 2019
+355. haut de buisson cdr blanc
+356. haut de buisson cdr rose
+357. haut de buisson cdr rouge
+358. haut de buisson cdrv rouge
+359. haut de buisson cotes du rhone
+360. haut de la butte
+361. haut de la butte igp ile de france blanc les coteaux du montguichet 2023
+362. haut de la garde anjou 2023 pierre bise
+363. haut de poujeaux hautmedoc ac ch poujeaux
+364. haut de raffin
+365. haut de valent chardonnay
+366. haut de valent chardonnay pays doc
+367. haut deole
+368. haut deole igp coteaux du pont du gard vin blanc 2022
+369. haut deole igp coteaux du pont du gard vin rose 2022
+370. haut deole rose 2024
+371. haut deole rouge
+372. haut eole igp coteaux du pont du gard vin rouge 2022
+373. haut espoir cabernet sauvignon 2012
+374. haut espoir chardonnay
+375. haut espoir chardonnay
+376. haut espoir cloudfall
+377. haut espoir cloudfall
+378. haut espoir cloudfall sauvignon semillonviognierchardonnay
+379. haut espoir gentle giant 2017
+380. haut espoir gentle giant 2017
+381. haut espoir gentle giant red blend 2017
+382. haut espoir merlot 2015
+383. haut espoir sauvignon blanc
+384. haut espoir sauvignon blanc
+385. haut espoir semillon
+386. haut espoir shiraz 2009
+387. haut espoir shiraz 2012
+388. haut espoir shiraz rose
+389. haut espoir winery semillon 2017
+390. haut faugeres
+391. haut faugeres bordeaux cuvee trocken
+392. haut faugeres bordeaux cuvee trocken 6 x 0
+393. haut fresne coteaux dancenis gamay 2022
+394. haut gaudin bordeaux superieur
+395. haut gaudin bordeaux superieur
+396. haut gay bordeaux superieur 2016
+397. haut gleon vallee du paradis chardonnay blend 2020
+398. haut grelot hautgrelot selection
+399. haut grelot premiere cuvee hautgrelot
+400. haut jamin bordeaux superieur
+401. haut la pereyre bordeaux
+402. haut la pereyre chateau bordeaux rouge 2020
+403. haut la rulotte lussac saint emilion 2016
+404. haut larca 2016
+405. haut lavigne fleur de peau 2018
+406. haut lavigne rose 2017
+407. haut lavigne rose 2024
+408. haut les coeurs
+409. haut les coeurs
+410. haut les grains
+411. haut lieu sec
+412. haut logat hautmedoc cru bourgeois
+413. haut lorettes pour amelie cotes de bourg 2022
+414. haut maillet 1998
+415. haut maillet 2000
+416. haut marbuzet
+417. haut marbuzet 1988
+418. haut marbuzet 1989
+419. haut marbuzet 1990
+420. haut marbuzet 1990 st estephe
+421. haut marbuzet 2003 st estephe
+422. haut marbuzet 2018 stestephe cb12
+423. haut marbuzet 2020 cb6 stestephe
+424. haut marbuzet chateau hautmarbuzet 2015 frankrijk bordeaux rood
+425. haut marbuzet chateau hautmarbuzet 2018 frankrijk bordeaux rood
+426. haut marbuzet chateau hautmarbuzet 2018 frankrijk bordeaux rood
+427. haut marbuzet cru bourgeois exceptionnel saintestephe 2022
+428. haut marbuzet cru bourgeois exceptionnel saintestephe 2023
+429. haut marbuzet cru bourgeois exceptionnel saintestephe 2023
+430. haut marbuzet cru bourgeois exceptionnel saintestephe double magnum 2021
+431. haut marbuzet cru bourgeois exceptionnel saintestephe double magnum 2022
+432. haut marbuzet cru bourgeois exceptionnel saintestephe double magnum 2023
+433. haut marbuzet cru bourgeois exceptionnel saintestephe double magnum 2023
+434. haut marbuzet cru bourgeois exceptionnel saintestephe magnum 1 2023
+435. haut marbuzet cru bourgeois exceptionnel saintestephe magnum 1 2023
+436. haut marin amande colombard sauvignon blanc 11 0
+437. haut marin blanc cotes de gascogne
+438. haut marin blend
+439. haut marin connoisseur le grand dormeur igp 2022 53 z
+440. haut marin connoisseur rose igp 2023 45 z
+441. haut marin cotes de gascogne blanc
+442. haut marin fossil n6 gascogne
+443. haut marin grd pavois n8 gasc
+444. haut marin n1 littorine 2021
+445. haut marin n3 gulf stream 2022
+446. haut marin n6 les fossiles 2020
+447. haut marin triton
+448. haut marin triton rouge
+449. haut marin venus gallina 2023
+450. haut marin venus n7 gascogne
+451. haut mayne sauternes
+452. haut medoc
+453. haut medoc
+454. haut medoc 1989 chateau sociando mallet
+455. haut medoc 2010 chateau fontesteau
+456. haut medoc 2011
+457. haut medoc 2015 sociando mallet
+458. haut medoc 2016
+459. haut medoc 2016 sociando mallet
+460. haut medoc 2019
+461. haut medoc 2020
+462. haut medoc 2021
+463. haut medoc aoc cru bourgeois 2020 chateau du retout
+464. haut medoc aop chateau puy castera cru bourgeois 2020 caisse de 6 bouteilles
+465. haut medoc aop chateau puy castera cru bourgeois 2022 caisse de 6 bouteilles
+466. haut medoc branaire ducru 2015
+467. haut medoc chateau belorme tronquoy lalande 2015
+468. haut medoc chateau de lamarque
+469. haut medoc chateau du ha 2022
+470. haut medoc chateau du moulin 2021
+471. haut medoc chateau hanteillan 1985
+472. haut medoc chateau hanteillan 1985
+473. haut medoc chateau haut beyzac cru bourgeois 2016
+474. haut medoc chateau la lagune 1995
+475. haut medoc chateau la lagune 1995
+476. haut medoc chateau la lagune 1995
+477. haut medoc chateau la lagune 1995 grand cru classe
+478. haut medoc chateau la lagune 2019
+479. haut medoc chateau la lagune 75
+480. haut medoc chateau laroze labatisse 2022
+481. haut medoc chateau mille roses bordeaux france 2020
+482. haut medoc chateau segur 1985
+483. haut medoc chateau segur 1985
+484. haut medoc chateau segur 1985
+485. haut medoc chateau senejac 2016
+486. haut medoc chateau sociando mallet 2020
+487. haut medoc chateau sociandomaillet 2017 vin rouge
+488. haut medoc closerie de camensac rg 2021
+489. haut medoc cru bourg chat magnol bg 2022 rg
+490. haut medoc cru bourg sup chateau lestage simon rg 2020
+491. haut medoc cru bourgeois 1992 chateau larose trintaudon
+492. haut medoc cru bourgeois 2013
+493. haut medoc cru bourgeois 2014
+494. haut medoc cru bourgeois 2016
+495. haut medoc cru bourgeois 2018
+496. haut medoc cru bourgeois 2019
+497. haut medoc cru bourgeois 2020
+498. haut medoc cru bourgeois 2021
+499. haut medoc cru bourgeois 2022
+500. haut medoc cru bourgeois chateau clement pichon 20142018 vin rouge
+501. haut medoc cru bourgeois chateau maucamps 2015
+502. haut medoc cru bourgeois chateau maucamps 2016
+503. haut medoc cru bourgeois superieur 2018
+504. haut medoc cuvee deyssan chateau desteau 2019
+505. haut medoc cuvee marguerite dejean
+506. haut medoc de branaire ducru haut medoc branaire ducru 1519
+507. haut medoc de giscours haut medoc
+508. haut medoc de haut bages liberal 2013
+509. haut medoc de haut bages liberal 2014
+510. haut medoc de haut bages liberal 2014
+511. haut medoc de haut bages liberal 2016
+512. haut medoc de labegorce
+513. haut medoc de lagrange 2012
+514. haut medoc de lagrange 2012
+515. haut medoc de lagrange 2016
+516. haut medoc giscours 2018
+517. haut medoc issan 2020
+518. haut medoc la demoiselle de sociando mallet 2015
+519. haut medoc la fon du berger 2015 bordeaux france
+520. haut medoc lagrange 2015
+521. haut medoc les allees de charmail rouge
+522. haut medoc lheritage de chasse spleen rouge
+523. haut medoc mademoiselle l 2016
+524. haut medoc magnum chateau landat
+525. haut medoc moulin de la lagune 2019
+526. haut millon pauillac 2000
+527. haut monplaisir prestige malbec
+528. haut monplaisir pur plaisir malbec
+529. haut monplaisir tradition 2022
+530. haut montlong corten chenin 2021
+531. haut montlong eclat de fruit bergerac sec 2021
+532. haut montlong font romaine monbazillac
+533. haut montravel liquoreux chateau le raz
+534. haut mouleyre cremant de bordeaux
+535. haut mouleyre cremant de bordeaux
+536. haut peyruguet bourdeaux rouge
+537. haut plessis
+538. haut poitou marquis de goulaine
+539. haut poitou marquis de goulaine
+540. haut poitou sauvignon blanc marcel martin
+541. haut poitou sauvion sauvignon blanc
+542. haut poitou sauvion sauvignon blanc
+543. haut poitou sauvion sauvignon blanc
+544. haut revers du chutat
+545. haut revers du chutat montgueux 22
+546. haut reys blanc graves 2020
+547. haut reys rouge graves 2020
+548. haut rian bordeaux blanc
+549. haut rian bordeaux blanc aoc
+550. haut rian bordeaux blanc half
+551. haut rian cotes de bordeaux aoc
+552. haut rian cotes de bordeaux rouge half
+553. haut rian coulous cadillac aoc france
+554. haut rian rose bordeaux aoc
+555. haut rian sauvignon blanc semillon bordeaux blanc aoc france
+556. haut rian selection parcellaire
+557. haut roc blanquant 2005 saint emillion grand cru
+558. haut roc blanquant 2014
+559. haut roc blanquant 2014
+560. haut roc blanquant 3e vin
+561. haut roc blanquant de chateau belair monange
+562. haut roc blanquant saint emilion
+563. haut roc blanquant saint emilion grand cru
+564. haut roc blanquant st emilion grand cru 2016
+565. haut rozier
+566. haut sage 2019
+567. haut salettes rouge 2021
+568. haut sarpe saintemilion grand cru classe 2000 1
+569. haut segottes saint emilion grand cru 2022 145 abv
+570. haut segottes saint emilion grand cru 2022 145 abv
+571. haut segottes st emilion
+572. haut segottes st emilon grand cru
+573. haut selve rouge 2018
+574. haut theron malbec
+575. haut tropchaud pomerol aoc
+576. haut veyrac st emilion 2015
+577. haut vol rose
+578. haut vol rose
+579. haut vol rose
+580. hautatud kanaliha 250g premium 92 farmer grant
+581. hautatud sealiha 250g premium 90 farmer grant
+582. hautatud veiseliha 250g premium 90 farmer grant
+583. hautatud veiseliha de lux konserv 250g
+584. hautatud veiseliha de lux konserv 525g
+585. hautbages avero fran pauillac
+586. hautbages avero from pauillac
+587. hautbages avero pauillac
+588. hautbages avero pauillac
+589. hautbages avero pauillac
+590. hautbages gemiddeld 1989 van pauillac
+591. hautbages liberal 2018 pauillac
+592. hautbages liberal 2020 pauillac
+593. hautbages liberal pauillac 2003 1
+594. hautbailly bordeaux pessacleognan 2016
+595. hautbailly ii
+596. hautbailly ii 2018
+597. hautbailly ii 2018
+598. hautbailly ii 2018
+599. hautbailly ii 2019
+600. hautbailly ii 2019
+601. hautbailly ii 2019
+602. hautbailly ii 2020
+603. hautbailly ii 2020
+604. hautbailly ii 2020
+605. hautbailly ii 2021
+606. hautbailly ii 2021
+607. hautbailly ii 2021
+608. hautbailly ii 2022
+609. hautbailly ii 2022
+610. hautbailly ii grand vin de bordeaux 2022
+611. hautbailly ii grand vin de bordeaux pessacleognan chateau hautbailly bordeaux france 2020
+612. hautbailly ii pessacleognan france 2019
+613. hautbaillyii 2o ch hautbailly
+614. hautbatailley 5eme cru pauillac aoc 2019
+615. hautbatailley pauillac 5gcc 2016
+616. hautbatailley verso
+617. hautbatailley verso
+618. hautbatailley verso
+619. hautbatailley verso
+620. hautbatailley verso 2018 pauillac france six bottles in style
+621. hautbatailley verso 2nd wine pauillac bordeaux france 2018
+622. hautbatailley verso pauillac 2017
+623. hautbatailley verso pauillac 2017 6x
+624. hautbeausejour 2017
+625. hautbergey damaged label 2000
+626. hautbergey pessacleognan 2000
+627. hautblanville grande reserve pinot noir 2023
+628. hautblanville peyrals 2019
+629. hautblanville peyrals 2019
+630. hautbourg sauvignon
+631. hautbrion
+632. hautbrion 1967
+633. hautbrion 1er grand cru classe pessacleognan 1988
+634. hautbrion 1er grand cru classe pessacleognan 1993
+635. hautbrion 1er grand cru classe pessacleognan 1993
+636. hautbrion 1er grand cru classe pessacleognan 1994
+637. hautbrion 1er grand cru classe pessacleognan 1996
+638. hautbrion 1er grand cru classe pessacleognan 1997
+639. hautbrion 1er grand cru classe pessacleognan 1999
+640. hautbrion 1er grand cru classe pessacleognan 2001
+641. hautbrion 1er grand cru classe pessacleognan 2002
+642. hautbrion 1er grand cru classe pessacleognan 2003
+643. hautbrion 1er grand cru classe pessacleognan 2004
+644. hautbrion 1er grand cru classe pessacleognan 2004
+645. hautbrion 1er grand cru classe pessacleognan 2005
+646. hautbrion 1er grand cru classe pessacleognan 2006
+647. hautbrion 1er grand cru classe pessacleognan 2007
+648. hautbrion 1er grand cru classe pessacleognan 2008
+649. hautbrion 1er grand cru classe pessacleognan 2009
+650. hautbrion 1er grand cru classe pessacleognan 2010
+651. hautbrion 1er grand cru classe pessacleognan 2011
+652. hautbrion 1er grand cru classe pessacleognan 2012
+653. hautbrion 1er grand cru classe pessacleognan 2014
+654. hautbrion 1er grand cru classe pessacleognan 2014
+655. hautbrion 1er grand cru classe pessacleognan 2015
+656. hautbrion 1er grand cru classe pessacleognan 2016
+657. hautbrion 1er grand cru classe pessacleognan 2018
+658. hautbrion 1er grand cru classe pessacleognan 2018
+659. hautbrion 1er grand cru classe pessacleognan 2019
+660. hautbrion 1er grand cru classe pessacleognan 2020
+661. hautbrion 1er grand cru classe pessacleognan 2021
+662. hautbrion 1er grand cru classe pessacleognan 2022
+663. hautbrion 1er grand cru classe pessacleognan 2023
+664. hautbrion 1er grand cru classe pessacleognan 2023
+665. hautbrion 1er grand cru classe pessacleognan magnum 1 2002
+666. hautbrion 1er grand cru classe pessacleognan magnum 1 2004
+667. hautbrion 1er grand cru classe pessacleognan magnum 1 2022
+668. hautbrion 1er grand cru classe pessacleognan magnum 1 2023
+669. hautbrion 1er grand cru classe pessacleognan magnum 1 2023
+670. hautbrion 2021
+671. hautbrion ex chateau 2025 1er grand cru classe pessacleognan 2014
+672. hautbrion ex chateau 2025 1er grand cru classe pessacleognan 2014
+673. hautbrion low shoulder stained label 1966
+674. hautbrion mid shoulder stained label 1966
+675. hautbrion pessacleognan 1992 1
+676. hautbrion pessacleognan 1994 1
+677. hautbrion pessacleognan 1996 1
+678. hautbrion pessacleognan blanc 2000 1
+679. hautbrion pessacleognan blanc 2014 1
+680. hautbrissan 2017 magnum domaine saladin
+681. hautbrissan 2019 domaine saladin
+682. hautbrisson st emilion grand cru 2020
+683. hautcapitole
+684. hautcarles
+685. hautcarles 1996 chateau haut carles
+686. hautcarles 1998 chateau haut carles
+687. hautcarles 1999 chateau hautcarles 1999 chateau haut carles
+688. hautcarles 2008 chateau hautcarles 2008 chateau haut carles
+689. hautcarles 2009 chateau haut carles
+690. hautcarles 2012 bordeaux
+691. hautcarles 2012 bordeaux
+692. hautcarles 2012 bordeaux
+693. hautcaussantornet 1981
+694. hautclaverie sauternes 2020
+695. hautcluzet sauternes appellation sauternes controlee
+696. hautcolombier blaye bordeaux
+697. hautcotesdenuits
+698. haute cabriere
+699. haute cabriere 4 bottle champagne bag
+700. haute cabriere arnim family reserve
+701. haute cabriere arnim family reserve
+702. haute cabriere arnim family reserve 2019
+703. haute cabriere arnim family reserve x6
+704. haute cabriere blush
+705. haute cabriere champagne sabre
+706. haute cabriere chardonnay
+707. haute cabriere chardonnay en pinot noir 2024
+708. haute cabriere chardonnay pinot noir
+709. haute cabriere chardonnay pinot noir
+710. haute cabriere chardonnay pinot noir
+711. haute cabriere chardonnay pinot noir
+712. haute cabriere chardonnay pinot noir
+713. haute cabriere chardonnay pinot noir
+714. haute cabriere chardonnay pinot noir
+715. haute cabriere chardonnay pinot noir
+716. haute cabriere chardonnay pinot noir 12 bottles wine club
+717. haute cabriere chardonnay pinot noir 2021
+718. haute cabriere chardonnay pinot noir 2022
+719. haute cabriere chardonnay pinot noir 2024
+720. haute cabriere chardonnay pinot noir 2024
+721. haute cabriere chardonnay pinot noir 2024
+722. haute cabriere chardonnay pinot noir een licht goudkleurige wijn van chardonnay en pinot noir de meest bekende wijn van haute cabriere
+723. haute cabriere chardonnay pinot noir x6
+724. haute cabriere chardonnay reserve
+725. haute cabriere chardonnay reserve
+726. haute cabriere chardonnay reserve
+727. haute cabriere chardonnay reserve 2022
+728. haute cabriere chardonnay unwooded
+729. haute cabriere chardonnay unwooded 2024
+730. haute cabriere chardonnaypinot noir 2019
+731. haute cabriere collection chardonnay
+732. haute cabriere navy peak cap
+733. haute cabriere perfect summer choice 3 bottle gift
+734. haute cabriere pierre jourdan belle nectar demisec 2019
+735. haute cabriere pierre jourdan belle rose cap classique
+736. haute cabriere pierre jourdan belle rose cap classique 2023
+737. haute cabriere pierre jourdan belle rose methode cap classique 2019
+738. haute cabriere pierre jourdan blanc de blancs 2010
+739. haute cabriere pierre jourdan brut
+740. haute cabriere pierre jourdan brut cap classique magnum 2019
+741. haute cabriere pierre jourdan mcc brut 2018
+742. haute cabriere pierre jourdan ratafia 2019
+743. haute cabriere pierre jourdan tranquille blush 2019
+744. haute cabriere pierre jourdan tranquille blush sparkling nv
+745. haute cabriere pierre jourdan tranquille classique 2025
+746. haute cabriere pinot noir
+747. haute cabriere pinot noir
+748. haute cabriere pinot noir reserve
+749. haute cabriere pinot noir reserve
+750. haute cabriere pinot noir reserve
+751. haute cabriere pinot noir reserve 2017
+752. haute cabriere pinot noir reserve 2017 elegant vin til tilbud
+753. haute cabriere pinot noir reserve 2020
+754. haute cabriere pinot noir reserve 2020
+755. haute cabriere pinot noir reserve 2021
+756. haute cabriere pinot noir reserve 2021
+757. haute cabriere pinot noir rose
+758. haute cabriere pinot noir rose
+759. haute cabriere pinot noir rose 2022
+760. haute cabriere pinot noir rose 2025
+761. haute cabriere pinot noir rose 2025
+762. haute cabriere pinot noir unwooded
+763. haute cabriere pinot noir unwooded
+764. haute cabriere pinot noir unwooded
+765. haute cabriere pinot noir unwooded
+766. haute cabriere pinot noir unwooded
+767. haute cabriere pinot noir unwooded
+768. haute cabriere pinot noir unwooded 2020
+769. haute cabriere ratafia
+770. haute cabriere reserve chardonnay x6
+771. haute cabriere reserve pinot noir 2016
+772. haute cabriere reserve pinot noir 2016 magnum signed
+773. haute cabriere reserve pinot noir 2017
+774. haute cabriere reserve pinot noir 2018
+775. haute cabriere the haute collection chardonnay 2017
+776. haute cabriere the haute collection chardonnay 2020
+777. haute cabriere the haute collection chardonnay amphora 2020
+778. haute cabriere the haute collection pinot noir 2017
+779. haute cabriere the haute collection pinot noir 2018
+780. haute cabriere the haute collection pinot noir 2020
+781. haute cabriere unwooded chardonnay
+782. haute cabriere unwooded pinot noir
+783. haute cabriere unwooded pinot noir
+784. haute cabriere unwooded pinot noir 2024
+785. haute cabriere unwooded pinot noir 2024
+786. haute cabriere waiters friend graphite
+787. haute cabrieres unwooded wines are perfect for th
+788. haute collection amphora chardonnay 2023
+789. haute collection amphora chardonnay 2023
+790. haute collection chardonnay 2022
+791. haute collection chardonnay 2022
+792. haute collection pinot noir 2022
+793. haute collection pinot noir 2022
+794. haute collection pinot noir rose 2020
+795. haute cot de fruit
+796. haute cot de fruit
+797. haute cot de fruit 2023
+798. haute cot de fruits
+799. haute cote de beaune
+800. haute cote de beaune 2015 marcel de normont
+801. haute cote de beaune blanc
+802. haute cote de beaune les rouards 2019 domaine ballorin
+803. haute cote de beaune nerthus chardonnay 2022
+804. haute cote de beaune nuiton beaunoy aux meix genets 2022
+805. haute cote de beaune veilles vignes 2023 blanc
+806. haute cote de fruit
+807. haute cote de fruit 2024 mas del perie lot
+808. haute cote de fruit bio 2023 mas del perie
+809. haute cote de fruit malbec mas del perie fabien jouves 2021
+810. haute cote de nuit 2019 pierre gruber
+811. haute cotes de beaune en cheignot
+812. haute cotes de nuits 2023 blanc
+813. haute cotes de nuits coup de foudre 2024 domaine bonnardot
+814. haute cotes de nuits monopole blanc fontaine saint martin 2023 michel gros
+815. haute cotes de nuits monopole blanc fontaine saint martin 2023 michel gros
+816. haute cotes de nuits monopole rouge fontaine saint martin 2023 michel gros
+817. haute cotes de nuits monopole rouge fontaine saint martin 2023 michel gros
+818. haute coture blanc sparkling
+819. haute coutume 1966 rivesaltes
+820. haute coutume rivesaltes aoc ambre 1976
+821. haute couture 2018 savart
+822. haute couture 2018 savart
+823. haute couture blanc
+824. haute couture france blanc
+825. haute couture france brut rose
+826. haute couture french bubbles blanc
+827. haute couture french bubbles rose
+828. haute couture french bubbles rose
+829. haute couture french bubbles rose
+830. haute couture rose
+831. haute couture rose
+832. haute couture sparkling rose twin set
+833. haute couture sparkling wine blanc french
+834. haute couture white
+835. haute densite 2019 chateau de tracy
+836. haute densite du chateau de tracy 2018
+837. haute diggity dog bark cherry white paw
+838. haute diggity dog howliday white paw
+839. haute diggity dog lickety lime white paw
+840. haute diggity dog muttlennial mango white paw
+841. haute fable premium cuvee sparkling pinot chardonnay 2017 australia
+842. haute fable premium vintage cuvee
+843. haute fable premium vintage cuvee 2017
+844. haute fevrie gras moutons muscadet sevre et maine 2023
+845. haute fevrie muscadet sevre maine slie von domaine haute fevrie
+846. haute house floormat
+847. haute house floral mat 96
+848. haute marin no 1 littorine
+849. haute medoc aoc 2014 chateau larosetrintaudon
+850. haute montagne cabernet franc napa 2021
+851. haute montagne eau de parfum
+852. haute piece
+853. haute piece vv
+854. haute pierre 2017 chateauneuf pape delas
+855. haute pierre 2022 chateauneuf pape delas
+856. haute pirre chateauneuf du pape delas wine
+857. haute provence napoleons vag genom verdon
+858. haute rouge cuvee 2022 aoc bergerac
+859. haute sage cotes de bordeaux rood
+860. haute serre geron dadine cahors malbec 2018
+861. haute valle de laude viognier le paradis domaine begude
+862. haute vallee de laude aigle royal gerard bertrand 2021
+863. haute victoire quincy henri bourgeois 2019
+864. haute vigne cotes du vivarais
+865. haute vigne rouge aoc 2021 gallety
+866. hauteauboulanger la muse sauvignon blanc
+867. hautecombe
+868. hautecote de beaune 2024
+869. hautecote de beaune rouge 2021
+870. hautecote de beaune rouge 2022
+871. hautecote de beaune rouge laisse tomber 2023
+872. hautecotes de beaune rouge 2022 by domaine labry
+873. hautecotes de beaune villages 2022 by domaine labry
+874. hautecotes de nuits cyprien arlaud 17 burgundy france
+875. hautecotes de nuits rouge 2024 stic wines
+876. hautecotesdebeaune 2023 magnum rood domaine latour
+877. hautefeuille ephemere pomme sureau
+878. hauterive demie 2023
+879. hautes c beaune lamotte
+880. hautes collines rouge vintage 2020
+881. hautes collines rouge vintage 2022
+882. hautes cot de fruit 2021
+883. hautes cot de fruit 2022
+884. hautes cote de beaune
+885. hautes cote de nuits blanc le clos du chateau 2023
+886. hautes cote de nuits blanc le rouard 2023
+887. hautes cote de nuits blanc les lapinieres
+888. hautes cotes beaune nuiton 2022
+889. hautes cotes beaune nuiton magnum 2022
+890. hautes cotes beaune perriere parigot 2022 rg
+891. hautes cotes beaune vieil vigne parigot 2023 bl
+892. hautes cotes de beaune
+893. hautes cotes de beaune
+894. hautes cotes de beaune
+895. hautes cotes de beaune
+896. hautes cotes de beaune
+897. hautes cotes de beaune
+898. hautes cotes de beaune
+899. hautes cotes de beaune
+900. hautes cotes de beaune
+901. hautes cotes de beaune
+902. hautes cotes de beaune
+903. hautes cotes de beaune
+904. hautes cotes de beaune 2017 domaine de letoile noire
+905. hautes cotes de beaune 2019 closerie des alisiers burgundia france
+906. hautes cotes de beaune 2020
+907. hautes cotes de beaune 2021 branco
+908. hautes cotes de beaune 2021 wei
+909. hautes cotes de beaune 2022
+910. hautes cotes de beaune 2022
+911. hautes cotes de beaune 2022 domaine chevrot
+912. hautes cotes de beaune 2023
+913. hautes cotes de beaune 2023 francoise et denis clair
+914. hautes cotes de beaune 2024
+915. hautes cotes de beaune ac blanc les perrieres 2023
+916. hautes cotes de beaune ac en chateau 2021
+917. hautes cotes de beaune ac vieilles vignes 2023
+918. hautes cotes de beaune albus domain roux
+919. hautes cotes de beaune aoc
+920. hautes cotes de beaune blanc
+921. hautes cotes de beaune blanc
+922. hautes cotes de beaune blanc 2016 domaine de rouge queues
+923. hautes cotes de beaune blanc 2020
+924. hautes cotes de beaune blanc 2020
+925. hautes cotes de beaune blanc 2020 bouthenetclerc wit
+926. hautes cotes de beaune blanc 2020 domaine pansiot
+927. hautes cotes de beaune blanc 2021
+928. hautes cotes de beaune blanc 2021 bouthenetclerc wit
+929. hautes cotes de beaune blanc 2022
+930. hautes cotes de beaune blanc 2022
+931. hautes cotes de beaune blanc 2022 by domaine labry
+932. hautes cotes de beaune blanc 2023
+933. hautes cotes de beaune blanc 2023
+934. hautes cotes de beaune blanc 2023
+935. hautes cotes de beaune blanc 2023 fouquerand
+936. hautes cotes de beaune blanc 2023 magnum
+937. hautes cotes de beaune blanc 2023 philippe germain
+938. hautes cotes de beaune blanc 2023 philippe germain
+939. hautes cotes de beaune blanc ac 2023
+940. hautes cotes de beaune blanc aux meix genets nuiton beaunoy
+941. hautes cotes de beaune blanc bio les perrieres domaine camp atthalin
+942. hautes cotes de beaune blanc domaine claude nouveau
+943. hautes cotes de beaune blanc domaine delegrange 2019 burgundy france
+944. hautes cotes de beaune blanc domaine francois mikulski
+945. hautes cotes de beaune blanc domaine francois mikulski 2023
+946. hautes cotes de beaune blanc en cheignot 2022
+947. hautes cotes de beaune blanc en cheignot 2022 personliche empfehlung
+948. hautes cotes de beaune blanc en cheignot 2022 persoonlijke aanbeveling
+949. hautes cotes de beaune blanc en cheignot 2023
+950. hautes cotes de beaune blanc en cheignot 2023
+951. hautes cotes de beaune blanc en cheignot 2023
+952. hautes cotes de beaune blanc en cheignot 2023
+953. hautes cotes de beaune blanc en cheignot 2023
+954. hautes cotes de beaune blanc en cheignot 2023 persoonlijke aanbeveling
+955. hautes cotes de beaune blanc en cheignot 2023 recommandation personnelle
+956. hautes cotes de beaune blanc en jaron domaine cozanne
+957. hautes cotes de beaune blanc le chemin de pierre boisson pierre 2023
+958. hautes cotes de beaune blanc le chemin de pierre boisson pierre 2023
+959. hautes cotes de beaune blanc les champlains domaine decelle fils 2023
+960. hautes cotes de beaune blanc les perrieres 2021
+961. hautes cotes de beaune blanc les perrieres ardhuy 2023
+962. hautes cotes de beaune blanc sebastien magnien 2023
+963. hautes cotes de beaune blanc sebastien magnien burgundy france
+964. hautes cotes de beaune blanc tilapaisesti loppu
+965. hautes cotes de beaune bourgogne pinot noir 2022 la malaurie
+966. hautes cotes de beaune champs de perdrix
+967. hautes cotes de beaune chardonnay 2022 bourgogne la malaurie
+968. hautes cotes de beaune chevrieres 19
+969. hautes cotes de beaune chevrieres 20
+970. hautes cotes de beaune clos bortier
+971. hautes cotes de beaune clos de la perriere
+972. hautes cotes de beaune clos de la perriere croix blanche 2023 blanc
+973. hautes cotes de beaune cuvee en pain perdu nuiton beaunoy
+974. hautes cotes de beaune cuvee k
+975. hautes cotes de beaune denis carre 2023 vin rouge
+976. hautes cotes de beaune domaine arnoux pere fils les perrieres 2018
+977. hautes cotes de beaune domaine doudet naudin 2024
+978. hautes cotes de beaune domaine germain
+979. hautes cotes de beaune domaine mandelot
+980. hautes cotes de beaune en cheignot
+981. hautes cotes de beaune en cheignot domaine bonnardot hautescotes de beaune blanc 2021
+982. hautes cotes de beaune en cheignot domaine bonnardot hautescotes de beaune blanc 2022
+983. hautes cotes de beaune fiona leroy les champs rigets bourgogne
+984. hautes cotes de beaune hautes cotes de beaune la chaume des lies
+985. hautes cotes de beaune jardin du calvaire ac
+986. hautes cotes de beaune jeanyves devevey champs perdrix bourgogne
+987. hautes cotes de beaune jeanyves devevey xviii lunes bourgogne
+988. hautes cotes de beaune la couleuvraire 2019 parcelles cie vignerons des terres secretes
+989. hautes cotes de beaune la gredine domaine mandelot
+990. hautes cotes de beaune le clou 2022 rood domaine denis carre
+991. hautes cotes de beaune les chataigniers domaine gilles bouton 2023
+992. hautes cotes de beaune les equeillons
+993. hautes cotes de beaune les perrieres 2020
+994. hautes cotes de beaune les perrieres 2020
+995. hautes cotes de beaune les perrieres 2020 gabriel dardhuy
+996. hautes cotes de beaune monopol rouge
+997. hautes cotes de beaune pinot blanc 2022 jean claude rateau
+998. hautes cotes de beaune pinot noir
+999. hautes cotes de beaune polent 2023
+1000. hautes cotes de beaune polent 2023

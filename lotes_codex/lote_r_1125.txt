@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. aldo viola biancoviola 2022
+2. aldo viola biancoviola bianco igp 2021 126 z
+3. aldo viola biancoviola blanco 2017
+4. aldo viola biancoviola terre siciliane bianco 2019
+5. aldo viola biancoviola terre siciliane igt 2024
+6. aldo viola biancoviolo
+7. aldo viola brutto
+8. aldo viola brutto 2020
+9. aldo viola brutto 2020
+10. aldo viola brutto 2023
+11. aldo viola brutto catarratto pet nat igp 2021 122 z
+12. aldo viola brutto pet nat
+13. aldo viola brutto rose 2023
+14. aldo viola brutto rose pet nat
+15. aldo viola brutto vino frizzante bianco 2022
+16. aldo viola coccinella 2018
+17. aldo viola coccinella 2019
+18. aldo viola coccinella 2019 syrah
+19. aldo viola coccinella 2019 syrah
+20. aldo viola coccinella syrah 2018
+21. aldo viola coccinella syrah igt 2018
+22. aldo viola cocinella syrah igp 2021 122 z
+23. aldo viola egesta 2018
+24. aldo viola egesta 2018
+25. aldo viola egesta 2018
+26. aldo viola egesta 2018
+27. aldo viola egesta 2019
+28. aldo viola egesta bianco 2019
+29. aldo viola egesta bianco igp 2019 169 z
+30. aldo viola egesta italy
+31. aldo viola egesta terre siciliane igt 2021
+32. aldo viola guarini coccinella terre siciliane igt 2022
+33. aldo viola guarini plus terre siciliane igt 2019
+34. aldo viola krimiso
+35. aldo viola krimiso 2017
+36. aldo viola krimiso 2018
+37. aldo viola krimiso 2018
+38. aldo viola krimiso 2018
+39. aldo viola krimiso 2018
+40. aldo viola krimiso 2019
+41. aldo viola krimiso 2019
+42. aldo viola krimiso 2019
+43. aldo viola krimiso catarratto igp 2019 158 z
+44. aldo viola krimiso catarratto terre siciliane bianco 2018
+45. aldo viola krimiso sicily 2019
+46. aldo viola krimiso terre siciliane igt 2021
+47. aldo viola moretto 2018
+48. aldo viola moretto 2018
+49. aldo viola moretto 2018
+50. aldo viola moretto 2019
+51. aldo viola moretto 2019
+52. aldo viola moretto terre siciliane igt 2022
+53. aldo viola perrico 2017
+54. aldo viola pl
+55. aldo viola pl
+56. aldo viola plus syrah 2016
+57. aldo viola plus syrah 2019
+58. aldo viola plus syrah 2019
+59. aldo viola rosso saignee terre siciliane sicily 2019
+60. aldo viola saignee 2018
+61. aldo viola saignee 2018
+62. aldo viola saignee 2019
+63. aldo viola saignee 2019
+64. aldo viola saignee rosso
+65. aldo viola saignee rosso 2018
+66. aldo viola saignee terre siciliane igt 2020
+67. aldo viola shiva bianco 2017
+68. aldo viola shiva bianco 2017
+69. aldobrandesca a rosato toscana igt
+70. aldobrandesca rosato a
+71. aldobrandino igt 2018 il drago e la fornace
+72. aldone 2018 bolgheri igt terre del marchesato
+73. aldone 2020
+74. aldone 2020 bolgheri igt terre del marchesato
+75. aldone 2021 terre del marchesato
+76. aldone igt toscana 2020 terre del marchesato
+77. aldonia vendimia 2019
+78. aldonza
+79. aldonza albo
+80. aldonza albo sauvignon blanc
+81. aldonza brut rose
+82. aldridge abbott twynham chardonnay
+83. aldridge shiraz cabernet
+84. aldrighetti amarone della valpolicella 2015
+85. aldrighetti amarone della valpolicella 2015
+86. aldrighetti amarone della valpolicella classico 2015 italy
+87. aldrighetti amarone della valpolicella classico docg
+88. aldrighetti ponte de la tor rosso veneto igt
+89. aldrighetti recioto della vapolicella docg
+90. aldrighetti valpolicella classico doc
+91. aldrighetti valpolicella classico superiore doc
+92. aldrighetti valpolicella ripasso 2018
+93. aldrighetti valpolicella ripasso 2018
+94. aldrighetti valpolicella ripasso classico superiore doc
+95. aldro corporate office set includes duffel bag yoga mat wrist band strech band and tumbler
+96. aldrtz pau liniment
+97. aldrtz pau liniment
+98. aldrtz pau masaje classic
+99. aldrtz pau masaje floral
+100. aldrtz pau masaje peppermint
+101. aldunie23 1997
+102. aldwick estate bs40
+103. aldwick jubilate brut rose
+104. aldwick jubilate classic cuvee
+105. aldwick marys rose 2023
+106. aldwick seyval jubilate
+107. aldwin step black
+108. ale coq 52 x 24 tolkkia
+109. ale coq alexander dunkel 42
+110. ale coq alexander export 52
+111. ale coq cuba libre 47 pullo
+112. ale coq gn long drink 55
+113. ale coq gn watermelon long drink 55
+114. ale coq grapefruit long drink 55
+115. ale coq mojito 47 pullo
+116. ale coq premium 47 vol x 24
+117. ale coq premium 52
+118. ale coq premium export
+119. ale coq premium export 52
+120. ale coq premium export 52 2403
+121. ale coq premium export 52 2403
+122. ale coq premium select gluteiiniton 43 1235
+123. ale coq tropical long drink 55
+124. ale rosso 2021 la villana
+125. alea 2021 cascina ebreo
+126. alea 2021 cascina ebreo
+127. alea 2021 cascina ebreo
+128. alea aleatico rosso arcaico andrea occhipinti 2022
+129. alea fina rutherford cabernet sauvignon 2017
+130. alea iacta est el jardin de los caprichos n 24 karim mussi
+131. alea jacta est 2016
+132. alea jacta est 2018
+133. alea jacta est 2018
+134. alea jacta est 2019
+135. alea jacta est 2019
+136. alea jacta est 2019
+137. alea jacta est 2019 le coste
+138. alea jacta est 2019 le coste
+139. alea jacta est rouge 2010
+140. alea malvasia bianca 125 0
+141. alea malvasia bianca puglia
+142. alea red blend
+143. alea rosa
+144. alea rosa 2024
+145. alea rosa 2024
+146. alea rosa vino rosato andrea occhipinti
+147. alea viva
+148. alea viva
+149. alea viva 2022
+150. alea viva 2022
+151. alea viva 2023
+152. alea viva 2023 vino rosso andrea occhipinti
+153. alea viva andrea occhipinti
+154. alea viva rosso andrea occhipinti 2023
+155. alea vv 2013
+156. alea vv 2016
+157. alea white blend
+158. alea wit belgian wheat 50 alc
+159. aleabacter oenos fermentazione malolattica
+160. aleabois ferm r legni per lenologia
+161. aleabois original 1 legni per lenologia
+162. aleaferm ar ceppo vigoroso
+163. aleaferm arom lievito
+164. aleaferm chm ceppo produzione spumanti
+165. aleaferm crio ceppo ibrido
+166. aleaferm cuvee ceppo per spumantizzazione
+167. aleaferm pdm ceppo per spumantizzazione
+168. aleaferm thiol lievito secco
+169. aleandri merlot
+170. aleanna el enemigo chardonnay 2018
+171. aleanna el enemigo chardonnay wine
+172. aleanna el enemigo gran enemigo 2013
+173. aleanna el enemigo malbec wine
+174. aleanna gran enemigo agrelo 2013
+175. aleanna gran enemigo agrelo magnum 2016
+176. aleanna gran enemigo chacayes 2013
+177. aleanna gran enemigo chacayes magnum 2013
+178. aleanna gran enemigo chacayes magnum 2016
+179. aleanna gran enemigo el cepillo magnum 2013
+180. aleanna gran enemigo gualtallary magnum 2013
+181. aleanna gran enemigo gualtallary magnum 2016
+182. aleanna gran enemigo red blend 2013 0
+183. aleanna gran enemigo red blend magnum 2013
+184. aleanna gran enemigo red blend magnum 2016
+185. aleanna gualtallary single vineyard gran enemigo cabernet franc 2014
+186. aleasol 61 solfiti
+187. aleatan blanc tannino
+188. aleatan galla tannino
+189. aleatan rouge tannino
+190. aleatico
+191. aleatico del lazio rosato pian di stelle igt 2021 antonella pacchiarotti
+192. aleatico dessertwein
+193. aleatico di gradoli
+194. aleatico di gradoli
+195. aleatico di puglia passito dop 50 antiche terre del salento
+196. aleatico eliseo 2022 gualdo del re
+197. aleatico fattoria aldobrand desert wine
+198. aleatico lazio bianco matee igt 2020 antonella pacchiarotti
+199. aleatico lazio rosso cavarosso igt 2021 antonella pacchiarotti
+200. aleatico lomazzi e sarli
+201. aleatico passito
+202. aleatico passito 2013
+203. aleatico passito 2013
+204. aleatico passito 2015
+205. aleatico passito 2015
+206. aleatico passito 2016
+207. aleatico passito 2016
+208. aleatico passito delba montefico
+209. aleatico passito delba montefico
+210. aleatico passito di toscana tilapaisesti loppu
+211. aleatico passito igt pugliamenhir lt 075
+212. aleatico passito in cassetta di legno
+213. aleatico pomele falesco
+214. aleatico pomele falesco
+215. aleatico pomele igp cotarella
+216. aleatico sovana superiore doc 2020
+217. aleatico stravecchio i l ruffino 1952 dessert wine
+218. aleatico stravecchio il ruffino 1952 dessert wine
+219. aleatico stravecchio il ruffino 1952 dessertvin
+220. aleatico vinaccero igp puglia
+221. aleatico vino liquoroso doc 1974
+222. aleaugust cru
+223. aleaugust cru igp sangiovese 2025
+224. aleaugust cru igp sangiovese degustazione
+225. aleavini bululu 2020
+226. aleavini bululu garnatcha
+227. alebois ferm b legni per lenologia
+228. alebrijes anejo
+229. alebrino
+230. alebrino blend
+231. alebrino botellin
+232. alebrino rose blend
+233. alec bradley caribbean cask robusto
+234. alec bradley gatekeeper robusto
+235. alec bradley project 40 gordo 6x60
+236. alec bradley project 40 toro
+237. alec bradley project 40 toro 6x52
+238. alec bradley white gold
+239. alecoq vesimeloni lonkero 55 x 24 tolkkia
+240. alecrim 100g
+241. alecrim aguena unidade
+242. alecrim aroma das ervas 40 g
+243. alecrim br spices 20g
+244. alecrim branco
+245. alecrim desidratado zuppa 15 g
+246. alecrim em folhas members mark vidro 80g
+247. alecrim em vaso festval unidade
+248. alecrim folhas oba bem querer 45g
+249. alecrim fresco temperos sul 25g
+250. alecrim geriba 20g
+251. alecrim kodilar pacote 15g
+252. alecrim ponzan 15g
+253. alecrim rose
+254. alecrim tinto
+255. alecrim tinto
+256. alecrim tinto portugal
+257. alecrim unid
+258. alecrim unidade
+259. alecrim up 24x5gr
+260. alecrim vermeulen 30 g
+261. alecrin
+262. alecs blend napa valley
+263. alecs ice cream organic cardamom pecan ice cream
+264. aleear solera 1927 pedro ximenez
+265. aleegokus
+266. alef barely pink wine tote set
+267. alef bet cartitas
+268. alef bet juego de memoria 64 piezas 01251
+269. alef to tav alef to tav de yaffa ganz
+270. alefarm through the ages a concept of linearity toasted coconut 2023
+271. alefato magnetico 2115 cm
+272. alefbet magnetico de plastico
+273. alege buchetul potrivit
+274. alegoria gran reserva cabernet s
+275. alegoria gran reserva cabernet sauvignon
+276. alegoria gran reserva malbec
+277. alegoria gran reserva malbec de navarro correas
+278. alegoria navarro correas
+279. alegorias hiperbolicas o las ruedas del beso de reinaldo arenas
+280. alegra champagne
+281. alegra joven
+282. alegra ribera del duero crianza
+283. alegra ribera del duero reserva
+284. alegra ribera del duero tempranillo joven
+285. alegra rose 2022
+286. alegra rueda sauvignon blanc
+287. alegra rueda verdejo
+288. alegra rueda verdejo 2018
+289. alegra sauvignon blanc
+290. alegra verdejo 2020
+291. alegra verdejo rueda
+292. alegra verdejo rueda spain
+293. alegranza brut
+294. alegre amor
+295. alegre amor
+296. alegre amor
+297. alegre amor
+298. alegre amor
+299. alegre amor
+300. alegre amor
+301. alegre amor
+302. alegre amor
+303. alegre amor
+304. alegre amor
+305. alegre amor
+306. alegre amor
+307. alegre amor
+308. alegre amor
+309. alegre amor
+310. alegre amor
+311. alegre amor
+312. alegre compartir
+313. alegre dia
+314. alegre fotli antiga vermouth
+315. alegre fotli vermouth
+316. alegre fotli vermut rojo
+317. alegre lbv 2013
+318. alegre lbv 2018
+319. alegre lirio naranja plantado
+320. alegre ruby
+321. alegre sorpresa
+322. alegre tawny 0
+323. alegre unicornio
+324. alegre valganon
+325. alegre valganon 2015
+326. alegre valganon blanco
+327. alegre valganon blanco 2020
+328. alegre valganon blanco 2024
+329. alegre valganon clarete
+330. alegre valganon clarete
+331. alegre valganon clarete
+332. alegre valganon clarete rose
+333. alegre valganon clarito rose 2021
+334. alegre valganon garnacha
+335. alegre valganon garnacha
+336. alegre valganon garnacha
+337. alegre valganon garnacha tinto 2023
+338. alegre valganon la calleja
+339. alegre valganon la calleja
+340. alegre valganon la calleja
+341. alegre valganon rioja 2022
+342. alegre valganon rioja bianco
+343. alegre valganon rioja bianco
+344. alegre valganon rioja blanco
+345. alegre valganon rioja blanco
+346. alegre valganon rioja blanco
+347. alegre valganon rioja blanco
+348. alegre valganon rioja tinto
+349. alegre valganon rioja tinto
+350. alegre valganon rioja tinto
+351. alegre valganon rioja tinto
+352. alegre valganon rioja tinto
+353. alegre valganon rioja tinto 2018
+354. alegre valganon rioja tinto 2019
+355. alegre valganon rioja tinto 2021
+356. alegre valganon rioja tinto rioja spain tempranillo blend 2021
+357. alegre valganon tempranillo garnacha 2021
+358. alegre valganon tinto
+359. alegre valganon tinto
+360. alegre valganon tinto
+361. alegre valganon tinto 2022
+362. alegre valganon tinto rioja 20
+363. alegre wine spirits
+364. alegre wines fotli reus vermut rojo spain
+365. alegre y valganon bahierra single vineyard field blend 2020
+366. alegre y valganon blanco 2024 rioja
+367. alegre y valganon carra santo domingo single vineyard field blend clarete 2020
+368. alegre y valganon la calleja single vineyard tempranillo fonzaleche 2019
+369. alegre y valganon las llanas single vineyard viura field blend 2019
+370. alegre y valganon tino rioja 2022
+371. alegre y valganon tres anos viura 2019
+372. alegre y valganon viura 2023
+373. alegres
+374. alegrete crisp sharp vinho verde doc
+375. alegrete fresh fruity vinho verde doc
+376. alegrete ligeiro 2022
+377. alegria
+378. alegria
+379. alegria
+380. alegria
+381. alegria
+382. alegria 2022
+383. alegria 22
+384. alegria a todo color
+385. alegria a todo color
+386. alegria a todo color
+387. alegria a todo color
+388. alegria a todo color
+389. alegria a todo color
+390. alegria ainos wines
+391. alegria ainos wines
+392. alegria compartida
+393. alegria de flores
+394. alegria de girasoles
+395. alegria de navidad
+396. alegria de nochebuena
+397. alegria de nochebuena
+398. alegria de nochebuena
+399. alegria de nochebuena
+400. alegria de nochebuena
+401. alegria de rosas rosa preservada
+402. alegria de tharsys brut
+403. alegria de tharsys brut
+404. alegria de tharsys brut nature
+405. alegria de tharsys brut nature
+406. alegria de tharsys brut nature 2022
+407. alegria de tharsys do cava reserva organic brut 2022
+408. alegria de tulipanes
+409. alegria de vivir joyitas de emuna
+410. alegria de vivir joyitas de emuna
+411. alegria dos vivos vinhas velhas branco 2024
+412. alegria en amarillo
+413. alegria en amarillo
+414. alegria en amarillo
+415. alegria en amarillo
+416. alegria en amarillo
+417. alegria en amarillo
+418. alegria en amarillo
+419. alegria en amarillo
+420. alegria en amarillo
+421. alegria en amarillo
+422. alegria en amarillo
+423. alegria en amarillo
+424. alegria en amarillo
+425. alegria en amarillo
+426. alegria en amarillo
+427. alegria en amarillo
+428. alegria en amarillo
+429. alegria en amarillo
+430. alegria en amarillo
+431. alegria en amarillo
+432. alegria en amarillo
+433. alegria en flor
+434. alegria en flor
+435. alegria en flor
+436. alegria en flor
+437. alegria en flor
+438. alegria en flor
+439. alegria en flor
+440. alegria en flor
+441. alegria en flor
+442. alegria en flor
+443. alegria en flor
+444. alegria en flor
+445. alegria en flor
+446. alegria en flor
+447. alegria en flor
+448. alegria en flor
+449. alegria en flor
+450. alegria en flor
+451. alegria en flor
+452. alegria en flor
+453. alegria eterna shalom bait volumen ii
+454. alegria eterna shidujim volumen i
+455. alegria festiva
+456. alegria floral
+457. alegria frizzante rose 2024 bio papras organic wines
+458. alegria multicolor
+459. alegria multicolor
+460. alegria navidena
+461. alegria navidena
+462. alegria navidena
+463. alegria navidena
+464. alegria navidena
+465. alegria navidena
+466. alegria navidena
+467. alegria navidena
+468. alegria navidena
+469. alegria navidena
+470. alegria navidena
+471. alegria navidena
+472. alegria navidena
+473. alegria navidena
+474. alegria navidena
+475. alegria navidena
+476. alegria navidena
+477. alegria navidena
+478. alegria navidena
+479. alegria navidena
+480. alegria panda
+481. alegria para ti
+482. alegria pura
+483. alegria pura
+484. alegria pura
+485. alegria pura
+486. alegria pura
+487. alegria pura
+488. alegria pura
+489. alegria pura
+490. alegria pura
+491. alegria pura
+492. alegria pura
+493. alegria pura
+494. alegria pura
+495. alegria pura
+496. alegria pura
+497. alegria pura
+498. alegria pura
+499. alegria pura
+500. alegria pura
+501. alegria pura
+502. alegria pura
+503. alegria pura
+504. alegria ramo 12 rosas
+505. alegria riojana lito 80 g
+506. alegria rosa
+507. alegria rosa
+508. alegria rose 0
+509. alegria tinto
+510. alegria y tradicion
+511. alegrias airen canaveras semisweet frizzante
+512. alegrias riojanas lc
+513. alegrias riojanas picantes
+514. alegrias semi sweet
+515. alegro branco viura
+516. alegro crianza tempranillo
+517. alegro reserva
+518. alegro rioja blanco
+519. alegro rioja crianza
+520. alegro rioja reserva
+521. alegro rioja tempranillo
+522. alegro rioja tempranillo
+523. alegro rioja tinto
+524. alegro tempranillo blanco rioja doc
+525. alegro tinto tempranillo
+526. alegro viura blanco rioja doc 2020
+527. aleia lar de oro crianza do ribera del guadiana 2019
+528. aleia lar de oro reserva do ribera del guadiana 2017
+529. aleikos 2013 rosato leone de castris puglia italien
+530. aleis falanghina
+531. aleis falanghina igp puglia 2023
+532. aleitapteit 01 december 2022
+533. aleixo baga grande reserva bairrada tinto 1997
+534. aleixo espumante reserva blanc de blancs 2022
+535. aleixo family collection grande reserva bairrada branco 2023
+536. aleixo family collection grande reserva bairrada tinto 2022
+537. aleixo family collection grande reserva branco 2023
+538. aleixo family collection grande reserva tinto 2022
+539. aleixo garcia branco
+540. aleixo garcia tinto
+541. aleixo grande reserva 1997
+542. aleixo grande reserva 1997
+543. aleixo grande reserva tinto 1997
+544. aleixo grande reserva tinto 1997
+545. aleixo reserva bairrada branco 2022
+546. aleixo reserva bairrada tinto 2020
+547. aleixo reserva branco 2020
+548. aleixo reserva branco 2020
+549. aleixo reserva branco 2020
+550. aleixo reserva doc branco
+551. aleixo reserva tinto
+552. aleixo reserva tinto 2020
+553. aleixo reserva tinto 2020
+554. aleixo reserva tinto 2020
+555. aleixo reserve red wine
+556. aleixo superior maria gomes e bical bairrada branco 1996
+557. alejairen crianza 2023
+558. alejairen el vinculo crianza white 145vol 2021
+559. alejairen el vinculo crianza white 145vol 2021
+560. alejairen tinaja 2024
+561. alejandra pizarnik biografia de un mito
+562. alejandria 2022
+563. alejandria 2023
+564. alejandro bulgheroni
+565. alejandro bulgheroni 2021 lithology cabernet sauvignon beckstoffer dr crane vineyard st helena
+566. alejandro bulgheroni cabernet sauvignon 2015
+567. alejandro bulgheroni cabernet sauvignon 2016
+568. alejandro bulgheroni cabernet sauvignon 2017
+569. alejandro bulgheroni cabernet sauvignon 2018
+570. alejandro bulgheroni cabernet sauvignon lithology 2015
+571. alejandro bulgheroni cabernet sauvignon lithology 2018
+572. alejandro bulgheroni cabernet sauvignon lithology 2021
+573. alejandro bulgheroni cabernet sauvignon lithology beckstoffer dr crane 2018
+574. alejandro bulgheroni cabernet sauvignon lithology beckstoffer dr crane 2021
+575. alejandro bulgheroni cabernet sauvignon lithology beckstoffer las piedras 2017
+576. alejandro bulgheroni cabernet sauvignon lithology beckstoffer las piedras 2019
+577. alejandro bulgheroni cabernet sauvignon lithology beckstoffer to kalon vineyard 2021
+578. alejandro bulgheroni cabernet sauvignon lithology beckstoffer to kalon vineyard oakville
+579. alejandro bulgheroni cabernet sauvignon lithology to kalon vineyard napa valley
+580. alejandro bulgheroni cabernet sauvignon napa valley
+581. alejandro bulgheroni estate cabernet 2015
+582. alejandro bulgheroni estate cabernet sauvignon 2017 napa ca
+583. alejandro bulgheroni estate cabernet sauvignon 2018 napa ca
+584. alejandro bulgheroni estate lithology cabernet sauvignon 2015
+585. alejandro bulgheroni estate lithology cabernet sauvignon beckstoffer dr crane vineyard 2019
+586. alejandro bulgheroni estate lithology cabernet sauvignon beckstoffer dr crane vineyard 2021
+587. alejandro bulgheroni lithology beckstoffer to kalon vineyard cabernet sauvignon or case of 3
+588. alejandro bulgheroni lithology cabernet sauvignon 2015
+589. alejandro bulgheroni lithology cabernet sauvignon beckstoffer dr crane vineyard 2017 napa ca
+590. alejandro bulgheroni lithology cabernet sauvignon beckstoffer dr crane vineyard 2018 napa ca
+591. alejandro bulgheroni lithology cabernet sauvignon beckstoffer dr crane vineyard 2019 napa ca
+592. alejandro bulgheroni lithology cabernet sauvignon beckstoffer to kalon vineyard 2018 napa ca
+593. alejandro bulgheroni lithology cabernet sauvignon beckstoffer to kalon vineyard 2021 napa ca
+594. alejandro chistorra pamplona reserva 12 x 200g
+595. alejandro escovedo alejandro escovedo the rant band 2022 by joan chiverton
+596. alejandro escovedo the rant band songs of ian hunter by joan chiverton
+597. alejandro fernandez condado de haza
+598. alejandro fernandez condado de haza crianza ribera del duero
+599. alejandro fernandez condado de haza reserva ribera del duero
+600. alejandro fernandez dehesa la granja
+601. alejandro fernandez dehesa la granja
+602. alejandro fernandez dehesa la granja magnum 15 liter
+603. alejandro fernandez el vinculo
+604. alejandro fernandez el vinculo crianza
+605. alejandro fernandez el vinculo crianza la mancha
+606. alejandro fernandez pesquera crianza
+607. alejandro fernandez pesquera crianza
+608. alejandro fernandez pesquera crianza
+609. alejandro fernandez pesquera crianza 145 abv
+610. alejandro fernandez pesquera reserva
+611. alejandro fernandez pesquera reserva
+612. alejandro fernandez tinto pesquera crianza ribera del duero
+613. alejandro fernandez tinto pesquera reserva ribera del duero
+614. alejandro fernandez tinto pesquera ribera del duero reserva 2012
+615. alejandro fernandez tinto pesquera sl el vinculo crianza
+616. alejandro fernandez tinto pesquera sl el vinculo crianza
+617. alejandro panceta adobada 1kg
+618. alejandro prosecco 2024
+619. alejos coated peanut 150g
+620. alejos salted peanut 150g
+621. alekasnrouli limited addition
+622. aleksander a 2010
+623. aleksander by sasha vujacic blend paso robles 2019
+624. aleksander reserve 2010
+625. aleksander reserve 2011
+626. aleksander reserve 2012
+627. aleksander reserve 2017
+628. aleksander reserve by sasha vujacic blend paso robles 2016
+629. aleksandria frankfurterki pieprzowe biae
+630. aleksandria parowki wiedenskie
+631. aleksandrouli
+632. aleksandrouli
+633. aleksandrouli
+634. aleksandrouli 2018 kankatela
+635. aleksandrouli 2019 koncho
+636. aleksandroulisaperavi
+637. aleksandrovic bela varijanta 075
+638. aleksandrovic euforija 075
+639. aleksandrovic harizma 075
+640. aleksandrovic prokupac 075
+641. aleksandrovic regent 075
+642. aleksandrovic rodoslov 075
+643. aleksandrovic tema 075
+644. aleksandrovic trijumf 075
+645. aleksandrovic trijumf gold 075
+646. aleksandrovic trijumf kasna berba 0375
+647. aleksandrovic trijumf late harvest 0357
+648. aleksandrovic trijumf noir mousserend 2019
+649. aleksandrovic trijumf pinot noir 075
+650. aleksandrovic trijumf terroir 075
+651. aleksandrovic varijanta 075
+652. aleksandrovic vizija 075
+653. aleksandrovic white varijanta 075
+654. alekse 2003 4538
+655. alekse mco
+656. aleksic amanet 075
+657. aleksic amanet vranac 2019
+658. aleksic barbara 075
+659. aleksic biser brut
+660. aleksic bonaca 075
+661. aleksic kardas 075
+662. aleksic kardas limited 075
+663. aleksic morava 075
+664. aleksic muscat 070 sa kutijom
+665. aleksic muscat 070 with box
+666. aleksic nostalgija 2018
+667. aleksic penusavo vino zuti cvet 075
+668. aleksic prokupac 0
+669. aleksic sinergija 075
+670. aleksic zuti cvet 075
+671. aleksic zuti cvet temjanika 2020
+672. aleli rosato
+673. alella aus pet nat 2020
+674. alella vinicola costa del maresme 2008
+675. alella vinicola marfil generos dolc solera 2003 rp93
+676. alella vinicola marfil generos sec nv solera 1976 rp91
+677. alella vinicola marfil generos violeta solera 2003 rp93
+678. alelma
+679. alelma
+680. alelma
+681. alelma alalunga 120gr
+682. alelma spicy blue fin alonissos tuna in sunflower oil 314gr
+683. alelma white alalunga alonissos tuna in water 212gr
+684. alelor grated alsace horseradish 140g
+685. alelor sennep moutarde de dijon 350 gr
+686. alelor sennep moutarde douce dalsace 350 gr
+687. alem do rio branco
+688. alem do rio branco
+689. alem do rio branco leve vinho regional de lisboa safra 2023
+690. alem do rio rose
+691. alem do rio rose
+692. alem do rio rose leve vinho regional de lisboa safra 2023
+693. alem tanha douro doc
+694. alem tanha douro doc 2018
+695. alemanha
+696. alemania
+697. alemania blue nun liebfraumilch 1980
+698. alemany almond marzipan turron
+699. alemany and corrio principia mathematica
+700. alemany corrido principia mathematica garage wine 2022
+701. alemany hard turron
+702. alemany i corrio barcelona xarello principia mathematica 2023
+703. alemany i corrio cargol treu vi
+704. alemany i corrio cargol treu vi penedes spain 2023
+705. alemany i corrio el microscopi red blend
+706. alemany i corrio pas curtei red blend
+707. alemany i corrio pas curtei vilafranca del penedes catalunya spain
+708. alemany i corrio penedes el microscopi 2016
+709. alemany i corrio principia mathematica do penedes
+710. alemany i corrio principia mathematica penedes
+711. alemany i corrio principia mathematica vilafranca del penedes catalunya spain
+712. alemany i corrio principia mathematica xarello
+713. alemany i corrio sot lefriec
+714. alemany i corrio sot lefriec 2018
+715. alemany i corrio vilafranca del penedes pas curtei 2022
+716. alemany soft turron
+717. alemar good thunder wheels
+718. alemat augusta barbera dasti superiore 2015
+719. alemat augusta barbera dasti superiore 2016
+720. alemat augusta barbera dasti superiore 2017
+721. alenar 2022
+722. alenar 745
+723. alenar 767
+724. alennustuotteet
+725. aleno crianza finca la legua
+726. aleno joven
+727. aleno rosado
+728. alent red wine herdade do rocim touriga nacional
+729. alenta falanghina del sannio vendemmia tardiva nifo sarrapochiello 2022
+730. alentador rose
+731. alentejano
+732. alentejano
+733. alentejano coelheiros red wine
+734. alentejano doc conventual reserva 2020 adega de portalegre rouge
+735. alentejano esperanca white wine
+736. alentejano jupiter red wine
+737. alentejano limited release 2021
+738. alentejano pgi
+739. alentejano red wine esporao defesa
+740. alentejano red wine esporao organico
+741. alentejano red wine esporao reserve
+742. alentejano red wine esporao reserve
+743. alentejano red wine esporao reserve
+744. alentejano red wine explicit
+745. alentejano red wine explicit
+746. alentejano red wine guarda rios vinha do riacho
+747. alentejano red wine herdade s miguel selected harvest
+748. alentejano red wine insolito reserve
+749. alentejano red wine ossa private selection
+750. alentejano red wine pequeno pintor
+751. alentejano red wine reserve dos amigos
+752. alentejano red wine segredos s miguel reserve
+753. alentejano red wine torre de palma blend 2020
+754. alentejano reserva
+755. alentejano rose wine herdade de smiguel selected harvest
+756. alentejano rose wine monte da ravasqueira selection of the year
+757. alentejano rose wine segredos de sao miguel
+758. alentejano sparkling bojador blanc de blancs gross
+759. alentejano tinto herdade paco do conde
+760. alentejo
+761. alentejo
+762. alentejo
+763. alentejo
+764. alentejo 2
+765. alentejo 2001 cabernet sauvignon aragonez castelao
+766. alentejo 4
+767. alentejo alentejo
+768. alentejo branco reserva barrique select 2024
+769. alentejo branco reserva esporao
+770. alentejo branco rio dos patos 2024
+771. alentejo costa nova 16
+772. alentejo costa nova 21
+773. alentejo costa nova 27
+774. alentejo costa nova 31 white
+775. alentejo doc tres anforas howards folly 2019
+776. alentejo esporao red wine sweet gift crate
+777. alentejo on the move
+778. alentejo pdo
+779. alentejo red wine alabastro
+780. alentejo red wine alento
+781. alentejo red wine amote
+782. alentejo red wine artterra amphora
+783. alentejo red wine artterra organic
+784. alentejo red wine bis
+785. alentejo red wine bojador
+786. alentejo red wine bojador reserve
+787. alentejo red wine calantica
+788. alentejo red wine canto decimo
+789. alentejo red wine cartuxa
+790. alentejo red wine cartuxa reserve
+791. alentejo red wine castelo de estremoz grande escolha
+792. alentejo red wine coelheiros vinha do taco
+793. alentejo red wine conde de serpa
+794. alentejo red wine cortes de cima
+795. alentejo red wine ea
+796. alentejo red wine encosta das perdizes old vines
+797. alentejo red wine encosta das perdizes reserve
+798. alentejo red wine encostas dalqueva reserve
+799. alentejo red wine encostas de estremoz yellow clay
+800. alentejo red wine esporao private selection 2004
+801. alentejo red wine fita preta
+802. alentejo red wine garrafeira tapada de coelheiros
+803. alentejo red wine grande rocim reserve
+804. alentejo red wine grande trinca bolotas
+805. alentejo red wine granja amareleja superior
+806. alentejo red wine h esporao quatro castas
+807. alentejo red wine herdade das servas
+808. alentejo red wine herdade de sao miguel oenologists choice
+809. alentejo red wine herdade de sao miguel pe de mae
+810. alentejo red wine herdade do mouchao
+811. alentejo red wine herdade do peso
+812. alentejo red wine herdade do rocim reserve
+813. alentejo red wine herdade dos grous
+814. alentejo red wine herdade dos grous reserve
+815. alentejo red wine herdade rocim alicante bouschet
+816. alentejo red wine insolito grande reserve
+817. alentejo red wine jose de sousa mayor
+818. alentejo red wine jose piteira talha wine
+819. alentejo red wine marques de borba
+820. alentejo red wine monte da cal
+821. alentejo red wine monte da ravasqueira syrah
+822. alentejo red wine monte ravasqueira
+823. alentejo red wine monte ravasqueira encantado
+824. alentejo red wine monte ravasqueira premium
+825. alentejo red wine monte ravasqueira selection of the year
+826. alentejo red wine monte ravasqueira superior
+827. alentejo red wine monte ravasqueira touriga franca
+828. alentejo red wine monte velho
+829. alentejo red wine mouras de arraiolos premium
+830. alentejo red wine olho de mocho reserve
+831. alentejo red wine paulo laureano portuguese varieties
+832. alentejo red wine paulo laureano premium
+833. alentejo red wine paulo laureano vinha das lebres
+834. alentejo red wine paulo laureano vinhas velhas
+835. alentejo red wine peramanca
+836. alentejo red wine poliphonia signature
+837. alentejo red wine portas da herdade
+838. alentejo red wine qta do alqueve 2 mundos reserve
+839. alentejo red wine quinta da esperanca escolha
+840. alentejo red wine quinta da esperanca reserve
+841. alentejo red wine quinta do carmo
+842. alentejo red wine quinta do carmo reserve
+843. alentejo red wine quinta do carmo reserve
+844. alentejo red wine rotas de portugal
+845. alentejo red wine rumo touriga nacional
+846. alentejo red wine terras de xisto grande reserve vinhas velhas
+847. alentejo red wine terras de xisto reserve vinhas velhas
+848. alentejo red wine trinca bolotas
+849. alentejo red wine vicentino syrah
+850. alentejo red wine villa romanu
+851. alentejo red wine vinha do almo
+852. alentejo red wine vinha do almo escolha
+853. alentejo red wine vinha do almo limited edition
+854. alentejo red wine vinha do pastor
+855. alentejo region 6 bottles case
+856. alentejo regional monte velho herdade do esporao rouge
+857. alentejo rose wine herdade do rocim
+858. alentejo rose wine monte da ravasqueira
+859. alentejo rose wine ravasqueira mr premium
+860. alentejo sobro tinto 2023
+861. alentejo sparkling wine herdade do perdigao brut
+862. alentejo tinto anas 2023
+863. alentejo tinto trinca bellotas herdade peso alentejo por
+864. alentejo vin rouge tapada delvas
+865. alentejo white wine abelharuco
+866. alentejo white wine bojador
+867. alentejo white wine bojador reserve
+868. alentejo white wine castelo de estremoz
+869. alentejo white wine chamine
+870. alentejo white wine coelheiros
+871. alentejo white wine dona maria amantis reserve
+872. alentejo white wine esperanca reserve
+873. alentejo white wine esporao defesa
+874. alentejo white wine esporao organic
+875. alentejo white wine esporao private selection
+876. alentejo white wine esporao reserve
+877. alentejo white wine h da malhadinha nova late harvest
+878. alentejo white wine herdade do rocim
+879. alentejo white wine herdade do rocim mariana
+880. alentejo white wine herdade dos grous
+881. alentejo white wine herdade dos grous reserve
+882. alentejo white wine herdade smiguel selected harvest
+883. alentejo white wine jose piteira
+884. alentejo white wine jose piteira talha wine
+885. alentejo white wine monte da cal
+886. alentejo white wine monte da ravasqueira alvarinho
+887. alentejo white wine monte da ravasqueira enchanted
+888. alentejo white wine monte da ravasqueira late harvest
+889. alentejo white wine monte da ravasqueira reserve da familia
+890. alentejo white wine monte da ravasqueira selection of the year
+891. alentejo white wine monte da ravasqueira superior
+892. alentejo white wine olho de mocho reserve
+893. alentejo white wine paulo laureano classic
+894. alentejo white wine paulo laureano premium
+895. alentejo white wine paulo laureano vinhas velhas
+896. alentejo white wine peramanca
+897. alentejo white wine quinta da esperanca escolha
+898. alentejo white wine quinta do carmo
+899. alentejo white wine scala coeli
+900. alentejo white wine segredos de smiguel
+901. alentejo white wine tapada de coelheiros
+902. alentejo white wine tapada delvas
+903. alentejo white wine terras de cante
+904. alentejo white wine terras de xisto reserve vinhas velhas
+905. alentejo white wine terras do crato
+906. alentejo white wine vidigueira reserve
+907. alentejo white wine villa romanu
+908. alenti red
+909. alenti rose
+910. alenti white
+911. alento 2023 tinto do alentejo
+912. alento 2024 rose do alentejo
+913. alento blanc 2019
+914. alento blanc 2020
+915. alento branco
+916. alento branco
+917. alento branco
+918. alento branco 2021
+919. alento branco 2022
+920. alento branco 2024
+921. alento branco 2025 alentejo
+922. alento godello
+923. alento reserva alentejo tinto 2007
+924. alento reserva alentejo tinto 2016
+925. alento reserva branco
+926. alento reserva branco 2020
+927. alento reserva branco 2023
+928. alento reserva red alt wines producers
+929. alento reserva tinto
+930. alento reserva tinto
+931. alento reserva tinto 2015
+932. alento reserva tinto 2016
+933. alento reserva tinto 2019
+934. alento reserva tinto 2020
+935. alento reserva tinto 2021
+936. alento reserva tinto 2022 alentejo
+937. alento reserve 2019
+938. alento rose
+939. alento rose
+940. alento rose 2022
+941. alento rose 2023
+942. alento rouge 2020
+943. alento rouge 2021
+944. alento tinto
+945. alento tinto
+946. alento tinto
+947. alento tinto
+948. alento tinto 2020
+949. alento tinto 2020
+950. alento tinto 2023
+951. alentomonte branco
+952. alenza 1996
+953. alenza 1997
+954. alenza crianza 1995
+955. alenza gran reserva 2018
+956. alenza gran reserva 2018
+957. alenza gran reserva 2019
+958. alenza gran reserva 2019 ribera del duero 15
+959. alenza gran reserva 2019 ribera del duero 15
+960. aleo aloe vera it30 gralma drs
+961. aleo aloe vera it30 premnatur
+962. aleofane crozes hermitage 2024 rouge
+963. aleofane crozeshermitage 2018
+964. aleofane saint joseph 2023 rouge
+965. alepa casa di campagna bianco 2018
+966. alepa casa di campagna bianco 2018
+967. alepa casa di campagna falanghina 2021
+968. alepa casa di campagna rosso
+969. alepa privo leretico 2018
+970. alepa privo leretico 2018
+971. alepetit bigne hautes cotes de beaune
+972. aleph 2014
+973. aleph 2016
+974. aleph 2019
+975. aleph 2021
+976. aleph apuesta laminado 3242 cm
+977. aleph beis 100 pc
+978. aleph beis 24 pz 01419
+979. aleph bet ball
+980. aleph bet dottodot 00607
+981. aleph bet matchme puzzles
+982. aleph bet reading wheel 01246
+983. aleph macabeo aleph winery
+984. aleph perlage
+985. aleph rose aleph winery
+986. alephbet flash cards
+987. aleppo pepper pul biber 25g
+988. aleppo peppercapsicum annuum
+989. aleppo sbe 100 olivenolie 200g finigrana
+990. aleppo sbe olivenolie 16 laurbrolie 180g finigrana
+991. alera kupe
+992. aleramico bianco toscana 2022
+993. aleramico rosso toscana 2020
+994. alerancia
+995. aleria
+996. aleria updated 10 february 2026
+997. aleris wines mystik rose 2024 0
+998. alero transparente de policarbonato
+999. alert wijnfles wordt teruggeroepen kunst en wijn wijnbars in antwerpen etc
+1000. alerta roja

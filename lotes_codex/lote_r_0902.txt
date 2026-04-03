@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. valenciso rioja reserva 10 anos despues rioja 2015
+2. valenciso rioja reserva 10 anos despues rioja 2014
+3. valenciso rioja reserva 10 anos despues edicion limitada 2014
+4. valenciso rioja reserva 10 anos despues edicion limitada 2010
+5. valenciso rioja reserva 10 anos despues 2015
+6. valenciso rioja reserva 10 anos despues 2014
+7. valenciso rioja reserva 10 anos despues 2014
+8. valenciso rioja reserva 10 anos despues 2011 limited parcel
+9. valenciso rioja reserva 10 anos despues
+10. valenciso rioja reserva 10 anos despues
+11. valenciso rioja reserva 10
+12. valenciso rioja reserva
+13. valenciso rioja reserva
+14. valenciso rioja reserva
+15. valenciso rioja reserva
+16. valenciso rioja reserva
+17. valenciso rioja reserva
+18. valenciso rioja red reserva 2018
+19. valenciso rioja red reserva 2016
+20. valenciso rioja red
+21. valenciso rioja laderas de cabama 2021
+22. valenciso rioja laderas de cabama 2021
+23. valenciso rioja laderas de cabama 2021
+24. valenciso rioja laderas de cabama 2021
+25. valenciso rioja laderas de cabama 2021
+26. valenciso rioja laderas de cabama 2019
+27. valenciso rioja laderas de cabama 2019
+28. valenciso rioja laderas de cabama
+29. valenciso rioja edicion limited 2014 aged 10 years
+30. valenciso rioja doca white barrel fermented 2024
+31. valenciso rioja doca white barrel fermented
+32. valenciso rioja doca white barrel fermented
+33. valenciso rioja doca tempranillo blanco barrica 2024
+34. valenciso rioja doca tempranillo blanco barrica
+35. valenciso rioja doca tempranillo blanco barrica
+36. valenciso rioja doca tempranillo blanco barrica
+37. valenciso rioja doca reserva 2020
+38. valenciso rioja doca reserva 2019
+39. valenciso rioja doca reserva
+40. valenciso rioja doca reserva
+41. valenciso rioja doca laderas de cabama 2023
+42. valenciso rioja doca laderas de cabama
+43. valenciso rioja doca laderas de cabama
+44. valenciso rioja doca cemento 2022
+45. valenciso rioja doca cemento
+46. valenciso rioja doca 100 graciano 2019
+47. valenciso rioja doca 100 graciano
+48. valenciso rioja doca 10 anos despues 2015
+49. valenciso rioja doca 10 anos despues
+50. valenciso rioja doca 10 anos despues
+51. valenciso rioja doca 10 anos despues
+52. valenciso rioja doc white barrel fermented 2022
+53. valenciso rioja doc white barrel fermented
+54. valenciso rioja doc tempranillo blanco barrica
+55. valenciso rioja doc rosado
+56. valenciso rioja doc reserva 2018
+57. valenciso rioja doc reserva
+58. valenciso rioja doc laderas de cabama
+59. valenciso rioja doc laderas de cabama
+60. valenciso rioja doc graciano 2017
+61. valenciso rioja doc cemento 2020
+62. valenciso rioja doc cemento
+63. valenciso rioja doc 100 graciano
+64. valenciso rioja doc 100 graciano
+65. valenciso rioja doc 10 aos despus
+66. valenciso rioja doc 10 anos despues 2010
+67. valenciso rioja doc 10 anos despues
+68. valenciso rioja doc
+69. valenciso rioja cemento 2020
+70. valenciso rioja cemento 2020
+71. valenciso rioja cemento 2018
+72. valenciso rioja cemento 2018
+73. valenciso rioja cemento
+74. valenciso rioja cemento
+75. valenciso rioja cemento
+76. valenciso rioja blanco spain
+77. valenciso rioja blanco rioja magnum
+78. valenciso rioja blanco rioja
+79. valenciso rioja blanco fermentado en barrica 2022
+80. valenciso rioja blanco 2023 case
+81. valenciso rioja blanco 2023
+82. valenciso rioja blanco 2023
+83. valenciso rioja blanco 2023
+84. valenciso rioja blanco 2023
+85. valenciso rioja blanco 2023
+86. valenciso rioja blanco 2023
+87. valenciso rioja blanco 2022
+88. valenciso rioja blanco 2022
+89. valenciso rioja blanco 2022
+90. valenciso rioja blanco 2022
+91. valenciso rioja blanco 2021
+92. valenciso rioja blanco
+93. valenciso rioja blanco
+94. valenciso rioja blanco
+95. valenciso rioja blanco
+96. valenciso rioja blanco
+97. valenciso rioja blanco
+98. valenciso rioja blanco
+99. valenciso rioja 10 anos despues edicion limitada 2012
+100. valenciso rioja 10 anos despues
+101. valenciso reserva tempranillo
+102. valenciso reserva rioja 2019
+103. valenciso reserva rioja 2019
+104. valenciso reserva rioja 2018
+105. valenciso reserva rioja
+106. valenciso reserva rioja
+107. valenciso reserva 2019 6 botellas
+108. valenciso reserva 2019
+109. valenciso reserva 2019
+110. valenciso reserva 2017
+111. valenciso reserva 2012
+112. valenciso reserva 2011
+113. valenciso reserva 10 anos despues rioja 2008
+114. valenciso reserva 10 anos despues rioja 2008
+115. valenciso reserva 10 anos despues 2015 3 botellas
+116. valenciso reserva
+117. valenciso reserva
+118. valenciso reserva
+119. valenciso reserva
+120. valenciso reserva
+121. valenciso laderas de cabama rioja 2023
+122. valenciso laderas de cabama rioja 2021
+123. valenciso laderas de cabama rioja 2019
+124. valenciso laderas de cabama rioja
+125. valenciso laderas de cabama rioja
+126. valenciso laderas de cabama rioja
+127. valenciso graciano rioja alta 2019 limited parcel
+128. valenciso graciano 2020
+129. valenciso graciano 2019
+130. valenciso graciano 2019
+131. valenciso graciano 2019
+132. valenciso graciano
+133. valenciso fermentado en barrica tempranillo blanco 2025
+134. valenciso fermentado en barrica tempranillo blanco 2023
+135. valenciso fermentado en barrica rioja
+136. valenciso fermentado en barrica rioja
+137. valenciso fermentado en barrica rioja
+138. valenciso fermentado en barrica 2022
+139. valenciso cemento tempranillo
+140. valenciso cemento rioja 2022
+141. valenciso cemento rioja 2021
+142. valenciso cemento rioja 2021
+143. valenciso cemento rioja 2020
+144. valenciso cemento rioja
+145. valenciso cemento rioja
+146. valenciso cemento rioja
+147. valenciso cemento 2021 6 botellas
+148. valenciso cemento 2021
+149. valenciso cemento 2020
+150. valenciso cemento
+151. valenciso cabama rioja 2021
+152. valenciso cabama rioja
+153. valenciso blanco rioja 2023
+154. valenciso blanco rioja
+155. valenciso blanco fermentado en barrica 2023 6 botellas
+156. valenciso blanco 2023
+157. valenciso blanco 2022
+158. valenciso blanco 2015
+159. valenciso blanco
+160. valenciso blanco
+161. valenciso blanco
+162. valenciso blanco
+163. valenciso barrel fermented white rioja
+164. valenciso 2012 10 anos despues
+165. valenciso 1999
+166. valenciso 19 rioja reserva 2019
+167. valenciso 100 graciano 2019
+168. valenciso 10 anos despues 2014
+169. valenciso 10 anos despues 2012
+170. valenciso 10 anos
+171. valenciso
+172. valenciso
+173. valencisco rioja reserva 2014 145
+174. valencisco rioja blanco 135
+175. valencian paella seasoning 12 gr 3 sachets
+176. valencian almonds with herbs 175g bag
+177. valencia woodworks desk tray
+178. valencia woodworks coaster
+179. valencia woodworks chopping board
+180. valencia tinto trilogia 2021 casa los frailes bd vin nature
+181. valencia tinto naturel 2023 casa los frailes bd vin nature
+182. valencia tinto naturel 2023 casa los frailes bd vin nature
+183. valencia tinto monastrell 2024 casa los frailes bd vin nature
+184. valencia tinto monastrell 2024 casa los frailes bd vin nature
+185. valencia tinto garnachabarrica 2023 casa los frailes bd vin nature
+186. valencia tinto garnachabarrica 2023 casa los frailes bd vin nature
+187. valencia tinto dolomitas 2023 casa los frailes bd vin nature
+188. valencia tinto dolomitas 2023 casa los frailes bd vin nature
+189. valencia tinto crianza bilogia 2023 casa los frailes bd vin nature
+190. valencia tinto crianza bilogia 2023 casa los frailes bd vin nature
+191. valencia tinto caliza 2021 casa los frailes bd vin nature
+192. valencia tinto caliza 2021 casa los frailes bd vin nature
+193. valencia tinto calabuig nv bodegas arraez
+194. valencia tinto calabuig nv bodegas arraez
+195. valencia spanish paella gift set
+196. valencia smoked paprika almonds
+197. valencia salted herbed almonds 120g
+198. valencia pure avocado oil
+199. valencia orange california
+200. valencia orange appx 600gm 700gm 23pcs
+201. valencia mandler m fldechokolade strk lakrids
+202. valencia mandeln ohne haut 90g
+203. valencia dry white
+204. valencia do crianza 2022 bodegas enguera
+205. valencia blanco trilogia 2024 casa los frailes bd vin nature
+206. valencia blanco don joseph granos nobles vin doux naturel 2019 casa los frailes bd vin nature
+207. valencia blanco don joseph granos nobles vin doux naturel 2019 casa los frailes bd vin nature
+208. valencia blanco calabuig nv bodegas arraez
+209. valencia blanco calabuig nv bodegas arraez
+210. valencia almonds with summer truffle
+211. valencia almonds with fine herbs
+212. valencia 91355
+213. valencia 91354
+214. valencia 78
+215. valencia 71 110g
+216. valencia 71
+217. valencia
+218. valencay sophie siadou 2022 france
+219. valencay sebastien vaillant 2024
+220. valencay sebastien vaillant
+221. valencay rouge paradis
+222. valencay rouge du domaine saint roch
+223. valencay rouge domaine minchin
+224. valencay rouge domaine denis bardon 2025
+225. valencay rouge clos saintlazare 2022 domaines minchin
+226. valencay rouge clos saintlazare 2020 domaines minchin
+227. valencay rouge 2021
+228. valencay rouge
+229. valencay rose 2024
+230. valencay pyramide with ash 9oz
+231. valencay domaine bardon paradis red
+232. valencay domaine bardon les hauts taillons
+233. valencay cedre affine 9oz
+234. valencay blanc les mivoies 2023 domaines minchin
+235. valencay blanc les mivoies 2022 domaine minchin
+236. valencay blanc les hauts taillons domaine denis bardon 2025
+237. valencay blanc les hauts taillons
+238. valencay blanc du domaine saint roch
+239. valencay blanc domaine malet loire
+240. valencay blanc bio domaine rochejaspe 2025
+241. valencay blanc 2024
+242. valencay blanc
+243. valencay ash 110g
+244. valencay aop francuski ser kozi z doliny loary
+245. valencay aop fermier 220g
+246. valencay aop
+247. valencay anjouin aop
+248. valencay 220
+249. valencay 100g
+250. valencay
+251. valencay
+252. valencay
+253. valencay
+254. valenca pork shoulder roast 1825kg
+255. valenca free range pork mince 500g
+256. valenca free range pork mid ribs 600g12kg
+257. valenca free range pork loin steaks 300600g
+258. valenca free range pork loin chops 300450g
+259. valenca free range pork leg roast 1424kg
+260. valenca free range pork belly strips 350550g
+261. valenca free range pork belly 80012kg
+262. valenca free range pork and veal mince 500g shortdate
+263. valenca free range minced pork 500g frozen
+264. valen yuzuk
+265. valemesio
+266. valee daoste syrah doc 870 2022 rosset terroir
+267. valee daoste syrah doc 870 2022 rosset terroir
+268. valee daoste syrah doc 870 2022 rosset terroir
+269. valee daoste syrah doc 870 2022 rosset terroir
+270. valee daoste pinot nero doc 850 2024 rosset terroir
+271. valee daoste pinot nero doc 850 2023 rosset terroir
+272. valee daoste pinot nero doc 850 2023 rosset terroir
+273. valee daoste pinot nero doc 850 2023 rosset terroir
+274. valee daoste pinot nero doc 850 2023 rosset terroir
+275. valee daoste doc sopraquota 900 2023 rosset terroir
+276. valee daoste doc sopraquota 900 2022 rosset terroir
+277. valee daoste doc sopraquota 900 2022 rosset terroir
+278. valee daoste doc sopraquota 900 2022 rosset terroir
+279. valee daoste doc sopraquota 900 2022 rosset terroir
+280. valee daoste chardonnay doc 770 2023 rosset terroir
+281. valee daoste chardonnay doc 770 2023 rosset terroir
+282. valee daoste chardonnay doc 770 2023 rosset terroir
+283. valee daoste chardonnay doc 770 2023 rosset terroir
+284. valedor spirit cordial 47
+285. valea ascunsa sauvignon blanc
+286. valea ascunsa rezerva feteasca neagra
+287. valea ascunsa rezerva feteasca alba chardonnay
+288. valea ascunsa muscat ottonel sec
+289. valea ascunsa muscat ottonel demidulce
+290. valea ascunsa feteasca regala
+291. valea ascunsa feteasca neagra rose
+292. valea ascunsa feteasca neagra barrique
+293. valea ascunsa feteasca alba
+294. valea ascunsa chardonnay
+295. vale perdido rose 2020
+296. vale perdido reserva regional lisboa 2017
+297. vale dos vinhedos
+298. vale dos ares limited edition alvarinho moncao e melgaco 2019
+299. vale dona maria vinhas do sabor douro 2021
+300. vale dona maria douro superior tinto
+301. vale dona maria douro superior doc branco
+302. vale dona maria douro superior branco
+303. vale do rocim tinto
+304. vale do rocim 2021
+305. vale do rhone
+306. vale do rapel
+307. vale do mel mel laranjeira 280g
+308. vale do maule
+309. vale do maipo
+310. vale do loire
+311. vale do itata
+312. vale do curico
+313. vale do colchagua
+314. vale do cachapoal
+315. vale do biobio
+316. vale do aconcagua
+317. vale deste vinho frisante gaseificado rose
+318. vale de san antonioleyda
+319. vale de maria douro superior
+320. vale de malleco
+321. vale de limari
+322. vale de fornos tinto
+323. vale de elqui
+324. vale de cavalos vinho tinto numao 2019
+325. vale de casablanca
+326. vale de apalta
+327. vale de almahue
+328. vale da raposa touriga nacional douro
+329. vale da raposa reserva douro
+330. vale da raposa reserva
+331. vale da pedra
+332. vale da ferradura merlot
+333. vale da ferradura cabernet sauvignon
+334. vale d maria vinhas do sabor superior
+335. vale d maria douro superior tinto
+336. vale d maria douro superior branco
+337. vale central
+338. vale barqueiros colheita tinto magnum 1
+339. valduga terroir exclusivo syrahviognier
+340. valduga terroir exclusivo pinot noir
+341. valduga terroir chardonnay bra
+342. valduga terroir cabfranc bra
+343. valduga terroir cabernet franc
+344. valduga premivm nature espumante
+345. valduga premivm nature bra
+346. valduga premivm brut rose bra
+347. valduga identidade gran reserva corte 2020
+348. valduga espumante sur lie nature rose espumante bruto com as borras
+349. valduga espumante sur lie nature blanc espumante bruto com as borras
+350. valdueza tinto el pajaro
+351. valduero2 maderas 2020
+352. valduero white albillo 2023
+353. valduero white albillo 2023
+354. valduero viadero blanco 2024
+355. valduero unacepa t 34
+356. valduero unacepa premium
+357. valduero unacepa bot
+358. valduero unacepa 2018
+359. valduero una cepa tinto
+360. valduero una cepa ribera del duero do 2019 14 vol
+361. valduero una cepa ribera del duero do 2019 14 vol
+362. valduero una cepa reserva ribera del duero
+363. valduero una cepa premium do ribera del duero
+364. valduero una cepa premium 2015 ribera del duero
+365. valduero una cepa premium 2011
+366. valduero una cepa premium 2011
+367. valduero una cepa premium 2010
+368. valduero una cepa premium 2010
+369. valduero una cepa premium
+370. valduero una cepa magnum 2019
+371. valduero una cepa magnum 2015
+372. valduero una cepa magnum 2015
+373. valduero una cepa magnum 1
+374. valduero una cepa do ribera del duero 2020
+375. valduero una cepa do ribera del duero
+376. valduero una cepa 2020
+377. valduero una cepa 2020
+378. valduero una cepa 2020
+379. valduero una cepa 2020
+380. valduero una cepa 2019
+381. valduero una cepa 2019
+382. valduero una cepa 2018
+383. valduero una cepa 2018
+384. valduero una cepa 2018
+385. valduero una cepa 2018
+386. valduero una cepa 2016
+387. valduero una cepa 2016
+388. valduero una cepa 18 meses
+389. valduero una cepa
+390. valduero una cepa
+391. valduero una cepa
+392. valduero una cepa
+393. valduero tierra una cepa premium 2010
+394. valduero tierra una cepa 2019
+395. valduero tierra alta reserva de 2 cotas 2017
+396. valduero tierra alta en dos maderas 2018
+397. valduero tierra alta en 2 racimos gran reserva grv 2014
+398. valduero tierra alta en 2 maderas ribera del duero do 2017
+399. valduero tierra alta en 2 maderas ribera del duero 2020
+400. valduero tierra alta en 2 maderas magnum 2018
+401. valduero tierra alta en 2 maderas jeroboam 2018
+402. valduero tierra alta en 2 maderas do ribera del duero 2021
+403. valduero tierra alta en 2 maderas do ribera del duero
+404. valduero tierra alta en 2 maderas crianza 2020 0375plo
+405. valduero tierra alta en 2 maderas crianza 2020
+406. valduero tierra alta en 2 maderas 2019
+407. valduero tierra alta en 2 maderas 2018
+408. valduero tierra alta en 2 maderas 2018
+409. valduero tierra alta en 2 maderas
+410. valduero tierra alta en 2 maderas
+411. valduero tierra alta en 2 maderas
+412. valduero tierra alta en 2 cotas reserva 2014
+413. valduero tierra alta de 2 racimos gran reserva 2011
+414. valduero tierra alta de 2 racimos gran reserva
+415. valduero tierra alta de 2 cotas reserva 2014
+416. valduero tierra alta de 2 cotas reserva 2014
+417. valduero tierra alta de 2 cotas reserva
+418. valduero tierra alta de 2 cotas reserva
+419. valduero tierra alta de 2 cotas magnum 2017
+420. valduero tierra alta 2 maderas magnum
+421. valduero tierra alta 2 cotas reserva
+422. valduero rva t 34
+423. valduero rva premium 6 years 2014
+424. valduero rva premium 6 anos 2015
+425. valduero rva 6 anos 2014
+426. valduero rva 12anos 2001
+427. valduero rosado ribera del duero 2012
+428. valduero rosado reserva 2016
+429. valduero ribera del duero white wine spain 2021
+430. valduero ribera del duero una cepa red wine spain 2018
+431. valduero reserva ribero del duero 1998
+432. valduero reserva red
+433. valduero reserva premium6 anos 1996
+434. valduero reserva premium 6 anos ribera del duero do 2016 14 vol
+435. valduero reserva premium 6 anos magnum 2011
+436. valduero reserva premium 6 anos 2016
+437. valduero reserva premium 6 anos 2015
+438. valduero reserva magnum 2012
+439. valduero reserva magnum
+440. valduero reserva de 2 cotas
+441. valduero reserva caracter noble
+442. valduero reserva 6 anos ribera del duero
+443. valduero reserva 6 anos
+444. valduero reserva 2018
+445. valduero reserva 2016
+446. valduero reserva 2012
+447. valduero reserva 2009
+448. valduero reserva 2 cotas do ribera del duero 2018
+449. valduero reserva 2 cotas do ribera del duero
+450. valduero reserva 2 cotas 2016
+451. valduero reserva
+452. valduero reserva
+453. valduero reserva
+454. valduero lantigua 1989 do ribera del duero
+455. valduero lantigua 1989
+456. valduero i cepa premium 2011
+457. valduero i cepa 2019
+458. valduero i cepa
+459. valduero gran reserve ribero del duero
+460. valduero gran reserva de 2 racimos 2015
+461. valduero gran reserva de 2 racimos 2015
+462. valduero gran reserva de 2 racimos 2014
+463. valduero gran reserva 2012
+464. valduero gran reserva 2010
+465. valduero gran reserva 2005
+466. valduero gran reserva 2001
+467. valduero gran reserva 2 racimos do ribera del duero
+468. valduero gran reserva 1991
+469. valduero gran reserva 12anos owc1 1990
+470. valduero gran reserva
+471. valduero gran reserva
+472. valduero gran reserva
+473. valduero gran reserva
+474. valduero garcia viadero blanco de albillo 2014
+475. valduero garcia viadero blanco de albillo 2013
+476. valduero finca azaya premium 2016
+477. valduero finca azaya bot
+478. valduero finca azaya 2019
+479. valduero finca azaya 2017 0
+480. valduero finca azaya 0 2019
+481. valduero fin de milenio 1990
+482. valduero en dos maderas 2019
+483. valduero en 2 maderas crianza tempr 0
+484. valduero en 2 maderas
+485. valduero dos racimos gran reserva ribera del duero
+486. valduero dos maderas ribera del duero valduero
+487. valduero dos maderas crianza ribera del duero
+488. valduero dos maderas
+489. valduero dos cotas reserva ribera del duero
+490. valduero de 2 racimos gran reserva 0
+491. valduero de 2 cotas reserva tempr 0
+492. valduero cza t 34
+493. valduero crianza ribera del duero 2011
+494. valduero crianza magnum 2016
+495. valduero crianza magnum 2016
+496. valduero crianza en toda su plenitud
+497. valduero crianza 2016
+498. valduero crianza 2016
+499. valduero crianza 2007
+500. valduero crianza 15 meses
+501. valduero crianza
+502. valduero crianza
+503. valduero crianza
+504. valduero crianza
+505. valduero crianza
+506. valduero criado sobre lias 2022
+507. valduero blanco sobre lias 2023
+508. valduero blanco sobre lias
+509. valduero blanco de albillo ribera del duero 2021
+510. valduero blanco de albillo natural en rama 2019
+511. valduero blanco de albillo 2024
+512. valduero blanco de albillo 2023
+513. valduero blanco de albillo 2019
+514. valduero blanco de albillo
+515. valduero blanco bot
+516. valduero blanco albillo ribera del duero do 2023 125 vol
+517. valduero blanco albillo 2025
+518. valduero blanco albillo 2024
+519. valduero blanco albillo 2023
+520. valduero blanco albillo 2021
+521. valduero blanco albillo 2020
+522. valduero blanco albillo 0
+523. valduero blanco 2023
+524. valduero blanco 2022
+525. valduero blanco 2020
+526. valduero blanco
+527. valduero blanco
+528. valduero albillo 2019
+529. valduero 6anos reserva 2016
+530. valduero 6 anos ribera del duero 2012
+531. valduero 6 anos reserva premium magnum 2014
+532. valduero 6 anos reserva premium 2016
+533. valduero 6 anos reserva premium 2016
+534. valduero 6 anos reserva premium 2015 ribera del duero
+535. valduero 6 anos reserva premium 2015
+536. valduero 6 anos reserva premium 2014
+537. valduero 6 anos reserva premium 2014
+538. valduero 6 anos reserva premium 2014
+539. valduero 6 anos reserva premium 2014
+540. valduero 6 anos reserva premium
+541. valduero 6 anos reserva premium
+542. valduero 6 anos reserva do ribera del duero
+543. valduero 6 anos reserva
+544. valduero 6 anos premium
+545. valduero 6 anos magnum 1
+546. valduero 6 anos 2016
+547. valduero 6 anos 2016
+548. valduero 6 anos 2016
+549. valduero 6 anos 2014
+550. valduero 6 anos 1998
+551. valduero 6 anos
+552. valduero 6 anos
+553. valduero 6 anos
+554. valduero 6 anos
+555. valduero 2019 una cepa ribera del duero tempranillo
+556. valduero 2 racimos gran reserva 2015
+557. valduero 2 racimos gran reserva 2014
+558. valduero 2 racimos gran reserva 2012
+559. valduero 2 racimos gran reserva
+560. valduero 2 maderas tinto
+561. valduero 2 maderas ribera del duero do 2019 14 vol
+562. valduero 2 maderas ribera del duero do 2018 14 vol
+563. valduero 2 maderas magnum 2019
+564. valduero 2 maderas crianza
+565. valduero 2 maderas 2021
+566. valduero 2 maderas 2020
+567. valduero 2 maderas 2020
+568. valduero 2 maderas 2019
+569. valduero 2 maderas
+570. valduero 2 cotas ribera del duero do 2017 14 vol
+571. valduero 2 cotas ribera del duero do 2016 14 vol
+572. valduero 2 cotas reserva 2017
+573. valduero 2 cotas reserva 2017
+574. valduero 2 cotas reserva
+575. valduero 2 cotas reserva
+576. valduero 1991 la antigua
+577. valduero 12 anos gran reserva ribera del duero do 2004 14 vol
+578. valduero 12 anos gran reserva do ribera del duero
+579. valduero 12 anos gran reserva 2009
+580. valduero 12 anos gran reserva 2001
+581. valduero 12 anos gran reserva 1999
+582. valduero 12 anos 2001 rivera del duero
+583. valduero 12 anos 1999 rivera del duero
+584. valduero 12 anos
+585. valdubon x 1a edicion
+586. valdubon verdejo rueda
+587. valdubon verdejo roble verdejo 2017
+588. valdubon verdejo roble barrica
+589. valdubon verdejo roble 2023
+590. valdubon verdejo roble
+591. valdubon verdejo roble
+592. valdubon verdejo roble
+593. valdubon verdejo roble
+594. valdubon verdejo roble
+595. valdubon verdejo joven
+596. valdubon verdejo joven
+597. valdubon verdejo joven
+598. valdubon verdejo joven
+599. valdubon verdejo joven
+600. valdubon verdejo barrica
+601. valdubon verdejo 2023
+602. valdubon verdejo
+603. valdubon verdejo
+604. valdubon verdejo
+605. valdubon tinto joven
+606. valdubon tinto 9 meses
+607. valdubon tempranillo ribera del duero
+608. valdubon tempranillo 2020
+609. valdubon tempranillo 2020
+610. valdubon tempranillo
+611. valdubon tempranillo
+612. valdubon sauvignon blanc
+613. valdubon sauvignon blanc
+614. valdubon rueda verdejo
+615. valdubon roble tinto
+616. valdubon roble tempranillo 2020
+617. valdubon roble tempranillo
+618. valdubon roble ribera del duero
+619. valdubon roble ribera del duero
+620. valdubon roble bot
+621. valdubon roble 2023
+622. valdubon roble 2021
+623. valdubon roble 2020
+624. valdubon roble 050
+625. valdubon roble
+626. valdubon roble
+627. valdubon roble
+628. valdubon roble
+629. valdubon roble
+630. valdubon roble
+631. valdubon ribera del duero reserva vino tinto
+632. valdubon ribera del duero reserva
+633. valdubon ribera del duero reserva
+634. valdubon reserva ribera del duero red wine 14 bot
+635. valdubon reserva ribera del duero
+636. valdubon reserva 2018
+637. valdubon reserva 2016
+638. valdubon reserva
+639. valdubon reserva
+640. valdubon reserva
+641. valdubon reserva
+642. valdubon reserva
+643. valdubon reserva
+644. valdubon reserva
+645. valdubon joven tempranillo
+646. valdubon honoris
+647. valdubon honoris
+648. valdubon honoris
+649. valdubon diez 13a edicion cvc
+650. valdubon diez 13a edicion
+651. valdubon diez 13a edicion
+652. valdubon diez
+653. valdubon crianzaribera del duero
+654. valdubon crianza tempranillo 2018
+655. valdubon crianza ribera del duero red wine 135 bot
+656. valdubon crianza ribera del duero
+657. valdubon crianza ribera del duero
+658. valdubon crianza bot
+659. valdubon crianza 2020 pack 6 botellas
+660. valdubon crianza 2020
+661. valdubon crianza 2018
+662. valdubon crianza
+663. valdubon crianza
+664. valdubon crianza
+665. valdubon crianza
+666. valdubon crianza
+667. valdubon crianza
+668. valdubon crianza
+669. valdubon cosecha
+670. valdubon 9 meses
+671. valdubon 9 meses
+672. valdubon
+673. valdrinal verdejo santa maria 2023
+674. valdrinal tradicion crianza 2019
+675. valdrinal tradicion crianza 2018
+676. valdrinal sqr 2016
+677. valdrinal sqr 2015
+678. valdrinal sqr
+679. valdrinal roble
+680. valdrinal reserva 2015
+681. valdrinal quinq efemeride insolito 2006
+682. valdrinal quinq 2016
+683. valdrinal quinq 2015
+684. valdrinal entrega roble magnum 2021
+685. valdrinal entrega roble 2022
+686. valdrinal entrega roble 2020 en hyldest til traditionen
+687. valdrinal entrega roble 2020 ekstraordinr rdvin
+688. valdrinal entrega roble 2020
+689. valdrinal de santamaria 2021
+690. valdrinal de santamaria
+691. valdrinal crianza tradicion 2021
+692. valdrinal crianza magnum 2019
+693. valdrinal 24 riserva 2019
+694. valdrinal 24 reserva 2018
+695. valdrinal 24 reserva 2015 uovertruffen rdvin til 179 dkk
+696. valdrianal tradicion crianza magnum 2018
+697. valdovinos seleccion syrah
+698. valdovinos seleccion garnacha
+699. valdovinos roble
+700. valdovinos crianza
+701. valdovinos cava brut nature reserva
+702. valdovinos berda syrah
+703. valdovato 2018 0
+704. valdovato 2016 cascina fornace
+705. valdovato 2015 roero docg cascina fornace
+706. valdovado
+707. valdouru rose porto
+708. valdouro tawny porto
+709. valdouro tawny porto
+710. valdouro tawny porto
+711. valdouro tawny port
+712. valdouro tawny port
+713. valdouro tawny port
+714. valdouro tawny port
+715. valdouro ruby porto 19 075
+716. valdouro ruby porto
+717. valdouro ruby porto
+718. valdouro ruby porto
+719. valdouro ruby port
+720. valdouro ruby port
+721. valdouro ruby port
+722. valdouro rose porto
+723. valdouro porto tawny red 19
+724. valdouro porto tawny port
+725. valdouro porto tawny 0
+726. valdouro porto tawny 0
+727. valdouro porto tawny
+728. valdouro porto ruby red 19
+729. valdouro porto ruby port
+730. valdouro porto ruby 0
+731. valdouro porto ruby 0
+732. valdouro porto ruby
+733. valdouro porto ruby
+734. valdouro porto ruby
+735. valdouro porto rose 195
+736. valdouro porto red 10 ani 20
+737. valdouro porto alb 19
+738. valdouro porto 10 anni
+739. valdouro 10 years old tawny port
+740. valdouro 10 port ambachtelijke chocolade prijs op aanvraag
+741. valdosan toro do
+742. valdosan
+743. valdosan
+744. valdoret pinot noir reserve 2023
+745. valdoret oaked merlot 2022 le cellier du pic
+746. valdoret oaked merlot 2022 le cellier du pic
+747. valdorella sangiovese rubicone igt
+748. valdonica saragio maremma toscano 2019
+749. valdonica mersino vermentino 2021
+750. valdonica mersino vermentino
+751. valdonica maremma toscana sangiovese saragio 2019
+752. valdonica ballarino vermentino 2020
+753. valdona grande reserve
+754. valdoglio regiment club
+755. valdoeiro white 2021
+756. valdoeiro white
+757. valdoeiro tinto doc 2022
+758. valdoeiro tinto
+759. valdoeiro rose doc 2023
+760. valdoeiro rose
+761. valdoeiro rose
+762. valdoeiro red 2021
+763. valdoeiro red
+764. valdoeiro branco doc 2023
+765. valdoeiro branco
+766. valdoeiro bairrada tinto
+767. valdoeiro bairrada rose
+768. valdoeiro bairrada branco
+769. valdoeiro 2023 rosevin
+770. valdobiaddene prosecco mariarosa 2021 ca dei zago
+771. valdobiaddene prosecco col fondo 2021 ca dei zago
+772. valdobbiadeneconeg spumante prosecco superiore docg extra dry
+773. valdobbiadene superiore prosecco docg extra dry montelliana
+774. valdobbiadene superiore prosecco doc 2023
+775. valdobbiadene superiore docg magnum 1 extra dry
+776. valdobbiadene superiore di cartizze dry docg villa sandi
+777. valdobbiadene superiore di cartizze dry docg villa sandi
+778. valdobbiadene superiore di cartizze dry docg villa sandi
+779. valdobbiadene superiore di cartizze dry docg col vetoraz
+780. valdobbiadene superiore di cartizze dry docg
+781. valdobbiadene superiore di cartizze dry docg
+782. valdobbiadene superiore di cartizze dry
+783. valdobbiadene superiore di cartizze dry
+784. valdobbiadene superiore di cartizze docg viviana valdo
+785. valdobbiadene superiore di cartizze docg spumante dry
+786. valdobbiadene superiore di cartizze docg nino franco
+787. valdobbiadene superiore di cartizze docg nino franco
+788. valdobbiadene superiore di cartizze docg magnum nino franco
+789. valdobbiadene superiore di cartizze docg magnum nino franco
+790. valdobbiadene superiore di cartizze docg la rivetta villa sandi
+791. valdobbiadene superiore di cartizze docg la marca
+792. valdobbiadene superiore di cartizze docg dry viviana valdo
+793. valdobbiadene superiore di cartizze docg dry villa sandi
+794. valdobbiadene superiore di cartizze docg dry selezione bottiglia nera de faveri
+795. valdobbiadene superiore di cartizze docg dry selezione bottiglia nera de faveri
+796. valdobbiadene superiore di cartizze docg dry elevantum cartizze valdo
+797. valdobbiadene superiore di cartizze docg dry casa gheller
+798. valdobbiadene superiore di cartizze docg dry
+799. valdobbiadene superiore di cartizze docg brut
+800. valdobbiadene superiore di cartizze docg bottiglia nera dry de faveri
+801. valdobbiadene superiore di cartizze docg 2024 col vetoraz
+802. valdobbiadene superiore di cartizze docg 2024 col vetoraz
+803. valdobbiadene superiore di cartizze docg 2024 col vetoraz
+804. valdobbiadene superiore di cartizze docg 2024 col vetoraz
+805. valdobbiadene superiore di cartizze docg 2024 col vetoraz
+806. valdobbiadene superiore di cartizze docg 2023 nino franco
+807. valdobbiadene superiore di cartizze docg
+808. valdobbiadene superiore cartizze dry docg 0
+809. valdobbiadene superiore cartizze docg arzana astoria
+810. valdobbiadene sup docg brut bio family collection
+811. valdobbiadene sup cartizze docg dry
+812. valdobbiadene prosecco superiore xzero docg brut nature 2023
+813. valdobbiadene prosecco superiore spumante docg extra dry millesimato canella
+814. valdobbiadene prosecco superiore rive di refrontolo extra brut docg 2024 santa margherita
+815. valdobbiadene prosecco superiore rive di refrontolo extra brut docg 2024 santa margherita
+816. valdobbiadene prosecco superiore rive di refrontolo extra brut docg 2024 santa margherita
+817. valdobbiadene prosecco superiore rive di guia extra dry millesimato docg lauri 2024 guia
+818. valdobbiadene prosecco superiore rive di guia extra dry millesimato docg lauri 2024 guia
+819. valdobbiadene prosecco superiore rive di guia extra dry millesimato docg lauri 2024 guia
+820. valdobbiadene prosecco superiore rive di guia extra dry millesimato docg lauri 2024 guia
+821. valdobbiadene prosecco superiore rive di guia extra dry millesimato docg lauri 2024 guia
+822. valdobbiadene prosecco superiore rive di guia extra brut millesimato docg mandre 2024 guia
+823. valdobbiadene prosecco superiore rive di guia extra brut millesimato docg mandre 2024 guia
+824. valdobbiadene prosecco superiore rive di guia extra brut millesimato docg mandre 2024 guia
+825. valdobbiadene prosecco superiore rive di guia extra brut millesimato docg mandre 2024 guia
+826. valdobbiadene prosecco superiore rive di guia extra brut millesimato docg mandre 2024 guia
+827. valdobbiadene prosecco superiore rive di guia brut millesimato rebus docg 2024 guia
+828. valdobbiadene prosecco superiore rive di guia brut millesimato rebus docg 2024 guia
+829. valdobbiadene prosecco superiore rive di guia brut millesimato rebus docg 2024 guia
+830. valdobbiadene prosecco superiore rive di guia brut millesimato rebus docg 2024 guia
+831. valdobbiadene prosecco superiore rive di guia brut millesimato rebus docg 2024 guia
+832. valdobbiadene prosecco superiore primo franco
+833. valdobbiadene prosecco superiore millesimato extra dry docg 2024 magnum ca di rajo astuccio
+834. valdobbiadene prosecco superiore millesimato extra dry docg 2024 magnum ca di rajo astuccio
+835. valdobbiadene prosecco superiore millesimato extra dry docg 2024 magnum ca di rajo astuccio
+836. valdobbiadene prosecco superiore millesimato extra dry docg 2024 magnum ca di rajo astuccio
+837. valdobbiadene prosecco superiore millesimato extra dry docg 2024 magnum ca di rajo astuccio
+838. valdobbiadene prosecco superiore millesimato extra dry docg 2024 ca di rajo
+839. valdobbiadene prosecco superiore millesimato extra dry docg 2024 ca di rajo
+840. valdobbiadene prosecco superiore millesimato extra dry docg 2024 ca di rajo
+841. valdobbiadene prosecco superiore millesimato extra dry docg 2024 ca di rajo
+842. valdobbiadene prosecco superiore millesimato extra dry docg 2024 ca di rajo
+843. valdobbiadene prosecco superiore millesimato docg extra dry ruiol castei magnum follador
+844. valdobbiadene prosecco superiore millesimato docg extra dry ruiol castei follador
+845. valdobbiadene prosecco superiore magnum docg 2024 millesimato brut
+846. valdobbiadene prosecco superiore extra dry senior 2024 bortolomiol astuccio
+847. valdobbiadene prosecco superiore extra dry senior 2024 bortolomiol astuccio
+848. valdobbiadene prosecco superiore extra dry senior 2024 bortolomiol astuccio
+849. valdobbiadene prosecco superiore extra dry docgvilla sandi
+850. valdobbiadene prosecco superiore extra dry docg torre zecchei
+851. valdobbiadene prosecco superiore extra dry docg sutto
+852. valdobbiadene prosecco superiore extra dry docg sutto
+853. valdobbiadene prosecco superiore extra dry docg sgr
+854. valdobbiadene prosecco superiore extra dry docg setage 2024 magnum canevel
+855. valdobbiadene prosecco superiore extra dry docg setage 2024 magnum canevel
+856. valdobbiadene prosecco superiore extra dry docg setage 2024 magnum canevel
+857. valdobbiadene prosecco superiore extra dry docg setage 2024 canevel
+858. valdobbiadene prosecco superiore extra dry docg setage 2024 canevel
+859. valdobbiadene prosecco superiore extra dry docg setage 2024 canevel
+860. valdobbiadene prosecco superiore extra dry docg senior 2025 bortolomiol
+861. valdobbiadene prosecco superiore extra dry docg senior 2025 bortolomiol
+862. valdobbiadene prosecco superiore extra dry docg senior 2025 bortolomiol
+863. valdobbiadene prosecco superiore extra dry docg senior 2025 bortolomiol
+864. valdobbiadene prosecco superiore extra dry docg senior 2025 bortolomiol
+865. valdobbiadene prosecco superiore extra dry docg senior 2024 magnum bortolomiol astuccio
+866. valdobbiadene prosecco superiore extra dry docg senior 2024 magnum bortolomiol astuccio
+867. valdobbiadene prosecco superiore extra dry docg senior 2024 magnum bortolomiol astuccio
+868. valdobbiadene prosecco superiore extra dry docg senior 2024 bortolomiol
+869. valdobbiadene prosecco superiore extra dry docg senior 2024 bortolomiol
+870. valdobbiadene prosecco superiore extra dry docg senior 2024 bortolomiol
+871. valdobbiadene prosecco superiore extra dry docg santa margherita
+872. valdobbiadene prosecco superiore extra dry docg santa margherita
+873. valdobbiadene prosecco superiore extra dry docg santa margherita
+874. valdobbiadene prosecco superiore extra dry docg rive di collalto 2024 borgoluce
+875. valdobbiadene prosecco superiore extra dry docg rive di collalto 2024 borgoluce
+876. valdobbiadene prosecco superiore extra dry docg rive di collalto 2024 borgoluce
+877. valdobbiadene prosecco superiore extra dry docg rive di collalto 2024 borgoluce
+878. valdobbiadene prosecco superiore extra dry docg rive di collalto 2024 borgoluce
+879. valdobbiadene prosecco superiore extra dry docg cuvee 1926 valdo wine outlet
+880. valdobbiadene prosecco superiore extra dry docg cuvee 1926 valdo wine outlet
+881. valdobbiadene prosecco superiore extra dry docg cuvee 1926 valdo
+882. valdobbiadene prosecco superiore extra dry docg cuvee 1926 valdo
+883. valdobbiadene prosecco superiore extra dry docg cuvee 1926 valdo
+884. valdobbiadene prosecco superiore extra dry docg colli del soligo
+885. valdobbiadene prosecco superiore extra dry docg col vetoraz
+886. valdobbiadene prosecco superiore extra dry docg borgoluce
+887. valdobbiadene prosecco superiore extra dry docg borgoluce
+888. valdobbiadene prosecco superiore extra dry docg borgoluce
+889. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 magnum bortolomiol
+890. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 magnum bortolomiol
+891. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 magnum bortolomiol
+892. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 magnum bortolomiol
+893. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 magnum bortolomiol
+894. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 bortolomiol
+895. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 bortolomiol
+896. valdobbiadene prosecco superiore extra dry docg bandarossa 2024 bortolomiol
+897. valdobbiadene prosecco superiore extra dry docg bandarossa 2023 bortolomiol
+898. valdobbiadene prosecco superiore extra dry docg bandarossa 2023 bortolomiol
+899. valdobbiadene prosecco superiore extra dry docg bandarossa 2023 bortolomiol
+900. valdobbiadene prosecco superiore extra dry docg 2024 althea
+901. valdobbiadene prosecco superiore extra dry docg
+902. valdobbiadene prosecco superiore extra dry campo della maestra docg fratelli gatto cavalier
+903. valdobbiadene prosecco superiore extra dry campo della maestra docg fratelli gatto cavalier
+904. valdobbiadene prosecco superiore extra dry campo della maestra docg fratelli gatto cavalier
+905. valdobbiadene prosecco superiore extra dry ca di rajo
+906. valdobbiadene prosecco superiore extra brut docg rive di san pietro di barbozza 2023 valdo
+907. valdobbiadene prosecco superiore extra brut docg rive di san pietro di barbozza 2023 valdo
+908. valdobbiadene prosecco superiore extra brut docg rive di san pietro di barbozza 2023 valdo
+909. valdobbiadene prosecco superiore extra brut docg rive di san pietro di barbozza 2023 valdo
+910. valdobbiadene prosecco superiore extra brut docg rive di collalto 2024 borgoluce
+911. valdobbiadene prosecco superiore extra brut docg rive di collalto 2024 borgoluce
+912. valdobbiadene prosecco superiore extra brut docg rive di collalto 2024 borgoluce
+913. valdobbiadene prosecco superiore extra brut docg rive di collalto 2024 borgoluce
+914. valdobbiadene prosecco superiore extra brut docg rive di collalto 2024 borgoluce
+915. valdobbiadene prosecco superiore extra brut docg relio rive di guia 2024 bisol
+916. valdobbiadene prosecco superiore extra brut docg relio rive di guia 2024 bisol
+917. valdobbiadene prosecco superiore extra brut docg relio rive di guia 2024 bisol
+918. valdobbiadene prosecco superiore extra brut docg la rivetta 120 villa sandi
+919. valdobbiadene prosecco superiore extra brut docg la rivetta 120 villa sandi
+920. valdobbiadene prosecco superiore extra brut docg la rivetta 120 villa sandi
+921. valdobbiadene prosecco superiore extra brut docg la rivetta 120 villa sandi
+922. valdobbiadene prosecco superiore extra brut docg col vetoraz
+923. valdobbiadene prosecco superiore extra brut docg audax zero3 2025 bortolomiol
+924. valdobbiadene prosecco superiore extra brut docg audax zero3 2025 bortolomiol
+925. valdobbiadene prosecco superiore extra brut docg audax zero3 2025 bortolomiol
+926. valdobbiadene prosecco superiore extra brut docg audax zero3 2025 bortolomiol
+927. valdobbiadene prosecco superiore extra brut docg audax zero3 2025 bortolomiol
+928. valdobbiadene prosecco superiore extra brut docg 2024 ruggeri
+929. valdobbiadene prosecco superiore extra brut docg 2024 ruggeri
+930. valdobbiadene prosecco superiore extra brut docg 2024 ruggeri
+931. valdobbiadene prosecco superiore extra brut docg 2024 ruggeri
+932. valdobbiadene prosecco superiore dry rive di san pietro in barbozza 0
+933. valdobbiadene prosecco superiore dry primo franco 2024 nino franco
+934. valdobbiadene prosecco superiore dry primo franco 2024 nino franco
+935. valdobbiadene prosecco superiore dry primo franco 2024 nino franco
+936. valdobbiadene prosecco superiore dry primo franco 2024 nino franco
+937. valdobbiadene prosecco superiore dry docg rive di san pietro in barbozza 2024 villa sandi
+938. valdobbiadene prosecco superiore dry docg rive di san pietro in barbozza 2024 villa sandi
+939. valdobbiadene prosecco superiore dry docg rive di san pietro in barbozza 2024 villa sandi
+940. valdobbiadene prosecco superiore dry docg maior 2025 bortolomiol
+941. valdobbiadene prosecco superiore dry docg maior 2025 bortolomiol
+942. valdobbiadene prosecco superiore dry docg maior 2025 bortolomiol
+943. valdobbiadene prosecco superiore dry docg maior 2025 bortolomiol
+944. valdobbiadene prosecco superiore dry docg maior 2025 bortolomiol
+945. valdobbiadene prosecco superiore dry docg maior 2024 bortolomiol
+946. valdobbiadene prosecco superiore dry docg maior 2024 bortolomiol
+947. valdobbiadene prosecco superiore dry docg maior 2024 bortolomiol
+948. valdobbiadene prosecco superiore dry docg 2019 col vetoraz
+949. valdobbiadene prosecco superiore docg vigneto della riva di san floriano nino franco
+950. valdobbiadene prosecco superiore docg ultra trail extra brut barichel
+951. valdobbiadene prosecco superiore docg trial extra dry barichel
+952. valdobbiadene prosecco superiore docg trial extra dry 075 x 3 barichel
+953. valdobbiadene prosecco superiore docg terra vizina
+954. valdobbiadene prosecco superiore docg tenuta pradase valdo
+955. valdobbiadene prosecco superiore docg tenuta pradase valdo
+956. valdobbiadene prosecco superiore docg spumante extra dry il vino dei poeti bottega
+957. valdobbiadene prosecco superiore docg spumante extra dry il vino dei poeti bottega
+958. valdobbiadene prosecco superiore docg spumante extra dry
+959. valdobbiadene prosecco superiore docg spumante extra dry
+960. valdobbiadene prosecco superiore docg spumante extra dry
+961. valdobbiadene prosecco superiore docg spumante brut il vino dei poeti bottega
+962. valdobbiadene prosecco superiore docg spumante brut
+963. valdobbiadene prosecco superiore docg rustico nino franco
+964. valdobbiadene prosecco superiore docg rustico nino franco
+965. valdobbiadene prosecco superiore docg rustico nino franco
+966. valdobbiadene prosecco superiore docg rustico nino franco
+967. valdobbiadene prosecco superiore docg rive spumante dry bottega
+968. valdobbiadene prosecco superiore docg rive spumante dry bottega
+969. valdobbiadene prosecco superiore docg rive di san pietro di barbozza 2023 extra brut rivaluce
+970. valdobbiadene prosecco superiore docg rive di colbertaldo brut maschio dei cavalieri
+971. valdobbiadene prosecco superiore docg rive di col san martino extra brut 2019 siro merotto
+972. valdobbiadene prosecco superiore docg rive di col san martino extra brut 2019 siro merotto
+973. valdobbiadene prosecco superiore docg rive di col san martino extra brut 2019 siro merotto
+974. valdobbiadene prosecco superiore docg primo franco nino franco
+975. valdobbiadene prosecco superiore docg primo franco nino franco
+976. valdobbiadene prosecco superiore docg millesimato il drago e la fornace
+977. valdobbiadene prosecco superiore docg millesimato extra dry val doca 2025
+978. valdobbiadene prosecco superiore docg millesimato extra dry mathusalem ca di rajo
+979. valdobbiadene prosecco superiore docg millesimato extra dry jeroboam ca di rajo
+980. valdobbiadene prosecco superiore docg millesimato extra dry contarini
+981. valdobbiadene prosecco superiore docg millesimato extra brut xzero follador
+982. valdobbiadene prosecco superiore docg millesimato brut tre dame
+983. valdobbiadene prosecco superiore docg millesimato brut numero 10 valdo
+984. valdobbiadene prosecco superiore docg millesimato brut nani dei berti magnum follador
+985. valdobbiadene prosecco superiore docg millesimato brut nani dei berti follador
+986. valdobbiadene prosecco superiore docg millesimato brut magnum numero 10 valdo
+987. valdobbiadene prosecco superiore docg millesimato brut magnum 1
+988. valdobbiadene prosecco superiore docg millesimato brut magnum 1
+989. valdobbiadene prosecco superiore docg millesimato brut cuvee del fondatore valdo
+990. valdobbiadene prosecco superiore docg millesimato brut cuvee del fondatore magnum valdo
+991. valdobbiadene prosecco superiore docg millesimato brut cuvee del fondatore ca di rajo magnum
+992. valdobbiadene prosecco superiore docg millesimato brut contarini
+993. valdobbiadene prosecco superiore docg millesimato 2024 terre di san venanzio fortunato
+994. valdobbiadene prosecco superiore docg millesimato 2024 terre di san venanzio fortunato
+995. valdobbiadene prosecco superiore docg millesimato 2024 terre di san venanzio fortunato
+996. valdobbiadene prosecco superiore docg millesimato 2024 brut villa sandi
+997. valdobbiadene prosecco superiore docg millesimato 2024 brut villa sandi
+998. valdobbiadene prosecco superiore docg millesimato 2024 brut villa sandi
+999. valdobbiadene prosecco superiore docg millesimato
+1000. valdobbiadene prosecco superiore docg millesimanto 2022 extra brut rive di san pietro magnum rivaluce

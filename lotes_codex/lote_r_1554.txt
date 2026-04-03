@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. cava rose pinot noir reserva 2015 sumarroca penedes spanien
+2. cava rose reserva pinot noir sumarroca
+3. cava rose submarina cv o2
+4. cava rose sumarroca penedes spain
+5. cava rovellats brut nature grva
+6. cava rovellats brut rose
+7. cava rovellats colleccio gran reserva extra brut sparkling wine
+8. cava rovellats colleccio gran reserva extra brut sparkling wine
+9. cava rovellats cuvee especial brut nature sparkling wine
+10. cava rovellats premier brut nature
+11. cava rovellats rva cuvee brut natur
+12. cava rovellats rva imperial brut
+13. cava roxane brut chozas carrascal
+14. cava roxanne
+15. cava roxanne brut chozas carrascal
+16. cava roxanne brut nature chozas carrascal
+17. cava sainsbury brut
+18. cava sainsbury brut rosado
+19. cava sainsbury semiseco
+20. cava sant manel brut nature
+21. cava santa monica b
+22. cava santa monica bn
+23. cava savia viva brut bio
+24. cava seafood evening
+25. cava seco macabeo chardonnay organic
+26. cava secura viudas reserva brut heredad
+27. cava segunyola brut nature mas candi
+28. cava segura viudas
+29. cava segura viudas aria brut nature botella
+30. cava segura viudas brut
+31. cava segura viudas brut
+32. cava segura viudas brut bio
+33. cava segura viudas brut organic
+34. cava segura viudas brut reserva
+35. cava segura viudas brut reserva
+36. cava segura viudas brut reserva
+37. cava segura viudas brut reserva botella
+38. cava segura viudas brut rosado botella
+39. cava segura viudas brut rose
+40. cava segura viudas guarda brut
+41. cava segura viudas heredad brut in giftbox
+42. cava segura viudas heredad reserva
+43. cava segura viudas heredad reserva brut 750cc
+44. cava segura viudas reserva brut 750cc
+45. cava segura viudas reserva heredad
+46. cava segura viudas reserva heredad
+47. cava segura viudas reserva heredad
+48. cava segura viudas reserva heredad brut
+49. cava segura viudas reserva heredad brut
+50. cava segura viudas reserva heredad brut botella
+51. cava segura viudas reserva heredad penedes
+52. cava segura viudas reserva heredad segura viudas
+53. cava segura viudas reserva semi seco botella
+54. cava segura viudas rose brut
+55. cava segura viudas rose brut freixenet
+56. cava segura viudas semi seco reserva
+57. cava segura viudas vintage reserva
+58. cava seleccion blanc de blancs brut nature 2019
+59. cava seleccion especial brut rose vintage 2018
+60. cava seleccion especial brut vintage 2020
+61. cava seleccion especial semiseco vintage 2021
+62. cava seleccion gran reserva brut nature vintage 2015
+63. cava selecta brut
+64. cava selecta brut
+65. cava selecta brut nature
+66. cava selecta brut nature
+67. cava semi sec
+68. cava semi sec alsina sarda
+69. cava semi sec alsina sarda
+70. cava semi sec cabaret
+71. cava semi sec castell dor
+72. cava semi sec castillo perelada
+73. cava semi sec codorniu clasico
+74. cava semi sec codorniu clasico x
+75. cava semi sec codorniu clasico x
+76. cava semi sec flama dor
+77. cava semi sec hello kitty nv spanje catalonie rose
+78. cava semi sec x 6
+79. cava semi secco do nitus cava
+80. cava semi seco
+81. cava semi seco castelfino
+82. cava semi seco hoya de cadenas 115 0
+83. cava semisec perelada
+84. cava semiseco
+85. cava semiseco
+86. cava semiseco
+87. cava semiseco mainegra
+88. cava semiseco sierra de guadalupe do cava
+89. cava sense cap reserva bn
+90. cava serendipia ayles brut reserva
+91. cava serendipia reserva brut
+92. cava sierra salinas
+93. cava siglo xxi brut
+94. cava siglo xxi brut nature
+95. cava siglo xxi brut nature vintage
+96. cava signat brut
+97. cava simonnet cremant brut rose
+98. cava sin alcohol disney frozen olaf
+99. cava sogas mascaro bn
+100. cava sola raventos reserva brut sparkling wine
+101. cava solivella brut
+102. cava solo brut
+103. cava sorra blanca organic brut
+104. cava sparkling 12 bottles case
+105. cava sparkling pezsgo
+106. cava sparkling wine 1861
+107. cava spiliadis 2020 cava spiliadis buketo
+108. cava stars brut organic
+109. cava stars brut reserva
+110. cava stars brut reserva 2021
+111. cava stars brut reserva 2022
+112. cava stars brut reserva castillo perelada
+113. cava stars brut touch of rose bio 2022
+114. cava stars organic perelada 2019 sparkling wine
+115. cava stars touch of rose castillo perelada
+116. cava starts brut de la perelada
+117. cava starts rose de la perelada
+118. cava subirat parent reserva brut espana
+119. cava submarino ocean corallium
+120. cava sumarroca
+121. cava sumarroca brut nature
+122. cava sumarroca brut nature gran reserva white extra brut gift box 12 075
+123. cava sumarroca brut reserva
+124. cava sumarroca brut reserva
+125. cava sumarroca brut rose
+126. cava sumarroca rose
+127. cava sumarroca semisec reserva
+128. cava summer box
+129. cava summum brut nature
+130. cava summum brut rose
+131. cava sutra
+132. cava sutra
+133. cava sutra
+134. cava sutra bodegas arraes dop cava brut
+135. cava sutra brut
+136. cava sutra brut
+137. cava sutra brut
+138. cava sutra brut
+139. cava sutra brut
+140. cava sutra brut box
+141. cava sutra brut cava
+142. cava sutra brut estuche
+143. cava sutra brut r
+144. cava sutra brut reserva
+145. cava sutra brut reserva estuche
+146. cava tantum ergo
+147. cava tantum ergo brut nature
+148. cava tantum ergo chardonaypinot noir
+149. cava tantum ergo chardonnay brut nature 2021
+150. cava tantum ergo chardonnaypinot noir
+151. cava tantum ergo exclusive cuvee
+152. cava tantum ergo pinot noir rosado
+153. cava tantum ergo rose
+154. cava tantum ergo rose 2021
+155. cava tantum ergo rose pinot noir
+156. cava tantum ergo vintage
+157. cava tantum ergo vintage 2019
+158. cava tarrida brut biologisch
+159. cava tasting box
+160. cava tasting pack
+161. cava tempus aurum
+162. cava tempus iii brut
+163. cava terra de marca brut nature 2021
+164. cava terra de marca vintage 2013
+165. cava terra terrae brut
+166. cava tesco brut int
+167. cava tesco brut uk
+168. cava tesco semiseco int
+169. cava tharsys millesime barrica
+170. cava tierra azul brut
+171. cava tierra de angeles brut mexico
+172. cava tierra de oro brut eci
+173. cava tierra de oro brut rosado eci
+174. cava titiana brut nature 34
+175. cava titiana pinot noir rosado 34
+176. cava torello petit pallid brut reserva
+177. cava torreblanca brut nature
+178. cava torreblanca brut nature reserva
+179. cava torreblanca brut rose
+180. cava trencadis sleeve rose bio
+181. cava trepat celler kripta 2021
+182. cava trepat rose reserva
+183. cava trepat rose reserva en kasse
+184. cava tres naus brut
+185. cava tres naus brut rose
+186. cava trias batlle b rosado
+187. cava trias batlle bn grva
+188. cava trias batlle bn rva
+189. cava tutumba brut nature
+190. cava udu b rva
+191. cava uma brut gran reserva
+192. cava un poco de amor para compartir
+193. cava unique brut nature reserva
+194. cava unique brut nature reserva chozas carrascal
+195. cava urias eco rosado valle de guadalupe 2021
+196. cava urias nemesis nebbiolo valle de guadalupe 2020
+197. cava uvae cavas rimarts
+198. cava valhondo brut
+199. cava valhondo brut
+200. cava valhondo rose brut
+201. cava vall d lluna brut eroski
+202. cava vall d lluna brut nature vintage eroski
+203. cava vall d lluna brut rosado eroski
+204. cava vall d lluna semiseco eroski
+205. cava valle de san jaime
+206. cava valle de san jaime brut
+207. cava vallede saint jaume cava
+208. cava vallformosa alcohol free
+209. cava vallformosa brut nature reserva
+210. cava vallformosa brut reserva
+211. cava vallformosa brut rose
+212. cava vallformosa origen bio organic reserva nv
+213. cava vallformosa solo vida reserva bio brut nature
+214. cava vallformosa solo vida reserva bio rose
+215. cava vallfornes brut nature
+216. cava vardon kennett cuvee extra brut
+217. cava varias brut nature
+218. cava varias la bona vida brut
+219. cava vega cristina brut
+220. cava vega cristina brut nature japon
+221. cava vega cristina brut rosado
+222. cava vega mediem nature
+223. cava vega mediem rosado
+224. cava vega medien brut ecologico
+225. cava vega medien brut ko cavas marevia requena valencia
+226. cava vega medien brut nature ecologico
+227. cava vega medien brut nature ecologico
+228. cava vega medien brut nature ko cavas marevia requena valencia
+229. cava vega medien brut rose
+230. cava vega medien brut rose ecologico
+231. cava vega medien brut rose ko cavas marevia requena valencia
+232. cava vega medien do cava blanc
+233. cava vega medien do cava blanc
+234. cava vega medien do cava blanc
+235. cava vega medien do cava blanc
+236. cava vega medien semiseco ko cavas marevia requena valencia
+237. cava vega medien zero
+238. cava vegalfaro gran reserva brut nature
+239. cava vegamar prive 18
+240. cava vegera
+241. cava via de la plata
+242. cava via de la plata brut
+243. cava via de la plata brut
+244. cava via de la plata brut nature
+245. cava via de la plata brut nature chardonnay
+246. cava via de la plata brut rosado
+247. cava via de la plata chardonnay brut
+248. cava via de la plata reserva
+249. cava via de la plata reserva chardonnay
+250. cava via de la plata reserva coupage
+251. cava via de la plata semi seco
+252. cava vibracions
+253. cava vibracions brut reserva
+254. cava vidadelsur brut nature
+255. cava vidadelsur rose
+256. cava vilarnau brut nature
+257. cava vilarnau brut nature
+258. cava vilarnau brut nature organic 2020 aoc c6
+259. cava vilarnau brut nature organic 2022 aoc c6
+260. cava vilarnau brut nature reserva
+261. cava vilarnau brut nature reserva organic
+262. cava vilarnau brut reserva
+263. cava vilarnau brut reserva 0 115
+264. cava vilarnau brut reserva 750cc
+265. cava vilarnau brut reserva aoc die cut giftbox
+266. cava vilarnau brut reserva aoc mg c6
+267. cava vilarnau brut reserva organic
+268. cava vilarnau brut reserva organic
+269. cava vilarnau brut reserva organic aoc c24
+270. cava vilarnau brut reserva organic aoc c6
+271. cava vilarnau brut reserva organic sleeve
+272. cava vilarnau brut reserva organico
+273. cava vilarnau brut reserva sleeve
+274. cava vilarnau brut rosado ecologico vintage
+275. cava vilarnau brut rose
+276. cava vilarnau brut rose reserva organic
+277. cava vilarnau demi sec espana
+278. cava vilarnau demi sec organico 750cc
+279. cava vilarnau demisec
+280. cava vilarnau demisec
+281. cava vilarnau ice
+282. cava vilarnau reserva
+283. cava vilarnau rose delicat brut reserva organicc6
+284. cava vilarnau rose delicat reserva organico 750cc
+285. cava vilarnau rose reserva organico
+286. cava vilarnau rose sleeve
+287. cava villa conchi brut
+288. cava villa conchi brut seleccion gift tube
+289. cava vina adelaida brut
+290. cava vina aderus 85 alcohol
+291. cava vina aderus brut
+292. cava vinart brut
+293. cava vinart brut aldi
+294. cava vinart brut ecologico std
+295. cava vinart brut nature aldi
+296. cava vinart brut nature vintage std
+297. cava vinart brut nesco
+298. cava vinart ecologico
+299. cava vinart semiseco aldi
+300. cava vinart semiseco nesco
+301. cava vinart vintage reserva extra brut
+302. cava vino rosado espumoso artesano 3 botellas
+303. cava vino tierra bella gran reserva premium
+304. cava vinya d en ferran
+305. cava vinya escude 523 ecologic reserva extra brut
+306. cava vinya escude daurat ecologic reserva brut
+307. cava vinya escude daurat ecologic reserva brut nature
+308. cava vinya escude ecologic macabeu reserva brut nature 2022
+309. cava vinya escude ecologic pinot noir reserva brut nature
+310. cava vinya escude ecologic xarello reserva brut nature 2022
+311. cava vinyes de can sala
+312. cava visiega brut
+313. cava visiega brut
+314. cava visiega brut nature
+315. cava visiega brut reserva
+316. cava visiega brut rosado
+317. cava visiega semiseco
+318. cava vita vivet brut nature
+319. cava vita vivet organic brut seleccio
+320. cava viurana brut nature reserva
+321. cava viurana rose brut reserva
+322. cava vives ambros brut reserva
+323. cava vives ambros brut reserva rosado
+324. cava vives ambros gran reserva brut nature
+325. cava vives ambros xarello vermell reserva
+326. cava winelaw
+327. cava winelaw wine store cava winelaw
+328. cava winelaw winebar tripadvisor
+329. cava x 6
+330. cava xenius bn
+331. cava xenius semiseco
+332. cava y destileria mascaro
+333. cava y turron
+334. cava zero rose pinord
+335. cava2017
+336. cavabianca 2022 van terrecarsiche1939
+337. cavacas
+338. cavacas
+339. cavacas de pombal 90 g
+340. cavacas de pombal box
+341. cavacchioli lambrusco
+342. cavaceppo docg
+343. cavaco branco
+344. cavaco tinto
+345. cavadiserpe igt terre siciliane 1 2017 mandrarossa
+346. cavadiserpe igt terre siciliane 2021 mandrarossa
+347. cavadiserpe terre siciliane igt
+348. cavadiserpe terre siciliane igt mandrarossa
+349. cavadiserpe terre siciliane igt mandrarossa 2019
+350. cavadondolo
+351. cavador de hoyos
+352. cavaer ud over det sdvanlige
+353. cavage blanc vin de france sauvignonmarsanne
+354. cavage malbec grenache noir 2022
+355. cavage malbec merlot
+356. cavage malbec merlot 2023
+357. cavage malbec rose grenache gris
+358. cavage rouge vin de france malbecgrenache noir
+359. cavage sauvignon blanc marsanne 2023
+360. cavaglas
+361. cavakassen
+362. caval argento prosecco extra dry
+363. caval prosecco brut
+364. cavala em oleo picante 120g manna
+365. cavala em oleo vegetal 120g manna
+366. cavala em tomate picante
+367. cavala inteira em tomate manna
+368. cavala inteira oleo picante 120 g
+369. cavala manna em oleo 120gr 12
+370. cavala manna em oleo picante 120gr 12
+371. cavala manna em tomate 120gr 12
+372. cavala manna em tomate picante 120gr 12
+373. cavalada
+374. cavalas em oleo picante manna 120 g
+375. cavalas em oleo vegetal manna 120 g
+376. cavalcade
+377. cavalcade
+378. cavalcade blanc chateau de corneilla
+379. cavalcade rose 2024
+380. cavalcade rouge les aspres chateau de corneilla
+381. cavalchina amadeo custoza 2019
+382. cavalchina amadeo custoza superiore
+383. cavalchina amedeo
+384. cavalchina amedeo custoza superiore doc 2022
+385. cavalchina bardolino
+386. cavalchina bardolino
+387. cavalchina bardolino 2019 italy
+388. cavalchina bardolino 2021
+389. cavalchina bardolino 2023
+390. cavalchina bardolino 2023
+391. cavalchina bardolino 2024
+392. cavalchina bardolino 2024
+393. cavalchina bardolino chiaretto
+394. cavalchina bardolino chiaretto
+395. cavalchina bardolino chiaretto doc 2025
+396. cavalchina bardolino chiaretto rose
+397. cavalchina bardolino denominazione di origine controllata 2022
+398. cavalchina bardolino doc dv 2022
+399. cavalchina bardolino doc dv 2023
+400. cavalchina bardolino doc dv 2025
+401. cavalchina bardolino rosso
+402. cavalchina bardolino rosso 0
+403. cavalchina bardolino superiore docg santa lucia 2023
+404. cavalchina bardolino superiore santa lucia
+405. cavalchina bianco custoza
+406. cavalchina bianco di custoza
+407. cavalchina bianco di custoza doc amedeo 70 anniversario 2017
+408. cavalchina casella bardolino denominazione di origine controllata
+409. cavalchina chiaretto bardolino denominazione di origine controllata 2023
+410. cavalchina chiaretto bardolino rose 2024
+411. cavalchina custoza bianco
+412. cavalchina custoza bianco 0
+413. cavalchina custoza bianco 3
+414. cavalchina custoza doc
+415. cavalchina custoza doc 2022
+416. cavalchina custoza doc dv 2025
+417. cavalchina custoza superiore doc amedeo 2023
+418. cavalchina fernanda rabitta 2020
+419. cavalchina la rosa passito
+420. cavalchina lugana llac
+421. cavalchina lugana llac 1
+422. cavalchina passito bianco 2015
+423. cavalchina passito bianco 2021
+424. cavalchina santa lucia bardolino superiore
+425. cavalchina torre d orti amarone
+426. cavaldos pays dauge vieille reserve domaine pierre huet
+427. cavaleiro do chateau lagrezette
+428. cavaletti vineyards tempranillo central coast ca 2019
+429. cavaletti vineyards tierra alta vineyard grenache blanc ballard canyon ca 2023
+430. cavalier 0
+431. cavalier 360 rose
+432. cavalier bartolomeo barbera dalba
+433. cavalier bartolomeo barolo
+434. cavalier bartolomeo barolo altenasso
+435. cavalier bartolomeo barolo altenasso 2016
+436. cavalier bartolomeo barolo chinato
+437. cavalier bartolomeo solanotto altenasso barolo docg
+438. cavalier blanc
+439. cavalier blanc brut
+440. cavalier blanc brut cfgv
+441. cavalier blanc de blancs brut
+442. cavalier blanc de blancs demisec
+443. cavalier blanc demi sec 02
+444. cavalier brut blanc de blancs
+445. cavalier geneve black ii robusto gordo ii
+446. cavalier geneve black ii salomones ii
+447. cavalier geneve black ii toro gordo ii
+448. cavalier geneve black ii torpedo ii
+449. cavalier geneve white series diplomate
+450. cavalier geneve white series elegantes
+451. cavalier geneve white series medio
+452. cavalier geneve white series salomones
+453. cavalier green ginger spritzer
+454. cavalier green ginger wine
+455. cavalier green ginger wine
+456. cavalier green ginger wine
+457. cavalier green ginger wine 750
+458. cavalier green ginger wine nv
+459. cavalier lorenzo accomasso annunziata barolo riserva docg italy 2012
+460. cavalier lorenzo accomasso annunziata barolo riserva docg italy 2013
+461. cavalier lorenzo accomasso annunziata barolo riserva docg italy 2014
+462. cavalier lorenzo accomasso annunziata barolo riserva docg italy 2016
+463. cavalier lorenzo accomasso rocche dellannunziata vigna rocchette barolo docg 2012
+464. cavalier lorenzo accomasso rocche dellannunziata vigna rocchette barolo docg 2013
+465. cavalier marlborough green ginger wine
+466. cavalier pepe lila irpinia falanghina doc 2019 6 bottles
+467. cavalier rouge
+468. cavalier rouge igp val de montferrand
+469. cavalier ruby champagne coupe by cristal darques durann
+470. cavalier ruby water goblet by cristal darques durand set of 2
+471. cavalier sauvignon dog toy
+472. cavalier sons pinot noir
+473. cavalier tranquillo bianco igt toscana 2023 querciavalle
+474. cavalier tranquillo rosso igt toscana 2022 querciavalle
+475. cavalier xo
+476. cavaliera ermes lambrusco
+477. cavaliera metodo classico caterina pas dose rose
+478. cavaliera metodo classico caterina pas dose rose
+479. cavaliera metodo classico caterina pas dose rose 2020
+480. cavaliera trebbiano di modena metodo classico millesimato pas dose cavaliera
+481. cavaliera vino spumante di qualita millesimato pas dose
+482. cavaliere 2018
+483. cavaliere 2019
+484. cavaliere 2020
+485. cavaliere 2023 vernaccia di san gimignano
+486. cavaliere 2024 sangiovese
+487. cavaliere cappuccino kapszula dolce gusto 16db
+488. cavaliere cavaliere sangiovese 2022
+489. cavaliere cavaliere szemes kave 1kg
+490. cavaliere chianti gabbiano
+491. cavaliere d oro chianti
+492. cavaliere d oro chianti classico
+493. cavaliere d oro pinot grigio
+494. cavaliere d oro pinot grigio
+495. cavaliere d oro primitivo
+496. cavaliere d oro prosecco
+497. cavaliere d0r0 pinot grigio promesa
+498. cavaliere doro alleanza red blend 2018
+499. cavaliere doro alleanza toscana igt 2016
+500. cavaliere doro bellazza chianti classico gran selezione 2015
+501. cavaliere doro bellez red blend 2018
+502. cavaliere doro bellezza chianti classico docg 2015
+503. cavaliere doro castello di gabbiano bellezza chianti
+504. cavaliere doro castello di gabbiano bellezza chianti
+505. cavaliere doro chianti
+506. cavaliere doro chianti
+507. cavaliere doro chianti 2017
+508. cavaliere doro chianti classico
+509. cavaliere doro chianti classico
+510. cavaliere doro chianti classico
+511. cavaliere doro chianti classico 2015
+512. cavaliere doro chianti classico 2016
+513. cavaliere doro chianti classico 2020
+514. cavaliere doro chianti classico 2021
+515. cavaliere doro chianti classico docg riserva
+516. cavaliere doro chianti classico gabbianno
+517. cavaliere doro chianti classico riserva
+518. cavaliere doro chianti classico riserva docg 2017
+519. cavaliere doro chianti docg 2023
+520. cavaliere doro chianti docg 2024
+521. cavaliere doro chianti docg 2024
+522. cavaliere doro chianti red blend 2022
+523. cavaliere doro chianti red blend 2023
+524. cavaliere doro chianti reserva 2018
+525. cavaliere doro chianti reserva 2018
+526. cavaliere doro chianti reserva 2018
+527. cavaliere doro chianti reserve
+528. cavaliere doro delle venezie pinot grigio gabbiano
+529. cavaliere doro pinot grigio
+530. cavaliere doro pinot grigio 2021
+531. cavaliere doro pinot grigio 2023
+532. cavaliere doro pinot grigio 2024
+533. cavaliere doro pinot grigio 2024
+534. cavaliere doro pinot grigio 2024
+535. cavaliere doro pinot grigio delle venezie doc
+536. cavaliere doro pinot grigio doc
+537. cavaliere doro prosecco
+538. cavaliere doro prosecco
+539. cavaliere doro prosecco
+540. cavaliere doro prosecco nv
+541. cavaliere doro terre siciliane 2016
+542. cavaliere extra bar szemes kave 1kg
+543. cavaliere extra bar szemes kave 500g
+544. cavaliere igt toscana rosso
+545. cavaliere nero rose riserva 2016 extra brut trentodoc
+546. cavaliere orolt kave 250g
+547. cavaliere rosso igt toscana 2015
+548. cavaliere rosso toscana igt 2019 michele satta
+549. cavaliere sangiovese
+550. cavaliere sangiovese
+551. cavaliere sangiovese toscana igt michele satta
+552. cavaliere sardo
+553. cavaliere sardo
+554. cavaliere sardo cantina di mogoro
+555. cavaliere special szemes kave 1kg
+556. cavaliere vernaccia di san gimignano
+557. cavalieri
+558. cavalieri
+559. cavalieri
+560. cavalieri
+561. cavalieri 2021
+562. cavalieri 2022
+563. cavalieri 2023
+564. cavalieri assyrtiko nico lazaridi
+565. cavalieri della seta il brolo bianco veneto igt i piwi sauvignon kretos 2020
+566. cavalieri di moasca barbaresco
+567. cavalieri di moasca barbera d asti docg
+568. cavalieri direzione papaina vino bianco
+569. cavalieri doro chianti
+570. cavalieri doro chianti classico
+571. cavalieri gege 2020 verdicchio di matelica bio doc
+572. cavalieri la quinta femmina 2022 marche bianco igt
+573. cavalieri lazaridi assyrtiko
+574. cavalieri lazaridi assyrtiko vin alb sec
+575. cavalieri lazaridi malagousia 0
+576. cavalieri lazaridi merlot 0
+577. cavalieri malagousia nico lazaridi
+578. cavalieri merlot
+579. cavalieri merlot 2021
+580. cavalieri merlot 2021
+581. cavalieri merlot 2022
+582. cavalieri reali pinot grigio
+583. cavalieri reali primitivo
+584. cavalieri sangiovese marche igt 2021
+585. cavalieri verdicchio di matelica doc 2022
+586. cavalieri verdicchio di matelica doc 2024
+587. cavalieri vin rosu
+588. cavalieri xinomavro nico lazaridi
+589. cavalierino donna enrica toscana
+590. cavalierino rosso di montapulciano
+591. cavalierino vino nobile di montepulciano
+592. cavalinha 100g
+593. cavalinha oleo piteu 120gr 10
+594. cavalinha talos para cha granoi 500g
+595. cavalinhas em oleo manna
+596. cavaliro n4m cuvee red wine
+597. cavaliro secreto cuvee red wine
+598. cavaliro w4m cuvee red wine
+599. cavaliro w4m cuvee red wine 20232022
+600. cavall de foc merseguera celler de la muntanya
+601. cavalleresco chianti classico
+602. cavalleresco di lodi spanna 1974
+603. cavalleresco di lodi spanna 1974
+604. cavalleresco di lodi spanna 1974
+605. cavalleri
+606. cavalleri alicante bouschet
+607. cavalleri au contraire franciacorta pas dose riserva 2008
+608. cavalleri au contraire franciacorta pas dose riserva 2011 astucciato
+609. cavalleri blanc de blanc brut
+610. cavalleri blanc de blancs brut nature
+611. cavalleri blanc de blancs brut nature
+612. cavalleri blanc de blancs brut nature
+613. cavalleri blanc de blancs brut nature vino spumante
+614. cavalleri blanc de blancs dgm owc franciacorta docg brut nature vino spumante
+615. cavalleri blanc de blancs dosaggio zero 2019
+616. cavalleri blanc de blancs mgm franciacorta docg brut nature vino spumante
+617. cavalleri cabernet sauvignon
+618. cavalleri chardonnay
+619. cavalleri espumante brut
+620. cavalleri espumante brut tradicional
+621. cavalleri espumante brut tradicional 36 meses
+622. cavalleri espumante moscatel
+623. cavalleri espumante moscatel rose
+624. cavalleri franciacorta blanc de blancs brut nature
+625. cavalleri franciacorta brut blanc de blancs nature
+626. cavalleri franciacorta brut blanc de blancs nature magnum
+627. cavalleri franciacorta brut saten 2018
+628. cavalleri franciacorta collezione exclusiva riserva 2013
+629. cavalleri franciacorta pas dose 2016
+630. cavalleri franciacorta pas dose 2017
+631. cavalleri franciacorta pas dose se riserva 2016
+632. cavalleri gran reserva cabernet sauvignon
+633. cavalleri la vie pinot noir rose
+634. cavalleri malbec
+635. cavalleri malbec demi sec rose
+636. cavalleri marselan
+637. cavalleri merlot
+638. cavalleri nilso cavalleri cabernet franc
+639. cavalleri pas dose
+640. cavalleri pas dose
+641. cavalleri pecato merlot
+642. cavalleri pinot noir
+643. cavalleri rosso espumante brut rose
+644. cavalleri saten franciacorta docg 2019 brut vino spumante
+645. cavalleri seradina brut
+646. cavalleri seradina brut
+647. cavalleri sur lie espumante nature
+648. cavalleri syrah
+649. cavalleri tajardino 1990
+650. cavalleri tannat
+651. cavalleri tereza espumante nature
+652. cavalleri vero
+653. cavallero 2015 barolo bussia
+654. cavallero barbaresco 1958
+655. cavallero barbaresco 1961
+656. cavallero brachetto dacqui 2023
+657. cavalli 2021
+658. cavalli 6 bottle mixed taster case
+659. cavalli black beauty shiraz 2018
+660. cavalli cabernet sauvignon
+661. cavalli cabernet sauvignon
+662. cavalli cabernet sauvignon
+663. cavalli cabernet sauvignon 2019
+664. cavalli cabernet sauvignon 2020
+665. cavalli cabernet sauvignon 2021
+666. cavalli cabernet sauvignon 2022
+667. cavalli capriole 2020
+668. cavalli capriole 2021
+669. cavalli capriole cc 2021
+670. cavalli capriole mcc
+671. cavalli capriole mcc 2019
+672. cavalli capriole mcc 2020
+673. cavalli chardonnay
+674. cavalli chardonnay
+675. cavalli chardonnay 2024
+676. cavalli chardonnay 2025
+677. cavalli chenin blanc 2022
+678. cavalli chenin blanc 2023
+679. cavalli chenin blanc 2023
+680. cavalli chenin blanc 2025
+681. cavalli colt cabernet sauvignon 2018
+682. cavalli cremello
+683. cavalli cremello 2014
+684. cavalli cremello 2018
+685. cavalli cremello 2021
+686. cavalli estate reserve chenin blanc 2024
+687. cavalli filly chenin blanc 2020
+688. cavalli foal verdelho
+689. cavalli igt 2019
+690. cavalli igt 2020
+691. cavalli igt 2020 box 6 flessen
+692. cavalli igt magnum 2021
+693. cavalli le redini tenuta degli dei 2020
+694. cavalli le redini tenuta degli dei 2020
+695. cavalli malbec 2023 limited edition
+696. cavalli neri 2015 rosso toscana 125
+697. cavalli neri brut vino spumante 10
+698. cavalli neri chardonnay bianco toscana 125
+699. cavalli pink pony
+700. cavalli pink pony grenache
+701. cavalli pink pony grenache rose 2020
+702. cavalli reserve chardonnay
+703. cavalli reserve chardonnay 2022
+704. cavalli reserve chardonnay 2024
+705. cavalli reserve chenin blanc
+706. cavalli reserve chenin blanc
+707. cavalli reserve chenin blanc
+708. cavalli reserve chenin blanc 2022
+709. cavalli reserve chenin blanc 2025
+710. cavalli reserve chenin blanc x6
+711. cavalli reserve white
+712. cavalli reserve white
+713. cavalli reserve white 2024
+714. cavalli reserve white 2024
+715. cavalli reserve white 2025
+716. cavalli roan syrah
+717. cavalli rosemary
+718. cavalli shiraz
+719. cavalli shiraz
+720. cavalli shiraz
+721. cavalli shiraz 2021
+722. cavalli shiraz 2022
+723. cavalli shiraz 2023
+724. cavalli shiraz 2023
+725. cavalli shiraz 2024
+726. cavalli tenuta degli dei 2013
+727. cavalli tenuta degli dei toscana igt 2019
+728. cavalli the foal verdelho
+729. cavalli the foal verdelho 2017
+730. cavalli toscana tenuta degli dei 2019
+731. cavalli toscana tenuta degli dei 2019
+732. cavalli toscana tenuta degli dei special edition box 2008 2009 2010
+733. cavalli toscana tenuta degli dei special edition box 2008 2009 2010
+734. cavalli unoaked chenin blanc
+735. cavalli unoaked chenin blanc
+736. cavalli unoaked chenin blanc
+737. cavalli unoaked chenin blanc 2023
+738. cavalli unoaked chenin blanc 2024
+739. cavalli unoaked chenin blanc 2024
+740. cavalli unoaked chenin blanc 2025
+741. cavalli vendetta
+742. cavalli warlord
+743. cavalli warlord
+744. cavalli warlord
+745. cavalli warlord 2019
+746. cavalli warlord 2021
+747. cavalli warlord 2022
+748. cavalli warlord bordeaux 2018
+749. cavalli warlord bordeaux blend
+750. cavalli white knight chenin blanc 2020
+751. cavalli white knight unoaked chenin blanc
+752. cavalli wine farm
+753. cavallina bianca 18 blend
+754. cavallina bianca 4 blend
+755. cavallina bianca chinata zanin
+756. cavallino barolo docg
+757. cavallino extra virgine olijfolie
+758. cavallino extra virgine olijfolie
+759. cavallo delle fate 2025
+760. cavallo delle fate grillo sicilia doc tasca dalmerita
+761. cavallo di battaglia montepulciano dabruzzo n
+762. cavallo pazzo pinot grigio rosato vigneti delle dolomiti natural rose
+763. cavalloto barolo bricco boschis 2019
+764. cavallotto
+765. cavallotto 1956 barolo
+766. cavallotto 1961 barbaresco
+767. cavallotto 1964 barolo
+768. cavallotto 1965 barbaresco
+769. cavallotto 1965 barolo bricco boschis
+770. cavallotto 1965 barolo riserva bricco boschis
+771. cavallotto 1967 barolo
+772. cavallotto 1967 barolo bricco boschis
+773. cavallotto 1967 barolo bricco boschis
+774. cavallotto 1968 barolo bricco boschis
+775. cavallotto 1968 grignolino delle langhe
+776. cavallotto 1970 barolo bricco boschis
+777. cavallotto 1971 barolo
+778. cavallotto 1971 barolo bricco boschis
+779. cavallotto 1974 barolo bricco boschis
+780. cavallotto 1974 langhe nebbiolo bricco boschis
+781. cavallotto 1975 barbera dalba bricco boschis
+782. cavallotto 1975 barolo bricco boschis
+783. cavallotto 1976 barolo riserva colle sud ovest
+784. cavallotto 1978 barolo bricco boschis
+785. cavallotto 1978 barolo riserva bricco boschis
+786. cavallotto 1978 barolo riserva colle sud ovest
+787. cavallotto 1979 barolo bricco boschis
+788. cavallotto 1979 barolo bricco boschis vigna san giuseppe
+789. cavallotto 1979 barolo riserva bricco boschis vigna san giuseppe
+790. cavallotto 1979 barolo riserva colle sud ovest
+791. cavallotto 1979 grignolino delle langhe
+792. cavallotto 1980 barolo bricco boschis vigna san giuseppe
+793. cavallotto 1980 barolo riserva colle sud ovest
+794. cavallotto 1981 barolo riserva bricco boschis vigna san giuseppe
+795. cavallotto 1981 barolo riserva colle sud ovest
+796. cavallotto 1982 barolo riserva bricco boschis vigna san giuseppe
+797. cavallotto 1983 barolo riserva bricco boschis vigna san giuseppe
+798. cavallotto 1984 barolo riserva bricco boschis vigna san giuseppe
+799. cavallotto 1985 barolo riserva bricco boschis punta marcello
+800. cavallotto 1985 barolo riserva bricco boschis vigna san giuseppe
+801. cavallotto 1988 barolo riserva bricco boschis cavaliere del tartuffo
+802. cavallotto 1989 barolo riserva bricco boschis vigna san giuseppe
+803. cavallotto 1998 barolo bricco boschis
+804. cavallotto 1999 barolo riserva bricco boschis vigna san giuseppe
+805. cavallotto 1999 barolo riserva bricco boschis vigna san giuseppe
+806. cavallotto 2001 barolo riserva bricco boschis vigna san giuseppe
+807. cavallotto 2001 barolo riserva bricco boschis vigna san giuseppe
+808. cavallotto 2001 barolo riserva bricco boschis vigna san giuseppe
+809. cavallotto 2003 barolo bricco boschis
+810. cavallotto 2004 barolo riserva bricco boschis vigna san giuseppe
+811. cavallotto 2006 barolo riserva bricco boschis vigna san giuseppe
+812. cavallotto 2006 barolo riserva vignolo
+813. cavallotto 2008 barolo riserva bricco boschis vigna san giuseppe
+814. cavallotto 2010 barolo bricco boschis
+815. cavallotto 2010 barolo riserva bricco boschis vigna san giuseppe
+816. cavallotto 2013 barolo bricco boschis
+817. cavallotto 2013 barolo riserva bricco boschis vigna san giuseppe
+818. cavallotto 2015 barolo bricco boschis
+819. cavallotto 2016 barolo bricco boschis
+820. cavallotto 2016 langhe nebbiolo
+821. cavallotto 2018 barolo bricco boschis
+822. cavallotto 2020 langhe freisa
+823. cavallotto 2021 barbera dalba vigna del cuculo
+824. cavallotto barbera dalba bricco boschis docg 1977
+825. cavallotto barbera dalba cuculo superiore
+826. cavallotto barbera dalba cuculo superiore
+827. cavallotto barbera dalba sup vigna cuculo 2021 doc bio
+828. cavallotto barbera dalba sup vigna cuculo 2022 doc bio
+829. cavallotto barbera dalba superiore doc vigna cuculo
+830. cavallotto barbera dalba superiore vigna cuculo 2015
+831. cavallotto barbera dalba superiore vigna cuculo 2017
+832. cavallotto barbera dalba superiore vigna cuculo 2021
+833. cavallotto barbera dalba superiore vigna cuculo 2022
+834. cavallotto barbera dalba superiore vigna del cuculo 2021
+835. cavallotto barbera dalba superiore vigna del cuculo 2023
+836. cavallotto barbera dalba superiore vigna del cuculo 2024
+837. cavallotto barbera dalba vigna cuculo
+838. cavallotto barbera dalba vigna del cuculo 2020
+839. cavallotto barbera dalba vigna del cuculo 2021
+840. cavallotto barbera dalba vigna del cuculo 2021
+841. cavallotto barbera dalba vigna del cuculo 2021
+842. cavallotto barbera dalba vigna del cuculo 2021
+843. cavallotto barolo 2015
+844. cavallotto barolo bricco boschis
+845. cavallotto barolo bricco boschis
+846. cavallotto barolo bricco boschis
+847. cavallotto barolo bricco boschis
+848. cavallotto barolo bricco boschis
+849. cavallotto barolo bricco boschis 2000
+850. cavallotto barolo bricco boschis 2010
+851. cavallotto barolo bricco boschis 2012
+852. cavallotto barolo bricco boschis 2013
+853. cavallotto barolo bricco boschis 2015
+854. cavallotto barolo bricco boschis 2015
+855. cavallotto barolo bricco boschis 2015
+856. cavallotto barolo bricco boschis 2015 magnum cassa in legno
+857. cavallotto barolo bricco boschis 2016
+858. cavallotto barolo bricco boschis 2016
+859. cavallotto barolo bricco boschis 2017
+860. cavallotto barolo bricco boschis 2017
+861. cavallotto barolo bricco boschis 2018
+862. cavallotto barolo bricco boschis 2018
+863. cavallotto barolo bricco boschis 2018
+864. cavallotto barolo bricco boschis 2018
+865. cavallotto barolo bricco boschis 2018
+866. cavallotto barolo bricco boschis 2018
+867. cavallotto barolo bricco boschis 2018
+868. cavallotto barolo bricco boschis 2018
+869. cavallotto barolo bricco boschis 2018
+870. cavallotto barolo bricco boschis 2018
+871. cavallotto barolo bricco boschis 2018
+872. cavallotto barolo bricco boschis 2019
+873. cavallotto barolo bricco boschis 2019
+874. cavallotto barolo bricco boschis 2019
+875. cavallotto barolo bricco boschis 2019
+876. cavallotto barolo bricco boschis 2019
+877. cavallotto barolo bricco boschis 2019
+878. cavallotto barolo bricco boschis 2019
+879. cavallotto barolo bricco boschis 2019
+880. cavallotto barolo bricco boschis 2019
+881. cavallotto barolo bricco boschis 2019
+882. cavallotto barolo bricco boschis 2019
+883. cavallotto barolo bricco boschis 2019
+884. cavallotto barolo bricco boschis 2019
+885. cavallotto barolo bricco boschis 2020
+886. cavallotto barolo bricco boschis 2020
+887. cavallotto barolo bricco boschis 2020
+888. cavallotto barolo bricco boschis 2020
+889. cavallotto barolo bricco boschis 2020
+890. cavallotto barolo bricco boschis 2020
+891. cavallotto barolo bricco boschis 2020
+892. cavallotto barolo bricco boschis 2020
+893. cavallotto barolo bricco boschis 2020
+894. cavallotto barolo bricco boschis 2020
+895. cavallotto barolo bricco boschis 2020
+896. cavallotto barolo bricco boschis 2021
+897. cavallotto barolo bricco boschis 2021
+898. cavallotto barolo bricco boschis 2021
+899. cavallotto barolo bricco boschis 2021
+900. cavallotto barolo bricco boschis 2021
+901. cavallotto barolo bricco boschis 2021
+902. cavallotto barolo bricco boschis 2021
+903. cavallotto barolo bricco boschis 2021
+904. cavallotto barolo bricco boschis 2021
+905. cavallotto barolo bricco boschis 2022
+906. cavallotto barolo bricco boschis docg two bottle case
+907. cavallotto barolo bricco boschis italy 2015
+908. cavallotto barolo bricco boschis italy 2018 750
+909. cavallotto barolo bricco boschis magnum 2018
+910. cavallotto barolo bricco boschis riserva san giuseppe
+911. cavallotto barolo bricco boschis riserva san giuseppe
+912. cavallotto barolo bricco boschis san giuseppe 2012
+913. cavallotto barolo bricco boschis san giuseppe riserva 2008
+914. cavallotto barolo bricco boschis san giuseppe rsv 2016
+915. cavallotto barolo bricco boschis vigna san giuseppe 2016
+916. cavallotto barolo bricco boschis vigna san giuseppe 2016
+917. cavallotto barolo bricco boschis vigna san giuseppe riserva 2017
+918. cavallotto barolo bricco boschis vigna san giuseppe riserva 2017
+919. cavallotto barolo docg bricco boschis
+920. cavallotto barolo docg bricco boschis
+921. cavallotto barolo docg riserva vigna san giuseppe
+922. cavallotto barolo docg riserva vigna san giuseppe single bottle in a wooden case
+923. cavallotto barolo docg riserva vignolo 2018 two bottle case
+924. cavallotto barolo mixed case
+925. cavallotto barolo riserva bricco boschis 2018 vigna san giuseppe
+926. cavallotto barolo riserva bricco boschis san giuseppe
+927. cavallotto barolo riserva bricco boschis san giuseppe 2015 docg
+928. cavallotto barolo riserva bricco boschis san giuseppe 2016
+929. cavallotto barolo riserva bricco boschis san giuseppe 2016 docg
+930. cavallotto barolo riserva bricco boschis vigna giuseppe 2013
+931. cavallotto barolo riserva bricco boschis vigna san giuseppe 2001
+932. cavallotto barolo riserva bricco boschis vigna san giuseppe 2008
+933. cavallotto barolo riserva bricco boschis vigna san giuseppe 2010
+934. cavallotto barolo riserva bricco boschis vigna san giuseppe 2010
+935. cavallotto barolo riserva bricco boschis vigna san giuseppe 2010
+936. cavallotto barolo riserva bricco boschis vigna san giuseppe 2012
+937. cavallotto barolo riserva bricco boschis vigna san giuseppe 2012 magnum cassa in legno
+938. cavallotto barolo riserva bricco boschis vigna san giuseppe 2013
+939. cavallotto barolo riserva bricco boschis vigna san giuseppe 2013
+940. cavallotto barolo riserva bricco boschis vigna san giuseppe 2013 doppia magnum cassa in legno
+941. cavallotto barolo riserva bricco boschis vigna san giuseppe 2016
+942. cavallotto barolo riserva bricco boschis vigna san giuseppe 2016
+943. cavallotto barolo riserva bricco boschis vigna san giuseppe 2016
+944. cavallotto barolo riserva bricco boschis vigna san giuseppe 2016
+945. cavallotto barolo riserva bricco boschis vigna san giuseppe 2016
+946. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+947. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+948. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+949. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+950. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+951. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+952. cavallotto barolo riserva bricco boschis vigna san giuseppe 2017
+953. cavallotto barolo riserva bricco boschis vigna san giuseppe 2018
+954. cavallotto barolo riserva bricco boschis vigna san giuseppe 2019
+955. cavallotto barolo riserva bricco boschis vigna san giuseppe 2019
+956. cavallotto barolo riserva bricco boschis vigna san giuseppe 2019 magnum cassa in legno
+957. cavallotto barolo riserva bricco boschis vigna san giuseppe 2020
+958. cavallotto barolo riserva bricco boschis vigna san giuseppe docg
+959. cavallotto barolo riserva bricco boschis vigna san giuseppe italy 2017 750
+960. cavallotto barolo riserva bricco boschis vigna san giuseppe italy 2018 750
+961. cavallotto barolo riserva bricco boschisvigna s giuseppe
+962. cavallotto barolo riserva cru bricco boschis vigna san giuseppe 2017
+963. cavallotto barolo riserva san giuseppe 2019
+964. cavallotto barolo riserva vigna san giuseppe
+965. cavallotto barolo riserva vigna san giuseppe 2017
+966. cavallotto barolo riserva vigna sud ovest 1979
+967. cavallotto barolo riserva vignolo
+968. cavallotto barolo riserva vignolo 2004
+969. cavallotto barolo riserva vignolo 2010
+970. cavallotto barolo riserva vignolo 2012
+971. cavallotto barolo riserva vignolo 2013
+972. cavallotto barolo riserva vignolo 2013
+973. cavallotto barolo riserva vignolo 2015
+974. cavallotto barolo riserva vignolo 2016
+975. cavallotto barolo riserva vignolo 2016
+976. cavallotto barolo riserva vignolo 2016
+977. cavallotto barolo riserva vignolo 2017
+978. cavallotto barolo riserva vignolo 2017
+979. cavallotto barolo riserva vignolo 2017
+980. cavallotto barolo riserva vignolo 2017
+981. cavallotto barolo riserva vignolo 2017
+982. cavallotto barolo riserva vignolo 2018
+983. cavallotto barolo riserva vignolo 2018
+984. cavallotto barolo riserva vignolo 2018
+985. cavallotto barolo riserva vignolo 2018
+986. cavallotto barolo riserva vignolo 2018
+987. cavallotto barolo riserva vignolo 2019
+988. cavallotto barolo riserva vignolo 2019
+989. cavallotto barolo riserva vignolo 2019
+990. cavallotto barolo riserva vignolo 2019
+991. cavallotto barolo riserva vignolo 2020
+992. cavallotto barolo rocche di castiglione 2022
+993. cavallotto barolo vigna san giuseppe 2016
+994. cavallotto barolo vigna san giuseppe 2017
+995. cavallotto barolo vignolo riserva 1999
+996. cavallotto barolo vignolo riserva 2008
+997. cavallotto barolo vignolo riserva 2009
+998. cavallotto barolo vignolo riserva 2011
+999. cavallotto barolo vignolo riserva 2015
+1000. cavallotto barolo vignolo riserva 2019

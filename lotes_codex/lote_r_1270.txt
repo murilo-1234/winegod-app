@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. barolo bussia riserva 2015 nebbiolo
+2. barolo bussia riserva 7 anni pianpolvere soprano
+3. barolo bussia riserva 90 di 2015
+4. barolo bussia riserva doc livia fontana
+5. barolo bussia riserva doc livia fontana
+6. barolo bussia riserva docg
+7. barolo bussia riserva docg
+8. barolo bussia riserva docg 2015 2016
+9. barolo bussia riserva docg giacomo fenocchio
+10. barolo bussia riserva docg giacomo fenocchio
+11. barolo bussia riserva docg vigna colonnello 2016 prunotto
+12. barolo bussia riserva docg vigna colonnello 2019 prunotto
+13. barolo bussia riserva docg vigna colonnello 2019 prunotto
+14. barolo bussia riserva docg vigna colonnello 2019 prunotto
+15. barolo bussia riserva docg vigna colonnello 2019 prunotto
+16. barolo bussia riserva docg vigna colonnello 2019 prunotto
+17. barolo bussia riserva fantini
+18. barolo bussia riserva munie 1999 parusso
+19. barolo bussia riserva oro 2006 domaine parusso
+20. barolo bussia riserva oro 2010 parusso
+21. barolo bussia riserva primis 3 flaskor av varje 6 flaskor totalt
+22. barolo bussia riserva vigna colonnello prunotto 2018
+23. barolo bussia romirasco 2016 poderi aldo conterno
+24. barolo bussia romirasco 2017
+25. barolo bussia romirasco poderi aldo conterno 2020
+26. barolo bussia simone scaletta
+27. barolo bussia soprana poderi aldo conterno 1967
+28. barolo bussia soprana poderi aldo conterno 1967
+29. barolo bussia soprana poderi aldo conterno 1967
+30. barolo bussia turot 98 99 prunotto
+31. barolo bussia vigna colonello riserva docg cassetta legno 2017
+32. barolo bussia vigna colonello riserva docg cassetta legno 2018
+33. barolo bussia vigna colonnello riserva 2017 prunotto
+34. barolo bussia vigna dei fantini 2020 silvano bolmida
+35. barolo bussia vigna fantini 2021 amalia
+36. barolo bussia vigna fantini docg
+37. barolo bussia vigna fiurin 1998
+38. barolo bussia vigna mondoca riserva 2017 oddero
+39. barolo bussia vigna mondoca riserva 2017 oddero cassa legno 6 bottiglie
+40. barolo bussia vigna mondoca riserva 2019
+41. barolo bussia vigna munie 1998
+42. barolo bussia vigna pianpolvere 2015 chionetti
+43. barolo bussia vigna pianpolvere 2019 famiglia anselma
+44. barolo bussia vigna rocche 1998
+45. barolo bussia vigna rocche parusso 1995
+46. barolo ca bianca tenimenti 2018
+47. barolo ca dnalin 2021 renzo seghesio
+48. barolo ca mia 2004
+49. barolo ca mia 2006
+50. barolo ca mia 2007
+51. barolo ca mia 2008
+52. barolo ca mia 2011
+53. barolo ca morissio 2014 bartolo mascarello
+54. barolo ca rossa doc 1967
+55. barolo calissano docg 1968
+56. barolo camerano 1958
+57. barolo camerano 1967
+58. barolo camerano doc 1974
+59. barolo camilla
+60. barolo camilla 2021 bruna grimaldi
+61. barolo camilla bruna grimaldi
+62. barolo camilla bruna grimaldi
+63. barolo camilla bruna grimaldi 2020
+64. barolo camilla bruna grimaldi 2021
+65. barolo camilla docg 2009 elegant nebbiolo from piedmont
+66. barolo camilla docg elegant nebbiolo from piedmont
+67. barolo campe
+68. barolo campe
+69. barolo campe
+70. barolo campe
+71. barolo campe
+72. barolo campe 2007 la spinetta
+73. barolo campe 2008 la spinetta
+74. barolo campe 2018
+75. barolo campe docg 2018 la spinetta
+76. barolo campe docg 2020
+77. barolo campe la spinetta wood case 2006
+78. barolo campe la spinetta wood case 2021
+79. barolo campe riserva
+80. barolo cannubi
+81. barolo cannubi
+82. barolo cannubi
+83. barolo cannubi
+84. barolo cannubi
+85. barolo cannubi
+86. barolo cannubi
+87. barolo cannubi 075 ltr
+88. barolo cannubi 1988 prunotto
+89. barolo cannubi 2009 francesco rinaldi figli
+90. barolo cannubi 2012 docg 1 francesco rinaldi figli
+91. barolo cannubi 2012 docg francesco rinaldi figli
+92. barolo cannubi 2012 elio altare 2012 azienda agricola elio altare
+93. barolo cannubi 2013 francesco rinaldi figli
+94. barolo cannubi 2013 magnum francesco rinaldi
+95. barolo cannubi 2013 marchesi di barolo
+96. barolo cannubi 2014 fratelli serio e battista borgogno
+97. barolo cannubi 2015 azienda agricola elio altare
+98. barolo cannubi 2015 francesco rinald figli
+99. barolo cannubi 2015 magnum francesco rinald figli
+100. barolo cannubi 2016
+101. barolo cannubi 2017
+102. barolo cannubi 2017 elio altare
+103. barolo cannubi 2018
+104. barolo cannubi 2018
+105. barolo cannubi 2018 chiara boschis e pira figli
+106. barolo cannubi 2019
+107. barolo cannubi 2019
+108. barolo cannubi 2019 marchesi di barolo
+109. barolo cannubi 2019 poderi luigi einaudi
+110. barolo cannubi 2019 prevenda
+111. barolo cannubi 2020
+112. barolo cannubi 2020 arnaldo rivera
+113. barolo cannubi 2020 burlotto
+114. barolo cannubi 2020 burlotto
+115. barolo cannubi 2020 burlotto
+116. barolo cannubi 2020 chiara et giorgio boschis pira figli
+117. barolo cannubi 2020 lastemia
+118. barolo cannubi 2020 poderi luigi einaudi
+119. barolo cannubi 2021
+120. barolo cannubi 2021 brezza
+121. barolo cannubi 2021 chiara et giorgio boschis pira figli
+122. barolo cannubi 2021 francesco rinaldi
+123. barolo cannubi 2021 fratelli serio battista borgogno
+124. barolo cannubi 2021 nebbiolo
+125. barolo cannubi 2021 poderi luigi einaudi
+126. barolo cannubi altare 2018
+127. barolo cannubi altare 2021
+128. barolo cannubi boschis
+129. barolo cannubi boschis 1998 sandrone
+130. barolo cannubi boschis 2003
+131. barolo cannubi boschis 2012 domaine luciano sandrone
+132. barolo cannubi boschis 2020 pico maccario
+133. barolo cannubi boschis 2021 pico maccario
+134. barolo cannubi boschis limited edition virna
+135. barolo cannubi chiara boschis
+136. barolo cannubi damilano 2019
+137. barolo cannubi damilano 2019
+138. barolo cannubi damilano 2021
+139. barolo cannubi docg
+140. barolo cannubi docg
+141. barolo cannubi docg
+142. barolo cannubi docg
+143. barolo cannubi docg
+144. barolo cannubi docg 2015
+145. barolo cannubi docg 2016 brezza
+146. barolo cannubi docg 2016 brezza
+147. barolo cannubi docg 2017 virna borgogno
+148. barolo cannubi docg 2018
+149. barolo cannubi docg 2018
+150. barolo cannubi docg 2018
+151. barolo cannubi docg 2018 borgogno magnum in astuccio legno
+152. barolo cannubi docg 2018 doublemagnum
+153. barolo cannubi docg 2019 box of 6 bottles
+154. barolo cannubi docg 2019 carlo viglione
+155. barolo cannubi docg 2019 carlo viglione
+156. barolo cannubi docg 2019 carlo viglione
+157. barolo cannubi docg 2020
+158. barolo cannubi docg 2020 borgogno
+159. barolo cannubi docg 2020 borgogno
+160. barolo cannubi docg 2020 borgogno
+161. barolo cannubi docg 2020 borgogno
+162. barolo cannubi docg 2020 borgogno
+163. barolo cannubi docg 2020 brezza
+164. barolo cannubi docg 2020 brezza
+165. barolo cannubi docg 2020 brezza
+166. barolo cannubi docg 2021
+167. barolo cannubi docg 2021
+168. barolo cannubi docg 2021
+169. barolo cannubi docg 2021
+170. barolo cannubi docg 2021
+171. barolo cannubi docg 2021
+172. barolo cannubi docg 2021
+173. barolo cannubi docg 2021
+174. barolo cannubi docg 2021
+175. barolo cannubi docg 2021 doppel
+176. barolo cannubi docg 2021 francesco rinaldi figli
+177. barolo cannubi docg 2021 francesco rinaldi figli
+178. barolo cannubi docg 2021 francesco rinaldi figli
+179. barolo cannubi docg 2021 francesco rinaldi figli
+180. barolo cannubi docg 2021 francesco rinaldi figli
+181. barolo cannubi docg 2021 marchesi di barolo
+182. barolo cannubi docg 2021 marchesi di barolo
+183. barolo cannubi docg 2021 marchesi di barolo
+184. barolo cannubi docg 2021 marchesi di barolo
+185. barolo cannubi docg 2021 marchesi di barolo
+186. barolo cannubi docg bio 2020
+187. barolo cannubi docg bio azienda vinicole ceretto
+188. barolo cannubi docg giacomo fenocchio
+189. barolo cannubi docg giacomo fenocchio
+190. barolo cannubi docg giacomo fenocchio
+191. barolo cannubi docg marchesi di barolo
+192. barolo cannubi docg reserva 2019
+193. barolo cannubi docg virna borgogno
+194. barolo cannubi e pira chiara boschis mwo 2020
+195. barolo cannubi e pira chiara boschis mwo 2021
+196. barolo cannubi francesco rinaldi
+197. barolo cannubi francesco rinaldi 2017 italie piemonte rood
+198. barolo cannubi limited edition 10 anni
+199. barolo cannubi luigi einaudi
+200. barolo cannubi marchesi di barolo
+201. barolo cannubi marchesi di barolo 2016
+202. barolo cannubi marchesi di barolo 2018
+203. barolo cannubi michele chiarlo
+204. barolo cannubi michele chiarlo 2021
+205. barolo cannubi moscatel 2017 carlo viglione
+206. barolo cannubi muscatel 2013
+207. barolo cannubi muscatel docg 2019 viglione
+208. barolo cannubi paolo scavino 2018
+209. barolo cannubi piemonte cascina adelaide 2019
+210. barolo cannubi riserva 1752 damilano
+211. barolo cannubi riserva 1752 damilano
+212. barolo cannubi riserva 2009
+213. barolo cannubi riserva docg
+214. barolo cannubi riserva docg 2016 box of 6 bottles
+215. barolo cannubi riserva docg poderi gianni gagliardo
+216. barolo cannubi s b borgogno 2020
+217. barolo cannubi san lorenzo
+218. barolo cannubi san lorenzo
+219. barolo cannubi san lorenzo 2008 giuseppe rinaldi
+220. barolo cannubi san lorenzo 2008 giuseppe rinaldi
+221. barolo cannubi san lorenzo docg
+222. barolo cantine luigi doc 1964
+223. barolo cantine santa rita doc 1970
+224. barolo cantine volpi piemont
+225. barolo capalot
+226. barolo capalot 2016 magnum santa maria
+227. barolo capalot 2016 santa maria
+228. barolo capalot 2016 santa maria
+229. barolo capalot 2019 crissante alessandria
+230. barolo capalot 2019 santamaria di walter viberti
+231. barolo capalot 2020 santamaria di walter viberti
+232. barolo capalot burzi
+233. barolo capalot docg 2016 3x2017 16x2019 8x2020 18x2021 18x alberto burzi
+234. barolo capalot docg 2019 20202021 cristian boffa
+235. barolo capalot docg 2019 cristian boffa
+236. barolo capalot docg 2020
+237. barolo capalot docg 2021 magnum 1 cristian boffa
+238. barolo capetta doc 1967
+239. barolo capra giuseppe doc 1977
+240. barolo carlo mancardi docg 1969
+241. barolo carlo revello figli 2018
+242. barolo carlo rinaldi riserva 1958
+243. barolo carobric paolo scavino 2001
+244. barolo carretta doc 1960
+245. barolo carretta docg 1980
+246. barolo casa di e mirafiore italy
+247. barolo casa mate
+248. barolo casa mirafiore docg 2016
+249. barolo casali del barone
+250. barolo casana rombone doc 1979
+251. barolo cascina ballarin 2017
+252. barolo cascina boschetti 2021 gomba
+253. barolo cascina ferrero docg
+254. barolo cascina ferrero docg tenuta carretta
+255. barolo cascina francia
+256. barolo cascina francia
+257. barolo cascina francia 1988
+258. barolo cascina francia 1990
+259. barolo cascina francia 1999
+260. barolo cascina francia 2004 giacomo conterno
+261. barolo cascina francia 2004 giacomo conterno
+262. barolo cascina francia 2007 giacomo conterno
+263. barolo cascina francia 2009
+264. barolo cascina francia 2012 giacomo conterno
+265. barolo cascina francia 2012 giacomo conterno
+266. barolo cascina francia 2015 giacomo conterno
+267. barolo cascina francia 2015 giacomo conterno
+268. barolo cascina francia 2017 giacomo conterno
+269. barolo cascina francia 2017 giacomo conterno
+270. barolo cascina francia 2018
+271. barolo cascina francia 2018 giacomo conterno
+272. barolo cascina francia 2018 giacomo conterno
+273. barolo cascina francia conterno 2012
+274. barolo cascina francia conterno 2012
+275. barolo cascina francia conterno 2015
+276. barolo cascina francia conterno 2016
+277. barolo cascina francia conterno 2016
+278. barolo cascina francia conterno 2017
+279. barolo cascina francia conterno 2018
+280. barolo cascina francia conterno 2018
+281. barolo cascina francia conterno 2021
+282. barolo cascina francia conterno 2021
+283. barolo cascina francia docg 2018 giacomo conterno
+284. barolo cascina francia docg 2018 magnum in cassa legno giacomo conterno
+285. barolo cascina francia docg 2020 giacomo conterno
+286. barolo cascina francia docg 2020 jeroboam giacomo conterno in cassa legno
+287. barolo cascina francia docg 2020 magnum giacomo conterno in cassa legno
+288. barolo cascina francia docg 2021 giacomo conterno
+289. barolo cascina francia docg 2021 jeroboam giacomo conterno in cassa legno
+290. barolo cascina francia docg 2021 magnum giacomo conterno in cassa legno
+291. barolo cascina francia magnum 2018
+292. barolo cascina la traversa 1969
+293. barolo cascina maria 2020 azienda agricola demarie
+294. barolo cascina maria piemonte 2020
+295. barolo cascina massara
+296. barolo cascina nuova 2017 elvio cogno
+297. barolo cascina nuova 2018
+298. barolo cascina nuova 2018 0
+299. barolo cascina nuova 2018 elvio cogno
+300. barolo cascina nuova 2020 0
+301. barolo cascina nuova 2020 elvio cogno
+302. barolo cascina nuova 2021 0
+303. barolo cascina nuova 2021 elvio cogno topjaar
+304. barolo cascina nuova docg 2020
+305. barolo casina bric
+306. barolo casina bric 2017
+307. barolo casina bric 2018 460 casina bric
+308. barolo castagni
+309. barolo castagni docg 0
+310. barolo castagni la morra michele reverdito 2017
+311. barolo castagni la morra reverdito
+312. barolo castagni la morra reverdito magnm
+313. barolo castagni michele reverdito 2019
+314. barolo castagnole doc 1964
+315. barolo casteletto docg
+316. barolo castellana doc 1961
+317. barolo castellana doc 1966
+318. barolo castellero
+319. barolo castellero
+320. barolo castellero 2016
+321. barolo castellero 2017
+322. barolo castellero 2018
+323. barolo castellero 2019 brezza
+324. barolo castellero 2020
+325. barolo castellero 2021
+326. barolo castellero 2021
+327. barolo castellero 2021 brezza
+328. barolo castellero 2021 marrone
+329. barolo castellero docg 2016 brezza
+330. barolo castellero docg 2020
+331. barolo castellero giacomo fenocchio 2018
+332. barolo castelletto
+333. barolo castelletto
+334. barolo castelletto
+335. barolo castelletto
+336. barolo castelletto 2008
+337. barolo castelletto 2015
+338. barolo castelletto 2016
+339. barolo castelletto 2017
+340. barolo castelletto 2018
+341. barolo castelletto 2021 fortemasso
+342. barolo castelletto castello di perno
+343. barolo castelletto docg 2014 fortemasso
+344. barolo castelletto docg 2015 fortemasso
+345. barolo castelletto docg fortemasso italie 2019
+346. barolo castelletto la villa 2019
+347. barolo castelletto la villa fratelli seghesio 2021
+348. barolo castelletto la villa seghesio 2019
+349. barolo castelletto vigna pressanda docg 2020 normalflasche
+350. barolo castelletto vigna pressenda 2020
+351. barolo castelletto vigna pressenda conterno fantino 2021
+352. barolo castello di verduno
+353. barolo castello di verduno 2021
+354. barolo castiglione
+355. barolo castiglione
+356. barolo castiglione 2008 vietti
+357. barolo castiglione 2012 domaine vietti 2012 vietti
+358. barolo castiglione 2012 vietti
+359. barolo castiglione 2015 barolo docg
+360. barolo castiglione 2017
+361. barolo castiglione 2017 vietti
+362. barolo castiglione 2018
+363. barolo castiglione 2018 vietti
+364. barolo castiglione 2019
+365. barolo castiglione 2019
+366. barolo castiglione 2019 vietti
+367. barolo castiglione 2019 vietti
+368. barolo castiglione 2020
+369. barolo castiglione 2020
+370. barolo castiglione 2020 magnum vietti
+371. barolo castiglione 2020 magnum vietti
+372. barolo castiglione 2020 magnum vietti
+373. barolo castiglione 2020 magnum vietti
+374. barolo castiglione 2020 magnum vietti
+375. barolo castiglione 2020 vietti
+376. barolo castiglione 2021 magnum vietti
+377. barolo castiglione 2021 magnum vietti
+378. barolo castiglione 2021 magnum vietti
+379. barolo castiglione 2021 vietti
+380. barolo castiglione dezzani
+381. barolo castiglione docg
+382. barolo castiglione docg
+383. barolo castiglione docg
+384. barolo castiglione docg 2019 vietti
+385. barolo castiglione docg 2020
+386. barolo castiglione docg 2020 jeroboam vietti
+387. barolo castiglione docg 2020 jeroboam vietti
+388. barolo castiglione docg 2020 jeroboam vietti
+389. barolo castiglione docg 2020 jeroboam vietti
+390. barolo castiglione docg 2020 jeroboam vietti
+391. barolo castiglione docg 2021 jeroboam vietti
+392. barolo castiglione docg 2021 jeroboam vietti
+393. barolo castiglione docg 2021 jeroboam vietti
+394. barolo castiglione docg vietti
+395. barolo castiglione docg vietti
+396. barolo castiglione docg vietti piemonte
+397. barolo castiglione docg vietti piemonte
+398. barolo castiglione falletto
+399. barolo castiglione falletto 2017
+400. barolo castiglione falletto anna maria abbona 2020
+401. barolo castiglione falletto docg anna maria abbona
+402. barolo castiglione vecchie viti 2020 roccheviberti
+403. barolo castiglione vietti
+404. barolo castiglione vietti 2012
+405. barolo castiglione vietti 2019
+406. barolo castiglione vietti 2020
+407. barolo castiglione vietti 2021
+408. barolo castiglione vietti docg wein
+409. barolo cavallo serafino doc 1966
+410. barolo cavallotto bricco boschis 2020
+411. barolo caviot ca viola
+412. barolo caviot docg 2020
+413. barolo cellar selection
+414. barolo cerequio
+415. barolo cerequio
+416. barolo cerequio 2016
+417. barolo cerequio 2016
+418. barolo cerequio 2018 azienda agricola roberto voerzio
+419. barolo cerequio 2018 michele chiarlo
+420. barolo cerequio 2018 vietti cassa legno
+421. barolo cerequio 2019
+422. barolo cerequio 2019 michele chiarlo
+423. barolo cerequio 2019 vietti
+424. barolo cerequio 2020 vietti in cassa legno
+425. barolo cerequio 2021
+426. barolo cerequio 2021 michele chiarlo
+427. barolo cerequio annate storiche roberto voerzio
+428. barolo cerequio docg
+429. barolo cerequio docg
+430. barolo cerequio docg 2016
+431. barolo cerequio docg 2018
+432. barolo cerequio docg 2021 vietti
+433. barolo cerequio docg 2021 vietti
+434. barolo cerequio docg 2021 vietti
+435. barolo cerequio docg damilano
+436. barolo cerequio docg damilano
+437. barolo cerequio docg damilano
+438. barolo cerequio docg magnum 2021 vietti
+439. barolo cerequio docg magnum 2021 vietti
+440. barolo cerequio docg magnum 2021 vietti
+441. barolo cerequio michele chiarlo
+442. barolo ceretta 2016 fratelli revello
+443. barolo ceretta baudana organic 2019 docg gd vajra
+444. barolo ceretta docg 2021
+445. barolo ceretta germano 2013
+446. barolo ceretto
+447. barolo ceretto
+448. barolo ceretto
+449. barolo ceretto 2016 075
+450. barolo ceretto brunate
+451. barolo ceretto brunate
+452. barolo ceretto brunate
+453. barolo ceretto chinato
+454. barolo ceretto chinato
+455. barolo ceretto docg 1981
+456. barolo cerreta 2010 domaine elio altare 2010 azienda agricola elio altare
+457. barolo cerreta bricco riserva docg 2018
+458. barolo cerretta
+459. barolo cerretta
+460. barolo cerretta
+461. barolo cerretta
+462. barolo cerretta
+463. barolo cerretta 2004 ettore germano
+464. barolo cerretta 2006 ettore germano
+465. barolo cerretta 2013
+466. barolo cerretta 2013
+467. barolo cerretta 2015
+468. barolo cerretta 2015 giovanni rosso
+469. barolo cerretta 2017
+470. barolo cerretta 2017 gd vajra luigi baudana
+471. barolo cerretta 2017 nebbiolo
+472. barolo cerretta 2019 prunotto
+473. barolo cerretta 2020 ettore germano
+474. barolo cerretta 2020 mauro sebaste
+475. barolo cerretta 2021 domaine giacomo conterno
+476. barolo cerretta azelia 2021
+477. barolo cerretta docg 2015
+478. barolo cerretta docg 2016
+479. barolo cerretta docg 2020
+480. barolo cerretta docg 2020 schiavenza
+481. barolo cerretta docg 2020 schiavenza
+482. barolo cerretta docg 2020 schiavenza
+483. barolo cerretta docg agricola brandini
+484. barolo cerretta docg cassetta legno 2020
+485. barolo cerretta docg davide fregonese
+486. barolo cerretta docg davide fregonese
+487. barolo cerretta docg gran riserva 2005
+488. barolo cerretta docg gran riserva 2007
+489. barolo cerretta docg gran riserva 2007
+490. barolo cerretta docg gran riserva 2009
+491. barolo cerretta docg gran riserva 2010
+492. barolo cerretta docg gran riserva 2011
+493. barolo cerretta docg gran riserva 2018
+494. barolo cerretta docg vigna bricco 2019 elio altare
+495. barolo cerretta docg vigna bricco 2019 elio altare
+496. barolo cerretta docg vigna bricco 2019 elio altare
+497. barolo cerretta docg vigna bricco 2019 elio altare
+498. barolo cerretta docg vigna bricco 2019 elio altare
+499. barolo cerretta ettore germano 2019
+500. barolo cerretta ettore germano 2020
+501. barolo cerretta ettore germano 2021
+502. barolo cerretta garesio 2017
+503. barolo cerretta giovanni rosso 2021
+504. barolo cerretta prunotto 2020
+505. barolo cerretta revello 2021
+506. barolo cerretta schiavenza
+507. barolo cerretta schiavenza
+508. barolo cerviano docg 2011 baslerweinmessela selection 2017 medaille dor
+509. barolo cerviano merli 2020 marziano abbona
+510. barolo cerviano merli docg 2018
+511. barolo cesare pavese
+512. barolo ceste
+513. barolo champagne
+514. barolo chianto bartolo mascarello 2020
+515. barolo chianto bartolo mascarello 2023
+516. barolo chianto bartolo mascarello 2025
+517. barolo chinato
+518. barolo chinato
+519. barolo chinato
+520. barolo chinato
+521. barolo chinato
+522. barolo chinato
+523. barolo chinato
+524. barolo chinato
+525. barolo chinato
+526. barolo chinato
+527. barolo chinato
+528. barolo chinato
+529. barolo chinato
+530. barolo chinato
+531. barolo chinato
+532. barolo chinato 0
+533. barolo chinato 2016
+534. barolo chinato antica distilleria quaglia
+535. barolo chinato antica ricetta cocchi
+536. barolo chinato astucciato
+537. barolo chinato astucciato
+538. barolo chinato astucciato
+539. barolo chinato astucciato 0
+540. barolo chinato cappellano
+541. barolo chinato cappellano astuccio
+542. barolo chinato cappellano astuccio
+543. barolo chinato cappellano astuccio
+544. barolo chinato ceretto
+545. barolo chinato ceretto
+546. barolo chinato ceretto
+547. barolo chinato ceretto
+548. barolo chinato ceretto 05
+549. barolo chinato ceretto astucciato
+550. barolo chinato cl 50 cappellano astucciato
+551. barolo chinato cl 75 cappellano astucciato
+552. barolo chinato cocchi
+553. barolo chinato cocchi
+554. barolo chinato cocchi
+555. barolo chinato cocchi
+556. barolo chinato cocchi
+557. barolo chinato cocchi
+558. barolo chinato cocchi 165 05
+559. barolo chinato cocchi astucciato cl50
+560. barolo chinato cocchi cl 100
+561. barolo chinato damilano nv
+562. barolo chinato diego conterno
+563. barolo chinato distilleria quaglia
+564. barolo chinato docg astucciato ceretto
+565. barolo chinato docg damilano
+566. barolo chinato docg erbaluna
+567. barolo chinato docg gd vajra astuccio
+568. barolo chinato docg gd vajra astuccio
+569. barolo chinato docg gd vajra astuccio
+570. barolo chinato erbaluna
+571. barolo chinato fontanafredda
+572. barolo chinato fratelli alessandria
+573. barolo chinato gd vajra
+574. barolo chinato gianni gagliardo
+575. barolo chinato le righe vino aromatizzato
+576. barolo chinato marchesi di barolo
+577. barolo chinato marchesi di barolo
+578. barolo chinato montanaro astucciato
+579. barolo chinato nv
+580. barolo chinato nv e pira e figli nv
+581. barolo chinato pio cesare
+582. barolo chinato pio cesare astuccio
+583. barolo chinato pio cesare astuccio
+584. barolo chinato pio cesare astuccio
+585. barolo chinato poderi luigi einaudi vino aromatizzato
+586. barolo chinato riserva roagna
+587. barolo chinato riserva roagna
+588. barolo chinato riserva roagna
+589. barolo chinato riserva roagna
+590. barolo chinato riserva roagna
+591. barolo chinato schiavenza
+592. barolo chinato spirito onirico beccaris
+593. barolo chinato torino
+594. barolo chinato vecchia formular
+595. barolo chinato vino aromatizzato
+596. barolo chinatococchi lt 05
+597. barolo chirlet 2017
+598. barolo chirlet simone scaletta
+599. barolo ciabot berton 1961 docg
+600. barolo ciabot berton docg 14 0
+601. barolo ciabot berton roggeri
+602. barolo ciabot berton roggeri
+603. barolo ciabot mentin docg ginestra 2017
+604. barolo ciabot mentin ginestra
+605. barolo ciabot tanasio sobrero 2018
+606. barolo cicala 2010
+607. barolo cicala 2013
+608. barolo cicala poderi aldo conterno 2021
+609. barolo cinquantacinque
+610. barolo cinquevigne 2018 damilano
+611. barolo ciravegna bartolomeo doc 1971
+612. barolo ciravegna bartolomeo doc 1974
+613. barolo classico
+614. barolo classico
+615. barolo classico 1969
+616. barolo classico 2021
+617. barolo classico brezza piemonte italy
+618. barolo classico docg
+619. barolo classico docg
+620. barolo classico docg 2016
+621. barolo classico docg 2019
+622. barolo classico docg 2019 magnum
+623. barolo classico docg 2019 scarzello
+624. barolo classico docg 2021
+625. barolo classico docg magnum oddero
+626. barolo classico docg magnum oddero
+627. barolo classico docg neirano ml 750 cod ne005
+628. barolo classico enrico serafino 1958
+629. barolo classico gianni gagliardo
+630. barolo classico la morra 2021 oddero
+631. barolo classico oddero
+632. barolo classico oddero
+633. barolo classico wijn uit 1958 vintage geboortejaar
+634. barolo clerico
+635. barolo clerico
+636. barolo clerico ciabot mentin
+637. barolo clerico ciabot mentin
+638. barolo co cadeaukaart verschillende waardes beschikbaar
+639. barolo co wijnclub riserva lidmaatschap
+640. barolo cocchi chinato
+641. barolo collezione le teorie borgogno cassetta in legno 3 btg
+642. barolo colonello 2010
+643. barolo colonello 2012
+644. barolo colonello 2013
+645. barolo colonello poderi aldo conterno 2021
+646. barolo commune di barolo pittatore 20182019
+647. barolo commune di la morra
+648. barolo commune di la morra 2019 2020 2021 cristian boffa
+649. barolo commune di la morra docg 2015 3x168x17 13x18 7x2018x 2021 18x alberto burzi
+650. barolo commune di la morra docg 2021 magnum 1 alberto burzi
+651. barolo comune del grinzane cavour 2021
+652. barolo comune di la morra docg 2020
+653. barolo comune di serralunga dalba docg 2021
+654. barolo conca
+655. barolo conca 2016
+656. barolo conca 2016 azienda agricola mauro molino
+657. barolo conca 2017 azienda agricola mauro molino
+658. barolo conca 2018 azienda agricola mauro molino
+659. barolo conca 2018 viticoltore mauro molino
+660. barolo conca 2019 azienda agricola mauro molino
+661. barolo conca docg
+662. barolo conca docg
+663. barolo conca docg 2019 fratelli revello
+664. barolo conca docg 2021
+665. barolo conteisa
+666. barolo conteisa 2014 gaja
+667. barolo conteisa 2014 gaja
+668. barolo conteisa 2014 gaja
+669. barolo conteisa 2015
+670. barolo conteisa 2015 gaja
+671. barolo conteisa 2017 gaja
+672. barolo conteisa 2019 gaja
+673. barolo conteisa 2019 gaja
+674. barolo conteisa gaja
+675. barolo conteisa gaja 2015
+676. barolo conterno 2020
+677. barolo conterno aldo bussia
+678. barolo conterno aldo bussia
+679. barolo conterno aldo colonnello
+680. barolo conterno aldo colonnello
+681. barolo conterno aldo gran bussia riserva
+682. barolo conterno aldo gran bussia riserva
+683. barolo conterno fantino sori ginestra
+684. barolo conterno francia 2017
+685. barolo conterno francia 2018
+686. barolo conterno francia 2021
+687. barolo conterno g monfortino75cl
+688. barolo conterno g monfortino75cl
+689. barolo conterno monfortino 2019
+690. barolo conterno monfortino riserva 1997
+691. barolo contratto 1970
+692. barolo contratto 1970
+693. barolo contratto 1970
+694. barolo convento luigi oddero 2019
+695. barolo convento luigi oddero 2019 piedmont italy
+696. barolo cooperativa tra produttori scuta 2019
+697. barolo cordero di montezemolo 1989
+698. barolo cordero di montezemolo 1989
+699. barolo cordero di montezemolo 1989
+700. barolo cordero di montezemolo 1998
+701. barolo cordero di montezemolo 1998
+702. barolo cordero di montezemolo 1998
+703. barolo cordero di montezemolo 1998
+704. barolo cossetti doc 1969
+705. barolo costa di bussia docg 2021
+706. barolo costa di bussia docg 2021
+707. barolo costareto 2015
+708. barolo coste di rose 2015 riserva bric cenciurio
+709. barolo coste di rose 20162017 bric cenciurio
+710. barolo coste di rose 2019
+711. barolo coste di rose 2021 gdvajra
+712. barolo coste di rose docg 2017
+713. barolo coste di rose docg 2019 marchesi di barolo
+714. barolo coste di rose docg 2019 marchesi di barolo
+715. barolo coste di rose docg 2019 marchesi di barolo
+716. barolo coste di rose docg 2019 marchesi di barolo
+717. barolo coste di rose marchesi di barolo
+718. barolo coste di rose organic 2019 docg gd vajra
+719. barolo coste di rosse docg marchesi di barolo
+720. barolo coste mosconi 2007 domaine parusso
+721. barolo coste mosconi 2018 parusso
+722. barolo coste mosconi 2019 parusso
+723. barolo coste mosconi docg
+724. barolo cru brandini docg agricola brandini
+725. barolo cru pichemej
+726. barolo curto marco doc 1978
+727. barolo d o c g bussia riserva 2015
+728. barolo d o c g bussia riserva 2016 bio
+729. barolo d o c g bussia riserva magnum 2016 bio
+730. barolo da vecchie riserve anteriori 1950
+731. barolo dagromis
+732. barolo dagromis
+733. barolo dagromis
+734. barolo dagromis
+735. barolo dagromis
+736. barolo dagromis 2013
+737. barolo dagromis 2014 barolo docg
+738. barolo dagromis 2015
+739. barolo dagromis 2015 gaja
+740. barolo dagromis 2016 gaja
+741. barolo dagromis 2016 gaja
+742. barolo dagromis 2017 dop gaja
+743. barolo dagromis 2017 gaja
+744. barolo dagromis 2019
+745. barolo dagromis docg gaja
+746. barolo dagromis dop 2020 gaja
+747. barolo dagromis gaja
+748. barolo dagromis gaja
+749. barolo dagromis gaja
+750. barolo dagromis gaja
+751. barolo dagromis gaja 2020
+752. barolo dagromis gaja 2021
+753. barolo dagromis gaja 2021
+754. barolo dagromis gaja cofanetto 2 bottiglie
+755. barolo dagromis gaja docg
+756. barolo dalba conca docg 2020
+757. barolo dalba doc 2018 renzo seghesio
+758. barolo dalba docg 2019
+759. barolo dalba docg 2019
+760. barolo dalba docg 2020
+761. barolo dalba docg 2021
+762. barolo dalba docg 2021
+763. barolo dalba docg arborina 2021
+764. barolo dalba docg rocche dellannunziata 2021
+765. barolo dalba docg roncaglie 2021
+766. barolo dalba san giovanni docg 2020
+767. barolo dalba san giovanni docg 2021
+768. barolo damilano 1967
+769. barolo damilano 1967 exclusief italiaans
+770. barolo damilano 1967 exclusively italian
+771. barolo damilano 1967 exklusivt italiensk
+772. barolo damilano 1976
+773. barolo damilano 1976
+774. barolo damilano 1976
+775. barolo damilano 1976
+776. barolo damilano 1978
+777. barolo damilano 1978 red wine
+778. barolo damilano 1978 rode wijn
+779. barolo damilano 1978 rott vin
+780. barolo damilano 1983 db
+781. barolo damilano 1983 db
+782. barolo damilano 1983 db
+783. barolo damilano freisa 1970
+784. barolo damilano lecinquevigne75cl
+785. barolo damilano lecinquevigne75cl
+786. barolo daniele conterno panerole 2022
+787. barolo debutto
+788. barolo defilippi giuseppe doc 1967
+789. barolo del buon padre docg 2019
+790. barolo del commune di la morra docg 201516171819 2021 renato corino
+791. barolo del commune di la morra docg magnum 1 2021 renato corino
+792. barolo del comune di barolo
+793. barolo del comune di barolo
+794. barolo del comune di barolo 2017 marchesi di barolo
+795. barolo del comune di barolo 2019
+796. barolo del comune di barolo 2019
+797. barolo del comune di barolo docg 2016
+798. barolo del comune di barolo docg 2017 marchesi di barolo
+799. barolo del comune di barolo docg 2019
+800. barolo del comune di barolo docg 2019 roagna
+801. barolo del comune di barolo docg 2019 roagna
+802. barolo del comune di barolo docg 2019 roagna
+803. barolo del comune di barolo docg 2019 roagna
+804. barolo del comune di barolo docg 2019 roagna
+805. barolo del comune di barolo docg 2020 marchesi di barolo
+806. barolo del comune di barolo docg 2020 marchesi di barolo
+807. barolo del comune di barolo docg 2020 marchesi di barolo
+808. barolo del comune di barolo docg 2020 marchesi di barolo
+809. barolo del comune di barolo docg 2020 marchesi di barolo
+810. barolo del comune di barolo docg 2020 roagna
+811. barolo del comune di barolo docg 2022 magnum scarzello
+812. barolo del comune di barolo docg 2022 magnum scarzello
+813. barolo del comune di barolo docg 2022 magnum scarzello
+814. barolo del comune di barolo docg 2022 magnum scarzello
+815. barolo del comune di barolo docg 2022 magnum scarzello
+816. barolo del comune di barolo docg 2022 scarzello
+817. barolo del comune di barolo docg 2022 scarzello
+818. barolo del comune di barolo docg 2022 scarzello
+819. barolo del comune di barolo docg 2022 scarzello
+820. barolo del comune di barolo docg 2022 scarzello
+821. barolo del comune di barolo docg marchesi di barolo
+822. barolo del comune di barolo docg pittatore bric cenciurio
+823. barolo del comune di barolo virna
+824. barolo del comune di castiglione falleto 2021
+825. barolo del comune di castiglione falletto 2019
+826. barolo del comune di castiglione falletto 2020
+827. barolo del comune di castiglione falletto 2020 cascina fontana
+828. barolo del comune di castiglione falletto barolo docg boroli
+829. barolo del comune di castiglione falletto vecchie viti roccheviberti 2022
+830. barolo del comune di grinzane cavour 2016
+831. barolo del comune di grinzane cavour 2017
+832. barolo del comune di grinzane cavour docg 2021 giovanni canonica
+833. barolo del comune di grinzane cavour docg 2021 giovanni canonica
+834. barolo del comune di grinzane cavour docg 2021 giovanni canonica
+835. barolo del comune di grinzane cavour docg 2021 giovanni canonica
+836. barolo del comune di la morra
+837. barolo del comune di la morra
+838. barolo del comune di la morra
+839. barolo del comune di la morra
+840. barolo del comune di la morra
+841. barolo del comune di la morra
+842. barolo del comune di la morra
+843. barolo del comune di la morra 2016
+844. barolo del comune di la morra 2017
+845. barolo del comune di la morra 2017 azienda agricola roberto voerzio
+846. barolo del comune di la morra 2019
+847. barolo del comune di la morra 2019 azienda agricola roberto voerzio
+848. barolo del comune di la morra 2019 dosio
+849. barolo del comune di la morra 2020
+850. barolo del comune di la morra 2020 ciabot berton
+851. barolo del comune di la morra 2020 crissante alessandria
+852. barolo del comune di la morra 2020 roberto voerzio
+853. barolo del comune di la morra 2021
+854. barolo del comune di la morra 2021
+855. barolo del comune di la morra 2021
+856. barolo del comune di la morra 2021 crissante alessandria
+857. barolo del comune di la morra brandini
+858. barolo del comune di la morra cesare bussolo 2020 italie piemonte rood
+859. barolo del comune di la morra crissante 2018
+860. barolo del comune di la morra docg 2018 cesare bussolo
+861. barolo del comune di la morra docg 2018 lapo berti
+862. barolo del comune di la morra docg 2019 cesare bussolo
+863. barolo del comune di la morra docg 2019 cristian boffa
+864. barolo del comune di la morra docg 2020
+865. barolo del comune di la morra docg 2020 cesare bussolo
+866. barolo del comune di la morra docg 2020 giovanni corino
+867. barolo del comune di la morra docg 2021 cesare bussolo
+868. barolo del comune di la morra docg 2021 coppo
+869. barolo del comune di la morra docg 2021 coppo
+870. barolo del comune di la morra docg 2021 coppo
+871. barolo del comune di la morra docg 2021 coppo
+872. barolo del comune di la morra docg 2021 coppo
+873. barolo del comune di la morra docg 2021 crissante alessandria
+874. barolo del comune di la morra docg 2021 giovanni corino
+875. barolo del comune di la morra docg gianni gagliardo piedmont italy 2020
+876. barolo del comune di la morra docg voerzio 2020
+877. barolo del comune di la morra gianni gagliardo
+878. barolo del comune di la morra magnum cassa di legno roberto voerzio
+879. barolo del comune di la morra magnum cassa di legno roberto voerzio
+880. barolo del comune di la morra magnum roberto voerzio
+881. barolo del comune di la morra magnum roberto voerzio
+882. barolo del comune di la morra renato corino 2021
+883. barolo del comune di la morra roberto voerzio
+884. barolo del comune di la morra roberto voerzio
+885. barolo del comune di la morra trediberri 2018
+886. barolo del comune di monforte d alba 2020
+887. barolo del comune di monforte dalba
+888. barolo del comune di monforte dalba 2020 diego conterno
+889. barolo del comune di monforte dalba 2020 diego conterno
+890. barolo del comune di monforte dalba docg 2020 domenico clerico
+891. barolo del comune di monforte dalba docg 2021 cascina sot
+892. barolo del comune di monforte dalba docg 2021 cascina sot
+893. barolo del comune di monforte dalba docg 2021 cascina sot
+894. barolo del comune di monforte dalba docg 2021 cascina sot
+895. barolo del comune di monforte dalba docg 2021 cascina sot
+896. barolo del comune di monforte dalba domenico clerico 2021
+897. barolo del comune di serralunga 2021
+898. barolo del comune di serralunga dalba
+899. barolo del comune di serralunga dalba
+900. barolo del comune di serralunga dalba 2015
+901. barolo del comune di serralunga dalba 2018 gd vajra luigi baudana
+902. barolo del comune di serralunga dalba 2019 giovanni rosso
+903. barolo del comune di serralunga dalba 2021
+904. barolo del comune di serralunga dalba docg 1 magnum ferdinando principiano
+905. barolo del comune di serralunga dalba docg 2018 2019 2020
+906. barolo del comune di serralunga dalba docg 2021 principiano ferdinando
+907. barolo del comune di serralunga dalba docg 2021 principiano ferdinando
+908. barolo del comune di serralunga dalba docg 2021 principiano ferdinando
+909. barolo del comune di serralunga dalba docg 2021 principiano ferdinando
+910. barolo del comune di serralunga dalba docg 2021 principiano ferdinando
+911. barolo del comune di serralunga dalba docg 2021 schiavenza
+912. barolo del comune di serralunga dalba docg 2021 schiavenza
+913. barolo del comune di serralunga dalba docg 2021 schiavenza
+914. barolo del comune di serralunga dalba docg 2021 schiavenza
+915. barolo del comune di serralunga dalba docg 2021 schiavenza
+916. barolo del comune di serralunga dalba docg aeroplanservaj 2013 etichetta aquiloni domenico clerico
+917. barolo del comune di serralunga dalba docg aeroplanservaj 2013 etichetta bambino aquilone domenico clerico
+918. barolo del comune di serralunga dalba docg aeroplanservaj 2013 etichetta flipper domenico clerico
+919. barolo del comune di serralunga dalba docg aeroplanservaj 2013 etichetta mongolfiera domenico clerico
+920. barolo del comune di serralunga dalba docg aeroplanservaj 2013 etichetta numeri domenico clerico
+921. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta aquiloni domenico clerico
+922. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta bambino aquilone domenico clerico
+923. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta flipper domenico clerico
+924. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta mongolfiera domenico clerico
+925. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta numeri domenico clerico
+926. barolo del comune di serralunga dalba docg aeroplanservaj 2016 etichetta uomo volante domenico clerico
+927. barolo del comune di serralunga dalba docg jeroboam ferdinando principiano
+928. barolo del comune di serralunga dalba docg luigi pira 2019
+929. barolo del comune di serralunga dalba docg magnum boasso
+930. barolo del comune di serralunga dalba docg magnum boasso
+931. barolo del comune di serralunga docg 2019 15vol
+932. barolo del comune di serralunga docg 2020 stefano porro
+933. barolo del comune di serralunga docg 2020 tenuta cucco
+934. barolo del comune di serralunga docg 2020 tenuta cucco
+935. barolo del comune di serralunga docg 2020 tenuta cucco
+936. barolo del comune di serralunga docg 2020 tenuta cucco
+937. barolo del comune di serralunga docg 2020 tenuta cucco
+938. barolo del comune di serralunga garesio 2020
+939. barolo del comune di verduno
+940. barolo del comune di verduno
+941. barolo del comune di verduno 2020
+942. barolo del comune di verduno 2021
+943. barolo del comune di verduno burlotto massara magnum cofanetto legno astucciato cascina massara
+944. barolo del comune di verduno docg fratelli alessandria
+945. barolo del comune la morra 2020 voerzio
+946. barolo del comune le vite colte essenze
+947. barolo della tradizione docg 2018
+948. barolo della tradizione docg 2019
+949. barolo della tradizione docg half bottle 2019
+950. barolo delle vecchie cantine villadoria 1958
+951. barolo derieumes 2017
+952. barolo dezzani doc 1977
+953. barolo di barolo roagna 2015
+954. barolo di castglione falletto 1995
+955. barolo di serralunga 2020
+956. barolo di serralunga 2020 ferdinando principiano
+957. barolo di serralunga dalba docg schiavenza
+958. barolo di serralunga dalba docg schiavenza
+959. barolo di serralunga dalba schiavenza
+960. barolo di serralunga docg principiano ferdinando 2021
+961. barolo di serralunga le righe fontanafredda 2018
+962. barolo dieceri
+963. barolo diego conterno
+964. barolo dinner 2015
+965. barolo discovery box
+966. barolo doc 1958
+967. barolo doc 1960
+968. barolo doc 1961
+969. barolo doc 1963
+970. barolo doc 1964
+971. barolo doc 1966
+972. barolo doc 1967
+973. barolo doc 1967
+974. barolo doc 1968
+975. barolo doc 1968
+976. barolo doc 1969
+977. barolo doc 1969
+978. barolo doc 1970
+979. barolo doc 1971
+980. barolo doc 1971
+981. barolo doc 1973
+982. barolo doc 1974
+983. barolo doc 1975
+984. barolo doc 1977
+985. barolo doc 1978
+986. barolo doc 1979
+987. barolo doc 1983
+988. barolo doc 1986
+989. barolo doc 1987
+990. barolo doc 2018 renzo seghesio
+991. barolo doc barisone 1975
+992. barolo doc bersano 1984
+993. barolo doc bertolo 1964
+994. barolo doc calissano 1951
+995. barolo doc calissano 1966
+996. barolo doc cannubi fratelli serio e battista borgogno
+997. barolo doc cannubi jeroboam cassa di legno fratelli serio e battista borgogno
+998. barolo doc cannubi jeroboam cassa di legno fratelli serio e battista borgogno
+999. barolo doc cappellano 1976
+1000. barolo doc carretta 1950

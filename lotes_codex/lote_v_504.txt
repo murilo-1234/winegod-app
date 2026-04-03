@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. vinho branco quinta de ventozelo malvasia fina 2019 douro doc
+2. vinho branco quinta de ventozelo 2016 douro
+3. vinho branco quinta de soalheiro reserva 2023 vinhos verdes
+4. vinho branco quinta de soalheiro reserva 2023 moncao
+5. vinho branco quinta de sao simao da aguieira encruzado 2024 dao
+6. vinho branco quinta de santiago vinha do pardal 2022 moncao e melgaco
+7. vinho branco quinta de santiago vinha do pardal 2020 moncao e melgaco
+8. vinho branco quinta de santiago reserva vinhos verdes
+9. vinho branco quinta de santiago reserva alvarinho 2021 vinhos verdes
+10. vinho branco quinta de santiago mira do o sou 2021 vinhos verdes
+11. vinho branco quinta de santiago alvarinholoureiro 2021 moncao e melgaco
+12. vinho branco quinta de santiago alvarinho vinhos verdes
+13. vinho branco quinta de santiago alvarinho 2021 vinhos verdes
+14. vinho branco quinta de santa teresa essencia 2020 regional minho
+15. vinho branco quinta de santa teresa esculpido vinhos verdes
+16. vinho branco quinta de santa teresa esculpido 2022 regional minho
+17. vinho branco quinta de santa teresa curtimenta 2022 regional minho
+18. vinho branco quinta de santa teresa avesso unfiltred 2022 regional minho
+19. vinho branco quinta de santa teresa avesso unfiltered vinhos verdes
+20. vinho branco quinta de santa cristina reserva 2020 vinhos verdes
+21. vinho branco quinta de santa cristina grande escolha 2024 vinhos verdes
+22. vinho branco quinta de santa cristina alvarinho trajadura 2024 vinhos verdes
+23. vinho branco quinta de santa cristina alvarinho loureiro 2024 vinhos verdes
+24. vinho branco quinta de santa cristina alvarinho 2024 vinhos verdes
+25. vinho branco quinta de saes reserva 2022 dao
+26. vinho branco quinta de saes 2022 dao
+27. vinho branco quinta de s francisco 2022 obidos
+28. vinho branco quinta de pancas chardonnay lisboa
+29. vinho branco quinta de pancas 2017 regional lisboa
+30. vinho branco quinta de monforte superior azal 2022 vinhos verdes
+31. vinho branco quinta de monforte reserva 2023 vinhos verdes
+32. vinho branco quinta de monforte loureiro alvarinho colheita selecionada 2021 vinhos verdes
+33. vinho branco quinta de monforte loureiro 2023 vinhos verdes
+34. vinho branco quinta de monforte escolha 2021 vinhos verdes
+35. vinho branco quinta de monforte alvarinho grande reserva barricas 2020 vinhos verdes
+36. vinho branco quinta de monforte alvarinho 2022 vinhos verdes
+37. vinho branco quinta de lemos pica pica 2022 dao
+38. vinho branco quinta de lemos na mouche blanc de noirs 2020 dao
+39. vinho branco quinta de lemos dona santana encruzado 2024 dao
+40. vinho branco quinta de lemos dona santana 2024
+41. vinho branco quinta de lemos dona paulette encruzado 2022 dao
+42. vinho branco quinta de lagoalva arinto e chardonnay
+43. vinho branco quinta de lagoalva
+44. vinho branco quinta de la rosa douro
+45. vinho branco quinta de la rosa cerejinha 2021 douro
+46. vinho branco quinta de gomariz avesso 2023 vinhos verdes
+47. vinho branco quinta de foz de arouce 2023 beira interior
+48. vinho branco quinta de foz de arouce 2022 beira interior
+49. vinho branco quinta de foz de arouce
+50. vinho branco quinta de fafide reserva douro
+51. vinho branco quinta de cidro sauvignon blanc douro
+52. vinho branco quinta de cidro sauvignon blanc 2024 douro
+53. vinho branco quinta de cidro sauvignon blanc
+54. vinho branco quinta de cidro gewurztraminer 2021 douro
+55. vinho branco quinta de cidro chardonnay douro
+56. vinho branco quinta de cidro chardonnay 2023 douro
+57. vinho branco quinta de cidro alvarinho 2020 douro
+58. vinho branco quinta de chocapalha sauvignon blanc 2022 lisboa
+59. vinho branco quinta de chocapalha reserva 2022 lisboa
+60. vinho branco quinta de chocapalha chardonnay 2024 lisboa
+61. vinho branco quinta de chocapalha arinto antigo vinhas velhas 2020 lisboa
+62. vinho branco quinta de chocapalha arinto 2022 lisboa
+63. vinho branco quinta de chocapalha 2021 lisboa
+64. vinho branco quinta de carvalhicos reserva encruzado 2024 dao
+65. vinho branco quinta de carvalhicos reserva 2022
+66. vinho branco quinta de carvalhicos encruzado reserva 2023
+67. vinho branco quinta de carapecos reserva 2022 vinhos verdes
+68. vinho branco quinta de carapecos grande escolha 2020 vinhos verdes
+69. vinho branco quinta de carapecos alvarinho trajadura 2025 vinhos verdes
+70. vinho branco quinta de carapecos alvarinho 2024 vinhos verdes
+71. vinho branco quinta de camarate seco 2023 peninsula de setubal
+72. vinho branco quinta de camarate doce
+73. vinho branco quinta de camarate doce
+74. vinho branco quinta de camarate doce
+75. vinho branco quinta de camarate
+76. vinho branco quinta de camarate
+77. vinho branco quinta de camarate
+78. vinho branco quinta de camarate
+79. vinho branco quinta de cabriz pedro ines dao
+80. vinho branco quinta de bons ventos white blend
+81. vinho branco quinta de bons ventos fresh
+82. vinho branco quinta de bons ventos
+83. vinho branco quinta de arcosso riesling 2023 trasosmontes
+84. vinho branco quinta de arcosso riesling
+85. vinho branco quinta de arcosso reserva 2023 trasosmontes
+86. vinho branco quinta de arcosso reserva
+87. vinho branco quinta de arcosso grande reserva 2021 trasosmontes
+88. vinho branco quinta de arcosso colheita tardia 2019 trasosmontes
+89. vinho branco quinta de arcosso colheita 2023 trasosmontes
+90. vinho branco quinta de arcosso arinto 2019 trasosmontes
+91. vinho branco quinta de arcosso arinto
+92. vinho branco quinta de arcosso
+93. vinho branco quinta de adorigo 2023 douro
+94. vinho branco quinta dazinheira reserva 2023 douro
+95. vinho branco quinta dazinheira grande reserva 2023 douro
+96. vinho branco quinta dazinheira grande reserva
+97. vinho branco quinta dazinheira colheita 2023 douro
+98. vinho branco quinta dazinheira casmurro curtimenta 2022 douro
+99. vinho branco quinta dazinheira casmurro arinto 2024 douro
+100. vinho branco quinta dazinheira
+101. vinho branco quinta das marias encruzado 2024 dao
+102. vinho branco quinta das marias crud dao
+103. vinho branco quinta das marias crud dao
+104. vinho branco quinta das maias malvasia fina 2014 dao
+105. vinho branco quinta das cerejeiras grande reserva 2022 obidos
+106. vinho branco quinta das carvalhas tinta francisca
+107. vinho branco quinta das carvalhas 2024 douro
+108. vinho branco quinta das carvalhas
+109. vinho branco quinta das brolhas 2022 douro
+110. vinho branco quinta das bageiras pai abel 2022 bairrada
+111. vinho branco quinta das bageiras pai abel 2022 bairrada
+112. vinho branco quinta das bageiras pai abel 2021 bairrada
+113. vinho branco quinta das bageiras garrafeira 2022 bairrada
+114. vinho branco quinta das bageiras garrafeira 2022 bairrada
+115. vinho branco quinta das bageiras garrafeira
+116. vinho branco quinta das bageiras colheita bairrada
+117. vinho branco quinta das bageiras colheita 2023 bairrada
+118. vinho branco quinta das bageiras avo fausto 2022 bairrada
+119. vinho branco quinta das bageiras avo fausto 2022 bairrada
+120. vinho branco quinta das bageiras aldeia fogueira
+121. vinho branco quinta damares loureiro vinhos verdes doc
+122. vinho branco quinta damares alvarinho 2023 vinhos verdes doc
+123. vinho branco quinta daguieira 2018 bairrada
+124. vinho branco quinta da vacaria reserva viosinho magnum 2022 1 doc douro
+125. vinho branco quinta da vacaria reserva viosinho 2023 doc douro
+126. vinho branco quinta da vacaria reserva rabigato 2023 douro
+127. vinho branco quinta da vacaria reserva gouveio 2023 douro
+128. vinho branco quinta da vacaria reserva arinto magnum 2022 1 doc douro
+129. vinho branco quinta da vacaria reserva 2022 douro
+130. vinho branco quinta da vacaria reserva 2021 1 douro
+131. vinho branco quinta da vacaria oh pires 2024 douro
+132. vinho branco quinta da vacaria ah galego 2024 douro
+133. vinho branco quinta da tor
+134. vinho branco quinta da romeira arinto lisboa
+135. vinho branco quinta da romaneira reserva 2024 douro
+136. vinho branco quinta da romaneira reserva
+137. vinho branco quinta da romaneira pulga 2022 douro doc
+138. vinho branco quinta da rede vinha do pinheiro 2020 douro
+139. vinho branco quinta da rede reserva da familia 2019 douro
+140. vinho branco quinta da rede reserva 2021 douro
+141. vinho branco quinta da rede grande reserva 2019 douro
+142. vinho branco quinta da raza avesso alvarinho 2020 vinhos verdes
+143. vinho branco quinta da raza avesso 2018 vinhos verdes
+144. vinho branco quinta da raza alvarinho trajadura 2024 vinhos verdes
+145. vinho branco quinta da raza alvarinho 2024 vinhos verdes doc
+146. vinho branco quinta da ramalhosa vv
+147. vinho branco quinta da ramalhosa field blend
+148. vinho branco quinta da pellada prim dao
+149. vinho branco quinta da pedra graca da pedra alvarinho 2022 moncao e melgaco
+150. vinho branco quinta da pedra escrita reserva biologico douro
+151. vinho branco quinta da pedra escrita reserva biologico
+152. vinho branco quinta da pedra escrita reserva 2021
+153. vinho branco quinta da pedra escrita reserva
+154. vinho branco quinta da pedra escrita biologico douro
+155. vinho branco quinta da pedra escrita 2023 douro
+156. vinho branco quinta da pedra escrita
+157. vinho branco quinta da pedra alvarinho 2021 moncao
+158. vinho branco quinta da pacheca grande reserva 2021 douro
+159. vinho branco quinta da pacheca grande reserva 2021 douro
+160. vinho branco quinta da neve sauvignon blanc 2024
+161. vinho branco quinta da neve alvarinho 2024
+162. vinho branco quinta da neve alvarinho
+163. vinho branco quinta da neve alvarinho
+164. vinho branco quinta da lapa fernao pirao 2022 tejo
+165. vinho branco quinta da lapa fernao pirao 2021 tejo
+166. vinho branco quinta da lapa chardonnay reserva 2023 tejo
+167. vinho branco quinta da lapa alvarinho
+168. vinho branco quinta da lagoalva grande reserva fernao pires 2022 tejo
+169. vinho branco quinta da lagoalva dona isabel juliana grande reserva 2022 tejo
+170. vinho branco quinta da giesta reserva 2023 doc dao
+171. vinho branco quinta da giesta grande reserva 2021 doc dao
+172. vinho branco quinta da giesta colheita tardia 2022 doc dao
+173. vinho branco quinta da giesta 2023 dao
+174. vinho branco quinta da gaivosa grande reserva 2023 douro
+175. vinho branco quinta da gaivosa
+176. vinho branco quinta da fonte souto florao
+177. vinho branco quinta da fonte souto 2023 alentejo
+178. vinho branco quinta da fata reserva encruzado 2023 dao
+179. vinho branco quinta da falorca encruzado reserva 2021 dao
+180. vinho branco quinta da espiga
+181. vinho branco quinta da espiga
+182. vinho branco quinta da escusa harvest 2018 tejo
+183. vinho branco quinta da devesa reserva douro
+184. vinho branco quinta da devesa douro
+185. vinho branco quinta da cuca reserva 2017 douro
+186. vinho branco quinta da costa do pinhao 2015 douro
+187. vinho branco quinta da caldeirinha 2021
+188. vinho branco quinta da calcada vinhas velhas 2021 vinhos verdes
+189. vinho branco quinta da calcada reserva 2021 vinhos verdes
+190. vinho branco quinta da boavista vinha do levante 2022 douro
+191. vinho branco quinta da boa esperanca sauvignon blanc 2024 lisboa
+192. vinho branco quinta da boa esperanca reserva 2023 lisboa
+193. vinho branco quinta da boa esperanca fernao pires 2021 lisboa
+194. vinho branco quinta da boa esperanca arinto 2022 lisboa
+195. vinho branco quinta da boa esperanca 2022 lisboa
+196. vinho branco quinta da biaia reserva 2019 beira interior
+197. vinho branco quinta da biaia reserva
+198. vinho branco quinta da biaia 750 siria 2020 beira interior
+199. vinho branco quinta da biaia 750 chardonnay 2019 beira interior
+200. vinho branco quinta da biaia 750 arinto 2019 beira interior
+201. vinho branco quinta da bageiras reserva
+202. vinho branco quinta da bageiras pai abel
+203. vinho branco quinta da bageiras avo fausto
+204. vinho branco quinta da bacalhoa greco di tufo 2023
+205. vinho branco quinta da bacalhoa encruzado 2022 dao
+206. vinho branco quinta da bacalhoa 2024 peninsula de setubal
+207. vinho branco quinta da bacalhoa 2023
+208. vinho branco quinta da alorna sauvignon blanc 2022
+209. vinho branco quinta da alorna reserva arinto e chardonnay 2023no pixno boletoem ate3xdesem juroscomprar
+210. vinho branco quinta da alorna reserva arinto chardonnay tejo
+211. vinho branco quinta da alorna colheita 2020
+212. vinho branco quinta cidro chardonnay reserva
+213. vinho branco quinta boa esperanca sauvigon blanc
+214. vinho branco quinta boa esperanca reserva
+215. vinho branco quinta boa esperanca fernao pires
+216. vinho branco quinta boa esperanca arinto
+217. vinho branco quinta boa esperanca
+218. vinho branco quinta alta qalt reserva 2022 douro
+219. vinho branco quinta alta qalt colheita tardia 2019 37 douro doc
+220. vinho branco quinta alta qalt 2022 doc douro
+221. vinho branco quint das bageiras reserva
+222. vinho branco querencias riesling
+223. vinho branco quebrada seca reta
+224. vinho branco quebracabecas reserva
+225. vinho branco que beleza 2021 alentejo
+226. vinho branco quarts de chaume grand cru quarts 2018
+227. vinho branco quara estate torrontes
+228. vinho branco quanta terra grande reserva 2022 douro
+229. vinho branco quanta terra grande reserva 2022 douro
+230. vinho branco quanta terra grande reserva 2022
+231. vinho branco quanta terra grande reserva
+232. vinho branco quanta terra grande reserva
+233. vinho branco quanta terra gran reserva
+234. vinho branco quanta terra golden
+235. vinho branco quanta terra gold edition 2017 douro
+236. vinho branco quanta terra family edition
+237. vinho branco quaaaq quaaaq 2021
+238. vinho branco qta dos carvalhais encruzado
+239. vinho branco qm vinhas velhas alvarinho 2022 vinhos verdes
+240. vinho branco qm vinhas velhas alvarinho 2018 vinhos verdes
+241. vinho branco qm patriam 2021 vinhos verdes
+242. vinho branco qm nature 2022 vinhos verdes
+243. vinho branco qm homenagem 2020 vinhos verdes
+244. vinho branco qm alvarinho 2024 vinhos verdes
+245. vinho branco qalt douro
+246. vinho branco puro talha jose de sousa
+247. vinho branco pura textura dao
+248. vinho branco pur xarello penedes 2020
+249. vinho branco punctum 99 rosas edicao especial e limitada
+250. vinho branco punctum 99 rosas chardonnay viognier
+251. vinho branco pulignymontrachet premier cru sous le puits 2020
+252. vinho branco pulignymontrachet premier cru les folatieres en la richarde 2019
+253. vinho branco pulignymontrachet premier cru les folatieres 2018
+254. vinho branco pulignymontrachet premier cru les folatieres 2017
+255. vinho branco pulignymontrachet premier cru les champs canet 2017 meia garrafa
+256. vinho branco pulignymontrachet premier cru les champs canet 2017 meia
+257. vinho branco pulignymontrachet premier cru la truffiere 2017
+258. vinho branco pulignymontrachet premier cru la garenne 2023
+259. vinho branco pulignymontrachet premier cru la garenne 2022
+260. vinho branco pulignymontrachet premier cru la garenne 2022
+261. vinho branco pulignymontrachet premier cru la garenne 2021
+262. vinho branco pulignymontrachet premier cru la garenne 2021
+263. vinho branco pulignymontrachet premier cru la garenne 2020
+264. vinho branco pulignymontrachet premier cru la garenne 2020
+265. vinho branco pulignymontrachet premier cru la garenne 2019
+266. vinho branco pulignymontrachet premier cru la garenne 2018
+267. vinho branco pulignymontrachet premier cru la garenne 2014
+268. vinho branco pulignymontrachet premier cru clos de la truffiere 2019
+269. vinho branco pulignymontrachet premier cru champscanet 2022
+270. vinho branco pulignymontrachet premier cru champs canet 2020
+271. vinho branco pulignymontrachet premier cru champs canet 2018
+272. vinho branco pulignymontrachet les reuchaux 2022
+273. vinho branco pulignymontrachet les nosroyes 2022
+274. vinho branco pulignymontrachet les nosroyes 2021
+275. vinho branco pulignymontrachet les nosroyes 2020
+276. vinho branco pulignymontrachet les nosroyes 2018
+277. vinho branco pulignymontrachet les levrons 2022
+278. vinho branco pulignymontrachet 2021
+279. vinho branco pulignymontrachet 2020
+280. vinho branco pulignymontrachet 2019
+281. vinho branco pulignymontrachet 2018
+282. vinho branco puligny premier cru la garenne 2020
+283. vinho branco puligny montrachet 1er cru bouzereau
+284. vinho branco puklavec seven numbers pinot grigio
+285. vinho branco puklavec jerusalem ormoz rhine riesling
+286. vinho branco puklavec friends sauvignon blanc pinot grigio
+287. vinho branco puglia fiano white blend
+288. vinho branco pt gigantones verde doc
+289. vinho branco pt flor de penalva dao doc
+290. vinho branco provam vinhos verdes
+291. vinho branco prova regia arinto bucelas
+292. vinho branco prova regia arinto
+293. vinho branco prova regia 2023 bucelas doc lisboa
+294. vinho branco protos verdejo p
+295. vinho branco protos verdejo 2022 rueda espanha
+296. vinho branco protos verdejo 2021 rueda
+297. vinho branco protos verdejo
+298. vinho branco protos verdejo
+299. vinho branco protos verdejo
+300. vinho branco prosecco seco
+301. vinho branco projectos niepoort moscatel docil miau 2021 douro
+302. vinho branco procura vinhas velhas 2019 alentejo
+303. vinho branco procura na anfora 2018 regional alentejano
+304. vinho branco private selection esporao
+305. vinho branco private selection chardonnay robert mondavi
+306. vinho branco private colllection casal da coelheira
+307. vinho branco principal grande reserva 2019 bairrada
+308. vinho branco principal grande reserva 2015 bairrada
+309. vinho branco principal grande reserva 2015
+310. vinho branco principal grande reserva
+311. vinho branco prince de saintaubin aoc sauternes
+312. vinho branco prince de saintaubin aoc sauternes
+313. vinho branco primeira estrada sauvignon blanc
+314. vinho branco primaverina bianco puglia
+315. vinho branco primavera
+316. vinho branco primado 2021 dao
+317. vinho branco prima alta delle venezie pinot grigio
+318. vinho branco pretexto 2023 dao
+319. vinho branco premium pequenos defeitos grandes descontos
+320. vinho branco premium adega de palmela
+321. vinho branco premier cru pulignymontrachet louis latour
+322. vinho branco predicador benjamin romeo
+323. vinho branco preco 26g por 26 gramas
+324. vinho branco prazo da cotovia moscatel galego
+325. vinho branco praia white blend
+326. vinho branco pousio selection 2024 regional alentejano
+327. vinho branco pousio reserva 2024 alentejo
+328. vinho branco pousio arinto 2018 regional alentejano
+329. vinho branco pousio antao vaz e alvarinho 2024 alentejo
+330. vinho branco pourquoi faire sans blanc chenin blanc 2021
+331. vinho branco poully fume mademoiselle de t chateau de tracy
+332. vinho branco pouillyvinzelles les longeays 2021
+333. vinho branco pouillyloche les mures 2022
+334. vinho branco pouillyloche les mures 2021
+335. vinho branco pouillyloche les 4 saisons 2023
+336. vinho branco pouillyloche en chantone 2022
+337. vinho branco pouillyloche en chantone 2021
+338. vinho branco pouillyloche clos des rocs monopole 2022
+339. vinho branco pouillyloche clos des rocs monopole 2020
+340. vinho branco pouillyloche clos de rocs revelation 2021
+341. vinho branco pouillyloche 2021
+342. vinho branco pouillyloche 2020
+343. vinho branco pouillyfume terres blanches 2022
+344. vinho branco pouillyfume terres blanches 2022
+345. vinho branco pouillyfume terres blanches 2020
+346. vinho branco pouillyfume caillottes 2022
+347. vinho branco pouillyfume caillottes 2020
+348. vinho branco pouillyfume argile a silex tracy e cie
+349. vinho branco pouillyfume 2019
+350. vinho branco pouillyfuisse vignes de la cote 2021
+351. vinho branco pouillyfuisse vignes de la cote 2020
+352. vinho branco pouillyfuisse premier cru les vignes blanches 2020
+353. vinho branco pouillyfuisse pierrefolle 2020
+354. vinho branco pouillyfuisse les plessys 2018
+355. vinho branco pouillyfuisse les birbettes 2020
+356. vinho branco pouillyfuisse clos varambon 2020
+357. vinho branco pouillyfuisse 2021
+358. vinho branco pouillyfuisse 2020
+359. vinho branco pouilly fume chateau de tracy
+360. vinho branco pouilly fuisse vieilles vignes sebastien giroux
+361. vinho branco pouilly fuisse sebastien giroux
+362. vinho branco pouilly fuisse louis latour
+363. vinho branco pouilly fuisse clos varambon 2019
+364. vinho branco pouilly fuisse 1o cru sebastien giroux
+365. vinho branco pouca terra
+366. vinho branco pouca roupa sauvignon blanc 2021
+367. vinho branco pouca roupa 2021 alentejo
+368. vinho branco potter chardonnay guatambu
+369. vinho branco postales sauvignon blanc semillon
+370. vinho branco postales sauvignon blanc 2022
+371. vinho branco postales roble chardonnay
+372. vinho branco portugues white porto essentia
+373. vinho branco portugues vinho verde casal garcia
+374. vinho branco portugues vinho verde casal garcia
+375. vinho branco portugues vinho verde 500
+376. vinho branco portugues vinha do torrao moscatel casa ermelinda freitas
+377. vinho branco portugues vinha do torrao casa ermelinda freitas
+378. vinho branco portugues vila nova loureiro
+379. vinho branco portugues vila nova alvarinho
+380. vinho branco portugues verde doc selected harvest moura basto
+381. vinho branco portugues verde doc calamares
+382. vinho branco portugues verde casal garcia
+383. vinho branco portugues verde campelo arinto
+384. vinho branco portugues verde aveleda loureiro
+385. vinho branco portugues verde 500 sweet
+386. vinho branco portugues varanda do conde
+387. vinho branco portugues valle da estrada douro
+388. vinho branco portugues vallado douro doc
+389. vinho branco portugues vale dos barris
+390. vinho branco portugues tubucci tejo
+391. vinho branco portugues titular dao reserva encruzado
+392. vinho branco portugues terra do aldeano seco
+393. vinho branco portugues terra de lisboa garrafa
+394. vinho branco portugues taverna da aldeia
+395. vinho branco portugues tapada das lebres alentejano
+396. vinho branco portugues tamara falua
+397. vinho branco portugues sweet vinho verde casal garcia
+398. vinho branco portugues sombrio dao doc
+399. vinho branco portugues sombrio dao doc
+400. vinho branco portugues sao miguel do sul alentejano
+401. vinho branco portugues santos e seixo janela aberta vinho verde doc
+402. vinho branco portugues santa sara
+403. vinho branco portugues salino colheita
+404. vinho branco portugues salino
+405. vinho branco portugues salino
+406. vinho branco portugues ribeiro santo vinha da neve
+407. vinho branco portugues ribeiro santo vinha da neve
+408. vinho branco portugues ribeiro santo seco
+409. vinho branco portugues reserva fronteira
+410. vinho branco portugues regional lisboa quinta de bons ventos
+411. vinho branco portugues regional alentejano merino
+412. vinho branco portugues ravasqueira vinha das romas
+413. vinho branco portugues ravasqueira touriga franca
+414. vinho branco portugues ramilo wines galego dourado
+415. vinho branco portugues ramilo nativas
+416. vinho branco portugues quinta sao sebastiao rare
+417. vinho branco portugues quinta dos castelares 2022 doc douro blend de castas autoctones seco elegante aromatico vinho branco premium para frutos do mar e jantares especiais
+418. vinho branco portugues quinta do mondego munda gouveio doc
+419. vinho branco portugues quinta do mondego encruzado doc
+420. vinho branco portugues quinta do casal branco reserva
+421. vinho branco portugues quinta do carmo
+422. vinho branco portugues quinta do carmo
+423. vinho branco portugues quinta do ameal classico loureiro
+424. vinho branco portugues quinta de valenca verde
+425. vinho branco portugues quinta de bons ventos
+426. vinho branco portugues quinta da romaneira fine white garrafa
+427. vinho branco portugues quinta da mariposa dao doc
+428. vinho branco portugues quinta carvalhos blend
+429. vinho branco portugues quinta carvalhas blend douro
+430. vinho branco portugues pouca roupa
+431. vinho branco portugues porto ferreira
+432. vinho branco portugues portas do sol
+433. vinho branco portugues porta 6
+434. vinho branco portugues porrais signature
+435. vinho branco portugues poento blend
+436. vinho branco portugues pocas porto white
+437. vinho branco portugues pocas fora da serie orange wine
+438. vinho branco portugues po de poeira
+439. vinho branco portugues pitch algarve
+440. vinho branco portugues pitch algarve
+441. vinho branco portugues peramanca 2021
+442. vinho branco portugues peramanca
+443. vinho branco portugues pera manca caixa madeira 1
+444. vinho branco portugues parcelas douro
+445. vinho branco portugues papa figos douro
+446. vinho branco portugues papa figos douro
+447. vinho branco portugues ourico
+448. vinho branco portugues origens herdade grande
+449. vinho branco portugues opta dao
+450. vinho branco portugues murtelas
+451. vinho branco portugues morgado de bucelas arinto
+452. vinho branco portugues monte velho herdade do esporao
+453. vinho branco portugues monte do zambujeiro
+454. vinho branco portugues monte de pinheiros cartuxa
+455. vinho branco portugues monte de pinheiros
+456. vinho branco portugues monte da castinha
+457. vinho branco portugues messias quinta do penedo doc
+458. vinho branco portugues messias bairrada quinta do valdoeiro chardonnay
+459. vinho branco portugues messias
+460. vinho branco portugues messias
+461. vinho branco portugues mesa do presidente loureiro verde doc
+462. vinho branco portugues mesa do presidente loureiro
+463. vinho branco portugues mesa do presidente arinto verde doc
+464. vinho branco portugues mesa do presidente arinto
+465. vinho branco portugues mesa do presidente alvarinho
+466. vinho branco portugues meio seco confidencial
+467. vinho branco portugues mateus
+468. vinho branco portugues mateus
+469. vinho branco portugues marmore
+470. vinho branco portugues mariposa dao doc encruzado
+471. vinho branco portugues mariposa dao doc encruzado
+472. vinho branco portugues mar adentro blend
+473. vinho branco portugues manuel caldeira quinta dos castelares
+474. vinho branco portugues luis pato maria gomes
+475. vinho branco portugues lufa lufa frisante
+476. vinho branco portugues lufa lufa frisante
+477. vinho branco portugues loios
+478. vinho branco portugues julia florista bag in box
+479. vinho branco portugues julia florista bag in box
+480. vinho branco portugues julia florista
+481. vinho branco portugues joao portugal ramos loureiro vinho verde doc
+482. vinho branco portugues joao portugal ramos loios alentejo
+483. vinho branco portugues joao portugal ramos alvarinho vinho verde
+484. vinho branco portugues j m f vida portuguesa
+485. vinho branco portugues j m f vida portuguesa
+486. vinho branco portugues j m f primum
+487. vinho branco portugues intimista alentejo
+488. vinho branco portugues identidade vinho verde doc
+489. vinho branco portugues herdade sao miguel colheita selecionada
+490. vinho branco portugues herdade do moinho signature doc
+491. vinho branco portugues herdade de sao miguel esquecido
+492. vinho branco portugues herdade de sao miguel colheita selecionada
+493. vinho branco portugues herdade da comporta intocavel
+494. vinho branco portugues galodoro lisboa
+495. vinho branco portugues fonte da serrana
+496. vinho branco portugues flor do tua reserva costa boal 2022 elegante aromatico e sofisticado
+497. vinho branco portugues flor do coa
+498. vinho branco portugues fiuza ikon alvarinho
+499. vinho branco portugues fiuza ikon alvarinho
+500. vinho branco portugues fiuza chardonnay
+501. vinho branco portugues faisao vinho verde doc
+502. vinho branco portugues faisao verde
+503. vinho branco portugues esporao varietais duas castas
+504. vinho branco portugues esporao reserva corte
+505. vinho branco portugues esporao monte velho
+506. vinho branco portugues eruptio verdelho acores do pico
+507. vinho branco portugues ea cartuxa
+508. vinho branco portugues douro reserva quinta da romaneira
+509. vinho branco portugues douro coroa de rei branco
+510. vinho branco portugues dona ermelinda chardonnay garrafa
+511. vinho branco portugues dom martinho quinta do carmo
+512. vinho branco portugues dom martinho quinta do carmo
+513. vinho branco portugues de touros tejo
+514. vinho branco portugues crasto douro
+515. vinho branco portugues coracao do minho doc verde
+516. vinho branco portugues conde premium
+517. vinho branco portugues cheira bem cheira a lisboa
+518. vinho branco portugues cever reserva douro doc branco 2020
+519. vinho branco portugues cavalo bravo
+520. vinho branco portugues castelo de alandroal
+521. vinho branco portugues casal garcia
+522. vinho branco portugues casal da seara verde doc meio seco
+523. vinho branco portugues casa de santar doc dao single estate
+524. vinho branco portugues cartuxa evora
+525. vinho branco portugues cartuxa evora
+526. vinho branco portugues cartuxa ea branco alentejo 6 un
+527. vinho branco portugues carmim terras del rei alentejo
+528. vinho branco portugues carmim tarefa
+529. vinho branco portugues carmim reguengos reserva doc
+530. vinho branco portugues carmim reguengos doc alentejo
+531. vinho branco portugues carmim reguengos alentejo
+532. vinho branco portugues carmim regia colheita corte
+533. vinho branco portugues carmim regia colheita
+534. vinho branco portugues carmim putos doc
+535. vinho branco portugues carmim putos doc
+536. vinho branco portugues carmim olaria suave
+537. vinho branco portugues carmim olaria
+538. vinho branco portugues carmim olaria
+539. vinho branco portugues calamares verde sweet
+540. vinho branco portugues cabeco da pedra tejo
+541. vinho branco portugues burmester doc douro branco 2022
+542. vinho branco portugues bons ventos vinho verde
+543. vinho branco portugues bons ventos rose
+544. vinho branco portugues bons ventos
+545. vinho branco portugues bonavita
+546. vinho branco portugues boa noite lisboa
+547. vinho branco portugues blindado alentejo blend seco
+548. vinho branco portugues biologico organico quinta da biaia 750 siria beira interior castelo rodrigo portugal
+549. vinho branco portugues biologico organico quinta da biaia 750 arinto beira interior castelo rodrigo portugal
+550. vinho branco portugues beyra
+551. vinho branco portugues barrica 143 ravasqueira blend
+552. vinho branco portugues bacalhoa santa sara
+553. vinho branco portugues azul portugal white garrafa
+554. vinho branco portugues azul de ventozelo
+555. vinho branco portugues aveleda loureiro alvarinho
+556. vinho branco portugues aveleda loureiro alvarinho
+557. vinho branco portugues atlantico
+558. vinho branco portugues artterra curtimenta
+559. vinho branco portugues artterra curtimenta
+560. vinho branco portugues arribas do douro primavera 2021 vinho seco aromatico leve fresco e mineral safra 2021 ideal para frutos do mar e entradas leves
+561. vinho branco portugues andreza reserva doc douro
+562. vinho branco portugues andreza altitude doc douro
+563. vinho branco portugues amor de pias meio seco bag box
+564. vinho branco portugues alma de lisboa reserva arinto
+565. vinho branco portugues alianca bairrada reserva garrafa
+566. vinho branco portugues alianca bairrada reserva
+567. vinho branco portugues alianca bairrada reserva
+568. vinho branco portugues alfacinha branco
+569. vinho branco portugues alentejano members mark
+570. vinho branco portugues alentejano members mark
+571. vinho branco portugues alabastro bacalhoa garrafa
+572. vinho branco portugues adegamae terra de lisboa arinto e chardonnay garrafa
+573. vinho branco portugues adega moncao
+574. vinho branco portugues adega do passo
+575. vinho branco portugues adega de lisboa
+576. vinho branco portugues 5 elementos
+577. vinho branco portugues 3 autores douro doc
+578. vinho branco portugues 1000 curvas oak mature
+579. vinho branco portuges casa de santar vinha dos amores encruzado doc dao
+580. vinho branco portugal quinta de bons ventos blend brancas
+581. vinho branco portugal pedra cancela selecao enologo
+582. vinho branco portillo sauvignon blanc 2019
+583. vinho branco portillo sauvignon blanc 2018 mendoza
+584. vinho branco portillo chardonnay
+585. vinho branco porteno torrontes
+586. vinho branco porteno torrontes
+587. vinho branco porteno suave
+588. vinho branco porteno suave
+589. vinho branco portas do sol
+590. vinho branco portal verdelho sauvignon blanc 2021 douro
+591. vinho branco portal moscatel galego 2023 douro
+592. vinho branco portal do fidalgo alvarinho 2023 vinhos verdes
+593. vinho branco portal do fidalgo alvarinho
+594. vinho branco portal da estrela 2024 doc dao
+595. vinho branco porta da ravessa alentejo special edition
+596. vinho branco porta da calada 2020 regional alentejano
+597. vinho branco porta 6 meia
+598. vinho branco porta 6 2024 regional lisboa
+599. vinho branco porta 6
+600. vinho branco pormenor reserva 2022 douro
+601. vinho branco pormenor 2024 douro
+602. vinho branco porcupine ridge chardonnay 2022 africa do sul
+603. vinho branco porca de murca 2023 douro
+604. vinho branco porca de murca
+605. vinho branco porca de murca
+606. vinho branco popa curtimenta 2019 douro
+607. vinho branco popa black edition 2018 douro
+608. vinho branco popa 2018 douro
+609. vinho branco pontual superior 2018 alentejo
+610. vinho branco ponte mouchao 2023 alentejo
+611. vinho branco ponte de lima loureiro 2024 vinhos verdes
+612. vinho branco ponte de barca pardalito vinho verde
+613. vinho branco ponte alto
+614. vinho branco poitout tonnerre
+615. vinho branco poeira desalinhados curtimenta 2019 douro
+616. vinho branco poeira 2022 douro
+617. vinho branco poeira 2022 douro
+618. vinho branco poderi del paradiso vin santo
+619. vinho branco pocas reserva 2024 douro
+620. vinho branco pocas branco da ribeira 2022 douro
+621. vinho branco pocas 2024 douro
+622. vinho branco po de poeira douro
+623. vinho branco po de poeira 2020 douro
+624. vinho branco po de poeira 2015 douro
+625. vinho branco pluma alvarinho 2024 vinhos verdes
+626. vinho branco planalto reserva 2024 douro
+627. vinho branco planalto reserva
+628. vinho branco planalto 2021
+629. vinho branco pipoli grecofiano igp
+630. vinho branco pio cesare piodilei chardonnay langhe piemonte
+631. vinho branco pio cesare piodilei chardonnay
+632. vinho branco pio cesare laltro chardonnay piemonte
+633. vinho branco pio cesare laltro chardonnay 2023
+634. vinho branco pio cesare laltro chardonnay
+635. vinho branco pio cesare gavi piemonte
+636. vinho branco pinot noir reserva tierra los andes
+637. vinho branco pinot gris villa wolf
+638. vinho branco pinot gris les jardins 2018
+639. vinho branco pinot grigio villa cardeto
+640. vinho branco pinot grigio villa cardeto
+641. vinho branco pinot grigio villa cardeto
+642. vinho branco pinot grigio tuzko
+643. vinho branco pinot grigio tre venezie bel corvo doc delle venezie 2025
+644. vinho branco pinot grigio single don bonifacio
+645. vinho branco pinot grigio select castellamare caixa 6
+646. vinho branco pinot grigio select castellamare
+647. vinho branco pinot grigio milani
+648. vinho branco pinot grigio la promessa
+649. vinho branco pinot grigio giulio straccali
+650. vinho branco pinot grigio friuli grave albino armani
+651. vinho branco pinot grigio friuli cabert doc 2022cb001ou em ate12xno cartao de creditoa vista5 desconto
+652. vinho branco pinot grigio esquinas de argento
+653. vinho branco pinot grigio doc corte noa
+654. vinho branco pinot grigio delle venezie doc reteodorico
+655. vinho branco pinot grigio damijan
+656. vinho branco pinot grigio callia
+657. vinho branco pinot grigio artesano de argento
+658. vinho branco pinot grigio albino armani
+659. vinho branco pinot grigio 1020 verduzzo masi masianco 13 2024
+660. vinho branco pinot blanc luiz argenta l a classico
+661. vinho branco pinot blanc les jardins 2018
+662. vinho branco pinot blanc classico luiz argenta
+663. vinho branco pinot blanc alsace dopff moullin
+664. vinho branco pinot blanc 2018
+665. vinho branco pilandro terebianco kit com 6
+666. vinho branco pilandro terebianco
+667. vinho branco piesporter goldtropfchen riesling trocken 2017
+668. vinho branco piesporter falkenberg riesling trocken 2019
+669. vinho branco piesport falkenberg mosel riesling trocken 2018
+670. vinho branco piesport falkenberg mosel riesling 2018
+671. vinho branco piccini memoro bianco
+672. vinho branco picapoll abadal
+673. vinho branco piano1987 reserva famiglia blend
+674. vinho branco piano1987 reserva famiglia blend
+675. vinho branco piano reserva 2023 douro
+676. vinho branco piano
+677. vinho branco photogramme coteaux champenois blanc 2020
+678. vinho branco photogramme coteaux champenois blanc 2019
+679. vinho branco phebusbodegas fabre estate torrontes
+680. vinho branco phebusbodegas fabre estate chardonnay
+681. vinho branco phebusbodegas fabre chardonnay reserva
+682. vinho branco phebus torrontes estate
+683. vinho branco pezat 2024 bordeus franca
+684. vinho branco peverella 2018
+685. vinho branco petite selve coteaux de lardeche blanc 2022
+686. vinho branco petite chardonnay glen carlou
+687. vinho branco petit chablis icauna aop
+688. vinho branco petit chablis hauterivien 2019
+689. vinho branco petit chablis domaine perdrycourt
+690. vinho branco petit chablis domaine des quatre saisons 2022
+691. vinho branco petit chablis domaine de oliveira lecestre
+692. vinho branco petit chablis 2024
+693. vinho branco petit chablis 2023
+694. vinho branco petit chablis 2023
+695. vinho branco petit chablis 2022
+696. vinho branco petit chablis 2022
+697. vinho branco petit chablis 2022
+698. vinho branco petit chablis 2021
+699. vinho branco petit chablis 2021
+700. vinho branco petit chablis 2021
+701. vinho branco petit chablis 2020
+702. vinho branco petit chablis 2020
+703. vinho branco petit chablis 2019
+704. vinho branco petit chablis 2018
+705. vinho branco pessegueiro vinha da afurada reserva 2019
+706. vinho branco pessegueiro reserva 2022
+707. vinho branco pescada vinho verde
+708. vinho branco perro callejero sauvignon blanc
+709. vinho branco perro callejero sauvignon blanc
+710. vinho branco perro callejero chardonnay 2023
+711. vinho branco perro callejero blend de sauvignon blanc 2022
+712. vinho branco pernandvergelesses 2022
+713. vinho branco pernandvergelesses 2020
+714. vinho branco permitido reserva 2024 douro
+715. vinho branco permitido rabigato 2024 douro
+716. vinho branco permitido rabigato 2023 douro
+717. vinho branco permitido rabigato 2019 douro
+718. vinho branco permitido de centenaria 2020 douro
+719. vinho branco permitido branco de centenaria 2020 douro
+720. vinho branco periquita setubal
+721. vinho branco periquita sem alcool
+722. vinho branco periquita sem alcool
+723. vinho branco periquita reserva
+724. vinho branco periquita
+725. vinho branco periquita
+726. vinho branco periquita
+727. vinho branco peramanca garrafa magnum 1
+728. vinho branco peramanca evora 2021
+729. vinho branco peramanca alentejo
+730. vinho branco peramanca 2023 alentejo
+731. vinho branco peramanca 2022
+732. vinho branco peramanca 2020 alentejo
+733. vinho branco peragrave 2024
+734. vinho branco peragrave 2022 alentejo
+735. vinho branco pera manca magnum 1
+736. vinho branco pera manca cartuxa
+737. vinho branco pera manca alentejano
+738. vinho branco pera manca 2023no pixno boletoem ate3xdesem juroscomprar
+739. vinho branco pera manca 2023
+740. vinho branco pera manca 2022
+741. vinho branco pera manca
+742. vinho branco pera manca
+743. vinho branco pera manca
+744. vinho branco pera manca
+745. vinho branco pera manca
+746. vinho branco pequenos rebentos vinhas velhas loureiro 2021 vinhos verdes
+747. vinho branco pequenos rebentos vinhas velhas loureiro 2019 vinhos verdes
+748. vinho branco pequenos rebentos reserva vinhas velhas 2020 vinhos verdes
+749. vinho branco pequenos rebentos loureiro 2024 vinhos verdes
+750. vinho branco pequenos rebentos lote 3 alvarinho loureiro e trajadura 2024 vinhos verdes
+751. vinho branco pequenos rebentos ancestral pet nat 2023 vinhos verdes
+752. vinho branco pequenos rebentos alvarinho vinhos verdes
+753. vinho branco pequenos rebentos alvarinho 2024 vinhos verdes
+754. vinho branco pequenos rebentos a moda antiga alvarinho 2021 vinhos verdes
+755. vinho branco pequenos rebentos a moda antiga alvarinho 2017 vinhos verdes
+756. vinho branco pequenos rebentos a moda antiga 2020 vinhos verdes
+757. vinho branco penisula de setubal louco 2019
+758. vinho branco peninsula de setubal joao pires
+759. vinho branco peninsula de setubal dom campos
+760. vinho branco peninsula de lisboa 2020 regional lisboa
+761. vinho branco penedo borges prisma gran chardonnay
+762. vinho branco penedo borges cepas sauvignon blanc
+763. vinho branco penedo borges blanc de malbec
+764. vinho branco pegos claros blanc de noirs 2023 peninsula de setubal
+765. vinho branco pedro gimenez pireko
+766. vinho branco pedro e ines
+767. vinho branco pedro del castillo white blend
+768. vinho branco pedras brancas dop graciosa
+769. vinho branco pedra cancela vinha da fidalga encruzado com
+770. vinho branco pedra cancela selecao do enologo dao
+771. vinho branco pedra cancela selecao do enologo dao
+772. vinho branco pedra cancela selecao do enologo
+773. vinho branco pedra cancela selecao do enologo
+774. vinho branco pedra cancela malvasia encruzado reserva 2014
+775. vinho branco peccorino igp terre di chieti loretana
+776. vinho branco peccato bianco legno
+777. vinho branco pearlstone chenin blanc
+778. vinho branco pearlstone chenin blanc
+779. vinho branco pe de ganso reserva 2020 doc bairrada
+780. vinho branco pazo senorans albarino 2022 rias baixas
+781. vinho branco pazo de senorans seleccion de anada 2013 rias baixas
+782. vinho branco pazo das bruxas albarino torres penelas
+783. vinho branco pazo das bruxas albarino
+784. vinho branco pays dherault coteaux de fontcaude silice 2019
+785. vinho branco pavao
+786. vinho branco paulo laureano vidigueira antiga 2022 regional alentejano
+787. vinho branco paulo laureano verdelho 2019 alentejo
+788. vinho branco paulo laureano reserve
+789. vinho branco paulo laureano private selection
+790. vinho branco paulo laureano premium vinhas velhas alentejo
+791. vinho branco paulo laureano o nosso terroir 2023 alentejo
+792. vinho branco paulo laureano nosso terroir
+793. vinho branco paulo laureano dolium escolha 2016 regional alentejano
+794. vinho branco paulo laureano dolium escolha
+795. vinho branco paulo laureano caricatura 2021 regional alentejano
+796. vinho branco paulo laureano by paulo laureano 2023 regional alentejano
+797. vinho branco paulo laureano
+798. vinho branco paul mas vermentino
+799. vinho branco paul mas lartisan chardonnay
+800. vinho branco paul mas gewurztraminer
+801. vinho branco paul mas gewurztraminer
+802. vinho branco paul mas claude val blanc 2023no pixem ate3xdesem juroscomprar
+803. vinho branco paul mas claude val blanc
+804. vinho branco paul cluver village chardonnay 2023
+805. vinho branco paul cluver village chardonnay 2023
+806. vinho branco paul cluver chardonnay
+807. vinho branco patrimonio wines patrimonio colheita selecionada 2020 lisboa
+808. vinho branco patrimonio wines patrimonio 2024 lisboa
+809. vinho branco patricius tokaji aszu 6 puttonyos suave
+810. vinho branco patricius tokaji aszu 5 puttonyos suave
+811. vinho branco patriarche heritage
+812. vinho branco patina chenin blanc 2021 africa do sul
+813. vinho branco pataphysique beaujolais blanc 2022
+814. vinho branco pata negra verdejo
+815. vinho branco pata d urso castas antigas 2019 douro
+816. vinho branco passerina igp terre di chieti loretana
+817. vinho branco passagem reserva 2023 douro
+818. vinho branco passagem reserva 2023 douro
+819. vinho branco passadouro 2022 douro
+820. vinho branco passadico
+821. vinho branco pasmados garrafeira 2015 peninsula de setubal
+822. vinho branco pasmados 2023 peninsula de setubal
+823. vinho branco paskua sauvignon blanc 2022
+824. vinho branco pascal jolivet sancerre sauvage
+825. vinho branco pascal jolivet sancerre l caillottes
+826. vinho branco pascal jolivet pouilly fume
+827. vinho branco pascal jolivet edition n1
+828. vinho branco pascal jolivet attitude sauvignon blanc
+829. vinho branco paredes meias
+830. vinho branco pardas rupestris penedes 2022
+831. vinho branco pardalito sweet
+832. vinho branco parcela unica magnum 2021 1 vinhos verdes
+833. vinho branco parcela unica 2021 vinhos verdes
+834. vinho branco parajes del valle macabeo dop manchuela 2021
+835. vinho branco papa figos douro
+836. vinho branco papa figos 2024 douro
+837. vinho branco papa figos 2021
+838. vinho branco papa figos
+839. vinho branco panul chardonnay
+840. vinho branco panizzon white blend 2021
+841. vinho branco panceri varietal moscato gelado
+842. vinho branco panceri varietal moscato 2022
+843. vinho branco palpite reserva 2023 douro
+844. vinho branco palpite reserva 2023
+845. vinho branco palpite macanita
+846. vinho branco palacio dos tavoras vinhas velhas 2018 trasosmontes
+847. vinho branco palacio dos tavoras grande reserva
+848. vinho branco palacio dos tavoras gold edition
+849. vinho branco palacio da brejoeira alvarinho vinhos verdes
+850. vinho branco palacio da brejoeira alvarinho vinhos verdes
+851. vinho branco palacio da brejoeira alvarinho caixa x6 moncao
+852. vinho branco palacio da brejoeira alvarinho 2024 vinhos verdes
+853. vinho branco palacio da brejoeira alvarinho 2006 vinhos verdes
+854. vinho branco paisajes de los andes classic sauvignon blanc
+855. vinho branco paisajes de los andes classic chardonnay
+856. vinho branco pai horacio grande reserva 2021 douro doc
+857. vinho branco pai abel
+858. vinho branco pagina sauvignon blanc 2020 lisboa
+859. vinho branco pagina sauvignon blanc 2020
+860. vinho branco pagina encruzado 2022 doc obidos
+861. vinho branco pagina arinto 2022 lisboa
+862. vinho branco pagina alvarinho 2018 lisboa
+863. vinho branco paco de teixeiro avesso 2020 minho
+864. vinho branco paco de teixeiro 2021 minho
+865. vinho branco pacheco pereda chardonnay 2024
+866. vinho branco pacheca superior 2023 douro
+867. vinho branco pacheca colheita 2024 douro
+868. vinho branco pacheca
+869. vinho branco pacha reserva chardonnay vina marty 2022
+870. vinho branco paar alsace pinot blanc auxerrois 2022
+871. vinho branco paar alsace pinot blanc auxerrois 2021
+872. vinho branco p de protos verdejo
+873. vinho branco p de protos verdejo
+874. vinho branco p de protos verdejo
+875. vinho branco ouzado reserva 2016 alentejo
+876. vinho branco otto viognier 2024
+877. vinho branco otto sauvignon blanc 2024
+878. vinho branco ossian quintaluna 13 2022
+879. vinho branco ossian 2022 castilla leon espanha
+880. vinho branco os caniveis macanita
+881. vinho branco ortigao colheita 2020 bairrada
+882. vinho branco ortigao arintobical 2020 bairrada
+883. vinho branco ortigao 4 dezasseis 2017 bairrada
+884. vinho branco orphee sauvignon blanc de reuilly 2017
+885. vinho branco original reserva 2022 doc bairrada
+886. vinho branco origem chardonnay casa valduga
+887. vinho branco origem chardonnay casa valduga
+888. vinho branco origem casa valduga chardonnay 750 m
+889. vinho branco organico la oveja torrontes 2022
+890. vinho branco organico e natural argentino vamos de parranda criolla blanco
+891. vinho branco organico e natural argentino vamos de parranda criolla blanco
+892. vinho branco organico e natural argentino vamos de parranda criolla blanco
+893. vinho branco organico del mercado pinot grigio 2024
+894. vinho branco orbiel e freres chardonnayno pixem ate3xdesem juroscomprar
+895. vinho branco orange voilee chenin blanc vdf 2021
+896. vinho branco orange carbonique chardonnay 2019
+897. vinho branco opta dao encruzado doc
+898. vinho branco opta dao encruzado
+899. vinho branco opta dao
+900. vinho branco oniris
+901. vinho branco oniris
+902. vinho branco oniris
+903. vinho branco omnia branco 2021 douro
+904. vinho branco omar viognier vdf 2022
+905. vinho branco olli grillo feudo maccari
+906. vinho branco olho gordo branco especial 2a edicao
+907. vinho branco olho de mocho 2024 alentejo
+908. vinho branco old soul estate grown chardonnay
+909. vinho branco olas y vientos
+910. vinho branco okeanos chardonnay assyrtiko
+911. vinho branco ohau woven stone sauvignon blanc 2023
+912. vinho branco oh01 trocken beerenauslese
+913. vinho branco oh01 spatlese fruit
+914. vinho branco oh01 riesling semi sweet
+915. vinho branco oenologo encruzado casa passarella
+916. vinho branco ocho millas sauvignon blanc
+917. vinho branco oceanico salvaged 2022 ilha do pico
+918. vinho branco oceanico alvarinho
+919. vinho branco oboe vinhas velhas silver edition douro
+920. vinho branco oboe vinha da parcela garrafa magnum 1
+921. vinho branco oboe vinha da parcela
+922. vinho branco oboe superior garrafa magnum 1
+923. vinho branco oboe superior
+924. vinho branco oboe superior
+925. vinho branco oboe rabigato garrafa magnum 1 b
+926. vinho branco oboe rabigato
+927. vinho branco oboe concentus
+928. vinho branco obikwa chenin blanc
+929. vinho branco obikwa chenin blanc
+930. vinho branco oberrotweiler weissburgunder reserve orstwein 2020
+931. vinho branco oak barrel chardonnay amitie
+932. vinho branco o estrangeiro 2021 dao doc
+933. vinho branco o arinto das indigenas do morgado 2022 alentejo
+934. vinho branco nuviana chardonnay gf
+935. vinho branco nuviana chardonnay
+936. vinho branco nuitssaintgeorges premier cru les terres blanches 2019
+937. vinho branco nuitssaintgeorges premier cru les terres blanches 2018
+938. vinho branco nuits st georges premier cru les terres blanches 2022
+939. vinho branco nuits saint georges premier cru les terres blanches 2017
+940. vinho branco nuestro verdejo
+941. vinho branco nuance 2019
+942. vinho branco novas gran reserva chardonnay
+943. vinho branco novas gran reserva chardonnay
+944. vinho branco nostrofruto moscato giallo mato penso flores da cunha serra gaucha
+945. vinho branco nostrofruto moscato 2024
+946. vinho branco nossa calcario bairrada
+947. vinho branco norton sexy fish blanc de blancs
+948. vinho branco norton select chardonnay
+949. vinho branco norton porteno chardonnay
+950. vinho branco norton porteno chardonnay
+951. vinho branco norton lote blanco
+952. vinho branco norton altura white blend
+953. vinho branco noelia bebelia albarino 2022 rias baixas
+954. vinho branco nobre seco sauvignon blanc barricado suzin
+955. vinho branco no8 mosel ayler kupp riesling kabinett grosse lage vdp 2023
+956. vinho branco no8 ayler kupp kabinett vdp grosse lage 2022
+957. vinho branco no21 ayl mosel riesling 1g erste lage vdp 2024
+958. vinho branco no21 ayl 1g riesling saar erste lage 2021
+959. vinho branco no2 ayler riesling saar ortswein 2021
+960. vinho branco no16 riesling mosel qualitatswein trocken 2021
+961. vinho branco no16 mosel riesling trocken 2024
+962. vinho branco no11 gg ayl schonfels saar grosses lage 2021
+963. vinho branco ninfa vinha da teresa 2019
+964. vinho branco ninfa sauvignon blanc 2022 tejo
+965. vinho branco ninfa maria gomes 2020 tejo
+966. vinho branco ninfa maria gomes 2019
+967. vinho branco ninfa escolha 2021 tejo
+968. vinho branco ninfa alvarinho 2019 tejo
+969. vinho branco niepoort vv vinhas velhas bairrada
+970. vinho branco niepoort vinhas velhas 2019
+971. vinho branco niepoort tiara 2023 douro
+972. vinho branco niepoort tiara 2023
+973. vinho branco niepoort tiara 2021 douro
+974. vinho branco niepoort tiara 2021 douro
+975. vinho branco niepoort tiara 2020 douro
+976. vinho branco niepoort tiara 2020 douro
+977. vinho branco niepoort teppo peixe 2015 minho
+978. vinho branco niepoort rotulo touriga nacional
+979. vinho branco niepoort rotulo 2020 dao
+980. vinho branco niepoort rotulo
+981. vinho branco niepoort riesling docil au au 2020 douro
+982. vinho branco niepoort redoma reserva 2023 douro
+983. vinho branco niepoort redoma reserva 2023 douro
+984. vinho branco niepoort redoma 2024 douro
+985. vinho branco niepoort redoma 2024 douro
+986. vinho branco niepoort quinta da lomba garrafeira 2016 dao
+987. vinho branco niepoort olo vinhos verdes
+988. vinho branco niepoort navazos 2023 jerez de la frontera espanha
+989. vinho branco niepoort nat cool 2024 vinhos verdes
+990. vinho branco niepoort moscatel docil miau miau douro
+991. vinho branco niepoort dialogo douro
+992. vinho branco niepoort dialogo caixa x6 douro
+993. vinho branco niepoort dialogo 2024 douro
+994. vinho branco niepoort conciso 2017 dao
+995. vinho branco niepoort conciso
+996. vinho branco niepoort coche 2023 douro
+997. vinho branco niepoort coche 2023 douro
+998. vinho branco nicasia vineyards blanc de blancs 2023
+999. vinho branco niagara suave tradicao
+1000. vinho branco niagara suave pet tradicao caixa 6

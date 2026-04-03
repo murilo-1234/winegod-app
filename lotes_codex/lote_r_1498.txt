@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. cantina della porta rossa 1982 barolo riserva la delizia
+2. cantina della rorta rossa 1982 barolo riserva vigna delizia
+3. cantina della serra canavese rosso
+4. cantina della serra erbaluce di caluso
+5. cantina della serra erbaluce di caluso macerato
+6. cantina della serra erbaluce spumante brut serra blu
+7. cantina della serra fizz box
+8. cantina della serra nebbiolo rose brut
+9. cantina della stazione barbera dalba 2021
+10. cantina della stazione dolcetto dalba 2021
+11. cantina della stazione langhe favorita
+12. cantina della stazione langhe favorita 2021
+13. cantina della torre chianti
+14. cantina della torre chianti
+15. cantina della torre pinot grigio
+16. cantina della torre pinot grigio
+17. cantina della torre pinot grigio 2024 delle venezie italy
+18. cantina della torre prosecco extra dry nv veneto italy
+19. cantina della valle bianco bag in box
+20. cantina della valle bianco bib
+21. cantina della valle rosso bag in box
+22. cantina della valle rosso bib
+23. cantina della volta 2017 lambrusco di sorbara brutrosso
+24. cantina della volta 2018 il mattaglio brut rose
+25. cantina della volta 2018 il mattaglio dosaggio zero
+26. cantina della volta 36 lambrusco di sorbara metodo classico 2015
+27. cantina della volta brut rose
+28. cantina della volta brut rose 2020
+29. cantina della volta brut rosso
+30. cantina della volta brut rosso
+31. cantina della volta brut rosso
+32. cantina della volta brut rosso lambrusco
+33. cantina della volta brut rosso lambrusco di sorbara
+34. cantina della volta brutrosso lambrusco di sorbara
+35. cantina della volta brutrosso lambrusco nv
+36. cantina della volta brutrosso lambrusco spumante metodo classico
+37. cantina della volta brutrosso lambrusco spumante metodo classico
+38. cantina della volta christian bellei millesimato 2017 vino spumante di qualita brut
+39. cantina della volta christian bellei spumante metodo classico brut 2017
+40. cantina della volta christian bellei spumante metodo classico brut 2017
+41. cantina della volta christian bellei spumante metodo classico millesimato brut 2017
+42. cantina della volta christian bellei spumante millesimato emiliaromagna italy 2016 case
+43. cantina della volta il mattaglio blanc de blancs 2013
+44. cantina della volta il mattaglio mgm vino spumante di qualita brut
+45. cantina della volta il mattaglio pas dose
+46. cantina della volta il mattaglio spumante metodo classico brut
+47. cantina della volta il mattaglio spumante metodo classico brut
+48. cantina della volta il mattaglio spumante metodo classico brut
+49. cantina della volta la prima volta metodo classico
+50. cantina della volta la prima volta spumante rosato emiliaromagna italy 2018 case
+51. cantina della volta la volta lambrusco di sorbara 2024
+52. cantina della volta lambrusco brut rosso 2017
+53. cantina della volta lambrusco brut rosso 2017
+54. cantina della volta lambrusco brut rosso 2018
+55. cantina della volta lambrusco di sorbara brutrosso
+56. cantina della volta lambrusco di sorbara metodo classico rose brut 2018
+57. cantina della volta lambrusco di sorbara metodo classico rose brut 2020
+58. cantina della volta lambrusco di sorbara rimosso 2022
+59. cantina della volta lambrusco di sorbara rimosso 2024
+60. cantina della volta lambrusco di sorbara rimosso 2024
+61. cantina della volta lambrusco di sorbara rimosso 2024
+62. cantina della volta lambrusco rimosso 2021
+63. cantina della volta lambrusco rimosso 2021
+64. cantina della volta lambrusco spumante brut rosso metodo classico
+65. cantina della volta mattaglio brut
+66. cantina della volta mattaglio rose
+67. cantina della volta millesimato bianco christian bellei brut metodo classico vsq
+68. cantina della volta rimosso 2024
+69. cantina della volta rimosso lambrusco sorbara doc 6 case
+70. cantina della volta rose lambrusco
+71. cantina della volta rose mgm vino spumante di qualita lambrusco di sorbara doc brut
+72. cantina della volta rose vino spumante di qualita lambrusco di sorbara doc brut
+73. cantina della volta sparkling rose
+74. cantina dellalunno rosso umbria
+75. cantina delsignore gattinara il putto 2020
+76. cantina dessena fauledda 2023
+77. cantina di brigaldara amarone reserva
+78. cantina di calasetta carignano del sulcis bricco delle piane doc 2020
+79. cantina di calasetta carignano del sulcis bricco delle piane doc 2020
+80. cantina di calasetta carignano del sulcis deseia doc 2022
+81. cantina di calasetta carignano del sulcis deseia doc 2023
+82. cantina di calasetta carignano del sulcis rosato deste doc 2023
+83. cantina di calasetta carignano del sulcis rosato deste doc 2023
+84. cantina di calasetta carignano del sulcis superiore 932 doc 2021
+85. cantina di calasetta carignano del sulcis superioriore 932 doc 2021
+86. cantina di calasetta vermentino di sardegna dema doc 2023
+87. cantina di calasetta vermentino di sardegna dema doc 2023
+88. cantina di caldaro pinot grigio
+89. cantina di caldaro pinot nero
+90. cantina di carpi e sorbara emma lambrusco di sorbara emiliaromagna italy nv case
+91. cantina di carpi e sorbara lambrusco di sorbara emma amabile nv
+92. cantina di carpi modena brut notte rosa nv
+93. cantina di carpi nottebianca brut
+94. cantina di carpi nottebianca nv white blend
+95. cantina di carpi nottebianca sparkling white bubbly nv can emiliaromagna italy
+96. cantina di carpi notterosa modena brut
+97. cantina di carpi notterosa modena brut nv
+98. cantina di carpi notterosa sparkling rose bubbly nv can emiliaromagna italy
+99. cantina di casorzo malvasia di casorzo doc
+100. cantina di casteggio barbera
+101. cantina di casteggio oltrepo pavese pinot grigio
+102. cantina di castelnuovo del garda bianco
+103. cantina di castelnuovo del garda chardonnay
+104. cantina di castelnuovo del garda merlot
+105. cantina di castelnuovo del garda pinot grigio delle venezie
+106. cantina di castelnuovo del garda pinot grigio delle venezie doc
+107. cantina di castelnuovo del garda rosso
+108. cantina di colterenzio gewurztraminer perelise 2023
+109. cantina di colterenzio lagrein 2022
+110. cantina di colterenzio lagrein 2023
+111. cantina di colterenzio lagrein riserva gries 2020
+112. cantina di colterenzio muller thurgau 2021
+113. cantina di colterenzio pinot grigio 2021
+114. cantina di colterenzio pinot grigio puiten 2021
+115. cantina di colterenzio pinot nero riserva lafoa 2020
+116. cantina di colterenzio pinot nero riserva st daniel 2021
+117. cantina di colterenzio riesling harrer 2021
+118. cantina di colterenzio sauvignon blanc lafoa 2022
+119. cantina di colterenzio sauvignon blanc prail 2022
+120. cantina di custoza
+121. cantina di custoza 2015
+122. cantina di custoza 2019
+123. cantina di custoza 2020
+124. cantina di custoza 2022
+125. cantina di custoza 2023
+126. cantina di custoza 2024
+127. cantina di custoza bardolino
+128. cantina di custoza bardolino 2023
+129. cantina di custoza bardolino bio terre in fiore 2021
+130. cantina di custoza bardolino bio terre in fiore 2023
+131. cantina di custoza bardolino bio terre in fiore 2024
+132. cantina di custoza bardolino chiaretto classico doc veneto 2025
+133. cantina di custoza bardolino classico
+134. cantina di custoza bianco di custoza
+135. cantina di custoza bianco di custoza
+136. cantina di custoza bianco di custoza italy
+137. cantina di custoza bianco literwein 2025
+138. cantina di custoza chardonnay literwein 2022
+139. cantina di custoza chardonnay literwein 2023
+140. cantina di custoza chardonnay literwein 2024
+141. cantina di custoza chardonnay literwein 2025
+142. cantina di custoza corvina garda do
+143. cantina di custoza corvina garda doc veneto 2020
+144. cantina di custoza custodia bianco superiore 202224
+145. cantina di custoza custodia custoza superiore bianco
+146. cantina di custoza custoza bianco 2024
+147. cantina di custoza custoza doc veneto 2025
+148. cantina di custoza lugana
+149. cantina di custoza pinot grigio delle venezie 2022
+150. cantina di custoza pinot grigio delle venezie 2023
+151. cantina di custoza pinot grigio garda val dei molini 2024
+152. cantina di custoza pinot grigio garda val dei molini 2025
+153. cantina di custoza pinot grigio literwein 2024
+154. cantina di custoza pinot grigio literwein 2025
+155. cantina di custoza valpolicella val dei molini 2021
+156. cantina di custoza valpolicella val dei molini 2022
+157. cantina di custoza valpolicella val dei molini 2023
+158. cantina di francesco annesanti ninfa del nera bianco 2022 12
+159. cantina di gambellara i basalti soave
+160. cantina di gambellara monopolio 2022 gambellara classico
+161. cantina di gambellara monopolio durello spumante
+162. cantina di gambellara monopolio gambellara classico
+163. cantina di gambellara monopolio pinot grigio
+164. cantina di gambellara monopolio pinot grigio 12 pack
+165. cantina di gambellara monopolio pinot grigio 2022 italy
+166. cantina di gambellara monopolio pinot grigio 2023 italy
+167. cantina di gambellara monopolio pinot grigio 2024 italy
+168. cantina di gambellara monopolio pinot grigio 2025
+169. cantina di gambellara monopolio pinot grigio doc
+170. cantina di gambellara monopolio pinot grigio veneto 12 bottles
+171. cantina di gambellara monopolio prosecco spumante nv
+172. cantina di gambellara monopolio soave
+173. cantina di gambellara monopolio soave 2024 italy
+174. cantina di gambellara monopolio soave classico
+175. cantina di gambellara monopolio soave classico 2020
+176. cantina di gambellara monopolio spumante prosecco italy
+177. cantina di gambellara note di vino pinot grigio 2023 12 sc
+178. cantina di gambellara note di vino pinot grigio rose 2023
+179. cantina di gambellara note di vino pinot grigio rose 2023 12 sc
+180. cantina di gambellara note di vino prosecco spumante
+181. cantina di gambellara note di vino prosecco spumante extra dry nv
+182. cantina di gambellara note di vino prosecco spumante extra dry nv 11 ck
+183. cantina di gambellara nv monopolio prosecco spumante organic veneto italy
+184. cantina di gambellara pinot nero
+185. cantina di gattinara gattinara 1966
+186. cantina di gattinara gattinara 1967
+187. cantina di illasi amarone della valpolicella docg
+188. cantina di illasi malanchino amarone della valpolicella riserva docg
+189. cantina di illasi valpolicella ripasso doc
+190. cantina di lana montepulciano
+191. cantina di lana montepulciano dabruzzo 2019 12
+192. cantina di lana montepulciano dabruzzo 2022 12
+193. cantina di lana montepulciano dabruzzo 2023 12
+194. cantina di lana montepulciano dabruzzo 2023 12 2023
+195. cantina di lana pinot grigio 2023 12
+196. cantina di lana pinot grigio 2024 12
+197. cantina di lana pinot grigio 2024 12 2024
+198. cantina di lana prosecco nv 12
+199. cantina di leonardo da vinci chianti riserva docg
+200. cantina di lisandro terre del volturno igt pallagrello bianco lancella 2014
+201. cantina di mogoro don giovanni vermentino di sardegna doc
+202. cantina di mogoro don giovanni vermentino di sardegna doc 2020
+203. cantina di mogoro le giare sardegna italy vermentino 2024
+204. cantina di mogoro le giare vermentino di sardegna doc
+205. cantina di mogoro nero sardo cannonau di sardegna doc 2018
+206. cantina di mogoro nero sardo cannonau doc
+207. cantina di mogoro semidano puisteris 2016 case only
+208. cantina di mogoro vermentino di sardegna le giare 2024 case only
+209. cantina di mogoro vignaruja cannonau doc
+210. cantina di montalcino brunello 2019
+211. cantina di montalcino brunello di mont
+212. cantina di montalcino brunello di montalcino 2016
+213. cantina di montalcino brunello di montalcino 2018
+214. cantina di montalcino brunello di montalcino 2018
+215. cantina di montalcino brunello di montalcino 2019
+216. cantina di montalcino brunello di montalcino 2020
+217. cantina di montalcino brunello di montalcino 2020case only
+218. cantina di montalcino brunello di montalcino docg
+219. cantina di montalcino brunello di montalcino docg
+220. cantina di montalcino brunello di montalcino docg 2016
+221. cantina di montalcino brunello di montalcino docg toskana 2019
+222. cantina di montalcino brunello montalcino 2020
+223. cantina di montalcino rosso di montalcino 2021
+224. cantina di montalcino rosso di montalcino 2021
+225. cantina di montalcino rosso di montalcino 2023
+226. cantina di montalcino rosso di montalcino doc
+227. cantina di montalcino rosso di montalcino doc
+228. cantina di monteford soave classico cliv italy
+229. cantina di monteford soave classico cliv italy
+230. cantina di monteforte amarone della valpolicella prima pietra 2020
+231. cantina di monteforte clivus amarone della valpolicella 2021
+232. cantina di monteforte clivus corvina veneto
+233. cantina di monteforte clivus doc valpolicella ripasso 2022
+234. cantina di monteforte clivus doc valpolicella ripasso 2022
+235. cantina di monteforte clivus doc valpolicella ripasso 2022
+236. cantina di monteforte clivus doc valpolicella ripasso 2022
+237. cantina di monteforte clivus soave classico 2022 veneto vin ditalie
+238. cantina di monteforte doppio rosso vino ripassato
+239. cantina di monteforte durello metodo classico
+240. cantina di monteforte soave classico cliv
+241. cantina di monteforte soave classico cliv
+242. cantina di monteforte soave classico cliv
+243. cantina di monteforte soave classico cliv italy
+244. cantina di monteforte soave classico cliv italy
+245. cantina di monteforte soave classico cliv italy
+246. cantina di monteforte soave classico cliv italy
+247. cantina di monteforte soave classico foscarino
+248. cantina di monteforte soave classico terre di monteforte
+249. cantina di monteforte soave classico terre di monteforte
+250. cantina di monteforte soave classico tremenalto
+251. cantina di monteforte soave superiore classico castellaro
+252. cantina di monteforte soave superiore classico monte grande
+253. cantina di monteforte terre di monteforte pinot grigio rosato 2022
+254. cantina di monteforte valpolicella ripasso clivus 2021
+255. cantina di monteforte vigneto montegrande soave classico superiore
+256. cantina di monteforte vigneto montegrande soave classico superiore
+257. cantina di monteforte vigneto montegrande soave classico superiore 2022
+258. cantina di negrar amarone
+259. cantina di negrar amarone
+260. cantina di negrar amarone classico
+261. cantina di negrar amarone classico docg
+262. cantina di negrar amarone della valpolicella classico 2020
+263. cantina di negrar amarone della valpolicella classico 2022
+264. cantina di negrar amarone della valpolicella classico 2022
+265. cantina di negrar amarone della valpolicella classico docg
+266. cantina di negrar amarone della valpolicella classico docg
+267. cantina di negrar amarone della valpolicella docg classico 0
+268. cantina di negrar amarone valpolicella classico 202122
+269. cantina di negrar appassimento rosso italy
+270. cantina di negrar appassimento rosso nv
+271. cantina di negrar appassimento rosso veneto italy
+272. cantina di negrar bardolino chiaretto doc 0
+273. cantina di negrar bardolino doc 0
+274. cantina di negrar corvina
+275. cantina di negrar corvina
+276. cantina di negrar corvina
+277. cantina di negrar corvina igt verona
+278. cantina di negrar corvina verona italy
+279. cantina di negrar corvina verona ulisse 2023
+280. cantina di negrar custoza doc 0
+281. cantina di negrar garganega
+282. cantina di negrar garganega
+283. cantina di negrar garganega 2024
+284. cantina di negrar garganega 2024
+285. cantina di negrar garganega igt verona
+286. cantina di negrar garganega ulisse 2023
+287. cantina di negrar garganega ulisse 2024
+288. cantina di negrar garganega verona italy
+289. cantina di negrar il cedrone rosso veronese igt 0
+290. cantina di negrar il viaggio appassimento rosso veneto igt 0
+291. cantina di negrar il viaggio appassimento rosso veneto igt 1
+292. cantina di negrar il viaggio corvina rosso veronese igt 0
+293. cantina di negrar il viaggio garganega bianco veronese igt 0
+294. cantina di negrar le preare appassimento rosso veneto 2020 red semidry 14 075
+295. cantina di negrar le preare docg amarone della valpolicella classico
+296. cantina di negrar lugana doc 0
+297. cantina di negrar novello veronese igt
+298. cantina di negrar pinot grigio 2024
+299. cantina di negrar pinot grigio delle venezie doc 0
+300. cantina di negrar prearin bianco veneto igt frizzante 0
+301. cantina di negrar prearin rosato veronese igt frizzante 0
+302. cantina di negrar recioto
+303. cantina di negrar recioto classico della valpolicella docg 2022
+304. cantina di negrar recioto della valpolicella classico docg
+305. cantina di negrar recioto della valpolicella docg classico
+306. cantina di negrar rosso appassimento 2024
+307. cantina di negrar si mento vin rosu igt
+308. cantina di negrar soave
+309. cantina di negrar soave
+310. cantina di negrar soave classico 2023
+311. cantina di negrar soave classico 202324
+312. cantina di negrar soave classico doc
+313. cantina di negrar soave doc 0
+314. cantina di negrar soave doc classico italy
+315. cantina di negrar soave italy
+316. cantina di negrar valpolicella classico 2024
+317. cantina di negrar valpolicella classico doc
+318. cantina di negrar valpolicella classico doc 0
+319. cantina di negrar valpolicella doc 0
+320. cantina di negrar valpolicella italy
+321. cantina di negrar valpolicella ripasso
+322. cantina di negrar valpolicella ripasso
+323. cantina di negrar valpolicella ripasso 2022
+324. cantina di negrar valpolicella ripasso doc 2021
+325. cantina di negrar valpolicella ripasso doc 2022
+326. cantina di negrar valpolicella ripasso doc classico superiore
+327. cantina di negrar veneto appassimento
+328. cantina di nessuno nenti etna bianco doc 2021
+329. cantina di nizza dolcetto piemonte il delicato bag in box
+330. cantina di nizza le pole barbera dasti
+331. cantina di nizza metodo charmant brut nei
+332. cantina di ora amarone della valpolicella docg
+333. cantina di ora valpolicella superiore ripasso doc
+334. cantina di prisco fontanarosa irpinia coda di volpe 2017
+335. cantina di ruvo di puglia bellagriffi
+336. cantina di ruvo di puglia bombino bianco
+337. cantina di ruvo di puglia castel del monte rosato
+338. cantina di ruvo di puglia cryfus spumante
+339. cantina di ruvo di puglia nero di troia
+340. cantina di ruvo di puglia nero di troia grifone
+341. cantina di ruvo di puglia squarcione
+342. cantina di santadi grotta rossa doc carignano rotwein wein trocken doc italien
+343. cantina di santadi grotta rossa doc carignano rotwein wein trocken doc italien
+344. cantina di santadi grotta rossa doc carignano rotwein wein trocken doc italien
+345. cantina di santadi grotta rossa doc carignano rotwein wein trocken doc italien
+346. cantina di santadi villa solais vermentino
+347. cantina di scansano scantianum toscana vermentino
+348. cantina di soave amarone del valpol 2013 15
+349. cantina di soave amarone della valpolicella poesie 2020
+350. cantina di soave equipe 5 metodo classico cuvee n60 brut
+351. cantina di soave equipe 5 metodo classico cuvee n60 brut
+352. cantina di soave equipe 5 metodo classico cuvee n60 brut
+353. cantina di soave equipe 5 metodo classico cuvee n61 brut
+354. cantina di soave equipe 5 metodo classico cuvee n61 brut
+355. cantina di soave equipe 5 metodo classico cuvee n61 brut
+356. cantina di soave equipe 5 riserva dei cinque 120 mesi brut
+357. cantina di soave poesie bardolino doc
+358. cantina di soave poesie doc
+359. cantina di soave poesie valpolicella doc
+360. cantina di soave poesie valpolicella igt rotwein wein trocken italien 1 x 0
+361. cantina di soave poesie valpolicella igt rotwein wein trocken italien 12 x 0
+362. cantina di soave poesie valpolicella igt rotwein wein trocken italien 3 x 0
+363. cantina di soave poesie valpolicella igt rotwein wein trocken italien 6 x 0
+364. cantina di soave san lorenzo soave classico doc 2022
+365. cantina di soave soave
+366. cantina di soave soave doc 2022
+367. cantina di soliera il trovador lambrusco di sorbara
+368. cantina di soliera lambrusco di sorbara
+369. cantina di soliera lambrusco di sorbara doc dry nv
+370. cantina di soliera lambrusco di sorbara doc dry nv
+371. cantina di soliera lambrusco di sorbara dry
+372. cantina di soliera lambrusco di sorbara emiliaromagna italy nv
+373. cantina di soliera lambrusco di sorbara nv
+374. cantina di soliera lambrusco di sorbara nv
+375. cantina di soliera lambrusco grasparossa di castel vetro
+376. cantina di soliera lambrusco grasparossa di castelvetro doc
+377. cantina di soliera lambrusco grasparossa di castelvetro doc
+378. cantina di soliera lambrusco grasparossa di castelvetro doc sweet 8
+379. cantina di soliera lambrusco grasparossa di castelvetro doc sweet nv
+380. cantina di soliera lambrusco grasparossa di castelvetro nv
+381. cantina di soliera lambrusco grasparossa di castelvetro sweet
+382. cantina di soliera lambrusco rosso grasparossa amabile
+383. cantina di soliera lambrusco sorbara dry
+384. cantina di soliera nv lambrusco di sorbara
+385. cantina di soliera nv lambrusco grasparossa amabile offdry
+386. cantina di soliera nv lambrusco grasparossa secco
+387. cantina di solopaca aglianico carrese riserva selezione oro 2016
+388. cantina di solopaca aglianico del taburno docg 24 carati 2021
+389. cantina di solopaca aglianico igp
+390. cantina di solopaca aglianico sannio dop 2022
+391. cantina di solopaca barbera sannio dop 2023
+392. cantina di solopaca beneventano igt 2024
+393. cantina di solopaca beneventano igt aglianico 2024
+394. cantina di solopaca beneventano igt falanghina 2024
+395. cantina di solopaca bianco igp
+396. cantina di solopaca bianco igp
+397. cantina di solopaca bianco igp
+398. cantina di solopaca bianco sannio dop
+399. cantina di solopaca coda di volpe sannio dop 2025
+400. cantina di solopaca falanghina del sannio dop 2024
+401. cantina di solopaca falanghina dop selezione oro 2018
+402. cantina di solopaca falanghina spumante dop selezione oro 2018
+403. cantina di solopaca falanghina spumante dop selezione oro 2018 bp
+404. cantina di solopaca fiano doc selezione oro 2018
+405. cantina di solopaca fiano sannio dop 2024
+406. cantina di solopaca greco doc selezione oro 2018
+407. cantina di solopaca greco sannio dop 2024
+408. cantina di solopaca greco sannio dop foja 2024
+409. cantina di solopaca maria cristina falanghina sparkling brut
+410. cantina di solopaca maria cristina falanghina sparkling brut
+411. cantina di solopaca maria cristina falanghina sparkling brut
+412. cantina di solopaca rosso beneventano igp
+413. cantina di solopaca rosso origini 2016
+414. cantina di solopaca rosso sannio dop
+415. cantina di solopaca sannio dop origini solopaco classico 2019
+416. cantina di sorbara emma lambrusco
+417. cantina di sorbara emma lambrusco di sorbara nv emiliaromagna italy
+418. cantina di sorbara lambrusco
+419. cantina di sorbara lambrusco di modena ilpiu
+420. cantina di sorbara lambrusco di sorbara amabile emma emiliaromagna italy
+421. cantina di sorbara lambrusco emma
+422. cantina di terlano chardonnay 2023
+423. cantina di terlano chardonnay kreuth 2022
+424. cantina di terlano gewurztraminer 2023
+425. cantina di terlano gewurztraminer 2023 e gewurztraminer lunare 2022 box 2 bottiglie
+426. cantina di terlano gewurztraminer lunare 2022
+427. cantina di terlano gewurztraminer tradition 2025
+428. cantina di terlano lagrein 2021
+429. cantina di terlano lagrein 2023
+430. cantina di terlano lagrein 2023 e lagrein riserva gries 2021 box 2 bottiglie
+431. cantina di terlano lagrein riserva gries 2023
+432. cantina di terlano merlot riserva siebeneich 2020
+433. cantina di terlano nova domus riserva 2021
+434. cantina di terlano pinot bianco riserva vorberg 2023
+435. cantina di terlano pinot bianco riserva vorberg 2023
+436. cantina di terlano pinot bianco tradition 2023
+437. cantina di terlano pinot bianco tradition 2025
+438. cantina di terlano pinot noir tradition 2023
+439. cantina di terlano pinot noir tradition 2024
+440. cantina di terlano pinot noir tradition 2025
+441. cantina di terlano sauvignon quarz 2024
+442. cantina di terlano sauvignon winkl 2023
+443. cantina di terlano sauvignon winkl 2024
+444. cantina di terlano sauvignon winkl 2025
+445. cantina di terlano terlaner 2024
+446. cantina di terlano terlaner 2025
+447. cantina di torra aop patrimonio blanc 2022
+448. cantina di torra aop patrimonio blanc 2022
+449. cantina di torra aop patrimonio blanc 2022
+450. cantina di torra aop patrimonio blanc 2022
+451. cantina di torra blanc
+452. cantina di torra horsserie blanc
+453. cantina di torra les soiffards 2024
+454. cantina di torra rouge
+455. cantina di torra rouge patrimonio aop
+456. cantina di tortona bocciolo rosato 2023
+457. cantina di tortona colli tortonesi doc derthona timorasso 2021
+458. cantina di tortona derthona
+459. cantina di tortona derthona timorasso 2019 italy
+460. cantina di tortona derthona timorasso 2021
+461. cantina di tortona milia scauri
+462. cantina di tortona piccolo derthona
+463. cantina di tortona piccolo derthona
+464. cantina di tortona piccolo derthona colli tortonesi 2021 115 075
+465. cantina di tortona timorasso 20192021
+466. cantina di tortona timorasso 20192021
+467. cantina di tortona vessillo barbera 2022
+468. cantina di trento gewurztraminer khopfler 2023
+469. cantina di trento marzemino superiore ziresi doc 2015
+470. cantina di trento marzemino trentino doc mozart
+471. cantina di trento merlot trentino 1339 doc 2015
+472. cantina di trento nosiola trentino 1339 doc 2016
+473. cantina di trento pinot nero trentino doc mokner
+474. cantina di trento sauvignon bianco trentino doc arjent
+475. cantina di trento teroldego rotaliano doc braide
+476. cantina di trento teroldego vigneti delle dolomiti igt 2016
+477. cantina di trentomarzemino superiore ziresi doc 2015
+478. cantina di trentoteroldego vigneti delle dolomiti igt 2016
+479. cantina di valpantena amarone della valpolicella docg torre del falasco
+480. cantina di valpantena valpolicella superiore doc torre del falasco
+481. cantina di valpantena valpolicella superiore ripasso doc torre del falasco
+482. cantina di venosa basilicata rosso vignali basilicata italy
+483. cantina di venosa carato venusio aglianico del vulture superiore docg 6 x
+484. cantina di venosa gesualdo
+485. cantina di venosa gesualdo da venosa aglianico del vulture doc 6 x
+486. cantina di venosa matematico rosso basilicata igt 6 x
+487. cantina di venosa terre di orazio aglianico del vulture doc 6 x
+488. cantina di venosa terre di orazio bianco muscat dry basilicata igt 6 x
+489. cantina di venosa terre di orazio rose basilicata igt 6 x
+490. cantina di venosa tris di verbo
+491. cantina di venosa verbo aglianico del vulture 2020 12
+492. cantina di venosa verbo aglianico del vulture 2021 12
+493. cantina di venosa verbo aglianico del vulture dop 6 x
+494. cantina di venosa verbo aglianico di vulture 2021
+495. cantina di venosa verbo bianco
+496. cantina di venosa verbo bianco malvasia basilicata igt 6 x
+497. cantina di venosa verbo malvasia di basilicata 2023 12
+498. cantina di venosa verbo rosato
+499. cantina di venosa verbo rosato basilicata igt 6 x
+500. cantina di venosa verbo rose 2021 12
+501. cantina di venosa verbo rosso
+502. cantina di venosa vignali aglianico del vulture dop 6 x
+503. cantina di venosa vignali bianco
+504. cantina di venosa vignali bianco basilicata igp italy
+505. cantina di verona amarone della valp
+506. cantina di verona lugana terre di verona 2020
+507. cantina di verona podere poiano valpolicella ripasso superiore 2019
+508. cantina di verona ripasso
+509. cantina di verona ripasso superiore doc 2019
+510. cantina di verona valpantena terre di verona pinot grigio 2021
+511. cantina diana moscato passito di saracena 2022
+512. cantina diomede canace nero di troia
+513. cantina diomede canace nero di troia
+514. cantina diomede canace nero di troia
+515. cantina diomede canace nero di troia
+516. cantina diomede canace nero di troia
+517. cantina diomede canace nero di troia
+518. cantina diomede canace nero di troia
+519. cantina diomede canace nero di troia 2022
+520. cantina diomede canace nero di troia igp 135 abv
+521. cantina diomede canace nero di troia puglia
+522. cantina diomede canace nero di troia puglia 2020 red dry 135 075
+523. cantina diomede canace nero di troia puglia italy
+524. cantina diomede lama di pietra nero di troia
+525. cantina diomede lama di pietra nero di troia
+526. cantina diomede lama di pietra nero di troia 2020
+527. cantina diomede lama di pietra nero di troia 2024
+528. cantina diomede topicello nero di troia puglia 2022 red semidry 15 075
+529. cantina divina moscato dolce 0
+530. cantina do mogoro il nuraghe don giovanni vermentino di sardegna doc
+531. cantina doc treviso millesimato brut 0
+532. cantina dolcemente semi sweet cabernet
+533. cantina dolcemente semi sweet cabernet
+534. cantina domanda bosch chardonnay piemonte doc 2020
+535. cantina domanda calosso doc 2019
+536. cantina domanda casera moscato dasti docg 2022
+537. cantina domanda crevacuore barbera dasti docg
+538. cantina domanda crevacuore barbera dasti docg 2019
+539. cantina domanda crevacuore barbera dasti docg 2020
+540. cantina domanda derthona doc timirasso 2020 piemonte
+541. cantina domanda dino dolcetto dasti doc 2018
+542. cantina domanda favorita langhe doc 2018
+543. cantina domanda gemma cuvee doc piemonte bianco 2024
+544. cantina domanda onora merlot doc piemonte 2021
+545. cantina domanda valeri spumante rosata piemonte doc 2020
+546. cantina dora 2020
+547. cantina dora 2021
+548. cantina dora 2024
+549. cantina dorgali cannonau di sardegna vigna di isalle
+550. cantina dorgali cantina dorgali cannonau di sardegna vigna di isalle
+551. cantina dorgali vigna di isalle cannonau di sardegna
+552. cantina dryas fiano griseo 2022
+553. cantina dryas spumante classico 60 mesi
+554. cantina eisacktal valle isarco gruner veltiner 2023
+555. cantina ermes vento di mare pinot grigio
+556. cantina etnella attia bianco 2020
+557. cantina etrusca bella vita toscana rosso igt 2021 12 bottles
+558. cantina etrusca nero davola doc 2022 6 bottles
+559. cantina fassati chianti docg le gaggiole
+560. cantina fassati chianti docg le gaggiole
+561. cantina fassati chianti docg le gaggiole 2023
+562. cantina fassati rosso di montepulciano doc selciaia
+563. cantina fassati rosso di montepulciano doc selciaia
+564. cantina fassati rosso di montepulciano doc selciaia 2024
+565. cantina fassati vino nobile di montepulciano docg pasiteo
+566. cantina fassati vino nobile di montepulciano docg pasiteo
+567. cantina fassati vino nobile di montepulciano docg riserva salarco
+568. cantina fassati vino nobile di montepulciano docg riserva salarco
+569. cantina fassati vino nobile di montepulciano docg riserva salarco 2015
+570. cantina favaro le chiusure erbaluce di caluso 2023
+571. cantina federici bellone lazio igt 2019
+572. cantina fermento metodo famigliare 2021
+573. cantina fermento rosso del pozzo 2020
+574. cantina fermento santa madonna 2020 12
+575. cantina fermento santa madonna 2021
+576. cantina fiammetta benedictus sangiovese superiore doc 2023
+577. cantina fiammetta favola rebola rimini doc 2024
+578. cantina fiammetta nero eron sangiovese riserva doc 2022
+579. cantina filarole fatto coi piedi 2021
+580. cantina filarole genius loci 2021
+581. cantina filarole onda durto 2021
+582. cantina filarole rosso filarole 2020
+583. cantina filippi soave monteseroni 2021
+584. cantina filippi vindagoti 2020
+585. cantina filippi vindagoti 2020
+586. cantina filippi vindagoti 2020
+587. cantina fina miral nero davola 2024
+588. cantina fina nero davolla sicilia 2021
+589. cantina fiorentino fiano galatea
+590. cantina fiorentino galatea fiano organic white wine from salento italy 2024
+591. cantina fiorentino madreterra primitivo igp salento bio 13vol 2023
+592. cantina fiorentino madreterra primitivo salento 2023 bio
+593. cantina fiorentino madreterra primitivo salento igp biologico
+594. cantina fiorentino madreterra verdeca e fiano salento 2024 bio
+595. cantina fiorentino nivvro primitivo valle dellasso igp salento 145vol 2021
+596. cantina fiorentino nivvro primitivo valle dellasso salento 2021 bio
+597. cantina fiorentino primitivo igp salento 2021
+598. cantina fiorentino spumante brut cavallerizza igp salento 12vol 2023
+599. cantina fiorentino spumante brut rose cavalerizza igp salento 12vol 2023
+600. cantina fiorentino terra san giovanni primitivo valle dell asso salento 2021 bio
+601. cantina fiorentino terra san giovanni primitivo valle dellasso igp salento 145vol 2022
+602. cantina fiorentino tripiedi fiano igp salento 125vol 2022
+603. cantina flli zeni
+604. cantina flli zeni srl mr lake bardolino
+605. cantina flli zeni srl zeni amarone della valpolicella classico 2021
+606. cantina flli zeni srl zeni amarone della valpolicella classico 2022
+607. cantina flli zeni srl zeni amarone della valpolicella classico 2023
+608. cantina flli zeni srl zeni bardolino chiaretto classico vigne alte rose
+609. cantina flli zeni srl zeni costalago rosso veronese
+610. cantina flli zeni srl zeni lugana vigne alte trebbiano
+611. cantina flli zeni srl zeni soave doc classico vigne alte
+612. cantina flli zeni srl zeni valpolicella superiore ripasso marogne
+613. cantina fontefico cocca di casa montepulciano
+614. cantina forli predappio albana secco volo daquila 2022
+615. cantina forli predappio cagnina dolce 2023
+616. cantina forli predappio cagnina dolce 2025
+617. cantina forli predappio sangiovese appassimento volo daquila 2022
+618. cantina forli predappio sangiovese appassimento volo daquila 2023
+619. cantina forli predappio sangiovese appassimento volo daquila 2023
+620. cantina forli predappio sangiovese oibo 2022
+621. cantina forli predappio sangiovese rubicone linnominato 2023
+622. cantina forli predappio sangiovese superiore riserva volo daquila 2021
+623. cantina forli predappio sauvignon cleia 2022
+624. cantina forli predappio sauvignon cleia 2023
+625. cantina forli predappio syrah eudoro 2023
+626. cantina forli predappio tratti dautore albana dolce 2022
+627. cantina forli predappio tratti dautore albana dolce 2023
+628. cantina forli predappio tratti dautore albana secco 2024
+629. cantina forli predappio tratti dautore pagadebit 2022
+630. cantina forli predappio tratti dautore sangiovese superiore 2023
+631. cantina forli predappio tratti dautore trebbiano 2024
+632. cantina fornacina rosso di montalcino 2024 75012 2024
+633. cantina fratelli pardi 2014 sacrantino
+634. cantina fratelli pardi montefalco rosso montefalco umbria italy
+635. cantina fratelli pardi sagrantino di montefalco pasito 2008
+636. cantina fratelli pardi sagrantino sacrantino 2018
+637. cantina fratelli pardi trebbiano spoletino umbria italy
+638. cantina fratelli zeni amarone della valpolicella classico docg
+639. cantina fratelli zeni costalago rosso veronese igt
+640. cantina fratelli zeni vigne alte lugana doc
+641. cantina fratelli zeni vigne alte soave classico doc
+642. cantina fregnan il patriota 36 mesi dosaggio zero dosaggio zero spumante
+643. cantina fregnan il patriota 72 mesi dosaggio zero dosaggio zero spumante
+644. cantina fregnan il patriota metodo classico brut spumante
+645. cantina fregnan il patriota metodo classico mgm brut spumante
+646. cantina fregnan re metodo classico rose extra brut spumante
+647. cantina fregnan re metodo classico rose mgm extra brut spumante
+648. cantina frentana abruzzo cococciola doc costa del mulino
+649. cantina frentana abruzzo cococciola doc costa del mulino
+650. cantina frentana abruzzo cococciola doc costa del mulino 2023
+651. cantina frentana abruzzo cococciola doc costa del mulino 2024
+652. cantina frentana abruzzo cococciola doc costa del mulino 2025
+653. cantina frentana abruzzo passerina doc costa del mulino
+654. cantina frentana abruzzo passerina doc costa del mulino
+655. cantina frentana abruzzo passerina doc costa del mulino 2022
+656. cantina frentana abruzzo passerina doc costa del mulino 2023
+657. cantina frentana abruzzo passerina doc costa del mulino 2024
+658. cantina frentana abruzzo pecorino doc costa del mulino 2025
+659. cantina frentana cerasuolo dabruzzo doc costa del mulino 2022
+660. cantina frentana cerasuolo dabruzzo doc costa del mulino 2023
+661. cantina frentana cerasuolo dabruzzo doc costa del mulino 2025
+662. cantina frentana cerasuolo dabruzzo doc frentano 2023
+663. cantina frentana costa del mulino abruzzo pecorino
+664. cantina frentana costa del mulino abruzzo pecorino
+665. cantina frentana frentano trebbiano dabruzzo 2023
+666. cantina frentana frentano trebbiano dabruzzo 2023
+667. cantina frentana montepulciano dabruzzo doc bio 2019
+668. cantina frentana montepulciano dabruzzo doc bio 2021
+669. cantina frentana montepulciano dabruzzo doc costa del mulino 2019
+670. cantina frentana montepulciano dabruzzo doc frentano 2023
+671. cantina frentana montepulciano dabruzzo doc rubesto 2018
+672. cantina frentana montepulciano dabruzzo doc rubesto 2020
+673. cantina frentana montepulciano dabruzzo riserva doc 1960 2020
+674. cantina frentana montepulciano dabruzzo riserva doc panarda 2018
+675. cantina frentana montepulciano dabruzzo torre vinaria
+676. cantina frentana pecorino terre di chieti igt bio 2023
+677. cantina frentana rubesto montepulciano dabruzzo riserva 2020
+678. cantina frentana torre vinaria montepulciano dabruzzo doc
+679. cantina frentana trebbiano dabruzzo doc frentano 2023
+680. cantina frentana trebbiano dabruzzo doc frentano 2024
+681. cantina furlani 2022 moni bianco
+682. cantina furlani alpino 2021
+683. cantina furlani alpino 23
+684. cantina furlani alpino bianco
+685. cantina furlani alpino bianco
+686. cantina furlani alpino bianco dl
+687. cantina furlani alpino macerato 2024
+688. cantina furlani alpino macerato frizzante 2023 alto adige italy
+689. cantina furlani alto piano orange 2023
+690. cantina furlani altopiano mullerthurgau orange
+691. cantina furlani altopiano orange 2024
+692. cantina furlani altopiano orange 2024 trento italy
+693. cantina furlani altopiano rosso
+694. cantina furlani altopiano rosso 2020
+695. cantina furlani antico 2017 115
+696. cantina furlani antico 2021
+697. cantina furlani antico nosiola sparkling 2018
+698. cantina furlani bianco alpino 2020
+699. cantina furlani bianco alpino nv
+700. cantina furlani bianco frizzante 2019
+701. cantina furlani johannizza 2021
+702. cantina furlani macerato 2019 115
+703. cantina furlani macerato 2021
+704. cantina furlani macerato frizzante 2020
+705. cantina furlani macerato rosato
+706. cantina furlani maddie italian chillable red dl
+707. cantina furlani maddie rosso 2024
+708. cantina furlani mino carbo 2020
+709. cantina furlani moni 2020
+710. cantina furlani ramato frizzante
+711. cantina furlani ramato frizzante 2024
+712. cantina furlani rosato 2019 115
+713. cantina furlani rossino frizzante
+714. cantina furlani rosso negrik vino rosso
+715. cantina furlani vermouth
+716. cantina furlani vermouth
+717. cantina furlani vermouth
+718. cantina furlani vermouth nv
+719. cantina furlani vino rosso mino carbo 2023
+720. cantina gabriele 2017 dolcemente white semi sweet
+721. cantina gabriele 2020 dolcemente white semi sweet
+722. cantina gabriele cabernet sauvignon
+723. cantina gabriele cabernet sauvignon 17
+724. cantina gabriele cabernet sauvignon 2023
+725. cantina gabriele cabernet sauvignon kosher
+726. cantina gabriele cantina gabriele cabernet sauvignon
+727. cantina gabriele cantina gabriele chianti
+728. cantina gabriele cantina gabriele chianti
+729. cantina gabriele cantina gabriele dolcemente
+730. cantina gabriele cantina gabriele dolcemente
+731. cantina gabriele cantina gabriele gabriele moscato rose
+732. cantina gabriele cantina gabriele montepulciano dabruzzo
+733. cantina gabriele cantina gabriele montepulciano dabruzzo
+734. cantina gabriele cantina gabriele moscato
+735. cantina gabriele cantina gabriele moscato
+736. cantina gabriele cantina gabriele moscato
+737. cantina gabriele cantina gabriele pinot grigio
+738. cantina gabriele cantina gabriele pinot grigio
+739. cantina gabriele cantina gabriele rosato
+740. cantina gabriele cantina gabriele rosato
+741. cantina gabriele cantina gabriele spumante bianco
+742. cantina gabriele cantina gabriele spumante bianco
+743. cantina gabriele cantina gabriele vino sweet white
+744. cantina gabriele chardonnay
+745. cantina gabriele chardonnay
+746. cantina gabriele chardonnay kosher
+747. cantina gabriele chianti
+748. cantina gabriele chianti
+749. cantina gabriele chianti
+750. cantina gabriele chianti 1718
+751. cantina gabriele chianti docg
+752. cantina gabriele chianti koshe
+753. cantina gabriele chianti kosher
+754. cantina gabriele dolcemente red
+755. cantina gabriele dolcemente red
+756. cantina gabriele dolcemente red semi sweet
+757. cantina gabriele dolcemente white
+758. cantina gabriele dolcemente white 18
+759. cantina gabriele dolcemente white semi sweet
+760. cantina gabriele malvasia red
+761. cantina gabriele montepulciano
+762. cantina gabriele montepulciano
+763. cantina gabriele montepulciano dabruzzo 2022
+764. cantina gabriele montepulciano dabruzzo kosher
+765. cantina gabriele moscato
+766. cantina gabriele moscato
+767. cantina gabriele moscato
+768. cantina gabriele moscato
+769. cantina gabriele moscato
+770. cantina gabriele moscato 19
+771. cantina gabriele moscato 2024
+772. cantina gabriele moscato koshe
+773. cantina gabriele moscato kosher
+774. cantina gabriele moscato kosher
+775. cantina gabriele moscato sweet white kosher wine
+776. cantina gabriele nv spumante bianco kosher
+777. cantina gabriele pink moscato
+778. cantina gabriele pink moscato 19
+779. cantina gabriele pinot grigio
+780. cantina gabriele pinot grigio
+781. cantina gabriele pinot grigio
+782. cantina gabriele pinot grigio
+783. cantina gabriele pinot grigio
+784. cantina gabriele pinot grigio 19
+785. cantina gabriele pinot grigio 2023
+786. cantina gabriele pinot grigio delle venezia igt 2024
+787. cantina gabriele pinot grigio kosher
+788. cantina gabriele pinot grigiomevushalkosher for passover delle venezie igt italy
+789. cantina gabriele pinot grigiomevushalkosher for passover delle venezie igt italy
+790. cantina gabriele pinot noir
+791. cantina gabriele pinot noir
+792. cantina gabriele pinot noir 1719
+793. cantina gabriele rosato
+794. cantina gabriele rosato 18
+795. cantina gabriele sangiovese
+796. cantina gabriele sangiovese 19
+797. cantina gabriele sangiovese mevushalkosher for passover lazio italy
+798. cantina gabriele sauvignon blanc
+799. cantina gabriele semi sweet red
+800. cantina gabriele spumante bianco kosher
+801. cantina gabriele sweet pink
+802. cantina gabriele victorio chardonnay
+803. cantina gabriele victorio dolcemente white
+804. cantina gabriele victorio dolcemente white
+805. cantina gabriele victorio merlot
+806. cantina gabriele victorio merlot
+807. cantina gabriele vino azzurro kekbor koser habzo edes muskotaly
+808. cantina gabriele vino sweet red
+809. cantina gabriele vino sweet red nv
+810. cantina gabriele vino sweet white
+811. cantina gabrielle chardonnay
+812. cantina gabrielle chianti 2021
+813. cantina gabrielle dolce mente red mini
+814. cantina gabrielle dolce mente white
+815. cantina gabrielle malvasia sweet red
+816. cantina gabrielle merlot
+817. cantina gabrielle montepulciano d abruzzo
+818. cantina gabrielle moscato
+819. cantina gabrielle moscato mini
+820. cantina gabrielle pinot grigio mini
+821. cantina gabrielle pinot noir
+822. cantina gabrielle rosato 2020
+823. cantina gabrielle sangiovese
+824. cantina gabrielle sauvignon blanc
+825. cantina gaggiano coste della sesia sandrin nebbiolo 2017
+826. cantina gaggiano coste della sesia sandrin nebbiolo 2020
+827. cantina gaggiano gattinara riserva 2017
+828. cantina gallura canayli vit
+829. cantina gallura genesi vermentino di gallura docg superiore
+830. cantina gallura vermentino di gallura genesi 2015
+831. cantina gambellara soave i basalti 2024
+832. cantina garitina niades brachetto nv
+833. cantina garrone munaloss 2023
+834. cantina gentili cinco sangiovese 2024
+835. cantina giara 7 mesi 2022
+836. cantina giara amphora viva 2020
+837. cantina giara amphora viva 2020
+838. cantina giara amphora viva 2023
+839. cantina giara barik gioia del colle doc 2018
+840. cantina giara cicaleccio 2023
+841. cantina giara fatalita 2020
+842. cantina giara fatalita 2020
+843. cantina giara fatalita malvasia 2022
+844. cantina giara fiore di primitivo gioia del colle doc 2017
+845. cantina giara melech 2023
+846. cantina giara mons roni cannitum 2022
+847. cantina giara monsroni 2020
+848. cantina giara monsroni 2020
+849. cantina giara primordio 2019
+850. cantina giara primordio 2019
+851. cantina giara primordio gioia del colle doc 2017
+852. cantina giara rosme rosato 2023
+853. cantina giardino
+854. cantina giardino
+855. cantina giardino 2020 gaia
+856. cantina giardino 2020 volpe rosa
+857. cantina giardino 2021 fiano gaia
+858. cantina giardino 2022 fiano gaia
+859. cantina giardino 2022 na
+860. cantina giardino 2024 na
+861. cantina giardino adam 2018
+862. cantina giardino adam 2019
+863. cantina giardino adam 2019
+864. cantina giardino adam campania igt 2019
+865. cantina giardino adam greco igp 2021
+866. cantina giardino aglianico le fole 2020
+867. cantina giardino aglianico re 2022
+868. cantina giardino anfora
+869. cantina giardino anfora bianco 15 magnum campania italy
+870. cantina giardino anfora rosso 2021
+871. cantina giardino anfora rosso magnum campania italy
+872. cantina giardino bianco
+873. cantina giardino bianco 2020
+874. cantina giardino bianco anfora
+875. cantina giardino bianco anfora
+876. cantina giardino bianco chianzano
+877. cantina giardino bianco chianzano
+878. cantina giardino bianco chianzano 2018
+879. cantina giardino bianco controra
+880. cantina giardino bianco frizzante
+881. cantina giardino bianco frizzante metodo olimpia 2021
+882. cantina giardino bianco magnum 2021
+883. cantina giardino bianco na 2020
+884. cantina giardino campania greco adam
+885. cantina giardino chianzano 2019
+886. cantina giardino chianzano campania igt 2019
+887. cantina giardino chianzano orange 2019
+888. cantina giardino clown enologue 2017
+889. cantina giardino clown enologue 2017
+890. cantina giardino clown oenologue 2017
+891. cantina giardino clown oenologue 2017
+892. cantina giardino clown oenologue nv
+893. cantina giardino controra bianco 2023 campania italy
+894. cantina giardino drogone 2018
+895. cantina giardino drogone 2018
+896. cantina giardino drogone 2018
+897. cantina giardino drogone 2018
+898. cantina giardino drogone 2018
+899. cantina giardino drogone 2019
+900. cantina giardino drogone aglianico 2019
+901. cantina giardino drogone aglianico 2019
+902. cantina giardino drogone campania igt 2019
+903. cantina giardino falanghina fra 2022
+904. cantina giardino fiano gaia orange 2021
+905. cantina giardino fra bianco 2019
+906. cantina giardino fra campania igt 2020
+907. cantina giardino fra falanghina 2022
+908. cantina giardino frizzante metodo olimpia 2019
+909. cantina giardino fxf fiano 2021
+910. cantina giardino fxf fiano 2021
+911. cantina giardino fxf fiano igp 2020
+912. cantina giardino fxf fiano igp 2020
+913. cantina giardino fxf rosso igp
+914. cantina giardino fxf rosso igp
+915. cantina giardino gaia 2019
+916. cantina giardino gaia 2019
+917. cantina giardino gaia 2020
+918. cantina giardino gaia 2020
+919. cantina giardino gaia 2021
+920. cantina giardino gaia 2021
+921. cantina giardino gaia 2022
+922. cantina giardino gaia campania igt 2018
+923. cantina giardino gaia fiano 2019
+924. cantina giardino glu glu 2022
+925. cantina giardino glu glu bianco 2024
+926. cantina giardino glu glu orange 2024
+927. cantina giardino greco sophia orange 2020
+928. cantina giardino greco tara ra 2022 campania italy
+929. cantina giardino igt campania volpe rosa
+930. cantina giardino il mio fiasco nv
+931. cantina giardino le fole 2019
+932. cantina giardino le fole 2019
+933. cantina giardino le fole 2019
+934. cantina giardino le fole 2019
+935. cantina giardino le fole aglianico 2019
+936. cantina giardino le fole aglianico igp 2018
+937. cantina giardino le fole aglianico igp 2019
+938. cantina giardino le fole campania igt 2019
+939. cantina giardino le folle
+940. cantina giardino metodo olimpia
+941. cantina giardino metodo olimpia
+942. cantina giardino metodo olimpia 2017
+943. cantina giardino metodo olimpia bianco frizzante 2021
+944. cantina giardino na bianco
+945. cantina giardino na bianco
+946. cantina giardino na bianco 2020
+947. cantina giardino na bianco 2020
+948. cantina giardino na bianco 2022
+949. cantina giardino na skincontact
+950. cantina giardino na vino bianco 2019 125
+951. cantina giardino na vino bianco 2021
+952. cantina giardino na vino bianco 2021
+953. cantina giardino na vino bianco 2024
+954. cantina giardino nude 2012
+955. cantina giardino nude 2012
+956. cantina giardino nude aglianico igp 2012
+957. cantina giardino nude campania igt 2009
+958. cantina giardino orange na 2024
+959. cantina giardino paski 2018
+960. cantina giardino paski 2019
+961. cantina giardino paski 2020
+962. cantina giardino paski 2020
+963. cantina giardino paski 2021
+964. cantina giardino paski 2021
+965. cantina giardino paski 2021
+966. cantina giardino paski 2021
+967. cantina giardino paski 2022
+968. cantina giardino paski campania igt 2019
+969. cantina giardino paski coda di volpe 2018
+970. cantina giardino paski coda di volpe 2021
+971. cantina giardino primoaprile 2021
+972. cantina giardino primoaprile bianco 2021
+973. cantina giardino re 2021
+974. cantina giardino re rosso 2019 135
+975. cantina giardino re rosso 2021
+976. cantina giardino re rosso 2022
+977. cantina giardino re rosso 2022 campania italy
+978. cantina giardino re vino rosso 2019
+979. cantina giardino re vino rosso 2020
+980. cantina giardino re vino rosso 2020
+981. cantina giardino re vino rosso 2021
+982. cantina giardino re vino rosso 2021
+983. cantina giardino re vino rosso nv
+984. cantina giardino rosato 2020
+985. cantina giardino rosato 2020
+986. cantina giardino rosato 2021
+987. cantina giardino rosato controra nv
+988. cantina giardino rosato frizzante 2019
+989. cantina giardino rosato frizzante 2022
+990. cantina giardino rosato frizzante nv
+991. cantina giardino rosato magnum anfora 2021
+992. cantina giardino rosato magnum anfora 2021
+993. cantina giardino rosso 2021 magnum anfora
+994. cantina giardino rosso 2021 magnum anfora
+995. cantina giardino rosso amphora
+996. cantina giardino rosso frizzante 2018
+997. cantina giardino rosso magnum
+998. cantina giardino siwi 2020
+999. cantina giardino siwi 2020
+1000. cantina giardino siwi 2021

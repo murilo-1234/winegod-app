@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. domaine benoit chevallier nuitssaintgeorges 1er cru aux boudots 2022
+2. domaine benoit chevallier nuitssaintgeorges 1er cru aux boudots 2023
+3. domaine benoit chevallier nuitssaintgeorges 1er cru aux damodes 2022
+4. domaine benoit chevallier nuitssaintgeorges 1er cru aux damodes 2023
+5. domaine benoit chevallier nuitssaintgeorges premier cru aux boudots 2019
+6. domaine benoit chevallier nuitssaintgeorges premier cru aux boudots 2020
+7. domaine benoit chevallier vosneromanee 1er cru les beaux monts 2022
+8. domaine benoit chevallier vosneromanee 1er cru les beaux monts 2023
+9. domaine benoit chevallier vosneromanee 1er cru les beauxmonts 2022
+10. domaine benoit chevallier vosneromanee 2022
+11. domaine benoit chevallier vosneromanee 2023
+12. domaine benoit courault grande maille 2024
+13. domaine benoit courault le petit chemin 2024
+14. domaine benoit ente bourgogne aligote antichtone 2020 bourgogne aligote
+15. domaine benoit ente bourgogne aligote antichtone 2020 bourgogne aligote
+16. domaine benoit ente bourgogne aligote antichtone 2020 bourgogne aligote
+17. domaine benoit ente bourgogne aligote antichtone 2020 bourgogne aligote
+18. domaine benoit ente bourgogne blanc 2023
+19. domaine benoit ente bourgogne blanc 2023
+20. domaine benoit ente bourgogne blanc 2023
+21. domaine benoit ente bourgogne blanc 2023
+22. domaine benoit ente bourgogne blanc golden jubile 2023
+23. domaine benoit ente bourgogne blanc golden jubile 2023
+24. domaine benoit ente bourgogne blanc golden jubile 2023
+25. domaine benoit ente bourgogne blanc golden jubile 2023
+26. domaine benoit ente pulignymontrachet 1ier cru la truffiere 2023
+27. domaine benoit gautier vouvray bubble kiss loire
+28. domaine benoit girardin chassagnemontrachet 2021
+29. domaine benoit girardin santenay 2020
+30. domaine benoit lenoir coteaux de chatenay maconvillages
+31. domaine benoit roseau cote rotie coteau de turpin 2022
+32. domaine benoit roseau coteau de tupin coterotie 2020
+33. domaine benoit roseau la syrah de rosette 2022
+34. domaine benoit roseau le riollement condrieu 2023
+35. domaine benoit roseau petit patagon igp collines rhodaniennes 2022
+36. domaine benoit roseau saintjoseph 2022 la ribaude
+37. domaine benoit roseau sur le quartz saintjoseph
+38. domaine benoitchevallier bourgogne pinot noir en luteniere 2022
+39. domaine benoitchevallier vosneromanee 2022
+40. domaine benon remi aop chenas rouge 2016
+41. domaine benon remi aop chenas rouge 2016
+42. domaine benon remi aop chenas rouge 2016
+43. domaine benon remi aop chenas rouge 2016
+44. domaine benon remi aop chenas rouge 2017
+45. domaine benon remi aop chenas rouge 2017
+46. domaine benon remi aop chenas rouge 2017
+47. domaine benon remi aop chenas rouge 2018
+48. domaine benon remi aop chenas rouge 2018
+49. domaine benon remi aop chenas rouge 2018
+50. domaine benon remi aop chenas rouge 2019
+51. domaine benon remi aop chenas rouge 2019
+52. domaine benon remi aop chenas rouge 2019
+53. domaine benon remi aop chenas rouge 2019
+54. domaine benon remi aop julienas rouge 2011
+55. domaine benon remi aop julienas rouge 2011
+56. domaine benon remi aop julienas rouge 2011
+57. domaine benon remi aop julienas rouge 2011
+58. domaine benon remi aop julienas rouge 2017
+59. domaine benon remi aop julienas rouge 2017
+60. domaine benon remi aop julienas rouge 2017
+61. domaine benon remi aop julienas rouge 2018
+62. domaine benon remi aop julienas rouge 2018
+63. domaine benon remi aop julienas rouge 2018
+64. domaine benon remi aop julienas rouge 2019
+65. domaine benon remi aop julienas rouge 2019
+66. domaine benon remi aop julienas rouge 2019
+67. domaine benon remi aop julienas rouge 2020
+68. domaine benon remi aop julienas rouge 2020
+69. domaine benon remi aop julienas rouge 2020
+70. domaine benon remi aop julienas rouge 2021
+71. domaine benon remi aop julienas rouge 2021
+72. domaine benon remi aop julienas rouge 2021
+73. domaine benon remi aop julienas rouge 2021
+74. domaine benon remi chenas 2016
+75. domaine benon remi chenas aop chenas rot 2020
+76. domaine benon remi chenas aop chenas rouge 2020
+77. domaine benon remi chenas aop chenas rouge 2020
+78. domaine benon remi chenas aop chenas rouge 2020
+79. domaine benon remi chenas aop chenas rouge 2023
+80. domaine benon remi chenas aop chenas rouge 2023
+81. domaine benon remi chenas aop chenas rouge 2023
+82. domaine benon remi chenas aop chenas rouge 2023
+83. domaine benon remi chenas aop chenas rouge 2023
+84. domaine benon remi chenas aop chenas tinto 2020
+85. domaine benon remi julienas 2011
+86. domaine benon remi julienas aop julienas rot 2024
+87. domaine benon remi julienas aop julienas rouge 2023
+88. domaine benon remi julienas aop julienas rouge 2023
+89. domaine benon remi julienas aop julienas rouge 2023
+90. domaine benon remi julienas aop julienas rouge 2023
+91. domaine benon remi julienas aop julienas rouge 2023
+92. domaine benon remi julienas aop julienas rouge 2024
+93. domaine benon remi julienas aop julienas rouge 2024
+94. domaine benon remi julienas aop julienas rouge 2024
+95. domaine benon remi julienas aop julienas tinto 2024
+96. domaine beranger pouillyfuisse 1er cru pouilly 2021
+97. domaine berenas igp pays dherault rouge 2006
+98. domaine berenas igp pays dherault rouge 2006
+99. domaine berenas igp pays dherault rouge 2006
+100. domaine berenas igp pays dherault rouge 2006
+101. domaine berenas igp pays dherault rouge 2007
+102. domaine berenas igp pays dherault rouge 2007
+103. domaine berenas igp pays dherault rouge 2007
+104. domaine berenas igp pays dherault rouge 2007
+105. domaine berenas igp pays doc blanc 2015
+106. domaine berenas igp pays doc blanc 2015
+107. domaine berenas igp pays doc blanc 2015
+108. domaine berenas igp pays doc rouge 2015
+109. domaine berenas igp pays doc rouge 2015
+110. domaine berenas igp pays doc rouge 2015
+111. domaine berenas impatiens 2007
+112. domaine berenas insolite branco 2015
+113. domaine berenas iris 2006
+114. domaine berenas ungewohnlicher weiwein 2015
+115. domaine bergeret chassagnemontrachet
+116. domaine bergeret chassagnemontrachet 1e cru morgeot
+117. domaine bergeret chassagnemontrachet rouge
+118. domaine bergeret saintaubin 1e cru la chateniere
+119. domaine bergeret saintaubin 1e cru murgers des dents de chien
+120. domaine bergeret saintaubin 1e cru sur gamay
+121. domaine bergerie de larcade 2020
+122. domaine bergerie de larcade 2021
+123. domaine bergerie de larcade 2022
+124. domaine bergeron beaujolais emergines 2022
+125. domaine bergeron beaujolais villages julienas fleurie morgon saintamour
+126. domaine bergeron julienas
+127. domaine bergeron julienas 2021
+128. domaine bergerrive h c de beaune blan
+129. domaine bergerrive h c de beaune red
+130. domaine berlargus quarts sec 2020
+131. domaine berlioz 18 clothilde mondeuse table red
+132. domaine berlioz 22 les gueux blanc 2022
+133. domaine berlioz 22 les gueux blanc table white
+134. domaine bernard and thierry glantenay volnay les caillerets premier cru 2021
+135. domaine bernard baudry 2021 chinon le clos guillot loire fr
+136. domaine bernard baudry chinon blanc 2023
+137. domaine bernard baudry chinon la croix boissee 2019
+138. domaine bernard baudry chinon la croix boissie 2021
+139. domaine bernard baudry chinon le clos guillot 2020
+140. domaine bernard baudry chinon le clos guillot 2022
+141. domaine bernard baudry chinon le domaine
+142. domaine bernard baudry chinon le domaine 2019
+143. domaine bernard baudry chinon le domaine 2019 6x
+144. domaine bernard baudry chinon le domaine 2020 6x
+145. domaine bernard baudry chinon le domaine 2021
+146. domaine bernard baudry chinon le domaine aoc 2018
+147. domaine bernard baudry chinon le rose 2023
+148. domaine bernard baudry chinon les granges
+149. domaine bernard baudry chinon les granges
+150. domaine bernard baudry chinon les granges 2022
+151. domaine bernard baudry chinon les granges 2023
+152. domaine bernard baudry chinon les grezeaux 2020
+153. domaine bernard baudry chinon les grezeaux 2023
+154. domaine bernard baudry chinon rose
+155. domaine bernard baudry chinon rose 2021
+156. domaine bernard baudry chinon rose 2022
+157. domaine bernard baudry chinon rose 2024
+158. domaine bernard baudry chinon rose 2024
+159. domaine bernard baudry croix boissee
+160. domaine bernard baudry le clos guillot chinon aoc
+161. domaine bernard baudry le domaine chinon aoc
+162. domaine bernard baudry les granges chinon
+163. domaine bernard baudry les granges chinon aoc
+164. domaine bernard baudry les grezeaux chinon aoc
+165. domaine bernard bonin
+166. domaine bernard bonin la rencontre meursault aoc
+167. domaine bernard burgaud cote rotie 2021
+168. domaine bernard burgaud cote rotie 2023
+169. domaine bernard coillot gevreychambertin vieilles vignes 2023
+170. domaine bernard coillot marsannay les boivins 2020
+171. domaine bernard defaix bougros grand cru chablis 2023
+172. domaine bernard defaix bourgogne blanc 2020
+173. domaine bernard defaix bourgogne blanc 2020
+174. domaine bernard defaix bourgogne blanc 2020
+175. domaine bernard defaix bourgogne blanc 2020
+176. domaine bernard defaix bourgogne chardonnay 2019
+177. domaine bernard defaix bourgogne chardonnay 2023
+178. domaine bernard defaix bourgogne pinot noir 2023
+179. domaine bernard defaix chablis
+180. domaine bernard defaix chablis
+181. domaine bernard defaix chablis
+182. domaine bernard defaix chablis 1er cru
+183. domaine bernard defaix chablis 1er cru cote de lechet 2000 museum release
+184. domaine bernard defaix chablis 1er cru cote de lechet 2020
+185. domaine bernard defaix chablis 1er cru cote de lechet 2020
+186. domaine bernard defaix chablis 1er cru cote de lechet 2021
+187. domaine bernard defaix chablis 1er cru cote de lechet 2021
+188. domaine bernard defaix chablis 1er cru cote de lechet 2022
+189. domaine bernard defaix chablis 1er cru cote de lechet 2022
+190. domaine bernard defaix chablis 1er cru cote de lechet 2022
+191. domaine bernard defaix chablis 1er cru cote de lechet 2023
+192. domaine bernard defaix chablis 1er cru cote de lechet 2023
+193. domaine bernard defaix chablis 1er cru cote de lechet 2023
+194. domaine bernard defaix chablis 1er cru cote de lechet reserve
+195. domaine bernard defaix chablis 1er cru cote de lechet reserve 2021
+196. domaine bernard defaix chablis 1er cru cote de lechet reserve 2022
+197. domaine bernard defaix chablis 1er cru cote de lechet reserve 2023
+198. domaine bernard defaix chablis 1er cru cote de lechet sans soufre 2022
+199. domaine bernard defaix chablis 1er cru cote de lechet vv reserve 2022
+200. domaine bernard defaix chablis 1er cru cotes de lechet 2020
+201. domaine bernard defaix chablis 1er cru cotes de lechet reserve 2019
+202. domaine bernard defaix chablis 1er cru cotes de lechet reserve 2020
+203. domaine bernard defaix chablis 1er cru fourchaume 2023
+204. domaine bernard defaix chablis 1er cru les lys 2023
+205. domaine bernard defaix chablis 1er cru montee de tonnerre 2023
+206. domaine bernard defaix chablis 1er cru montee de tonnerre 2023
+207. domaine bernard defaix chablis 1er cru montmains 2023
+208. domaine bernard defaix chablis 1er cru montmains 2023
+209. domaine bernard defaix chablis 1er cru terroir de cote de lechet cuvee vieille vigne 2023
+210. domaine bernard defaix chablis 1er cru vaillons 2023
+211. domaine bernard defaix chablis 1er lechet vv reserve 2023
+212. domaine bernard defaix chablis 1er les lys 2023
+213. domaine bernard defaix chablis 1er vaillons 2023
+214. domaine bernard defaix chablis 2019
+215. domaine bernard defaix chablis 2020
+216. domaine bernard defaix chablis 2020
+217. domaine bernard defaix chablis 2021
+218. domaine bernard defaix chablis 2021
+219. domaine bernard defaix chablis 2022
+220. domaine bernard defaix chablis 2022
+221. domaine bernard defaix chablis 2022
+222. domaine bernard defaix chablis 2022
+223. domaine bernard defaix chablis 2022
+224. domaine bernard defaix chablis 2023
+225. domaine bernard defaix chablis 2023
+226. domaine bernard defaix chablis 2023
+227. domaine bernard defaix chablis 2023
+228. domaine bernard defaix chablis 2023
+229. domaine bernard defaix chablis 2023
+230. domaine bernard defaix chablis aoc vieille vigne 2023
+231. domaine bernard defaix chablis aoc vielles vignes 2015
+232. domaine bernard defaix chablis bougros grand cru 2023
+233. domaine bernard defaix chablis burgundy france
+234. domaine bernard defaix chablis cote de lechet 1er cru
+235. domaine bernard defaix chablis cote de lechet 2018
+236. domaine bernard defaix chablis cote de lechet reserve 2018
+237. domaine bernard defaix chablis cote de lechet reserve 2019
+238. domaine bernard defaix chablis fourchaume 2018
+239. domaine bernard defaix chablis grand cru bougros
+240. domaine bernard defaix chablis grand cru bougros 2019
+241. domaine bernard defaix chablis grand cru bougros 2022
+242. domaine bernard defaix chablis grand cru bougros 2023
+243. domaine bernard defaix chablis grand cru bougros 2023
+244. domaine bernard defaix chablis grand cru les clos 2019
+245. domaine bernard defaix chablis grand cru les clos 2023
+246. domaine bernard defaix chablis grand cru vaudesir 2014
+247. domaine bernard defaix chablis grand cru vaudesir 2015
+248. domaine bernard defaix chablis grand cru vaudesir 2019
+249. domaine bernard defaix chablis grand cru vaudesir 2019
+250. domaine bernard defaix chablis grand cru vaudesir 2019
+251. domaine bernard defaix chablis grand cru vaudesir 2019
+252. domaine bernard defaix chablis grand cru vaudesir 2019
+253. domaine bernard defaix chablis grand cru vaudesir 2023
+254. domaine bernard defaix chablis petit 2023
+255. domaine bernard defaix chablis premier cru cote de lechet
+256. domaine bernard defaix chablis premier cru fourchaume
+257. domaine bernard defaix chablis premier cru les lys
+258. domaine bernard defaix chablis sans soufre
+259. domaine bernard defaix chablis sans soufre 2023
+260. domaine bernard defaix chablis sans soufre 2023
+261. domaine bernard defaix chablis terroir de milly cuvee vieille vigne 2023
+262. domaine bernard defaix chablis vieilles vignes
+263. domaine bernard defaix chablis vielles vignes
+264. domaine bernard defaix cote de lechet 1er cru chablis 2022
+265. domaine bernard defaix cote de lechet 1er cru chablis 2023
+266. domaine bernard defaix cote de lechet 1er cru reserve chablis 2023
+267. domaine bernard defaix petit chablis
+268. domaine bernard defaix petit chablis 2019
+269. domaine bernard defaix petit chablis 2022
+270. domaine bernard defaix petit chablis 2022
+271. domaine bernard defaix petit chablis 2022
+272. domaine bernard defaix petit chablis 2023
+273. domaine bernard defaix petit chablis 2023
+274. domaine bernard defaix pinot noir
+275. domaine bernard defaix rully 1er cru clos du chapitre rouge 2012
+276. domaine bernard defaix rully 1er cru clos du chapitre rouge 2023
+277. domaine bernard defaix rully 1er cru mont palais blanc 2012
+278. domaine bernard defaix rully premier cru rabource
+279. domaine bernard defaix rully rouge
+280. domaine bernard defaix rully rouge 2012
+281. domaine bernard defaix saint bris sauvignon 2023
+282. domaine bernard delagrange beaune red les prevoles
+283. domaine bernard delagrange volnay clos du village
+284. domaine bernard dugatpy beaune 1er les epenotte blanc 2022
+285. domaine bernard dugatpy beaune les greves tres vieilles vignes 2021
+286. domaine bernard dugatpy beaune les greves tres vieilles vignes 2021
+287. domaine bernard dugatpy beaune les greves tres vieilles vignes 2021
+288. domaine bernard dugatpy beaune les greves tres vieilles vignes 2021
+289. domaine bernard dugatpy bourgogne blanc 2014
+290. domaine bernard dugatpy bourgogne rouge 2015
+291. domaine bernard dugatpy dugatpy meurs les poruz 6x75 2022
+292. domaine bernard dugatpy meursault 1er cru les charmes 2022
+293. domaine bernard dugatpy meursault 1er cru sous blagny 2022
+294. domaine bernard dugatpy monthelie tres vieilles vignes 2022
+295. domaine bernard dugatpy tres vieilles vignes la levriere 2021 pommard
+296. domaine bernard dugatpy tres vieilles vignes la levriere 2021 pommard
+297. domaine bernard dugatpy tres vieilles vignes la levriere 2021 pommard
+298. domaine bernard et thierry glantenay volnay 2021
+299. domaine bernard faurie hermitage 2018 16 ib
+300. domaine bernard faurie hermitage bessards 2016
+301. domaine bernard faurie hermitage bessardsmeal gold cap 2012
+302. domaine bernard faurie hermitage bessardsmeal gold cap 2013
+303. domaine bernard faurie hermitage bessardsmeal gold cap 2017
+304. domaine bernard faurie hermitage blanc 2018
+305. domaine bernard faurie hermitage blanc 2019
+306. domaine bernard faurie hermitage blanc 2020
+307. domaine bernard faurie hermitage greffieuxbessards 2019
+308. domaine bernard faurie hermitage greffieuxbessards cream cap 2012
+309. domaine bernard faurie hermitage greffieuxbessards cream cap 2014
+310. domaine bernard fils vacqueyras les garrigues 2016
+311. domaine bernard fleuriet et fils sancerre blanc 2022
+312. domaine bernard fleuriet renaissance sancerre magie des caillottes 2024 loire valley france
+313. domaine bernard fleuriet sancerre blanc 2023
+314. domaine bernard fleuriet sancerre blanc tradition loire france
+315. domaine bernard fleuriet sancerre cote de marloup loire france 2022
+316. domaine bernard fleuriet sancerre la baronne 2023
+317. domaine bernard fleuriet sancerre les pierres silex 2023
+318. domaine bernard fleuriet sancerre pur j
+319. domaine bernard fleuriet sancerre pur jus blanc loire france
+320. domaine bernard fleuriet sancerre pur jus loire france 2022
+321. domaine bernard fleuriet sancerre rose 2023
+322. domaine bernard fleuriet sancerre rouge 2023
+323. domaine bernard fleuriet sancerre rouge les saurins loire france
+324. domaine bernard gripa le berceau saint joseph 2005 750ml
+325. domaine bernard gripa saint joseph berceau rouge 2020
+326. domaine bernard gripa saint joseph blanc 2021 750ml
+327. domaine bernard gripa saint joseph blanc 2023 750ml
+328. domaine bernard gripa saint joseph le berceau blanc 2021 750ml
+329. domaine bernard gripa saint joseph le berceau rouge 2021 750ml
+330. domaine bernard gripa saint joseph rouge 2020
+331. domaine bernard gripa saint joseph rouge 2021
+332. domaine bernard gripa saint joseph rouge 2021 750ml
+333. domaine bernard gripa saint joseph rouge 2023 750ml
+334. domaine bernard gripa saint peray les pins blanc 2020 750ml
+335. domaine bernard gripa saint peray les pins blanc 2021 750ml
+336. domaine bernard haas alsace gewurztraminer 2019
+337. domaine bernard haas alsace grand cru schlossberg 2018
+338. domaine bernard haas alsace muscat 2018
+339. domaine bernard haas gewurztraminer doc alsace preco
+340. domaine bernard haas muscat doc alsace preco
+341. domaine bernard haas riesling grand cru doc alsace grand cru preco
+342. domaine bernard maillard methode traditionnelle brut nv
+343. domaine bernard millot beaune clos les longes blanc 2017
+344. domaine bernard millot beaune clos les longes blanc 2018
+345. domaine bernard millot beaune clos les longes blanc 2019
+346. domaine bernard millot beaune clos les longes blanc 2020
+347. domaine bernard millot beaune clos les longes blanc 2021
+348. domaine bernard millot beaune clos les longes blanc 2023
+349. domaine bernard millot bourgogne aligote les guets de bises 2017
+350. domaine bernard millot bourgogne aligote les guets de bises 2018
+351. domaine bernard millot bourgogne aligote les guets de bises 2023
+352. domaine bernard millot bourgogne blanc
+353. domaine bernard millot bourgogne chardonnay 2017
+354. domaine bernard millot bourgogne chardonnay 2018
+355. domaine bernard millot bourgogne chardonnay 2019
+356. domaine bernard millot bourgogne chardonnay 2020
+357. domaine bernard millot bourgogne cote dor chardonnay 2021
+358. domaine bernard millot bourgogne cote dor chardonnay 2023
+359. domaine bernard millot bourgogne pinot noir cote dor rouge 2022
+360. domaine bernard millot bourgogne pinot noir cote dor rouge 2022
+361. domaine bernard millot en luraule meursault 2021
+362. domaine bernard millot mersault les petits charrons blanc
+363. domaine bernard millot meursault 1 cru la gouttes dor blanc 2018
+364. domaine bernard millot meursault 1 cru la gouttes dor blanc 2019
+365. domaine bernard millot meursault 1 cru la gouttes dor blanc 2020
+366. domaine bernard millot meursault 1 cru la gouttes dor blanc 2023
+367. domaine bernard millot meursault 1 cru les perrieres 2018
+368. domaine bernard millot meursault 1 cru les perrieres 2019
+369. domaine bernard millot meursault 1 cru les perrieres 2023
+370. domaine bernard millot meursault 1er cru goutte dor
+371. domaine bernard millot meursault 1er cru les gouttes dor 2022
+372. domaine bernard millot meursault 1er cru les perrieres blanc 2022
+373. domaine bernard millot meursault 1er cru les perrieres blanc 2022
+374. domaine bernard millot meursault 2022
+375. domaine bernard millot meursault cuvee augustin blanc 2017
+376. domaine bernard millot meursault en la barre blanc 2017
+377. domaine bernard millot meursault en la barre blanc 2018
+378. domaine bernard millot meursault en la barre blanc 2019
+379. domaine bernard millot meursault en la barre blanc 2020
+380. domaine bernard millot meursault en la barre blanc 2023
+381. domaine bernard millot meursault en luraule 2023
+382. domaine bernard millot meursault en luraule blanc
+383. domaine bernard millot meursault en luraule blanc 2022
+384. domaine bernard millot meursault en luraule blanc 2022
+385. domaine bernard millot meursault les clo
+386. domaine bernard millot meursault les clous blanc
+387. domaine bernard millot meursault les vireuils 2022
+388. domaine bernard millot meursault les vireuils 2022
+389. domaine bernard millot meursault village blanc 2017
+390. domaine bernard millot meursault village blanc 2018
+391. domaine bernard millot meursault village blanc 2019
+392. domaine bernard millot meursault village blanc 2020
+393. domaine bernard millot meursault village blanc 2023
+394. domaine bernard millot pulignymontrachet les corvees 2021
+395. domaine bernard millot pulignymontrachet les corvees blanc
+396. domaine bernard moreau 2023 12btl
+397. domaine bernard moreau 2023 6btl
+398. domaine bernard moreau batard montrachet
+399. domaine bernard moreau bourgogne 2022
+400. domaine bernard moreau bourgogne 2023
+401. domaine bernard moreau bourgogne blanc 2017
+402. domaine bernard moreau bourgogne chardonnay
+403. domaine bernard moreau bourgogne chardonnay
+404. domaine bernard moreau bourgogne chardonnay vieilles vignes 2022
+405. domaine bernard moreau chassagne montrachet
+406. domaine bernard moreau chassagnemontrachet 1er cru champgains 2020
+407. domaine bernard moreau chassagnemontrachet 2019
+408. domaine bernard moreau chassagnemontrachet blanc 1er cru les chenevottes
+409. domaine bernard moreau chassagnemontrachet blanc 2020
+410. domaine bernard moreau chassagnemontrachet rouge vieilles vignes 2020
+411. domaine bernard moreau chassagnemontrachet vieilles vignes rouge 2020
+412. domaine bernard moreau chassagnemontrachet vv rouge 2020
+413. domaine bernard moreau et fils batardmontrachet grand cru
+414. domaine bernard moreau et fils chassagne montrachet 1er cru les chenevottes 2021
+415. domaine bernard moreau et fils chassagne montrachet rouge vieilles vignes 2019
+416. domaine bernard moreau et fils chassagnemontrachet 2019
+417. domaine bernard moreau et fils chassagnemontrachet 2020
+418. domaine bernard moreau et fils chevaliermontrachet grand cru
+419. domaine bernard moreau et fils en remilly saintaubin premier cru france 2015
+420. domaine bernard moreau et fils en remilly saintaubin premier cru france 2016
+421. domaine bernard moreau et fils en remilly saintaubin premier cru france 2019
+422. domaine bernard moreau et fils en remilly saintaubin premier cru france 2020
+423. domaine bernard moreau et fils la maltroie chassagnemontrachet premier cru
+424. domaine bernard moreau et fils les caillerets chassagne montrachet premier cru
+425. domaine bernard moreau et fils les grandes ruchottes chassagnemontrachet premier cru
+426. domaine bernard moreau et fils morgeot chassagnemontrachet premier cru
+427. domaine bernard moreau et fils morgeot la cardeuse chassagnemontrachet premier cru
+428. domaine bernard moreau et fils saintaubin 1 er cru sous roche dumay 2011
+429. domaine bernard moreau et fils volnay santenots 1er cru 2018
+430. domaine bernard moreau fils chassagne montrachet la cardeuse premier cru burgundy 2019
+431. domaine bernard moreau fils chassagnemontrachet 1er cru grandes ruchottes
+432. domaine bernard moreau fils santenots volnay premier cru 2020
+433. domaine bernard moreau pulignymontrachet 2021
+434. domaine bernard moreau rouge vv 2022
+435. domaine bernard moreau terre blanche 2020
+436. domaine bernard moreau volnay 1er cru les santenots 2018
+437. domaine bernard moreau volnay clos des chenes 1er cru pinot noir burgundy france 2017
+438. domaine bernard moreau volnay clos des chenes 1er cru pinot noir burgundy france 2017
+439. domaine bernard moreau volnay premier cru les caillerets 2020
+440. domaine bernard moreau volnay premier cru santenots 2020
+441. domaine bernard moreau volnaysantenots 1er cru 2019
+442. domaine bernard reverdy sancerre 2024
+443. domaine bernard reverdy sancerre blanc loire france 2023
+444. domaine bernard rion chassagnemontrachet en pimont 2022
+445. domaine bernard rion clos de vougeot clos de vougeot grand cru aoc 2021 vino rosso
+446. domaine bernard rion vosneromanee dame juliette 2022
+447. domaine bernard thierry glantenay
+448. domaine bernard thierry glantenay 1er les santenots 2020
+449. domaine bernard thierry glantenay bourgogne cote dor 2022
+450. domaine bernard thierry glantenay bourgogne cote dor rouge 2022
+451. domaine bernard thierry glantenay bourgogne cote dor rouge 2022
+452. domaine bernard thierry glantenay les brouillards volnay premier cru 2020
+453. domaine bernard thierry glantenay les brouillards volnay premier cru france 2022
+454. domaine bernard thierry glantenay les folatieres pulignymontrachet premier cru france 2022
+455. domaine bernard thierry glantenay les rugiens 1er cru pommard 2009
+456. domaine bernard thierry glantenay pommard 1er cru les rugiens 2021
+457. domaine bernard thierry glantenay pommard 1er cru les saussilles 2019
+458. domaine bernard thierry glantenay pommard les rugiens premier cru 2019
+459. domaine bernard thierry glantenay pommard les saussilles 2020
+460. domaine bernard thierry glantenay pommard les saussilles premier cru 2021
+461. domaine bernard thierry glantenay puligny montrachet 1er cru folatieres 2022
+462. domaine bernard thierry glantenay puligny montrachet 1er cru folatieres 2022
+463. domaine bernard thierry glantenay santenots volnay premier cru france 2021
+464. domaine bernard thierry glantenay volnay 1er cru les brouillards 2022
+465. domaine bernard thierry glantenay volnay 1er cru les brouillards 2022
+466. domaine bernard thierry glantenay volnay 1er cru les santenots 2016
+467. domaine bernard thierry glantenay volnay 1er cru santenots 2010
+468. domaine bernard thierry glantenay volnay 1er cru santenots 2022
+469. domaine bernard thierry glantenay volnay 1er cru santenots 2022
+470. domaine bernard thierry glantenay volnay 2016
+471. domaine bernard thierry glantenay volnay les caillerets 2020
+472. domaine bernard thierry glantenay volnay vieilles vignes 2021
+473. domaine bernard thierry glantenay volnay vv 2021
+474. domaine bernard thierry glantenay volnay vv 2021
+475. domaine bernard thierry glantenay volnay vv 2022
+476. domaine bernard thierry glantenay volnay vv 2022
+477. domaine bernardbonin
+478. domaine bernardbonin bourgogne blanc initial bb
+479. domaine bernardbonin bourgogne blanc initiales bb
+480. domaine bernardbonin bourgogne blanc initiales bb 2017
+481. domaine bernardbonin bourgogne blanc initiales bb 2018
+482. domaine bernardbonin bourgogne blanc initiales bb 2019
+483. domaine bernardbonin bourgogne blanc initiales bb 2020
+484. domaine bernardbonin bourgogne blanc initiales bb 2022
+485. domaine bernardbonin bourgogne blanc initiales bb 2023
+486. domaine bernardbonin bourgogne blanc initiales bb 2023
+487. domaine bernardbonin bourgogne blanc initiales bb 2023
+488. domaine bernardbonin bourgogne blanc initiales bb 2023
+489. domaine bernardbonin bourgogne blanc initiales bb burgundy france 2022
+490. domaine bernardbonin bourgogne blanc initiales bb burgundy france 2023
+491. domaine bernardbonin clos du cromin meursault 2019
+492. domaine bernardbonin clos du cromin meursault aoc
+493. domaine bernardbonin genevrieres meursault premier cru france 2023
+494. domaine bernardbonin initiales bb bourgogne aoc
+495. domaine bernardbonin la rencontre meursault 2022
+496. domaine bernardbonin la rencontre meursault 2023
+497. domaine bernardbonin la romance 1er cru pulignymontrachet 2022
+498. domaine bernardbonin le limozin meursault
+499. domaine bernardbonin le limozin meursault 2022
+500. domaine bernardbonin les charmes du milieu 1er cru meursault 2022
+501. domaine bernardbonin les charmesdessus meursault premier cru france 2023
+502. domaine bernardbonin les folatieres 1er cru puligny montrachet 2020
+503. domaine bernardbonin les genevrieres 1er cru meursault 2022
+504. domaine bernardbonin les tillets meursault 2023
+505. domaine bernardbonin meursault 1 cru les charmesdessus
+506. domaine bernardbonin meursault 1er cru charmesdessus 2015
+507. domaine bernardbonin meursault 1er cru charmesdessus 2016
+508. domaine bernardbonin meursault 1er cru genevrieres
+509. domaine bernardbonin meursault 1er cru genevrieres 2016
+510. domaine bernardbonin meursault 1er cru genevrieres 2017
+511. domaine bernardbonin meursault 1er cru genevrieres 2018
+512. domaine bernardbonin meursault 1er cru genevrieres 2019
+513. domaine bernardbonin meursault 1er cru genevrieres 2023
+514. domaine bernardbonin meursault 1er cru les charmes du milieu 2023
+515. domaine bernardbonin meursault 1er cru les charmesdessus
+516. domaine bernardbonin meursault 1er cru les genevrieres
+517. domaine bernardbonin meursault 1er cru les tillets
+518. domaine bernardbonin meursault clos du cromin
+519. domaine bernardbonin meursault clos du cromin
+520. domaine bernardbonin meursault clos du cromin 2019
+521. domaine bernardbonin meursault clos du cromin 2020
+522. domaine bernardbonin meursault clos du cromin cote de beaune france 2023
+523. domaine bernardbonin meursault cromin 2016
+524. domaine bernardbonin meursault la rencontre 2023
+525. domaine bernardbonin meursault la rencontre 2023
+526. domaine bernardbonin meursault la rencontre 2023
+527. domaine bernardbonin meursault la rencontre 2023
+528. domaine bernardbonin meursault la rencontre 2023
+529. domaine bernardbonin meursault la rencontre cote de beaune france 2022
+530. domaine bernardbonin meursault le limozin 2016
+531. domaine bernardbonin meursault le limozin 2019
+532. domaine bernardbonin meursault le limozin 2023
+533. domaine bernardbonin meursault le limozin 2023
+534. domaine bernardbonin meursault le limozin cote de beaune france 2023
+535. domaine bernardbonin meursault les narvauxdessous
+536. domaine bernardbonin meursault les tillets
+537. domaine bernardbonin meursault les tillets 2016
+538. domaine bernardbonin meursault les tillets 2018
+539. domaine bernardbonin meursault les tillets 2019
+540. domaine bernardbonin meursault les tillets 2023
+541. domaine bernardbonin meursault les tillets 2023
+542. domaine bernardbonin meursault les tillets 2023
+543. domaine bernardbonin meursault premier cru genevrieres 2023
+544. domaine bernardbonin meursault premier cru les charmes du milieu 2023
+545. domaine bernardbonin meursault premier cru les charmesdessus 2018
+546. domaine bernardbonin meursault premier cru les charmesdessus 2023
+547. domaine bernardbonin meursault vieilles vigne 2019
+548. domaine bernardbonin meursault vieilles vignes
+549. domaine bernardbonin meursault vieilles vignes 2018
+550. domaine bernardbonin meursault vv 2016
+551. domaine bernardbonin meursault vv 2018
+552. domaine bernardbonin meursault vv 2019
+553. domaine bernardbonin pulignymontrachet 1er cru la garenne
+554. domaine bernardbonin pulignymontrachet 1er cru la garenne 2015
+555. domaine bernardbonin pulignymontrachet 1er cru la garenne 2016
+556. domaine bernardbonin pulignymontrachet 1er cru la garenne 2019
+557. domaine bernardbonin pulignymontrachet 1er cru la romance 2023
+558. domaine bernardbonin pulignymontrachet 1er cru les folatieres
+559. domaine bernardbonin pulignymontrachet 1er cru les folatieres 2019
+560. domaine bernardbonin pulignymontrachet 1er cru les folatieres 2020
+561. domaine bernardbonin pulignymontrachet premier cru la romance 2023
+562. domaine bernardbonin vieilles vignes meursault 2019
+563. domaine bernatas la petite cordillere limoux france
+564. domaine bernatas m et nous limoux france
+565. domaine bernatas regarde le silence limoux france
+566. domaine bernaudeau les coqueries 2022
+567. domaine bernaudeau les nourissons 2023
+568. domaine bernhard cremant dalsace brut rose nv
+569. domaine bernhard reibel pinot gris
+570. domaine bernier chardonnay
+571. domaine bernier chardonnay 2023
+572. domaine bernier chardonnay 2023
+573. domaine berrien sauvignon blanc
+574. domaine berrien sauvignon blanc
+575. domaine berrod fleurie
+576. domaine berryalthoff menhir 2023
+577. domaine bersan 2023 bersan bourgogne passetoutgrain
+578. domaine bersan 2023 saint bris sauvignon blanc
+579. domaine bersan aop bourgogne cotes dauxerre blanc 2018
+580. domaine bersan aop bourgogne cotes dauxerre blanc 2018
+581. domaine bersan aop bourgogne cotes dauxerre blanc 2018
+582. domaine bersan aop bourgogne cotes dauxerre blanc 2018
+583. domaine bersan aop bourgogne cotes dauxerre rouge 2018
+584. domaine bersan aop bourgogne cotes dauxerre rouge 2018
+585. domaine bersan aop bourgogne cotes dauxerre rouge 2018
+586. domaine bersan aop bourgogne cotes dauxerre rouge 2019
+587. domaine bersan aop bourgogne cotes dauxerre rouge 2019
+588. domaine bersan aop bourgogne cotes dauxerre rouge 2019
+589. domaine bersan aop bourgogne cotes dauxerre rouge 2019
+590. domaine bersan aop bourgogne cotes dauxerre rouge 2020
+591. domaine bersan aop bourgogne cotes dauxerre rouge 2020
+592. domaine bersan aop bourgogne cotes dauxerre rouge 2020
+593. domaine bersan aop bourgogne cotes dauxerre rouge 2020
+594. domaine bersan aop irancy rouge 2018
+595. domaine bersan aop irancy rouge 2018
+596. domaine bersan aop irancy rouge 2018
+597. domaine bersan aop irancy rouge 2018
+598. domaine bersan aop saintbris blanc 2018
+599. domaine bersan aop saintbris blanc 2018
+600. domaine bersan aop saintbris blanc 2018
+601. domaine bersan bourgogne chardonnay
+602. domaine bersan bourgogne cotes dauxerre cuvee marianne 2022
+603. domaine bersan bourgogne passetoutgrain france pinot noir and gamay blend 2023
+604. domaine bersan chablis 2023
+605. domaine bersan cote dauxerre blanc
+606. domaine bersan cotes dauxerre 2023 red
+607. domaine bersan cotes dauxerre blanc
+608. domaine bersan cotes dauxerre blanc louis bersan 2022
+609. domaine bersan cotes dauxerre pinot noir chablisien 2022
+610. domaine bersan cotes dauxerre white 2023
+611. domaine bersan cremant de bourgogne
+612. domaine bersan cuvee louis bersan red 2023
+613. domaine bersan cuvee louis bersan white 2023
+614. domaine bersan irancy
+615. domaine bersan irancy 2023
+616. domaine bersan irancy rouge 2021
+617. domaine bersan jeanchristophe en jeanlouis bersan
+618. domaine bersan mont embrase saint bris
+619. domaine bersan saint bris
+620. domaine bersan saint bris
+621. domaine bersan saint bris sauvignon chablisien 2021
+622. domaine bersan saintbris 2022
+623. domaine bersan saintbris 2023
+624. domaine bertagna 1er cru les cras blanc 2020 vougeot
+625. domaine bertagna 1er cru les cras blanc 2020 vougeot
+626. domaine bertagna 1er cru les cras blanc 2020 vougeot
+627. domaine bertagna 1er cru les cras blanc 2020 vougeot
+628. domaine bertagna 1er cru les petits vougeots 2015 vougeot
+629. domaine bertagna 1er cru les petits vougeots 2015 vougeot
+630. domaine bertagna 1er cru les petits vougeots 2015 vougeot
+631. domaine bertagna 1er cru les petits vougeots 2015 vougeot
+632. domaine bertagna 2017 clos vougeot grand cru
+633. domaine bertagna 2017 clos vougeot grand cru
+634. domaine bertagna 2017 clos vougeot grand cru
+635. domaine bertagna 2017 clos vougeot grand cru
+636. domaine bertagna 2018 clos saint denis grand cru
+637. domaine bertagna 2018 clos saint denis grand cru
+638. domaine bertagna 2018 clos saint denis grand cru
+639. domaine bertagna 2018 clos vougeot grand cru
+640. domaine bertagna 2018 clos vougeot grand cru
+641. domaine bertagna 2018 clos vougeot grand cru
+642. domaine bertagna 2018 clos vougeot grand cru
+643. domaine bertagna 2020 clos vougeot grand cru
+644. domaine bertagna 2020 clos vougeot grand cru
+645. domaine bertagna 2020 clos vougeot grand cru
+646. domaine bertagna 2020 clos vougeot grand cru
+647. domaine bertagna bourgogne blanc hautes cotes de nuits
+648. domaine bertagna bourgogne blanc hauts cote des nuits 2020
+649. domaine bertagna bourgogne blanc les croix blanches 2023
+650. domaine bertagna bourgogne chardonnay les croix blanches 2019
+651. domaine bertagna bourgogne rouge hautes cotes de nuits
+652. domaine bertagna chambertin 2009
+653. domaine bertagna chambertin grand cru 2017
+654. domaine bertagna chambertin grand cru 2018
+655. domaine bertagna chambertin grand cru 2020
+656. domaine bertagna chambertin grand cru 2021
+657. domaine bertagna chambertin grand cru 2021
+658. domaine bertagna chambertin grand cru 2021
+659. domaine bertagna chambolle musigny 1er cru les plantes
+660. domaine bertagna chambollemusigny le village 2021
+661. domaine bertagna chambollemusigny le village 2021
+662. domaine bertagna clos de la perriere monopole vougeot premier cru 2014
+663. domaine bertagna clos de vougeot grand cru 2016
+664. domaine bertagna clos de vougeot grand cru 2016
+665. domaine bertagna clos de vougeot grand cru 2018
+666. domaine bertagna clos de vougeot grand cru 2018
+667. domaine bertagna clos de vougeot grand cru 2021
+668. domaine bertagna clos de vougeot grand cru 2021
+669. domaine bertagna clos du vouget 1999
+670. domaine bertagna clos saint denis grand cru
+671. domaine bertagna clos saint denis grand cru 2017
+672. domaine bertagna clos saint denis grand cru 2019 red dry 135 075
+673. domaine bertagna clos saint denis grand cru 2021
+674. domaine bertagna clos saint denis grand cru 2021
+675. domaine bertagna clos saintdenis grand cru 2019
+676. domaine bertagna clos saintdenis grand cru 2019
+677. domaine bertagna clos saintdenis grand cru cote de nuits
+678. domaine bertagna clos st denis 2000
+679. domaine bertagna corton charlemagne grand cru
+680. domaine bertagna corton grand cru les grandes lolieres
+681. domaine bertagna corton grand cru les grandes lolieres 2016
+682. domaine bertagna corton grand cru les grandes lolieres 2018
+683. domaine bertagna corton grand cru les grandes lolieres 2019
+684. domaine bertagna corton grand cru les grandes lolieres 2019
+685. domaine bertagna corton les grandes lolieres grand cru
+686. domaine bertagna cortoncharlemagne grand cru 2010
+687. domaine bertagna hautes cotes de nuits rouge les dames huguettes
+688. domaine bertagna les croix blanches 2017 bourgogne blanc
+689. domaine bertagna les croix blanches 2017 bourgogne blanc
+690. domaine bertagna les croix blanches 2017 bourgogne blanc
+691. domaine bertagna les croix blanches 2017 bourgogne blanc
+692. domaine bertagna les grandes lolieres 2018 corton grand cru
+693. domaine bertagna les grandes lolieres 2018 corton grand cru
+694. domaine bertagna les grandes lolieres 2018 corton grand cru
+695. domaine bertagna nuits saint georges les murgers 2021
+696. domaine bertagna nuits saint georges les murgers 2021
+697. domaine bertagna nuitssaintgeorges 1er cru les murgers
+698. domaine bertagna nuitssaintgeorges 1er cru les murgers 2021
+699. domaine bertagna vosne romanee 2000
+700. domaine bertagna vosneromanee 1er cru les beaux monts 2016
+701. domaine bertagna vougeot 1er cru clos de la perriere monopole
+702. domaine bertagna vougeot 1er cru clos de la perriere monopole
+703. domaine bertagna vougeot 1er cru clos de la perriere monopole 2021
+704. domaine bertagna vougeot 1er cru clos de la perriere monopole 2021
+705. domaine bertagna vougeot 1er cru clos de la perriere monopole 2021
+706. domaine bertagna vougeot 1er cru les cras rouge
+707. domaine bertagna vougeot clos de la perriere monopole 2021
+708. domaine bertagna vougeot clos de la perriere monopole premier cru 2019
+709. domaine bertagna vougeot le village 2020
+710. domaine bertagna vougeot premier cru les cras blanc 2015
+711. domaine bertagna vougeot premier cru les cras blanc 2016
+712. domaine bertagna vougeot premier cru les cras rouge 2017
+713. domaine bertagna vougeot village blanc
+714. domaine bertagna vougeot village rouge
+715. domaine bertagna vougeot village rouge 2019
+716. domaine bertagna vougeot village rouge 2019
+717. domaine berthaut bourgogne hautes cotes de nuits 2018
+718. domaine berthaut fixin 1er cru les arvelets 2023
+719. domaine berthaut fixin les crais 2023
+720. domaine berthaut gerbet bourgogne hautes cotes de nuits rouge 2021
+721. domaine berthaut gerbet bourgogne rouge les prielles 2022
+722. domaine berthaut gerbet clos vougeot grand cru 2023
+723. domaine berthaut gerbet cotes de nuits villages rouge 2022
+724. domaine berthaut gerbet fixin 1er les arvelets 2022
+725. domaine berthaut gerbet fixin bourgogne rouge 2020
+726. domaine berthaut gerbet fixin en combe roy 2022
+727. domaine berthaut gerbet fixin les clos 2022
+728. domaine berthaut gerbet fixin les crais 2022
+729. domaine berthaut gerbet fixin rouge 2022
+730. domaine berthaut gerbet gevrey chambertin 2021
+731. domaine berthaut gerbet le clos fixin bourgogne rouge 2020
+732. domaine berthaut gerbet vosne romanee 2021
+733. domaine berthaut gerbet vosne romanee rouge 2023
+734. domaine berthaut gevreychambertin 2023
+735. domaine berthaut vosneromanee 1er cru les suchots 2022
+736. domaine berthaut vosneromanee 2023
+737. domaine berthautgerbet bourgogne hautes cotes de nuits 2021
+738. domaine berthautgerbet bourgogne hautes cotes de nuits 2023
+739. domaine berthautgerbet bourgogne les prielles 2023
+740. domaine berthautgerbet bourgogne les prielles rouge 2023
+741. domaine berthautgerbet bourgogne rouge les prielles 2017
+742. domaine berthautgerbet chambollemusigny les plantes 2020
+743. domaine berthautgerbet chambollemusigny premier cru les plantes 2021
+744. domaine berthautgerbet clos de vougeot grand cru 2020
+745. domaine berthautgerbet denis berthaut bourgogne hautes cotes de nuits burgundy 2024 prearrival
+746. domaine berthautgerbet denis berthaut bourgogne hautes cotes de nuits burgundy 2024 prearrival
+747. domaine berthautgerbet denis berthaut les petits monts vosneromanee premier cru
+748. domaine berthautgerbet echezeaux grand cru
+749. domaine berthautgerbet echezeaux grand cru 2020
+750. domaine berthautgerbet fixin 2017
+751. domaine berthautgerbet fixin 2018
+752. domaine berthautgerbet fixin 2023
+753. domaine berthautgerbet fixin 2023
+754. domaine berthautgerbet fixin blanc champ des charmes 2021
+755. domaine berthautgerbet fixin champs des charmes 2022
+756. domaine berthautgerbet fixin champs des charmes blanc 2023
+757. domaine berthautgerbet fixin champs des charmes blanc 2023
+758. domaine berthautgerbet fixin en combe roy 2018
+759. domaine berthautgerbet fixin en combe roy 2022
+760. domaine berthautgerbet fixin les clos 2019
+761. domaine berthautgerbet fixin les crais cote de nuits
+762. domaine berthautgerbet fixin rouge 2021 half bottle
+763. domaine berthautgerbet fixin rouge 2022 half bottle
+764. domaine berthautgerbet fixin rouge 2023
+765. domaine berthautgerbet fixin rouge 2023
+766. domaine berthautgerbet gevreychambertin 1er cru lavaux st jacques 2022
+767. domaine berthautgerbet gevreychambertin 1er cru lavaux st jacques 2023
+768. domaine berthautgerbet gevreychambertin 2022
+769. domaine berthautgerbet gevreychambertin combe du dess
+770. domaine berthautgerbet gevreychambertin vieilles vignes 2021
+771. domaine berthautgerbet grand cru clos vougeot 2022
+772. domaine berthautgerbet grand cru clos vougeot 2023
+773. domaine berthautgerbet hautes cotes de nuits 2023
+774. domaine berthautgerbet hautescotes de nuits 2020
+775. domaine berthautgerbet lavaut saintjacques gevreychambertin premier cru
+776. domaine berthautgerbet les petits monts vosneromanee premier cru
+777. domaine berthautgerbet les prielles bourgogne rouge 2023
+778. domaine berthautgerbet les suchots vosneromanee premier cru
+779. domaine berthautgerbet vosne romanee 2018
+780. domaine berthautgerbet vosne romanee 2021
+781. domaine berthautgerbet vosne romanee 2022
+782. domaine berthautgerbet vosne romanee 2023
+783. domaine berthautgerbet vosneromanee 2019
+784. domaine berthautgerbet vosneromanee 2020
+785. domaine berthautgerbet vosneromanee 2021
+786. domaine berthautgerbet vosneromanee 2023
+787. domaine berthautgerbet vosneromanee premier cru les petits monts 2020
+788. domaine bertheau 2010 chambollemusigny 1er cru amoureuses
+789. domaine bertheau bonnesmares grand cru
+790. domaine bertheau chambollemusigny cote de nuits
+791. domaine bertheau les amoureuses chambollemusigny premier cru
+792. domaine bertheau les charmes chambollemusigny premier cru
+793. domaine berthelemot
+794. domaine berthelemot
+795. domaine berthelemot 1er cru sous fretille 2019
+796. domaine berthelemot beaune 1cru les bressandes rouge 2022
+797. domaine berthelemot beaune 1er cru clos de mouches 2022
+798. domaine berthelemot beaune 1er cru clos des mouches 2021
+799. domaine berthelemot beaune 1er cru clos des mouches 2022
+800. domaine berthelemot beaune 1er cru clos des mouches 2023
+801. domaine berthelemot beaune 1er cru le clos des mouches 2023
+802. domaine berthelemot beaune 1er cru les bressandes 2022
+803. domaine berthelemot beaune 1er cru les bressandes 2023
+804. domaine berthelemot beaune 1er cru les greves
+805. domaine berthelemot beaune 1er cru les greves 2021
+806. domaine berthelemot beaune 1er cru les greves 2022
+807. domaine berthelemot beaune les greves 1er cru
+808. domaine berthelemot beaune longbois 2022
+809. domaine berthelemot beaune longbois 2023
+810. domaine berthelemot beaune premier cru clos des mouches
+811. domaine berthelemot beaune premier cru clos des mouches blanc
+812. domaine berthelemot beaune premier cru clos des mouches blanc 6 bottle case
+813. domaine berthelemot bourgogne blanc les parties
+814. domaine berthelemot bourgogne blanc les parties organic 6 bottle case
+815. domaine berthelemot bourgogne les parties blanc 2023
+816. domaine berthelemot chambollemusigny 2023
+817. domaine berthelemot charlemagne blanc grand cru aoc 2023
+818. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2020
+819. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2021
+820. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2022
+821. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2022
+822. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2023
+823. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2023
+824. domaine berthelemot chassagnemontrachet 1er cru abbaye de morgeot 2023
+825. domaine berthelemot clos des mouches
+826. domaine berthelemot corton charlemagne 2022 burgundy
+827. domaine berthelemot corton grand cru rouge
+828. domaine berthelemot corton grand cru rouge
+829. domaine berthelemot corton grand cru rouge 2022
+830. domaine berthelemot cortoncharlemagne grand cru 2021
+831. domaine berthelemot cortoncharlemagne grand cru 2022
+832. domaine berthelemot cortoncharlemagne grand cru 2022
+833. domaine berthelemot cortoncharlemagne grand cru 2023
+834. domaine berthelemot gevrey chambertin 2022 pinot noir bourgogne
+835. domaine berthelemot gevrey chambertin craitepaille 2022
+836. domaine berthelemot grand cru corton charlemagne 2023
+837. domaine berthelemot les folatieres
+838. domaine berthelemot les greves
+839. domaine berthelemot les levrons puligny montrachet 2022
+840. domaine berthelemot meursault
+841. domaine berthelemot meursault 2022
+842. domaine berthelemot meursault 202223
+843. domaine berthelemot meursault 2023
+844. domaine berthelemot meursault 2023
+845. domaine berthelemot meursault les tillets 2023
+846. domaine berthelemot meursault les tillets 2023
+847. domaine berthelemot meursault village blanc
+848. domaine berthelemot meursault villages blanc
+849. domaine berthelemot monthelie
+850. domaine berthelemot monthelie
+851. domaine berthelemot monthelie 2022
+852. domaine berthelemot monthelie 2023
+853. domaine berthelemot monthelie organic 6 bottle case
+854. domaine berthelemot monthelie village rouge 2022
+855. domaine berthelemot monthelie village rouge 2023
+856. domaine berthelemot murgers des dents de chien
+857. domaine berthelemot perandvergelesses 1er cru sous fretille 2023
+858. domaine berthelemot pernand vergelesses belles
+859. domaine berthelemot pernand vergelesses belles
+860. domaine berthelemot pernandvergelesses 1er cru sous fretille 2019
+861. domaine berthelemot pernandvergelesses 1er cru sous fretille blanc 2022
+862. domaine berthelemot pernandvergelesses 1er cru sous fretille blanc 2023
+863. domaine berthelemot pernandvergelesses les belles filles 2023
+864. domaine berthelemot pommard
+865. domaine berthelemot pommard
+866. domaine berthelemot pommard 2021
+867. domaine berthelemot pommard 2022
+868. domaine berthelemot pommard 2023
+869. domaine berthelemot pommard noizons 2020
+870. domaine berthelemot pommard noizons organic 6 bottle case
+871. domaine berthelemot pommard village rouge organic 6 bottle case
+872. domaine berthelemot puligny montrachet 1e cru les folatieres blanc
+873. domaine berthelemot puligny montrachet 1er cru la garenne 6 bottle case
+874. domaine berthelemot puligny montrachet les levrons
+875. domaine berthelemot pulignymontrachet
+876. domaine berthelemot pulignymontrachet 1er cru la garenne 2022
+877. domaine berthelemot pulignymontrachet 1er cru la garenne 2023
+878. domaine berthelemot pulignymontrachet 1er cru la garenne 2023
+879. domaine berthelemot pulignymontrachet 1er cru la garenne 2023
+880. domaine berthelemot pulignymontrachet 1er cru les folatieres 2022
+881. domaine berthelemot pulignymontrachet 1er cru les folatieres 2023
+882. domaine berthelemot pulignymontrachet 1er cru les folatieres 2023
+883. domaine berthelemot pulignymontrachet 1er cru les folatieres 2023
+884. domaine berthelemot pulignymontrachet 1er cru les folatieres blanc 2022
+885. domaine berthelemot pulignymontrachet 1er cru les folatieres blanc 2023
+886. domaine berthelemot pulignymontrachet 2023
+887. domaine berthelemot pulignymontrachet 2023
+888. domaine berthelemot pulignymontrachet les levrons 2022
+889. domaine berthelemot pulignymontrachet les levrons 2023
+890. domaine berthelemot pulignymontrachet les levrons 2023
+891. domaine berthelemot saint aubin 1er cru murgers des dents de chien 2020
+892. domaine berthelemot saintaubin 1er cru murgers des dents de chien 2023
+893. domaine berthelemot saintaubin 1er cru murgers des dents de chien 2023
+894. domaine berthelemot santenay 1er cru 2013 la maladiere
+895. domaine berthelemot santenay 1er cru la maladiere 2022
+896. domaine berthelemot santenay 1er cru la maladiere 2023
+897. domaine berthelemot santenay rouge 2023 pinot noir bourgogne
+898. domaine berthelemot st aubin 1er cru dents de chien 6 bottle case
+899. domaine berthelemot volnay le village 2022
+900. domaine berthelemot volnay le village 2023
+901. domaine berthelemot vosneromanee 2022
+902. domaine berthelemot vosneromanee 2023
+903. domaine berthelmot gevrey chambertin craite paille 2019
+904. domaine berthenet 2020 montagny blanc 1er cru les platieres
+905. domaine berthenet aop montagny premier cru blanc 2012
+906. domaine berthenet aop montagny premier cru blanc 2012
+907. domaine berthenet aop montagny premier cru blanc 2012
+908. domaine berthenet aop montagny premier cru blanc 2012
+909. domaine berthenet bourgogne aligote
+910. domaine berthenet bourgogne aligote vieilles vignes 2023
+911. domaine berthenet givry premier cru 2023
+912. domaine berthenet givry premier cru rouge 2022
+913. domaine berthenet montagny
+914. domaine berthenet montagny 1er cru vieilles vignes
+915. domaine berthenet montagny 1er cru vieilles vignes 2012
+916. domaine berthenet montagny les coeres
+917. domaine berthenet montagny tete de cuvee 2023
+918. domaine berthet bondet aop cotesdujura blanc 2016
+919. domaine berthet bondet aop cotesdujura blanc 2016
+920. domaine berthet bondet aop cotesdujura blanc 2016
+921. domaine berthet bondet trio aop cotes du jura rot 2022
+922. domaine berthet bondet trio aop cotes du jura tinto 2022
+923. domaine berthet bondet trio aop cotesdujura rouge 2022
+924. domaine berthet bondet trio aop cotesdujura rouge 2022
+925. domaine berthet bondet trio aop cotesdujura rouge 2022
+926. domaine berthet rayne cairanne blanc tradition 2023
+927. domaine berthet rayne chateauneuf du pape 2022
+928. domaine berthet rayne chateauneuf du pape 2022
+929. domaine berthetbondet chateau chalon
+930. domaine berthetbondet chateau chalon 2008
+931. domaine berthetbondet chateau chalon 2008
+932. domaine berthetbondet chateau chalon 2014
+933. domaine berthetbondet chateau chalon 2014
+934. domaine berthetbondet chateau chalon jura france 2013
+935. domaine berthetbondet chateauchalon 2006
+936. domaine berthetbondet chateauchalon 2010
+937. domaine berthetbondet cotes du jura la poiriere 2018
+938. domaine berthetbondet cotes du jura savagnin 2016
+939. domaine berthetbondet cotes du jura tradition 2018
+940. domaine berthetbondet cremant du jura
+941. domaine berthetbondet cremant du jura
+942. domaine berthetbondet cremant du jura 6 x
+943. domaine berthetbondet la poiriere
+944. domaine berthetbondet la queue au renard
+945. domaine berthetbondet lacacia
+946. domaine berthetbondet macvin
+947. domaine berthetbondet macvin du jura
+948. domaine berthetbondet savagnier
+949. domaine berthetbondet savagnin 2018 cotes du jura
+950. domaine berthetbondet savagnin 2018 cotes du jura
+951. domaine berthetbondet savagnin 2018 cotes du jura
+952. domaine berthetbondet tradition
+953. domaine berthetbondet tradition 2018 cotes du jura
+954. domaine berthetbondet tradition 2018 cotes du jura
+955. domaine berthetbondet tradition 2018 cotes du jura
+956. domaine berthetbondet tradition 2021
+957. domaine berthetbondet trio
+958. domaine berthetbondet trio jura 2019
+959. domaine berthetbondet vin jaune 2017
+960. domaine berthetrayne chateauneuf du pape
+961. domaine berthetrayne chateauneuf du pape 2011
+962. domaine berthetrayne chateauneuf du pape rouge 2022
+963. domaine berthetrayne chateauneuf du pape vieilli fut du chene
+964. domaine berthetrayne chateauneufdupape aoc
+965. domaine berthetrayne chateaunuef du pape cuvee cadiac
+966. domaine berthier coteaux du giennois blanc polar bear 2019
+967. domaine berthier coteaux du giennois rouge gorge 2018
+968. domaine berthier linstant chardonnay 2022
+969. domaine berthier linstant pinot noir 2019
+970. domaine berthier linstant pinot noir 2022
+971. domaine berthier linstant pinot noir 2023
+972. domaine berthier linstant sauvignon blanc 2022
+973. domaine berthier macon chaintre chardonnay
+974. domaine berthier sancerre blanc
+975. domaine berthollier chignin bergeron exception 2023
+976. domaine berthollier chignin vieilles vignes jacquere 2024
+977. domaine berthollier vin de savoie sel de marius rouge
+978. domaine berthoumieu aop pacherencduvicbilh blanc 2019
+979. domaine berthoumieu aop pacherencduvicbilh blanc 2019
+980. domaine berthoumieu aop pacherencduvicbilh blanc 2019
+981. domaine berthoumieu aulet 2020
+982. domaine berthoumieu charles de batz 2016 madiran
+983. domaine berthoumieu charles de batz lionel osmin 2017
+984. domaine berthoumieu charles de batz madiran 2015
+985. domaine berthoumieu charles de batz madiran 20152016
+986. domaine berthoumieu constance 2021
+987. domaine berthoumieu constance aop madiran 2020
+988. domaine berthoumieu constance doux lionel osmin 2018
+989. domaine berthoumieu constance doux lionel osmin 2022
+990. domaine berthoumieu la fe
+991. domaine berthoumieu la fe cuvee
+992. domaine berthoumieu la fe cuvee sans soufre 2019 madiran
+993. domaine berthoumieu la fe cuvee sans soufre madiran 2019
+994. domaine berthoumieu la fe rouge 2020
+995. domaine berthoumieu madiran charles de batz
+996. domaine berthoumieu madiran charles de batz
+997. domaine berthoumieu madiran constance 2017 6x
+998. domaine berthoumieu madiran constance 2021
+999. domaine berthoumieu madiran constance 2021
+1000. domaine berthoumieu madiran cuvee charles de batz

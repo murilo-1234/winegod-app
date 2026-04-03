@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. lagar de darei tinto 2015 13
+2. lagar de darei sem abrigo tinto reserva 2019 13
+3. lagar de darei sem abrigo
+4. lagar de darei reserva tinto 2015
+5. lagar de darei reserva tinto
+6. lagar de darei reserva 2014
+7. lagar de darei private selection branco 2018 127
+8. lagar de darei encruzado 18
+9. lagar de darei colheita branco dao 2022
+10. lagar de darei branco private selection 2016
+11. lagar de darei branco 2020 125
+12. lagar de darei
+13. lagar de costaalvanino rias baixas 2023
+14. lagar de costa viva la vida espadeiro red 2021
+15. lagar de costa viva la vida 2020
+16. lagar de costa tradicion
+17. lagar de costa tradicion
+18. lagar de costa rias baixas albarino doelas
+19. lagar de costa naranjo skin contact 2022
+20. lagar de costa maio5
+21. lagar de costa maio albarino 2020
+22. lagar de costa lagar de costa albarino 2024
+23. lagar de costa calabobos albarino 2022
+24. lagar de costa calabobos
+25. lagar de costa albarino tradicion barrique 2021
+26. lagar de costa albarino natural orange wine 2024
+27. lagar de costa albarino barrica
+28. lagar de costa albarino 2022
+29. lagar de costa albarino
+30. lagar de costa albarino
+31. lagar de condesa kentia albarino 2023
+32. lagar de condesa albarino
+33. lagar de codegua tudor cabernet sauvignon premium
+34. lagar de codegua syrah edicion limitada
+35. lagar de codegua rosado cabernet sauvignon syrah premium
+36. lagar de codegua petit verdot alto cachapoal
+37. lagar de codegua mourvedre 2019
+38. lagar de codegua malbec alto cachapoal
+39. lagar de codegua malbec 2019
+40. lagar de codegua gsm grenache syrah mourvedre 2018
+41. lagar de codegua grenache 2020
+42. lagar de codegua codegua tannat premium
+43. lagar de codegua codegua malbec premium
+44. lagar de codegua codegua grenache premium
+45. lagar de codegua codegua cabernet sauvignon premium
+46. lagar de codegua amalgama
+47. lagar de codegua aluvion premium
+48. lagar de codegua aluvion ensamblaje tinto 2019
+49. lagar de cervera rias baixas albarino 2024
+50. lagar de cervera rias baixas albarino
+51. lagar de cervera pazo de seoane rosal rias baixas espana 2021
+52. lagar de cervera pazo de seoane rias baixas
+53. lagar de cervera pazo de seoane o rosal 2024
+54. lagar de cervera pazo de seoane albarino blend rosal rias baixas spain 2021
+55. lagar de cervera pazo de seoane albarino blend rosal rias baixas spain 2021
+56. lagar de cervera alvarino
+57. lagar de cervera albarino rias baixas galacia 2023
+58. lagar de cervera albarino rias baixas
+59. lagar de cervera albarino o rosal magnum
+60. lagar de cervera albarino o rosal
+61. lagar de cervera albarino 2024
+62. lagar de cervera albarino 2024
+63. lagar de cervera albarino 2024
+64. lagar de cervera albarino 2024
+65. lagar de cervera albarino 2024
+66. lagar de cervera albarino 2024
+67. lagar de cervera albarino 2023
+68. lagar de cervera albarino 2023
+69. lagar de cervera albarino 2023
+70. lagar de cervera albarino 2023
+71. lagar de cervera albarino 2022
+72. lagar de cervera albarino 2022
+73. lagar de cervera albarino 2021 la rioja alta
+74. lagar de cervera albarino 2021
+75. lagar de cervera albarino 2020
+76. lagar de cervera albarino 2020
+77. lagar de cervera albarino 2019
+78. lagar de cervera albarino
+79. lagar de cervera albarino
+80. lagar de cervera albarino
+81. lagar de cervera albarino
+82. lagar de cervera albarino
+83. lagar de cervera albarino
+84. lagar de cervera albarino
+85. lagar de cervera albarino
+86. lagar de cervera albarino
+87. lagar de cervera 2024 albarino
+88. lagar de cervera 2024 37
+89. lagar de cervera 2024
+90. lagar de cervera 2024
+91. lagar de cervera 2023
+92. lagar de cervera 2023
+93. lagar de cervera 2021 albarino
+94. lagar de cervera
+95. lagar de cayo crianza quiroga de pablo
+96. lagar de cayo clarete quiroga de pablo
+97. lagar de cabrera syrah crianza
+98. lagar de brais ribeiro do von adegas francisco fernandez sousa
+99. lagar de bouza albarino rias baixas
+100. lagar de bouza albarino 2022
+101. lagar de bouza albarino
+102. lagar de bouza albarino
+103. lagar de bouza albarino
+104. lagar de besada burbujas de baladina brut nature nv rias baixas spain
+105. lagar de besada baladina barro albarino 2016 rias baixas spain
+106. lagar de besada baladina albarino
+107. lagar de besada baladina 2023 rias baixas spain
+108. lagar de besada anada de baladina 2012 rias baixas spain
+109. lagar de besada albarino 2024 rias baixas spain
+110. lagar de besada albarino 2024
+111. lagar de besada albarino 2023 rias baixas spain
+112. lagar de besada albarino 2020
+113. lagar de besada
+114. lagar de baixo tinto
+115. lagar de baixo red
+116. lagar de baixo niepoort bairrada baga
+117. lagar de baixo niepoort
+118. lagar de baixo baga tinto 2026
+119. lagar de baixo baga 2021 by niepoort bairrada
+120. lagar de baixo 2021 red
+121. lagar de baixo 2021 baga tinto
+122. lagar de baixo 2020 baga tinto
+123. lagar de baixo 2019 baga
+124. lagar de baixo
+125. lagar de baixo
+126. lagar das moiras
+127. lagar da xestosa monterrei godello
+128. lagar da condesa rias baixas albarino o fillo da condesa 2020
+129. lagar da condesa rias baixas albarino o fillo da condesa
+130. lagar da condesa rias baixas albarino
+131. lagar da condesa o fillo da condesa albarino rias baixas
+132. lagar da condesa kentia albarino rias baixas
+133. lagar da condesa kentia albarino
+134. lagar da condesa albarino 2017
+135. lagar da condesa albarino
+136. lagar da condesa
+137. lagar da cachada seleccion 2024 do rias baixas
+138. lagar da cachada albarino 2023
+139. lagar d cervera rias baixas albarino 2022
+140. lagar d cervera albarino
+141. lagar condesa albarino
+142. lagar cab sauv 19
+143. lagar blanco pedro ximenez
+144. lagar blanco palo cortado
+145. lagar blanco palo cortado
+146. lagar blanco oloroso
+147. lagar blanco fino 7
+148. lagar blanco amontillado
+149. lagar 44 malaga rancio anos 40
+150. lagape expression gewurztraminer
+151. lagape expession riesling
+152. lagano jutro vrhnje za kuhanje 500 g dukat
+153. lagano jutro puding okus vanilija 4x125g dukat
+154. lagano jutro puding okus cokolada 4125 g dukat
+155. lagane ai semi misti
+156. lagalin gallina de piel wines 2023 spanje bierzo rood
+157. lagakis tongue fillet 1kg
+158. lagakis sliced octopgr
+159. lagakis peeled sea bream 600gr
+160. lagakis peeled sea bass 600gr
+161. lagakis nile perch fillet 1kg
+162. lagakis mixed seafood with vegetables 500gr
+163. lagakis kalamari rings 500gr
+164. lagakis indopacific shrimp peeled 80120 500gr
+165. lagakis indopacific shrimp peeled 4060 500gr
+166. lagakis indopacific shrimp peeled 2040 500gr
+167. lagakis cod fillet roll 1kg
+168. lagakis chile mussels 500gr
+169. lagakis argentine red shrimp no2 600gr
+170. lagaffeliere 2015
+171. lagadas farm 270gr
+172. lagadas farm 260gr
+173. lagadas farm
+174. lagabiere ta plus meilleure 4pk can
+175. lagabiere ta moins forte 4pk can
+176. lag til blendtec fourside og wildside ny typelatching
+177. lag til blendtec fourside og wildside ldre typevented
+178. lag resurs bank 36 stks univ emballage
+179. lag radi stks univ emballage
+180. lag protruck 2 stks uni emballage
+181. lag hmf 36 stks uni emballage
+182. lag hmf 2 stks uni emballage
+183. lag din egen eplecider utstytskit mbok
+184. lag 3855 cm brndtsortbejdse
+185. lag 3855 cm brndthvidlak
+186. lag 3855 cm brndt
+187. lafuente l3 brut rosado
+188. lafuente brut nature
+189. lafuente a lafuente palomar
+190. lafrea langhe favorita
+191. lafranveyrolles bandol rouge 2022
+192. lafranveyrolles bandol rose 2024
+193. lafran veyrolles organic bandol rose provence france
+194. lafran veyrolles organic bandol rose 135
+195. lafran veyrolles bandol rose 2024
+196. lafran veyrolles bandol rose 2024
+197. lafran veyrolles bandol rose 2024
+198. lafran veyrolles bandol rose
+199. lafoy gasse 1989 cote rotie
+200. lafouge jean gilles pommard les noizons 2020 1
+201. lafouge jean et gilles 2023 pommard les noizons
+202. lafouge jean et gilles 2023 pommard 1er cru les chanlins
+203. lafouge jean et gilles 2023 meursault les meix chavaux
+204. lafouge jean et gilles 2023 bourgogne aligote
+205. lafouge jean et gilles 2023 auxeyduresses rouge
+206. lafouge jean et gilles 2023 auxeyduresses blanc les hautes
+207. lafouge jean et gilles 2023 auxeyduresses 1er cru les duresses
+208. lafouge jean et gilles 2023 auxeyduresses 1er cru la chapelle
+209. lafouge jean et gilles 2022 pommard 1er cru les chanlins
+210. lafouge jean et gilles 2022 meursault les meix chavaux
+211. lafouge jean et gilles 2022 meursault casse tetes
+212. lafouge jean et gilles 2022 les hautes auxeyduresses blanc
+213. lafouge jean et gilles 2022 bourgogne rouge cote dor
+214. lafouge jean et gilles 2022 bourgogne aligote
+215. lafouge jean et gilles 2022 auxeyduresses rouge
+216. lafouge jean et gilles 2022 auxeyduresses 1er cru les duresses
+217. lafouge jean et gilles 2022 auxeyduresses 1er cru la chapelle
+218. lafouge jean et gilles 2021 auxey duresses les hautes
+219. lafouge jean et gilles 2020 meursault meix chavoux
+220. lafouge jean et gilles 2020 meursault les cassestetes
+221. lafouge jean et gilles 2020 meursault
+222. lafouge jean et gilles 2020 auxeyduresses les hautes
+223. lafouge jean et gilles 2020 auxey duresses les boutonniers
+224. lafouge jean et gilles 2020 auxey duresses 1er cru les duresses la parapelle
+225. lafouge jean et gilles 2016 pommard 1er cru les chanlins
+226. lafouge jean et gilles 2015 pommard 1er cru les chanlins
+227. lafouge auxey duresses rouge 2022
+228. lafouge auxey duresses 2019
+229. lafou els amerlers 2022
+230. lafou els amelers blanc 2023
+231. lafou els amelers blanc
+232. lafou els amelers 2024
+233. lafou els amelers
+234. lafou els amelers
+235. lafou els amelers
+236. lafou els amelers
+237. lafou els amelers
+238. lafou els ameler
+239. lafou els almelers 2022
+240. lafou el sender 2022
+241. lafou el sender 2021
+242. lafou el sender 2021
+243. lafou el sender 2020
+244. lafou el sender 2020
+245. lafou el sender
+246. lafou el sender
+247. lafou el sender
+248. lafou el sender
+249. lafou el sender
+250. lafou el sender
+251. lafou el sender
+252. lafou el sender
+253. lafou el sender
+254. lafou el sender
+255. lafou de batea
+256. lafou de batea
+257. lafou celler els amelers 2022
+258. lafou celler el sender 2020
+259. lafou cellar el sender blend bot
+260. lafou blanc els amelers 2024
+261. laforge st emilion 2009
+262. laforge 2016
+263. laforge 2009
+264. laforge
+265. laforet pinot noir
+266. laforet joseph drouhin 1988
+267. laforet joseph drouhin 1988
+268. laforet joseph drouhin 1988
+269. laforet chardonnay
+270. laforet burgunder chardonnay
+271. laforet bourgogne pinot noir joseph drouhin
+272. laforet bourgogne pinot noir 2022 joseph drouhin
+273. laforet bourgogne pinot noir
+274. laforet bourgogne chardonnay 2018
+275. laforet bourgogne chardonnay
+276. laforet bourgogne chardonnay
+277. lafontmenaut pessacleognan rouge 2018
+278. lafontmenaut pessacleognan rouge 2017
+279. lafontmenaut graves blanc 2019
+280. lafontan vs gift box 40 07
+281. lafontan gift box 40 07
+282. lafontan floc de gascogne rouge
+283. lafontan floc de gascogne blanc
+284. lafontan 1993 gift box 40 07
+285. lafontan 1990 gift box 40 07
+286. lafontan 1988 gift box 40 07
+287. lafont fourcat blanc 2019
+288. lafont fourcat 2016
+289. lafont 2023 la comarcal valencia spanien
+290. lafonrochet 2019 st estephe les pelerins
+291. lafonrochet 2019 st estephe
+292. lafonrochet 2015
+293. lafond winery vineyards srh pinot noir santa rita hills ca 2020
+294. lafond winery pinot noir srh sta rita hills 2019
+295. lafond tavel 2024
+296. lafond syrah
+297. lafond santa rita hills chardonnay
+298. lafond rocepine lirac rouge cotes du rhone 2021
+299. lafond rocepine lirac rouge cotes du rhone 2021
+300. lafond roc epine tavel rose
+301. lafond pinot noir
+302. lafond lirac rouge 2023
+303. lafond lirac blanc 2024
+304. lafond lirac 202122
+305. lafond lirac 202122
+306. lafond family santa barbara winery santa rita hills pinot noir
+307. lafond cotes du rhone 2024
+308. lafond cotes du rhone 2023
+309. lafond chateauneufdupape 2022
+310. lafond chateauneuf du pape 2021
+311. lafond chardonnay
+312. lafond cdr
+313. lafond 2024 tavel rocepine
+314. lafond 2021 chateauneufdupape rocepine
+315. lafond 2020 syrah srh series
+316. lafond 2018 pinot noir srh series
+317. lafon rochet top shoulder fills 1978
+318. lafon rochet st estephe 2016
+319. lafon rochet mid shoulder fill 1975
+320. lafon rochet 4eme grand cru classe saintestephe double magnum 2020
+321. lafon rochet 4eme grand cru classe saintestephe 2021
+322. lafon rochet 4eme grand cru classe saintestephe 2003
+323. lafon rochet 2020 st estephe
+324. lafon rochet 2020 cb6 stestephe
+325. lafon rochet 2020
+326. lafon rochet 2019 prevenda
+327. lafon rochet 2018
+328. lafon rochet 2017
+329. lafon rochet 2016
+330. lafon rochet 2016
+331. lafon rochet 2012 cb6 stestephe
+332. lafon rochet 2011 stestephe
+333. lafon rochet 2011
+334. lafon rochet 2010 imperial
+335. lafon rochet 2010
+336. lafon rochet 2010
+337. lafon rochet 2010
+338. lafon rochet 2000
+339. lafon rochet 1998
+340. lafon rochet 1996
+341. lafon rochet 1995
+342. lafon rochet
+343. lafon rochet
+344. lafon rochet
+345. lafon le montrachet 2019
+346. lafon le montrachet 2019
+347. lafon le montrachet 2018
+348. lafon le montrachet 2018
+349. lafon le montrachet 2006
+350. lafon le montrachet 2006
+351. lafon dominique 2020 volnay 1er cru lurets
+352. lafon dominique 2009 beaune 1er cru les epenottes
+353. lafoa sauvignon riserva
+354. lafoa sauvignon magnum 15
+355. lafoa sauvignon doc schreckbichl colterenzio
+356. lafoa sauvignon blanc
+357. lafoa sauvignon alto adige doc 2022
+358. lafoa sauvignon alto adige doc 2021
+359. lafoa sauvignon
+360. lafoa pinot nero riserva alto adige doc 2020
+361. lafoa pinot nero riserva alto adige doc 2018
+362. lafoa pinot nero riserva
+363. lafoa pinot nero
+364. lafoa gewurztraminer riserva
+365. lafoa gewurztraminer alto adige doc 2022
+366. lafoa gewurztraminer alto adige doc 2021
+367. lafoa formigar chardonnay
+368. lafoa chardonnay riserva
+369. lafoa chardonnay doc schreckbichl colterenzio
+370. lafoa chardonnay alto adige doc 2022
+371. lafoa cabernet sauvignon riserva alto adige doc 2018
+372. lafoa cabernet sauvignon riserva
+373. lafoa cabernet sauvignon
+374. lafnetscha
+375. lafnetscha
+376. lafnetscha
+377. lafluer les perrieres
+378. lafluer grand village acte 7 2015
+379. lafluer 2013
+380. laflluer grand village bordeaux sup
+381. lafleurgazin 2014 cb12 pomerol
+382. lafleurgazin 2006
+383. lafleur top shoulder soiled label 1979
+384. lafleur pomerol 2021
+385. lafleur pomerol 2020
+386. lafleur pomerol 2018
+387. lafleur pomerol 2018
+388. lafleur pomerol 2017
+389. lafleur pomerol 2000 hk label
+390. lafleur pomerol 1995 lable damage
+391. lafleur pomerol 1995 lable damage
+392. lafleur pomerol 1990 wine stain label
+393. lafleur pomerol 1985 us label
+394. lafleur pomerol 1985
+395. lafleur pomerol 1949
+396. lafleur pomerol 1949
+397. lafleur mallet sauternes quancard 2023
+398. lafleur mallet sauternes quancard 2019
+399. lafleur mallet sauternes quancard 2017
+400. lafleur les perrieres bordeaux superieur 2022
+401. lafleur les pensees de lafleur pomerol 2018 1
+402. lafleur lafleur 2019
+403. lafleur gazin 2022 cb6 pomerol
+404. lafleur gazin 2021 cb6 pomerol
+405. lafleur gazin 2020 cb6 pomerol
+406. lafleur gazin 2019 magnum cb6 pomerol
+407. lafleur gazin 2017 cb12 pomerol
+408. lafleur gazin 1982
+409. lafleur gazin
+410. lafleur gazin
+411. lafleur aoc pomerol 2012
+412. lafleur 2022
+413. lafleur 2021
+414. lafleur 2020
+415. lafleur 2019
+416. lafleur 2018 cb6 pomerol
+417. lafleur 2018
+418. lafleur 2017
+419. lafleur 2014
+420. lafleur 2013
+421. lafleur 2013
+422. lafleur 2013
+423. lafleur 2010
+424. lafleur 2010
+425. lafleur 2009
+426. lafleur 2009
+427. lafleur 2008 6pack owc
+428. lafleur 2008
+429. lafleur 2008
+430. lafleur 2007 6pack owc
+431. lafleur 2007
+432. lafleur 2007
+433. lafleur 2007
+434. lafleur 2006
+435. lafleur 2005
+436. lafleur 2005
+437. lafleur 2004 dmag
+438. lafleur 2001
+439. lafleur 2001
+440. lafleur 2000 slightly nicked label
+441. lafleur 1998
+442. lafleur 1995 6pack owc
+443. lafleur 1995
+444. lafleur 1995
+445. lafleur 1995
+446. lafleur 1994
+447. lafleur 1990
+448. lafleur 1988
+449. lafleur 1985 top shoulder nicked label
+450. lafleur 1985 top shoulder
+451. lafleur 1985 slightly soiled label
+452. lafleur 1982
+453. lafleur
+454. lafleur
+455. lafleur
+456. lafleur
+457. lafleur
+458. lafkiotis retsina lafkiotis wine outlet
+459. lafkiotis retsina lafkiotis wine outlet
+460. lafkiotis retsina lafkiotis wine outlet
+461. lafkiotis retsina lafkiotis wine outlet
+462. lafkiotis retsina lafkiotis wine outlet
+463. lafkiotis muscat de patras
+464. lafkiotis mavrodaphne de patras
+465. lafkiotis kleoni imiglykos wit griekenland
+466. lafkiotis kleoni imiglykos wit
+467. lafkiotis kleoni imiglykos rood griekenland
+468. lafkiotis kleoni imiglykos rood
+469. lafkiotis agionimo
+470. lafitte whole goose foie gras from sudouest 130g
+471. lafitte whole duck foie gras semipreserved 50g
+472. lafitte rillettes de pato con higado de ave 180 g
+473. lafitte pate puro pato con aceitunas 180 g
+474. lafitte pate de pato al pimiento de espelette 180 g
+475. lafitte pate de magret de pato ahumado 180 g
+476. lafitte french frozen duck liver sliced 200g
+477. lafitte french chilled lafitte duck breast 450g
+478. lafitte french chilled duck foie gras 3pcs
+479. lafitte foie gras de pato entero
+480. lafitte foie gras de pato en trozos trufado 130 g
+481. lafitte foie gras de pato en trozos
+482. lafitte foie gras de oca entero con trufa
+483. lafitte foie gras de oca entero
+484. lafitte foie gras de oca en trozos
+485. lafitte duck pure pate 80g
+486. lafitte duck leg confit 400g
+487. lafitte
+488. lafite top shoulder 1945
+489. lafite rothschild very high shoulder fill 1982
+490. lafite rothschild top shouldercapsule missing 1982
+491. lafite rothschild reserve de lafite armagnac 43
+492. lafite rothschild pauillac 2010
+493. lafite rothschild pauillac 2008 0750 bordeaux frankrijk
+494. lafite rothschild pauillac 2008
+495. lafite rothschild pauillac 2003
+496. lafite rothschild pauillac 2001 1mag
+497. lafite rothschild pauillac 2000
+498. lafite rothschild pauillac 1998
+499. lafite rothschild pauillac 1998
+500. lafite rothschild pauillac 1992 0750 bordeaux frankrijk
+501. lafite rothschild pauillac 1991 frankrijk bordeaux rood
+502. lafite rothschild pauillac 1971 1
+503. lafite rothschild mid shoulder fill 1961
+504. lafite rothschild mid shoulder 1978
+505. lafite rothschild high shoulder fill 1982
+506. lafite rothschild chateau lafite rothschild 2019 frankrijk bordeaux rood
+507. lafite rothschild carruades de lafite pauillac 2nd wine 2009
+508. lafite rothschild carruades de lafite pauillac 2017
+509. lafite rothschild carruades de lafite pauillac 2008
+510. lafite rothschild carruades de lafite 2022
+511. lafite rothschild carruades de lafite 2003
+512. lafite rothschild carruades de lafite 2003
+513. lafite rothschild carruades de lafite 1966 1
+514. lafite rothschild 24 products
+515. lafite rothschild 2022 cb3 pauillac
+516. lafite rothschild 2022
+517. lafite rothschild 2022
+518. lafite rothschild 2021 cb6 pauillac
+519. lafite rothschild 2021 cb3 pauillac
+520. lafite rothschild 2021
+521. lafite rothschild 2021
+522. lafite rothschild 2021
+523. lafite rothschild 2021
+524. lafite rothschild 2020 cb6 pauillac
+525. lafite rothschild 2020 cb3 pauillac
+526. lafite rothschild 2020
+527. lafite rothschild 2020
+528. lafite rothschild 2019 cb6 pauillac
+529. lafite rothschild 2019 cb3 pauillac
+530. lafite rothschild 2019
+531. lafite rothschild 2019
+532. lafite rothschild 2019
+533. lafite rothschild 2018 cb6 pauillac
+534. lafite rothschild 2018 cb3 pauillac
+535. lafite rothschild 2018
+536. lafite rothschild 2018
+537. lafite rothschild 2016
+538. lafite rothschild 2016
+539. lafite rothschild 2016
+540. lafite rothschild 2016
+541. lafite rothschild 2015
+542. lafite rothschild 2015
+543. lafite rothschild 2015
+544. lafite rothschild 2014
+545. lafite rothschild 2014
+546. lafite rothschild 2014
+547. lafite rothschild 2014
+548. lafite rothschild 2013
+549. lafite rothschild 2012 pauillac
+550. lafite rothschild 2012
+551. lafite rothschild 2011 1er grand cru classe pauillac red
+552. lafite rothschild 2011
+553. lafite rothschild 2011
+554. lafite rothschild 2011
+555. lafite rothschild 2010 pauillac cb6
+556. lafite rothschild 2010
+557. lafite rothschild 2010
+558. lafite rothschild 2010
+559. lafite rothschild 2010
+560. lafite rothschild 2009
+561. lafite rothschild 2009
+562. lafite rothschild 2009
+563. lafite rothschild 2009
+564. lafite rothschild 2009
+565. lafite rothschild 2008
+566. lafite rothschild 2007
+567. lafite rothschild 2006
+568. lafite rothschild 2006
+569. lafite rothschild 2005 pauillac
+570. lafite rothschild 2005
+571. lafite rothschild 2005
+572. lafite rothschild 2005
+573. lafite rothschild 2005
+574. lafite rothschild 2005
+575. lafite rothschild 2004
+576. lafite rothschild 2004
+577. lafite rothschild 2004
+578. lafite rothschild 2003 mag
+579. lafite rothschild 2003 dobbelt
+580. lafite rothschild 2003 dobbelt
+581. lafite rothschild 2003
+582. lafite rothschild 2003
+583. lafite rothschild 2003
+584. lafite rothschild 2003
+585. lafite rothschild 2003
+586. lafite rothschild 2002 pauillac
+587. lafite rothschild 2002
+588. lafite rothschild 2002
+589. lafite rothschild 2002
+590. lafite rothschild 2002
+591. lafite rothschild 2001
+592. lafite rothschild 2001
+593. lafite rothschild 2001
+594. lafite rothschild 2000
+595. lafite rothschild 2000
+596. lafite rothschild 2000
+597. lafite rothschild 1er grand cru classe pauillac magnum 1 2014
+598. lafite rothschild 1er grand cru classe pauillac 2023
+599. lafite rothschild 1er grand cru classe pauillac 2023
+600. lafite rothschild 1er grand cru classe pauillac 2022
+601. lafite rothschild 1er grand cru classe pauillac 2021
+602. lafite rothschild 1er grand cru classe pauillac 2020
+603. lafite rothschild 1er grand cru classe pauillac 2019
+604. lafite rothschild 1er grand cru classe pauillac 2016
+605. lafite rothschild 1er grand cru classe pauillac 2015
+606. lafite rothschild 1er grand cru classe pauillac 2015
+607. lafite rothschild 1er grand cru classe pauillac 2014
+608. lafite rothschild 1er grand cru classe pauillac 2013
+609. lafite rothschild 1er grand cru classe pauillac 2011
+610. lafite rothschild 1er grand cru classe pauillac 2010
+611. lafite rothschild 1er grand cru classe pauillac 2010
+612. lafite rothschild 1er grand cru classe pauillac 2008
+613. lafite rothschild 1er grand cru classe pauillac 2007
+614. lafite rothschild 1er grand cru classe pauillac 2004
+615. lafite rothschild 1er grand cru classe pauillac 2004
+616. lafite rothschild 1er grand cru classe pauillac 2003
+617. lafite rothschild 1er grand cru classe pauillac 2003
+618. lafite rothschild 1er grand cru classe pauillac 2002
+619. lafite rothschild 1er grand cru classe pauillac 2001
+620. lafite rothschild 1er grand cru classe pauillac 1995
+621. lafite rothschild 1er grand cru classe pauillac 1993
+622. lafite rothschild 1er grand cru classe pauillac 1993
+623. lafite rothschild 1er grand cru classe pauillac 1988
+624. lafite rothschild 1er grand cru classe pauillac 1984
+625. lafite rothschild 1er grand cru classe pauillac 1984
+626. lafite rothschild 1999
+627. lafite rothschild 1999
+628. lafite rothschild 1998
+629. lafite rothschild 1998
+630. lafite rothschild 1997
+631. lafite rothschild 1997
+632. lafite rothschild 1996 rp100
+633. lafite rothschild 1996 pauillac
+634. lafite rothschild 1996
+635. lafite rothschild 1996
+636. lafite rothschild 1996
+637. lafite rothschild 1996
+638. lafite rothschild 1995 pauillac
+639. lafite rothschild 1995
+640. lafite rothschild 1995
+641. lafite rothschild 1995
+642. lafite rothschild 1994 pauillac
+643. lafite rothschild 1994
+644. lafite rothschild 1994
+645. lafite rothschild 1994
+646. lafite rothschild 1993
+647. lafite rothschild 1993
+648. lafite rothschild 1992
+649. lafite rothschild 1991
+650. lafite rothschild 1990
+651. lafite rothschild 1990
+652. lafite rothschild 1990
+653. lafite rothschild 1990
+654. lafite rothschild 1990
+655. lafite rothschild 1989 pauillac
+656. lafite rothschild 1989
+657. lafite rothschild 1988
+658. lafite rothschild 1988
+659. lafite rothschild 1987
+660. lafite rothschild 1987
+661. lafite rothschild 1986
+662. lafite rothschild 1986
+663. lafite rothschild 1985
+664. lafite rothschild 1985
+665. lafite rothschild 1985
+666. lafite rothschild 1984
+667. lafite rothschild 1983
+668. lafite rothschild 1982 pauillac
+669. lafite rothschild 1982 base neck
+670. lafite rothschild 1982
+671. lafite rothschild 1982
+672. lafite rothschild 1981
+673. lafite rothschild 1980
+674. lafite rothschild 1979 pauillac
+675. lafite rothschild 1979
+676. lafite rothschild 1979
+677. lafite rothschild 1978
+678. lafite rothschild 1975
+679. lafite rothschild 1974 sdl
+680. lafite rothschild 1974
+681. lafite rothschild 1970 pauillac upper shoulder
+682. lafite rothschild 1970 pauillac mid shoulder
+683. lafite rothschild 1970 pauillac
+684. lafite rothschild 1961 pauillac top shoulder
+685. lafite rothschild 1945
+686. lafite rothschild
+687. lafite rothschild
+688. lafite rothschild
+689. lafite rothschild
+690. lafite rothschild
+691. lafite rothschild
+692. lafite rothschild
+693. lafite pauillac 2021
+694. lafite pauillac 2020
+695. lafite pauillac 2020
+696. lafite pauillac 2017
+697. lafite pauillac 2017
+698. lafite pauillac 2015
+699. lafite pauillac 2015
+700. lafite pauillac 1978
+701. lafite pauillac 1959
+702. lafite pauillac 1899 recorked in 1992
+703. lafite pauillac 1899 recorked in 1992
+704. lafite pauillac 1899 recorked in 1981
+705. lafite pauillac 1899 recorked in 1981
+706. lafite pauillac 1895 recorked in 1987
+707. lafite pauillac 1895 recorked in 1987
+708. lafite pauillac 1893 recorked in 1992
+709. lafite pauillac 1893 recorked in 1992
+710. lafite pauillac 1893 recorked in 1992
+711. lafite pauillac 1892 recorked in 1953 1983
+712. lafite pauillac 1892 recorked in 1953 1983
+713. lafite pauillac 1891 recorked in 1980s
+714. lafite pauillac 1891 recorked in 1980s
+715. lafite pauillac 1877 recorked in 1983
+716. lafite pauillac 1877 recorked in 1983
+717. lafite pauillac 1875 recorked
+718. lafite pauillac 1875 recorked
+719. lafite pauillac 1874 recorked in 1992
+720. lafite pauillac 1874 recorked in 1992
+721. lafite pauillac 1874 recorked in 1986
+722. lafite pauillac 1874 recorked in 1986
+723. lafite pauillac 1874 recorked in 1983label damage
+724. lafite pauillac 1874 recorked in 1983label damage
+725. lafite pauillac 1874 reconditioned in 1986
+726. lafite pauillac 1874 reconditioned in 1986
+727. lafite pauillac 1872 recorked in 1983
+728. lafite pauillac 1872 recorked in 1983
+729. lafite pauillac 1870 glamis castlerecorked in 1992
+730. lafite pauillac 1870 glamis castlerecorked in 1992
+731. lafite pauillac 1870 glamis castle low level
+732. lafite pauillac 1870 glamis castle low level
+733. lafite pauillac 1869 reconditionedlabel damaged
+734. lafite pauillac 1868 recorked in 1992
+735. lafite pauillac 1868 recorked in 1992
+736. lafite pauillac 1865 recorked in 1983
+737. lafite pauillac 1865 recorked in 1983
+738. lafite pauillac 1864 recorked in 1992
+739. lafite pauillac 1864 recorked in 1992
+740. lafite pauillac 1864 recorked in 1992
+741. lafite moulin de duhart
+742. lafite midshoulder fill damaged label and cap 1976
+743. lafite midshoulder damaged lable 1963
+744. lafite mid shoulder fill worn label 1966
+745. lafite les legendes r bordeaux rouge 2020
+746. lafite les legendes r bordeaux blanc 2018
+747. lafite legendes saint emilion
+748. lafite legendes pauillac
+749. lafite legende r pauillac ac
+750. lafite history case owc6 950003091015
+751. lafite decade case collection owc6 900010
+752. lafite damaged label 1996
+753. lafite collection legende rouge bot
+754. lafite collection legende blanc bot
+755. lafite blason de levangile
+756. lafite 2010 6pack owc
+757. lafite 2010
+758. lafite 2010
+759. lafite 2009 6pack owc purchased on release
+760. lafite 2009
+761. lafite 2006
+762. lafite 2005 12pack owc purchased on release
+763. lafite 2005
+764. lafite 2003
+765. lafite 2003
+766. lafite 2003
+767. lafite 2000 slightly tissued stained label
+768. lafite 2000 slightly soiled label
+769. lafite 2000
+770. lafite 1998
+771. lafite 1998
+772. lafite 1997
+773. lafite 1996 6pack owc purchased on release
+774. lafite 1996
+775. lafite 1995
+776. lafite 1994
+777. lafite 1994
+778. lafite 1993
+779. lafite 1992
+780. lafite 1991
+781. lafite 1990 top shoulder
+782. lafite 1990
+783. lafite 1990
+784. lafite 1990
+785. lafite 1989
+786. lafite 1988
+787. lafite 1986
+788. lafite 1983
+789. lafite 1982 upper shoulder corroded capsule
+790. lafite 1982 midshoulder
+791. lafite 1982
+792. lafite 1981 3liter
+793. lafite 1980
+794. lafite 1966
+795. lafite 1952 mid shoulder
+796. lafite
+797. lafite
+798. lafiesta edes elmeny voros edes csavarkupakos 075
+799. lafiesta edes elmeny voros edes bor 075
+800. lafiesta edes elmeny rose edes bor 075
+801. lafiesta edes elmeny feher cuvee edes bor 075
+802. laficaia sbarbata
+803. laficaia olijfolie
+804. laficaia langhe nebbiolo 0
+805. laficaia langhe barbera dasti 0
+806. laficaia gavi di gavi docg
+807. laficaia gavi di gavi
+808. laficaia gavi di gavi
+809. laficaia chardonnay doc
+810. laficaia barolo docg 2016
+811. laficaia barolo docg 2016
+812. laficaia barolo 2019
+813. laficaia barolo 2014
+814. laficaia barolo
+815. laficaia barolo
+816. laficaia barbera dasti docg 2022
+817. laficaia barbera dasti docg 2022
+818. laficaia barbera dasti docg 2018
+819. laficaia barbera dasti docg 2018
+820. laficaia barbera dasti
+821. laficaia barbera dasti
+822. laficaia babera d asti
+823. lafi spirit meggylikor 05 pdd 2 pohar 25
+824. lafi spirit baracklikor 05 pdd 2 pohar 25
+825. lafi hugo sex on the beach 0 drs
+826. lafi hugo frizzante tropical mix 0 drs
+827. lafi hugo frizzante aperitivo 0 drs
+828. lafi hugo dinnye mix 0 drs
+829. lafi hugo bodzamentalime 0 drs
+830. lafi hugo blue lagoon 0 drs
+831. lafi fruit puncs 0 6 boralapu koktel drs
+832. laffy taffy strawberry
+833. laffy taffy rope strawberry 24ct
+834. laffy taffy rope blue raspberry 24ct
+835. laffy taffy cherry 23g
+836. laffut aop touraine blanc 2020
+837. laffut aop touraine blanc 2020
+838. laffut aop touraine blanc 2020
+839. laffreux jojo 2022
+840. laffont haut medoc vieilles vignes
+841. laffitteteston zeste
+842. laffitteteston vieilles vignes
+843. laffitteteston reve dautomne
+844. laffitteteston reflet du terroir
+845. laffitteteston ericka
+846. laffitte sauvignon blanc gros manseng 13 0
+847. laffitte petit gascoun blanc 20
+848. laffitte laujac medoc 2019
+849. laffitte gros mansengpetit manseng 115 0
+850. laffitte carcasset saintestephe 2020
+851. laffiorato fruttato leggero extra panensky olivovy olej
+852. laffiorante umbria marfuga evo oil monocultivar moraiolo
+853. laffiche des vins de france
+854. laffay chablis vieilles vignes 2020
+855. laffay chablis vaillons 2020
+856. laffali asti docg sparkling wine 75 italy
+857. laffali asti 7075 075
+858. laffacciatoio 2023 giacomo baraldo
+859. laffacciatoio 2023 giacomo baraldo
+860. laferte tourbe
+861. laferte tourbe
+862. laferte tourbe
+863. laferte tourbe
+864. laferte tourbe
+865. laferte laferte
+866. laferte classique
+867. laferte classique
+868. laferte classique
+869. laferte classique
+870. laferte blended malt
+871. laferrari piros taviranyitos auto 124 aranyban
+872. lafer fischfond 0
+873. lafbox
+874. lafazym 600 xl ice clarificacion rapida de mostos y vinos
+875. lafazanis winery igp peloponnese rouge 2020
+876. lafazanis winery igp peloponnese rouge 2020
+877. lafazanis winery igp peloponnese rouge 2020
+878. lafazanis winery igp peloponnese rouge 2020
+879. lafazanis retsina nv 3 990 ft 0 ft
+880. lafazanis moschofilero
+881. lafazanis geometria malagouzia 2022
+882. lafazanis geometria assyrtiko white
+883. lafazanis geometria agiorgitiko red
+884. lafazanis filema 2005
+885. lafazanis assyrtiko
+886. lafayette street
+887. lafayette
+888. lafauriepeyraguey 2001
+889. lafauriepeyraguey 2001
+890. lafauriepeyraguey 2001
+891. lafauriepeyraguey 2001
+892. lafauriepeyraguey
+893. lafaurie peyraguey 2022
+894. lafaurie peyraguey 2007
+895. lafaurie peyraguey 2005
+896. lafaurie peyraguey 2003 sauternes
+897. lafaurie peyraguey 2003
+898. lafaurie peyraguey 1988
+899. lafaurie peyraguey
+900. lafaurie peyraguey
+901. lafaurie peyraguey
+902. lafaurie peyraguey
+903. lafaurie peyraguey
+904. lafargue pessac leognan
+905. lafargevial fleurie clos vernay 2023
+906. lafargevial fleurie clos vernay 2022
+907. lafargevial fleurie clos vernay 2020
+908. lafargevial fleurie clos vernay 2016
+909. lafargevial fleurie bel air 2017
+910. lafargevial fleurie 22
+911. lafargevial fleurie 2023
+912. lafargevial fleurie 2023
+913. lafargevial fleurie 2022
+914. lafargevial cote de brouilly 22
+915. lafargevial cote de brouilly 2022
+916. lafargevial cote de brouilly 2016
+917. lafargevial chiroubles 22
+918. lafargevial chiroubles 2023
+919. lafargevial 2016 fleurie la joie de palais
+920. lafargevial 2016 fleurie clos vernay
+921. lafargevial 2014 fleurie clos vernay
+922. lafargevial 2014 fleurie bel air
+923. lafargevial 2014 chiroubles
+924. lafarge volnay vendanges selectionees 2019
+925. lafarge volnay les mitans 2020
+926. lafarge volnay les mitans 2019
+927. lafarge volnay les mitans 2017
+928. lafarge volnay les mitans 2015
+929. lafarge volnay les cinq climats 1er cru 2021
+930. lafarge volnay les caillerets 2016
+931. lafarge volnay les caillerets 2011
+932. lafarge volnay clos du chateau des ducs monopole 1er cr
+933. lafarge volnay clos du chateau des ducs 2020
+934. lafarge volnay clos du chateau des ducs 2019
+935. lafarge volnay clos du chateau des ducs 2017
+936. lafarge volnay clos du chateau des ducs 2009
+937. lafarge volnay clos du chateau des ducs 1993 3cm fill slightly soiled label
+938. lafarge volnay clos des chenes 2020
+939. lafarge volnay clos des chenes 2017
+940. lafarge volnay clos des chenes 2009
+941. lafarge volnay clos des chenes 2006
+942. lafarge volnay clos des chenes 2002
+943. lafarge volnay clos des chenes 2002
+944. lafarge volnay clos des chenes 1990 label damage
+945. lafarge volnay clos de chenes 1er cru 2020
+946. lafarge volnay 2022 cote de beaune
+947. lafarge volnay 2022
+948. lafarge volnay 2022
+949. lafarge volnay 2021 cote de beaune
+950. lafarge volnay 2019
+951. lafarge volnay 1er cru clos des ducs 1990
+952. lafarge vial la joie du palais fleurie 2016
+953. lafarge vial fleurie vernay 2023
+954. lafarge vial fleurie jois du palais 2019
+955. lafarge vial fleurie jois du palais 2018
+956. lafarge vial fleurie jois du palais 2016
+957. lafarge vial fleurie jois chiroubles 2019
+958. lafarge vial fleurie jois chiroubles 2018
+959. lafarge vial fleurie jois chiroubles 2017
+960. lafarge vial fleurie joie palais
+961. lafarge vial fleurie joie du palais 2023
+962. lafarge vial fleurie joie du palais 2023
+963. lafarge vial fleurie joie du palais 2022
+964. lafarge vial fleurie joie du palais 20 2020
+965. lafarge vial fleurie joie du palais 16 2016
+966. lafarge vial fleurie clos vernay 2023
+967. lafarge vial fleurie clos vernay 2019
+968. lafarge vial fleurie clos vernay 2018
+969. lafarge vial fleurie clos vernay 2017
+970. lafarge vial fleurie clos vernay 2017
+971. lafarge vial fleurie clos vernay 16 2016
+972. lafarge vial fleurie 22 2022
+973. lafarge vial fleurie 22
+974. lafarge vial fleurie 2023
+975. lafarge vial fleurie 2022
+976. lafarge vial fleurie 2022
+977. lafarge vial fleurie 2019
+978. lafarge vial fleurie 2018
+979. lafarge vial fleurie 2017
+980. lafarge vial fleurie 19 2019
+981. lafarge vial cote de brouilly 22 2022
+982. lafarge vial cote de brouilly 2019
+983. lafarge vial cote de brouilly 2018
+984. lafarge vial cote de brouilly 2017
+985. lafarge vial cote de brouilly 2016
+986. lafarge vial cote brouilly
+987. lafarge vial clos fleurie 2023
+988. lafarge vial clos fleurie 2022
+989. lafarge vial chiroubles 2020
+990. lafarge vial brouilly cote de brouilly
+991. lafarge raisins dores aligote
+992. lafarge pommard les pezerolles 2020
+993. lafarge pommard 1er cru les pezerolles 2018
+994. lafarge meursault 2022
+995. lafarge meursault 2022
+996. lafarge meursault 2021 cote de beaune
+997. lafarge meursault 2020 cote de nuits
+998. lafarge lexception bourgogne passetoutgrain
+999. lafarge lexception bourgogne passetoutgrain
+1000. lafarge bourgogne pinot noir 2022

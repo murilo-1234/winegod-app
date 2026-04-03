@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. cote rotie la blonde du seigneur rouge 2022 domaine georges vernay
+2. cote rotie la brocarde 2019 christophe billon
+3. cote rotie la brocarde domaine billon cote rotie 2020
+4. cote rotie la dedicace domaine nicolas champagneux
+5. cote rotie la giroflarie 2022 patrick jasmin
+6. cote rotie la giroflarie 2023 patrick jasmin
+7. cote rotie la giroflarie jasmin cote rotie 2023
+8. cote rotie la landnne 1999 syrah
+9. cote rotie la landonne
+10. cote rotie la landonne
+11. cote rotie la landonne
+12. cote rotie la landonne
+13. cote rotie la landonne 2003
+14. cote rotie la landonne 2005 domaine rostaing
+15. cote rotie la landonne 2010 domaine rostaing
+16. cote rotie la landonne 2013 domaine jeanmichel gerin
+17. cote rotie la landonne 2014
+18. cote rotie la landonne 2016
+19. cote rotie la landonne 2016
+20. cote rotie la landonne 2017
+21. cote rotie la landonne 2018
+22. cote rotie la landonne 2019
+23. cote rotie la landonne 2019
+24. cote rotie la landonne 2019 maison delas
+25. cote rotie la landonne 2020
+26. cote rotie la landonne 2020 jean michel gerin
+27. cote rotie la landonne 2021 domaine jean michel gerin
+28. cote rotie la landonne 2021 domaine jean michel gerin
+29. cote rotie la landonne 2021 domaine jean michel gerin
+30. cote rotie la landonne 2021 domaine jean michel gerin
+31. cote rotie la landonne 2021 domaine rostaing
+32. cote rotie la landonne 2023 domaine rostaing
+33. cote rotie la landonne delas 2015
+34. cote rotie la landonne delas freres
+35. cote rotie la landonne domaine rostaing
+36. cote rotie la landonne guigal 2018 frankrijk rhone rood
+37. cote rotie la landonne rostaing cote rotie magnum 1 1991
+38. cote rotie la mouline 1997 guigal
+39. cote rotie la mouline 2004 guigal
+40. cote rotie la mouline domaine e guigal 2012 frankrijk rhone rood
+41. cote rotie la mouline guigal 2013 0750 rhone frankrijk
+42. cote rotie la mouline guigal 2016
+43. cote rotie la mouline guigal 2017 frankrijk rhone rood
+44. cote rotie la mouline guigal 2018 frankrijk rhone rood
+45. cote rotie la peroline 2001 levet
+46. cote rotie la porchette
+47. cote rotie la rose brune rouge 2022 domaine chirat
+48. cote rotie la sarrasine
+49. cote rotie la sereine noire 2012 domaine gangloff
+50. cote rotie la sereine noire 2014 domaine gangloff
+51. cote rotie la turque 1999 syrah viognier
+52. cote rotie la turque 2016
+53. cote rotie la turque guigal 2017 frankrijk rhone rood
+54. cote rotie la turque guigal 2018 frankrijk rhone rood
+55. cote rotie la turque rouge 2020 guigal
+56. cote rotie la turque rouge 2021 guigal
+57. cote rotie la turque rouge 2022 guigal
+58. cote rotie la viaillere domaine rostaing
+59. cote rotie la viailliere 2022 domaine rostaing
+60. cote rotie la vialliere 2021 domaine jean michel gerin
+61. cote rotie la vialliere 2021 domaine jean michel gerin
+62. cote rotie la vialliere 2021 domaine jean michel gerin
+63. cote rotie la vialliere 2021 domaine jean michel gerin
+64. cote rotie la vialliere 2021 domaine jean michel gerin
+65. cote rotie la vialliere dom s ogier 2016
+66. cote rotie lancement
+67. cote rotie lancement 2005 domaine stephane ogier
+68. cote rotie lancement 2009 domaine stephane ogier
+69. cote rotie lancement 2010 domaine stephane ogier
+70. cote rotie lancement 2011 domaine stephane ogier
+71. cote rotie lancement 2012 domaine stephane ogier
+72. cote rotie lancement 2017
+73. cote rotie lavau rouge
+74. cote rotie le champon dom s ogier 2010
+75. cote rotie le gallet blanc 2018
+76. cote rotie le gallet blanc 2021
+77. cote rotie le gallet blanc 2022 francois villard
+78. cote rotie le truchet eymin tichoux 2023
+79. cote rotie les becasses chapoutier
+80. cote rotie les binardes 2020 maison stephan
+81. cote rotie les binardes 2020 maison stephan bd vin nature
+82. cote rotie les binardes 2020 maison stephan bd vin nature
+83. cote rotie les binardes 2022 maison stephan
+84. cote rotie les binardes aoc 2019
+85. cote rotie les elotins domaine billon cote rotie 2022
+86. cote rotie les elotins domaine billon cote rotie 2022
+87. cote rotie les grand places 2021 domaine jean michel gerin
+88. cote rotie les grand places 2021 domaine jean michel gerin
+89. cote rotie les grand places 2021 domaine jean michel gerin
+90. cote rotie les grand places 2021 domaine jean michel gerin
+91. cote rotie les grand places 2021 domaine jean michel gerin
+92. cote rotie les grandes places 2003 domaine gerin
+93. cote rotie les grandes places 2005 domaine de monteillet montez
+94. cote rotie les grandes places 2015
+95. cote rotie les grandes places 2020 clusel roch
+96. cote rotie les grandes places 2023 jean michel gerin
+97. cote rotie les grandes places cluselroch 2021
+98. cote rotie les grandes places domaine nicolas champagneux
+99. cote rotie les jumelles
+100. cote rotie les jumelles
+101. cote rotie les jumelles 2021
+102. cote rotie les lauzieres 2014 tardieu laurent
+103. cote rotie les meandres guy bernard vin rouge 2023
+104. cote rotie les pirelles 2015 jaboulet aine
+105. cote rotie les rochins 2022 domaine francois et fils
+106. cote rotie les schistes 2017 clusel roch
+107. cote rotie les triotes 2016 jean francois et carmen garon
+108. cote rotie lieu dit
+109. cote rotie lultime 2021 maison stephan
+110. cote rotie lultime 2021 maison stephan bd vin nature
+111. cote rotie lultime 2021 maison stephan bd vin nature
+112. cote rotie lultime jean michel stephan 2021
+113. cote rotie madiniere
+114. cote rotie madiniere 2006 cuilleron
+115. cote rotie magnum 1 2019 domaine b burgaud
+116. cote rotie maison mourier pierre blanche
+117. cote rotie maison rouge 2017 domaine georges vernay
+118. cote rotie maison rouge 2020 georges vernay
+119. cote rotie mes grands lieux dom s ogier 2016
+120. cote rotie mon village dom s ogier 2021
+121. cote rotie mordoree 2010 chapoutier
+122. cote rotie neve m chapoutier
+123. cote rotie neve m chapoutier
+124. cote rotie olea 2022 patrick jasmin
+125. cote rotie olea jasmin cote rotie 2022
+126. cote rotie patrick jasmin 2001
+127. cote rotie patrick jasmin 2001
+128. cote rotie patrick jasmin 2001
+129. cote rotie perrin
+130. cote rotie pierre gaillard 2023 frankrijk rhone rood
+131. cote rotie pierre gaillard aoc 2020
+132. cote rotie prelude 2021 jocelyne et yves lafoy
+133. cote rotie prelude 2023 jocelyne et yves lafoy
+134. cote rotie prenelle 2018 clos de la bonette
+135. cote rotie prenelle clos de la bonnette 2023
+136. cote rotie promesse 2020 christophe pichon
+137. cote rotie promesse 2021
+138. cote rotie promesse rouge 2022 domaine christophe pichon
+139. cote rotie quartett
+140. cote rotie quatour m chapoutier
+141. cote rotie quatour m chapoutier
+142. cote rotie quatuor
+143. cote rotie quatuor
+144. cote rotie reserve 2012 domaine stephane ogier
+145. cote rotie rose pourpre gaillard 2021
+146. cote rotie rose purpura
+147. cote rotie rouge 2022 chateau de saint cosme
+148. cote rotie rouge 2022 les alexandrins
+149. cote rotie rouge 2022 les alexandrins
+150. cote rotie rouge 2022 les alexandrins
+151. cote rotie rouge 2023 les alexandrins
+152. cote rotie rouge 2023 les alexandrins
+153. cote rotie rouge 2023 les alexandrins
+154. cote rotie rouge 2023 les alexandrins
+155. cote rotie rouge 2023 les alexandrins
+156. cote rotie rouge laur meffre
+157. cote rotie rozier 2021 domaine de la roche paradis
+158. cote rotie rozier 2023 domaine francois et fils
+159. cote rotie rozier rouge 2021 domaine christophe pichon
+160. cote rotie saint cosme 2020
+161. cote rotie seigneur de maugiron
+162. cote rotie seigneur de maugiron 2003 delas
+163. cote rotie seigneur de maugiron 2020 delas freres
+164. cote rotie seigneur de maugiron 2020 delas freres
+165. cote rotie seigneur de maugiron 2020 delas freres
+166. cote rotie seigneur de maugiron 2021 maison delas
+167. cote rotie seigneur de maugiron 2021 rr delas
+168. cote rotie seigneur de maugiron 2022 rr delas
+169. cote rotie seigneur de maugiron 2023 delas freres
+170. cote rotie seigneur de maugiron 2023 rr delas
+171. cote rotie seigneur de maugiron delas freres
+172. cote rotie seigneur de maugiron maison delas 2021
+173. cote rotie seigneur de maugiron maison delas 2022
+174. cote rotie so brune 2022 maison stephan
+175. cote rotie stephane ogier mon village
+176. cote rotie stephane ogier mon village 2015
+177. cote rotie syrah 2017 domaine jamet
+178. cote rotie tardieu laurent
+179. cote rotie terrasses jeanluc jamet vin rouge 2019
+180. cote rotie terre sombre 2014 cave yves cuilleron
+181. cote rotie tess 2020 christophe pichon
+182. cote rotie village 2022 domaine stephane ogier
+183. cote rotie village 2022 domaine stephane ogier
+184. cote rotie village 2022 domaine stephane ogier
+185. cote rotie village 2022 domaine stephane ogier
+186. cote rotie village 2022 domaine stephane ogier
+187. cote rousse
+188. cote rousse 2019 075
+189. cote sainteepine
+190. cote sainteepine ste epine lelegance
+191. cote soleil
+192. cote soleil chardonnay nieuwe naam dame adelaide
+193. cote soleil merlot nieuwe naam dame adelaide
+194. cote soleil sauvignon blanc nieuwe naam dame adelaide
+195. cote soleil syrah rose dame adelaide nieuwe naam
+196. cote sta rita hills pinot noir
+197. cote sud domaine lafage 2023
+198. cote suzette 2022 ventoux chateau redortier prijs inclbtw
+199. cote syrah aoc valais
+200. cote to cote 12 month gift
+201. cote to cote 3 month gift
+202. cote to cote 6 month gift
+203. cote to cote a burgundy wine club by flatiron wines
+204. cote ventoux ogier
+205. cote wino 0 bpw
+206. cote wino 0 cpw
+207. cote wino 075 bps
+208. cote wino 075 cps
+209. cote wino rose rpw 07
+210. coteau 85 2018
+211. coteau barrage
+212. coteau bourguignon gamay 2023
+213. coteau champenois les vinages
+214. coteau dancenis tresor dantan malvoisie
+215. coteau de bruno 2021
+216. coteau de chalamont
+217. coteau de la mort
+218. coteau de la mort 2015 antoine petitprez
+219. coteau de la mort 2019 domaine des cotes rousses
+220. coteau de la mort 2020 domaine des cotes rousses
+221. coteau de la mort 2022 domaine des cotes rousses
+222. coteau de la mort 2023 domaine des cotes rousses
+223. coteau de la mort aop savoie rouge domaine des cotes rousses
+224. coteau de la mort saintjeandelaporte domaine des cotes rousses
+225. coteau de lara
+226. coteau de lara
+227. coteau de rosette
+228. coteau de rosette 2022
+229. coteau de rosette 2023
+230. coteau de rosette chablis
+231. coteau de rosette chablis 2022 domaine de moor
+232. coteau de vernon
+233. coteau de verschiez
+234. coteau de verschiez amphore
+235. coteau de verschiez amphore pot vaudois
+236. coteau de verschiez pot vaudois
+237. coteau de vincy grand cru chasselas aoc la cote
+238. coteau du bruno
+239. coteau du houet
+240. coteau du languedoc blanc les pierres dargent chateau de lascaux
+241. coteau libre blanc 2015
+242. coteau libre le rouge bio 2022 bernard fleuriet et fils
+243. coteau libre rouge 2016
+244. coteau pavot grenache gris orange wine
+245. coteau roux
+246. coteaudulanguedoc paul mas clos des mures ac
+247. coteaux aix en provence bio rose selection de la coste
+248. coteaux blanc 2021 chardonnay sous voile terroirs le mesnil oger grand cru domaine vincey
+249. coteaux bourgignons
+250. coteaux bourgignons rouge le ptit bonheur
+251. coteaux bourguignon 2021
+252. coteaux bourguignon appellation controlee lambroise 2023 jeremy recchione
+253. coteaux bourguignon aux batailles
+254. coteaux bourguignon blanc 2022 laurent dufouleur
+255. coteaux bourguignon blanc cuvee julie 2023 domaine anne gros
+256. coteaux bourguignon en creot 2022 domaine rocault
+257. coteaux bourguignon rouge
+258. coteaux bourguignon rouge 2013
+259. coteaux bourguignon rouge 2022 laurent dufouleur
+260. coteaux bourguignon rouge 2023 maison chatelet
+261. coteaux bourguignon rouge buissonier
+262. coteaux bourguignon rouge vieilles vignes 2023 domaine anne gros
+263. coteaux bourguignon tradition domaine stephane magnien 2020
+264. coteaux bourguignon tradition domaine stephane magnien 2021
+265. coteaux bourguignon tradition domaine stephane magnien 2022
+266. coteaux bourguignons
+267. coteaux bourguignons
+268. coteaux bourguignons
+269. coteaux bourguignons
+270. coteaux bourguignons
+271. coteaux bourguignons
+272. coteaux bourguignons
+273. coteaux bourguignons
+274. coteaux bourguignons
+275. coteaux bourguignons
+276. coteaux bourguignons
+277. coteaux bourguignons
+278. coteaux bourguignons
+279. coteaux bourguignons
+280. coteaux bourguignons
+281. coteaux bourguignons
+282. coteaux bourguignons
+283. coteaux bourguignons
+284. coteaux bourguignons
+285. coteaux bourguignons
+286. coteaux bourguignons
+287. coteaux bourguignons 0
+288. coteaux bourguignons 2016 amarine rood
+289. coteaux bourguignons 2018
+290. coteaux bourguignons 2019
+291. coteaux bourguignons 2019
+292. coteaux bourguignons 2019
+293. coteaux bourguignons 2019
+294. coteaux bourguignons 2019
+295. coteaux bourguignons 2019
+296. coteaux bourguignons 2019 domaine amarine closerie des alisiers burgundia france
+297. coteaux bourguignons 2019 domaine dureuiljanthial
+298. coteaux bourguignons 2020
+299. coteaux bourguignons 2020
+300. coteaux bourguignons 2020
+301. coteaux bourguignons 2020
+302. coteaux bourguignons 2020
+303. coteaux bourguignons 2020
+304. coteaux bourguignons 2020
+305. coteaux bourguignons 2020 domaine dureuiljanthial
+306. coteaux bourguignons 2020 ved 3 stk 22000 stk
+307. coteaux bourguignons 2021
+308. coteaux bourguignons 2021
+309. coteaux bourguignons 2021
+310. coteaux bourguignons 2021 blanc jadot
+311. coteaux bourguignons 2022
+312. coteaux bourguignons 2022
+313. coteaux bourguignons 2022 domaine gault
+314. coteaux bourguignons 2022 dureuiljanthial
+315. coteaux bourguignons 2022 rouge grande cadole by vignerons de bel air
+316. coteaux bourguignons 2022 stephane magnien
+317. coteaux bourguignons 2023
+318. coteaux bourguignons 2023 domaine dureuiljanthial
+319. coteaux bourguignons 2024
+320. coteaux bourguignons 2024
+321. coteaux bourguignons 2024 baronne du bry
+322. coteaux bourguignons 4555 maison renaud boyer
+323. coteaux bourguignons a bichot
+324. coteaux bourguignons albert bichot
+325. coteaux bourguignons aligote x chardonnay petit aigle tilapaisesti loppu
+326. coteaux bourguignons aoc 2019 albert bichot cervene suche 0
+327. coteaux bourguignons aoc blanc 2022 domaine prieure roch
+328. coteaux bourguignons aoc gamay 2022 domaine prieure roch
+329. coteaux bourguignons aoc rouge 2023 patrick clerget
+330. coteaux bourguignons aoc vignerons de buxy 2022
+331. coteaux bourguignons aop julien altaber cuvee sextant rouge 2021
+332. coteaux bourguignons bio de lamour et du vin domaine de rotisson 2023
+333. coteaux bourguignons blanc
+334. coteaux bourguignons blanc 2023
+335. coteaux bourguignons blanc 2023 baronne du bry
+336. coteaux bourguignons blanc 50th anniversary 2019
+337. coteaux bourguignons blanc chateau de chemilly chardonnay
+338. coteaux bourguignons blanc en riottes
+339. coteaux bourguignons blanc grande cadole 2021 vignerons de bel air
+340. coteaux bourguignons blanc jerome galeyrand
+341. coteaux bourguignons blanc la vigne du petit poirier domaine francois carillon
+342. coteaux bourguignons blanc le ptit bonheur
+343. coteaux bourguignons blanc leclos des abeilles domaine de bellene 2020 frankrijk bourgogne wit
+344. coteaux bourguignons blanc leclos des abeilles domaine de bellene 2022 frankrijk bourgogne wit
+345. coteaux bourguignons blanc leclos des abeilles domaine de bellene 2023 frankrijk bourgogne wit
+346. coteaux bourguignons blanc lettre deloise
+347. coteaux bourguignons blanc louis jadot burgundy france 202122 125 vol
+348. coteaux bourguignons blanc renaud boyer 2023
+349. coteaux bourguignons blanc vieilles vignes magnatum 2020 bernard rion
+350. coteaux bourguignons bouthenet
+351. coteaux bourguignons buissonnier rouge 2020
+352. coteaux bourguignons chapuis chapuis coteauxbourguignons rouge 2023
+353. coteaux bourguignons chardonnay
+354. coteaux bourguignons chardonnay 2022 castagnier
+355. coteaux bourguignons chardonnay 2023 castagnier
+356. coteaux bourguignons chardonnay au gue 2023 domaine hubert lignier
+357. coteaux bourguignons chardonnay ko domaine philippe bouzereau
+358. coteaux bourguignons chardonnay maison de la cabotte 2023 frankrijk bourgogne wit
+359. coteaux bourguignons de lamour et du vin domaine rotisson 2022
+360. coteaux bourguignons domaine du moulin de foulot
+361. coteaux bourguignons domaine geantet pansiot
+362. coteaux bourguignons domaine joseph roty 2020 frankrijk bourgogne rood
+363. coteaux bourguignons domaine joseph roty 2021 frankrijk bourgogne rood
+364. coteaux bourguignons domaine joseph roty 2022 frankrijk bourgogne rood
+365. coteaux bourguignons domaine vincent bouzereau 2022
+366. coteaux bourguignons double zero
+367. coteaux bourguignons dureuiljanthial 2020
+368. coteaux bourguignons eclos des abeilles domaine de bellene 2021 frankrijk bourgogne wit
+369. coteaux bourguignons en blignee 2023
+370. coteaux bourguignons frederic leprince
+371. coteaux bourguignons gamay 2022 1 mag
+372. coteaux bourguignons gamay fin aop 2023
+373. coteaux bourguignons gege 2021
+374. coteaux bourguignons grand qv gamay 2015
+375. coteaux bourguignons hommage a marie de bourgogne
+376. coteaux bourguignons hommage a marie de bourgogne 2022 domaine louis chavy
+377. coteaux bourguignons hommage a marie de bourgogne red
+378. coteaux bourguignons la chaume des lies
+379. coteaux bourguignons la grande cadole 2021 ancienne grande qv vignerons de bel air
+380. coteaux bourguignons la pointure 2020 domaine henri richard
+381. coteaux bourguignons la pointure 2022 domaine henri richard
+382. coteaux bourguignons la superbe 2022
+383. coteaux bourguignons la superbe mongeardmugneret 2020
+384. coteaux bourguignons lambroise 2023 jeremy recchione
+385. coteaux bourguignons le pierrot aoc 2023
+386. coteaux bourguignons leclos des abeilles 2020 domaine de bellene
+387. coteaux bourguignons les colombiers
+388. coteaux bourguignons les glapignys 2022 blanc domaine jeanpierre guyon
+389. coteaux bourguignons les longerons 2022 rouge domaine alexis de benoist
+390. coteaux bourguignons lettre deloise pinot noir ambroise 2022
+391. coteaux bourguignons liberty
+392. coteaux bourguignons maison de la cabotte 2023 frankrijk bourgogne rood
+393. coteaux bourguignons maison fatien pere fils 2020
+394. coteaux bourguignons marthe henry boillot 2021
+395. coteaux bourguignons moillard grivot 2024 rg
+396. coteaux bourguignons mon poulain 2023
+397. coteaux bourguignons mon poulain les horees 2021
+398. coteaux bourguignons pillot
+399. coteaux bourguignons pinot noir 2022 castagnier
+400. coteaux bourguignons pinot noir 2023
+401. coteaux bourguignons pinot noir 2023 castagnier
+402. coteaux bourguignons pinot noir clos aux eglises 2021 domaine philippe naddef
+403. coteaux bourguignons pur pinot noir 2023 stephane magnien
+404. coteaux bourguignons pur pinot noir domaine stephane magnien 2022
+405. coteaux bourguignons renaud boyer 2022
+406. coteaux bourguignons rose
+407. coteaux bourguignons rose
+408. coteaux bourguignons rose
+409. coteaux bourguignons rose 2021
+410. coteaux bourguignons rose 2021 elegance til black friday
+411. coteaux bourguignons rose 2023
+412. coteaux bourguignons rose bellenos 2018 frankrijk bourgogne rose
+413. coteaux bourguignons rose domaine chardigny
+414. coteaux bourguignons rose jeanbaptiste jessiaume 2021
+415. coteaux bourguignons rose louis jadot
+416. coteaux bourguignons roue libre 2019 antoine petitprez uliz
+417. coteaux bourguignons rouge
+418. coteaux bourguignons rouge
+419. coteaux bourguignons rouge
+420. coteaux bourguignons rouge
+421. coteaux bourguignons rouge 2020 0
+422. coteaux bourguignons rouge 2021 domaine des rougesqueues
+423. coteaux bourguignons rouge 2022 0
+424. coteaux bourguignons rouge 2022 jerome chezeaux
+425. coteaux bourguignons rouge 2023
+426. coteaux bourguignons rouge 2023 cuvee juliette
+427. coteaux bourguignons rouge domaine amiot fils
+428. coteaux bourguignons rouge domaine chardigny
+429. coteaux bourguignons rouge duc de belmont
+430. coteaux bourguignons rouge la coline
+431. coteaux bourguignons rouge louis jadot burgundy france 2024 135 vol
+432. coteaux bourguignons rouge lpassetoutbien
+433. coteaux bourguignons rouge lupecholet
+434. coteaux bourguignons rouge new 2020 dom laurent
+435. coteaux bourguignons rouge tilapaisesti loppu
+436. coteaux bourguignons sextant julien altaber saint aubin
+437. coteaux bourguignons tradition 2022
+438. coteaux bourguignons trenel
+439. coteaux bourguignons trenel
+440. coteaux bourguignons trenel
+441. coteaux bourguignons vielles vignes cuvee rose 2022 bernard rion
+442. coteaux bourguignons vignoble bel air la grande cadole
+443. coteaux bourguinons 2023 o ma
+444. coteaux bourguinons blanc eclos des abeilles
+445. coteaux champagne ambonnay blanc marguet ambonnay montagne de reims
+446. coteaux champegnois millesime 2019
+447. coteaux champenois
+448. coteaux champenois
+449. coteaux champenois
+450. coteaux champenois 2 pack
+451. coteaux champenois 2015
+452. coteaux champenois 2018 la grapillere
+453. coteaux champenois 2020 loiselu rouge
+454. coteaux champenois 2022
+455. coteaux champenois 2022 champagne chavost
+456. coteaux champenois 2022 de sousa
+457. coteaux champenois 7 cepages
+458. coteaux champenois ambonnay cuvee des grands cotes vieilles vignes 2018 champagne eglyouriet
+459. coteaux champenois ambonnay cuvee des grands cotes vieilles vignes 2020 champagne eglyouriet
+460. coteaux champenois ambonnay cuvee des grands cotes vieilles vignes 2021 champagne eglyouriet
+461. coteaux champenois ambonnay cuvee des grands cotes vieilles vignes 2022 champagne eglyouriet
+462. coteaux champenois ambonnay cuvee des grands cotes vieilles vignes 2023 champagne eglyouriet
+463. coteaux champenois ambonnay rouge 2016 champagne eglyouriet
+464. coteaux champenois ambonnay rouge 2021 charles heidsieck
+465. coteaux champenois ambonnay rouge cuvee des 2022
+466. coteaux champenois ambonnay rouge cuvee des grands cotes vieilles vignes 2016 champagne eglyouriet
+467. coteaux champenois ambonnay rouge cuvee des grands cotes vieilles vignes 2017 champagne eglyouriet
+468. coteaux champenois ambonnay rouge cuvee des grands cotes vieilles vignes 2019 champagne eglyouriet
+469. coteaux champenois aoc en chanzeux 2020 devaux chapoutier
+470. coteaux champenois aoc en chanzeux 2020 devaux chapoutier
+471. coteaux champenois aoc en chanzeux 2020 devaux chapoutier
+472. coteaux champenois aoc en chanzeux 2020 devaux chapoutier
+473. coteaux champenois aoc veuve doussot
+474. coteaux champenois avize chardonnay 2022 benoit munier bd vin nature
+475. coteaux champenois ay blanc grand cru 2022 bereche fils 1800 bottiglie prodotte
+476. coteaux champenois ay grand cru 2022 bereche fils
+477. coteaux champenois ay grand cru 2023
+478. coteaux champenois bdlp bourgeoisdiaz
+479. coteaux champenois blanc
+480. coteaux champenois blanc
+481. coteaux champenois blanc
+482. coteaux champenois blanc
+483. coteaux champenois blanc
+484. coteaux champenois blanc
+485. coteaux champenois blanc 100 chardonnay cuvee no title required after robert ryman vendemmia 2023 jerome lefevre
+486. coteaux champenois blanc 100 meunier cuvee trankill vendemmia 2023 jerome lefevre
+487. coteaux champenois blanc 2019
+488. coteaux champenois blanc 2019
+489. coteaux champenois blanc 2019
+490. coteaux champenois blanc 2019
+491. coteaux champenois blanc 2019 haut revers du chutat
+492. coteaux champenois blanc 2020
+493. coteaux champenois blanc 2020
+494. coteaux champenois blanc 2020 bastien pointillart
+495. coteaux champenois blanc 2022 le mesnil sur oger
+496. coteaux champenois blanc 7 cepages 2020
+497. coteaux champenois blanc aoc vin de comptoir charles dufour
+498. coteaux champenois blanc champagne chavost
+499. coteaux champenois blanc champagne fleury
+500. coteaux champenois blanc confiance franck pascal
+501. coteaux champenois blanc de blancs cramant nature 2018 bonnaire
+502. coteaux champenois blanc de blancs la montagne secree warislarmandier
+503. coteaux champenois blanc gourmand 2009 charles dufour
+504. coteaux champenois blanc gourmand 2010 charles dufour
+505. coteaux champenois blanc il de perdrix 2022
+506. coteaux champenois blanc jacques lassaigne
+507. coteaux champenois blanc la vigne a vovonne 2018 a lamblot 102 bottiglie prodotte
+508. coteaux champenois blanc la vigne a vovonne 2019 a lamblot 80 bottiglie prodotte
+509. coteaux champenois blanc le leon 1er cru hebrart 2016
+510. coteaux champenois blanc ludes premier cru 2022 domaine les monts fournois
+511. coteaux champenois blanc meunier trankill 2023 jerome lefevre
+512. coteaux champenois blanc pehu simonet
+513. coteaux champenois blanc perpetuel 2023 champagne jm seleque
+514. coteaux champenois blanc pierre gerbais celles sur ource aube
+515. coteaux champenois blanc thomas de marne val frison ville sur arce aube
+516. coteaux champenois blanc vendanges 2019 et 2021 o belin
+517. coteaux champenois blanc vieilles vignes loppose 2023 eric taillet
+518. coteaux champenois blanc vieilles vignes loppose 23 eric taillet
+519. coteaux champenois blanc vieux champagne doyard gift box 2020
+520. coteaux champenois blanc vin de comptoir
+521. coteaux champenois blanc vin de comptoir
+522. coteaux champenois blanc vin de comptoir
+523. coteaux champenois blanc vin de comptoir
+524. coteaux champenois blanc vin de comptoir charles dufour
+525. coteaux champenois blanc vin de comptoir l2010 charles dufour
+526. coteaux champenois blanc vin de comptoir l2010 charles dufour
+527. coteaux champenois blanc vin de comptoir l2010 charles dufour
+528. coteaux champenois blc 2018
+529. coteaux champenois bouzy lieudit les mignottes 2019 champagne pierre paillard
+530. coteaux champenois bouzy lieudit les mignottes 2022 champagne pierre paillard
+531. coteaux champenois bouzy rouge
+532. coteaux champenois bouzy rouge 2018 paul clouet
+533. coteaux champenois bouzy rouge 2020
+534. coteaux champenois cch 2020
+535. coteaux champenois chamery 2022 bonnetponson
+536. coteaux champenois chamery rouge 2020
+537. coteaux champenois cumieres rouge 2022 vincent laval
+538. coteaux champenois cumieres rouge 2022 vincent laval
+539. coteaux champenois cumieres rouge aoc vincente laval
+540. coteaux champenois cuvee la montagne sacre 2020
+541. coteaux champenois en barmont riceys rouge 2017
+542. coteaux champenois en val bazot riceys rouge 2018
+543. coteaux champenois en valingrain riceys blanc 2021
+544. coteaux champenois etienne sandrin le bruyant calme et tranquille 2022
+545. coteaux champenois grand cru 2020 de sousa
+546. coteaux champenois griblanc 7 cepages 2022
+547. coteaux champenois hommage a camille 2019 blanc
+548. coteaux champenois hommage a camille 2019 rouge
+549. coteaux champenois la garde 2020 eric taillet
+550. coteaux champenois le bois vilmet premier cru champagne alloucherydeguerne 2023 frankrijk champagne wit
+551. coteaux champenois le caqeray premier cru champagne alloucherydeguerne 2022 frankrijk champagne wit
+552. coteaux champenois le caqeray premier cru champagne alloucherydeguerne 2023 frankrijk champagne wit
+553. coteaux champenois lentre deux rouge
+554. coteaux champenois les babagis 2020
+555. coteaux champenois les babagis chamery blanc 2020 emilien feneuil
+556. coteaux champenois les houardes
+557. coteaux champenois les monts fournois ludes premier cru 2022
+558. coteaux champenois lune rouge 2017
+559. coteaux champenois mailly
+560. coteaux champenois maillychampagne grand cru 2022
+561. coteaux champenois meunier 2022 bastien pointillart
+562. coteaux champenois montagne de reims orme rouge les montees 2022 bereche fils 880 bottiglie prodotte
+563. coteaux champenois mouzon leroux coteaux champenois blanc 2020
+564. coteaux champenois mouzon leroux coteaux champenois blanc 2021
+565. coteaux champenois nm champagne chavost
+566. coteaux champenois perpetuite champagne drappier harmonie des millesimes en solera
+567. coteaux champenois pierry rouge premier cru les gouttes dor 2022 304 bottiglie prodotte jm seleque
+568. coteaux champenois pinot blanc 2022 maison pierre gerbais
+569. coteaux champenois pinot noir 2018
+570. coteaux champenois pinot noir 2019
+571. coteaux champenois pinot noir 2019 champagne roger coulon
+572. coteaux champenois piperheidsieck ambonnay blanc de noirs 2022
+573. coteaux champenois piperheidsieck ay blanc de noirs 2022
+574. coteaux champenois premier cru le mont moine meunier 2019 champagne roger coulon
+575. coteaux champenois riceys blanc
+576. coteaux champenois riceys blanc
+577. coteaux champenois riceys rouge
+578. coteaux champenois riceys rouge
+579. coteaux champenois rose
+580. coteaux champenois rose
+581. coteaux champenois rose
+582. coteaux champenois rose
+583. coteaux champenois rose la tonnelle paul gosset
+584. coteaux champenois rouge
+585. coteaux champenois rouge
+586. coteaux champenois rouge 100 meunier confiance franck pascal
+587. coteaux champenois rouge 2019
+588. coteaux champenois rouge 2019
+589. coteaux champenois rouge 2019 les chardeloups
+590. coteaux champenois rouge 2020
+591. coteaux champenois rouge 2020 sadi malot
+592. coteaux champenois rouge 2020 sadi malot
+593. coteaux champenois rouge 2020 sadi malot
+594. coteaux champenois rouge 2022 874 bottiglie prodotte domaine mallet
+595. coteaux champenois rouge 2022 bonnetponson
+596. coteaux champenois rouge 2022 de sousa
+597. coteaux champenois rouge ambonnay rouge cuvee des grands cotes vv grand cru champagne eglyouriet 2022
+598. coteaux champenois rouge bouzy grand cru 2018 paul bara
+599. coteaux champenois rouge champagne fleury
+600. coteaux champenois rouge cuvee composition 4 for la monte jerome lefevre
+601. coteaux champenois rouge cuvee composition 4 jerome lefevre
+602. coteaux champenois rouge cuvee supergroovalisticmacerationstuff vendemmia 2020 jerome lefevre
+603. coteaux champenois rouge les furieuses warislarmandier
+604. coteaux champenois rouge les moines vats 2020 a lamblot 500 bottiglie prodotte
+605. coteaux champenois rouge les montees 2015 bereche fils
+606. coteaux champenois rouge pehu simonet
+607. coteaux champenois rouge pierre gerbais celles sur ource aube
+608. coteaux champenois rouge vieilles vignes la garde 2020 eric taillet
+609. coteaux champenois smagekassevin for begyndere
+610. coteaux champenois totum 2019
+611. coteaux champenois tranquille 2019
+612. coteaux champenois trop men faut champagne drappier redecouverte du fromenteau
+613. coteaux champenois verzy 2022 adrien renoir
+614. coteaux champenois vignes dieu 2022 bonnetponson
+615. coteaux champenois vin de comptoir
+616. coteaux champenois yetinte 2022 magnum
+617. coteaux champenoise 2021 0 bio
+618. coteaux champenoise ormes rouge le montees 2022 bereche et fils
+619. coteaux champenoise ormes rouge le montees 2022 bereche et fils
+620. coteaux champenoise ormes rouge le montees 2022 bereche et fils
+621. coteaux chardonnay terroir daltitude bw 2022
+622. coteaux d aix aix rose
+623. coteaux daix aop chateau bas cuvee le temple rouge
+624. coteaux daix en provence
+625. coteaux daix en provence
+626. coteaux daix en provence bio rose dune nuit chateau la coste 2024
+627. coteaux daix en provence blanc 2023 domaine oddo tenuta vallon des glauges
+628. coteaux daix en provence blanc 2023 domaine oddo tenuta vallon des glauges
+629. coteaux daix en provence blanc 2023 domaine oddo tenuta vallon des glauges
+630. coteaux daix en provence chapelle laique
+631. coteaux daix en provence cote aix maison giambagli 2021
+632. coteaux daix en provence lauze
+633. coteaux daix en provence oddo rose domaine oddo
+634. coteaux daix en provence oddo rose organic
+635. coteaux daix en provence oddo rose organic
+636. coteaux daix en provence rose
+637. coteaux daix en provence rose 2023 domaine oddo tenuta vallon des glauges
+638. coteaux daix en provence rose 2023 domaine oddo tenuta vallon des glauges
+639. coteaux daix en provence rose 2023 domaine oddo tenuta vallon des glauges
+640. coteaux daix en provence rose 2025
+641. coteaux daix en provence rose aix 2024 maison saint aix
+642. coteaux daix en provence rose aix 2024 maison saint aix
+643. coteaux daix en provence rose aix 2024 maison saint aix
+644. coteaux daix en provence rose bag in box
+645. coteaux daix en provence rose chapelle du seuil chateau du seuil 2025
+646. coteaux daix en provence rose mg 2025
+647. coteaux daix en provence rouge 2022 domaine oddo tenuta vallon des glauges
+648. coteaux daix en provence rouge 2022 domaine oddo tenuta vallon des glauges
+649. coteaux daix en provence rouge 2022 domaine oddo tenuta vallon des glauges
+650. coteaux daix en provence rouge villa minna 2021 villa minna vineyard
+651. coteaux daix en provence saint julien daille 2024
+652. coteaux daix rose 2020 buvez tranquille domaine de la chicanderie
+653. coteaux daix rose chateau virant 2019
+654. coteaux daixenprovence 2025
+655. coteaux daixenprovence 2025
+656. coteaux daixenprovence 2025 gold
+657. coteaux daixenprovence 2025 gold
+658. coteaux daixenprovence 2025 gold
+659. coteaux daixenprovence 2025 gold
+660. coteaux daixenprovence 2025 gold
+661. coteaux daixenprovence 2025 gold
+662. coteaux daixenprovence 2025 gold
+663. coteaux daixenprovence 2025 personliche empfehlung
+664. coteaux daixenprovence 2025 persoonlijke aanbeveling
+665. coteaux daixenprovence aop
+666. coteaux daixenprovence blanc 2025
+667. coteaux daixenprovence blanc baulieu 2016 villa baulieu
+668. coteaux daixenprovence blanc chapelle laique 2016 domaine de sulauze
+669. coteaux daixenprovence blanc chapelle laique 2017 domaine de sulauze
+670. coteaux daixenprovence chapelle laique 2014 domaine de sulauze
+671. coteaux daixenprovence chapelle laique 2018 domaine de sulauze
+672. coteaux daixenprovence chapelle laique 2020 domaine de sulauze
+673. coteaux daixenprovence chateau pigoudet premiere 2024
+674. coteaux daixenprovence cuvee berengere 2012 villa baulieu
+675. coteaux daixenprovence galinette 2019 domaine de sulauze
+676. coteaux daixenprovence galinette blanc
+677. coteaux daixenprovence lauze 2016 domaine de sulauze
+678. coteaux daixenprovence rose aop 2024
+679. coteaux daixenprovence rose chateau la coste 2020
+680. coteaux daixenprovence rose chateau vignelaure 2024
+681. coteaux daixenprovence rouge
+682. coteaux daixenprovence rouge 2016 villa baulieu
+683. coteaux daixenprovence rouge 2023
+684. coteaux daixenprovence villa baulieu 2016 villa baulieu
+685. coteaux dancenis gamay
+686. coteaux dancenis le vieux planty 2022
+687. coteaux dancenis les deux fillettes 2025
+688. coteaux dancenis les grands vignes 2022
+689. coteaux dancenis malvoisie
+690. coteaux dancenis malvoisie 2024
+691. coteaux dancenis malvoisie cuvee malvoisius
+692. coteaux dancenis malvoisie domaine merceronmartin
+693. coteaux dancenis malvoisie printemps
+694. coteaux dancenis parcellaire les quarts domaine merceron
+695. coteaux dancenis rouge automne
+696. coteaux dapremont silice 2023 maison des ardoisieres
+697. coteaux dapremont silice 2024 maison des ardoisieres
+698. coteaux de bassenon
+699. coteaux de bassenon
+700. coteaux de bassenon 2016
+701. coteaux de bassenon 2016
+702. coteaux de bassenon 2017
+703. coteaux de bassenon 2017
+704. coteaux de bellavista vino blanco 2023 osorno valley chile
+705. coteaux de bessiles villa noria amfora orange wine
+706. coteaux de beziers domaine preignes le vieux reserve
+707. coteaux de beziersviognier domaine preignes le neuf
+708. coteaux de dijon
+709. coteaux de dijon bourgogne blanc cras 2022 domaine de la cras
+710. coteaux de dijon bourgogne blanc cras 2022 domaine de la cras
+711. coteaux de dijon bourgogne blanc domaine de la cras
+712. coteaux de dijon bourgogne blanc domaine de la cras
+713. coteaux de dijon bourgogne blanc lequilibriste 2023 domaine de la cras
+714. coteaux de dijon bourgogne blanc lequilibriste 2023 domaine de la cras
+715. coteaux de dijon bourgogne rouge 2022 domaine de la cras
+716. coteaux de dijon bourgogne rouge 2022 domaine de la cras
+717. coteaux de dijon bourgogne rouge hermaion 2022 domaine de la cras
+718. coteaux de dijon bourgogne rouge hermaion 2022 domaine de la cras
+719. coteaux de dijon bourgogne rouge lequilibriste 2023 domaine de la cras
+720. coteaux de dijon bourgogne rouge lequilibriste 2023 domaine de la cras
+721. coteaux de djion blanc 2022
+722. coteaux de djion rouge 2023
+723. coteaux de kefraya
+724. coteaux de la loire
+725. coteaux de languedoc les dames de ricardelle 2022 chateau ricardelle
+726. coteaux de lardeche 2023
+727. coteaux de lardeche blanc bio 2021 domaine le sept pierres
+728. coteaux de lardeche domaine de vigier ma syrah
+729. coteaux de lardeche domaine de vigier mon chardonnay
+730. coteaux de lardeche grand ardeche by louis latour blanc
+731. coteaux de lardeche rouge bio 2021 domaine le sept pierres
+732. coteaux de lardeche syrah 2022 vigneaux
+733. coteaux de lardeche syrah 2022 vigneaux
+734. coteaux de laubance
+735. coteaux de laubance 1983
+736. coteaux de laubance 2013 domaine de montgilet
+737. coteaux de laubance 2022
+738. coteaux de laubance 2022 domaine de montgilet
+739. coteaux de laubance 2022 haute perche
+740. coteaux de laubance 2024 les rochelles domaine des rochelles
+741. coteaux de laubance aoc
+742. coteaux de laubance chateau prince 2018
+743. coteaux de laubance chateau prince val de loire 2018
+744. coteaux de laubance domaine de bablut unique bio
+745. coteaux de laubance domaine de montgilet
+746. coteaux de laubance domaine de montgilet clos des huttieres 2010
+747. coteaux de laubance domaine de montgilet clos prieur 2009
+748. coteaux de laubance domaine de montgilet les troix schistes
+749. coteaux de laubance domaine de montgilet les troix schistes
+750. coteaux de laubance grandpierre 2006
+751. coteaux de laubance grandpierre 2009
+752. coteaux de laubance grandpierre 2010
+753. coteaux de laubance grandpierre 2014
+754. coteaux de laubance les trois schistes 2022 domaine de montgilet
+755. coteaux de laubance premieres tries 2023 terra vita vinum bd vin nature
+756. coteaux de laubance premieres tries 2023 terra vita vinum bd vin nature
+757. coteaux de lauxois pinot gris clos de la romanee
+758. coteaux de lauxois pinot noir clos de la romanee
+759. coteaux de layon 1er cru chaume 2021
+760. coteaux de layon 2024
+761. coteaux de loir premices domaine belliviere 2022
+762. coteaux de lyon 2004 moulin touchais
+763. coteaux de lyon 2005 moulin touchais
+764. coteaux de peyriac domaine villepeyroux forest carignan vieilles vignes
+765. coteaux de peyriac domaine villepeyroux forest cinsaut cherry bomb
+766. coteaux de peyriac domaine villepeyroux forest syrah
+767. coteaux de peyriac solelh vieilles vignes igp 2020
+768. coteaux de saumur 1996 les etourneaux
+769. coteaux de saumur 1999
+770. coteaux de saumur 2000
+771. coteaux de saumur 2000 les etourneaux
+772. coteaux de saumur 2001
+773. coteaux de saumur 2002
+774. coteaux de saumur 2003
+775. coteaux de saumur 2004 les etourneaux
+776. coteaux de saumur 2005 les etourneaux
+777. coteaux de sierre aoc gregor kuonen
+778. coteaux de sierre aoc valais
+779. coteaux de travers zouzou cotes du rhone blanc 2024
+780. coteaux de travers zouzou cotes du rhone rose
+781. coteaux de traviole blanc
+782. coteaux de traviole rose
+783. coteaux de traviole rouge
+784. coteaux de trumao pinot noir cruchon
+785. coteaux de tupin
+786. coteaux de tupin 2017
+787. coteaux de tupin 2017
+788. coteaux denserune igp
+789. coteaux des croises
+790. coteaux des quarts
+791. coteaux des travers aop cotesdurhonevillages massif duchaux rouge 2021
+792. coteaux des travers aop cotesdurhonevillages massif duchaux rouge 2021
+793. coteaux des travers aop cotesdurhonevillages massif duchaux rouge 2021
+794. coteaux des travers aop rasteau rouge 2020
+795. coteaux des travers aop rasteau rouge 2020
+796. coteaux des travers aop rasteau rouge 2020
+797. coteaux des travers aop rasteau rouge 2021
+798. coteaux des travers aop rasteau rouge 2021
+799. coteaux des travers aop rasteau rouge 2021
+800. coteaux des travers les traves rasteau
+801. coteaux des travers terra rosea cairanne
+802. coteaux des travers zou zou red
+803. coteaux des travers zou zou rose
+804. coteaux des travers zouzou blanc vin de france
+805. coteaux des travers zouzou rouge rhone valley france
+806. coteaux do giennois
+807. coteaux du cap corse 2016 clos nicrosi 2016 clos nicrosi
+808. coteaux du giennois
+809. coteaux du giennois 2020 vignobles berthier
+810. coteaux du giennois 2021
+811. coteaux du giennois 2022
+812. coteaux du giennois 2023
+813. coteaux du giennois 2023
+814. coteaux du giennois 2023 clement florian berthier
+815. coteaux du giennois 2024
+816. coteaux du giennois aoc calcaire 2023 domaine chauveau
+817. coteaux du giennois berthier
+818. coteaux du giennois berthier
+819. coteaux du giennois blanc
+820. coteaux du giennois blanc
+821. coteaux du giennois blanc 2022 vignoble dauny
+822. coteaux du giennois blanc aop
+823. coteaux du giennois blanc aop
+824. coteaux du giennois blanc berthier
+825. coteaux du giennois blanc cedrick bardin 2023
+826. coteaux du giennois blanc clement et florian berthier 2024 bio
+827. coteaux du giennois blanc domaine berthier
+828. coteaux du giennois blanc domaine de villargeau 2023
+829. coteaux du giennois blanc vignobles berthier
+830. coteaux du giennois branco
+831. coteaux du giennois calcaire
+832. coteaux du giennois domaine de lepineau linstant
+833. coteaux du giennois domaine lepineau condates loire
+834. coteaux du giennois domaine lepineau lepineau loire
+835. coteaux du giennois la gaupiere mellot
+836. coteaux du giennois les pointes 2021 domaine raimbaultpineau
+837. coteaux du giennois red domaine berthier 2021
+838. coteaux du giennois rouge 2023 vignoble dauny
+839. coteaux du giennois rouge cedrick bardin 2023
+840. coteaux du giennois rouge clement et florian berthier 2023 bio
+841. coteaux du giennois rouge domaine berthier
+842. coteaux du giennois rouge vignobles berthier
+843. coteaux du giennois terre de caillotte clement et florian berthier 2023
+844. coteaux du giennois terre de silex 2022
+845. coteaux du giennois terre de silex blanc vignobles berthier
+846. coteaux du giennois vigne du taureau rouge 2020 gitton
+847. coteaux du giennois villargeau rouge montee casse cou 2023
+848. coteaux du giennois villargeau sauvignon blanc 2023
+849. coteaux du languedoc
+850. coteaux du languedoc
+851. coteaux du languedoc 2009 farouest
+852. coteaux du languedoc 2010 farouest
+853. coteaux du languedoc 2011 domaine saint sylvestre
+854. coteaux du languedoc 2011 farouest
+855. coteaux du languedoc 2012 farouest
+856. coteaux du languedoc 2013 farouest
+857. coteaux du languedoc 2014 farouest
+858. coteaux du languedoc 2015 farouest
+859. coteaux du languedoc 2016 farouest
+860. coteaux du languedoc aop comte de roche cuvee noble tradition
+861. coteaux du languedoc blanc lepervier 2023
+862. coteaux du languedoc blanc lepervier 2024
+863. coteaux du languedoc blanc oro 2004 domaine peyre rose
+864. coteaux du languedoc clos des cistes 2002 domaine peyre rose
+865. coteaux du languedoc clos des cistes 2003 domaine peyre rose
+866. coteaux du languedoc clos des cistes 2004 domaine peyre rose
+867. coteaux du languedoc clos des cistes 2005 domaine peyre rose
+868. coteaux du languedoc clos des cistes 2006 domaine peyre rose
+869. coteaux du languedoc clos des cistes 2008 domaine peyre rose
+870. coteaux du languedoc clos des cistes 2009 domaine peyre rose
+871. coteaux du languedoc cuvee marlene n3 2006 domaine peyre rose
+872. coteaux du languedoc la natice chateau la negly
+873. coteaux du languedoc les gres 2017 mas granier rood
+874. coteaux du languedoc metairies du clos vieilles vignes 2018 clos marie
+875. coteaux du languedoc montpeyroux lesprit de font caude 2004 domaine alain chabanon
+876. coteaux du languedoc montpeyroux lesprit de font caude 2007 domaine alain chabanon
+877. coteaux du languedoc montpeyroux lesprit de font caude 2013 domaine alain chabanon
+878. coteaux du languedoc montpeyroux lesprit de font caude 2014 domaine alain chabanon
+879. coteaux du languedoc moulins de coeur mylene bru 2019
+880. coteaux du languedoc oro 2006 domaine peyre rose
+881. coteaux du languedoc oro 2007 domaine peyre rose
+882. coteaux du languedoc oro 2008 domaine peyre rose
+883. coteaux du languedoc oro 2009 domaine peyre rose
+884. coteaux du languedoc oro 2011 domaine peyre rose
+885. coteaux du languedoc paul mas belluguette ac
+886. coteaux du languedoc pezenas 2023 domaine prieure saintjeandebebian
+887. coteaux du languedoc pezenas blanc 2022 domaine prieure saintjeandebebian
+888. coteaux du languedoc pic saint loup 2016 clos des reboussiers
+889. coteaux du languedoc pic saint loup rouge spoutnik 2015 clos des reboussiers
+890. coteaux du languedoc pic saint loup spoutnik 2016 clos des reboussiers
+891. coteaux du languedoc rose 2023 mas jullien
+892. coteaux du languedoc rose 2023 mas jullien
+893. coteaux du languedoc rose 2023 mas jullien
+894. coteaux du languedoc rose 2023 mas jullien
+895. coteaux du languedoc rose 2023 mas jullien
+896. coteaux du languedoc rose mas jullien
+897. coteaux du languedoc rouge 2011 mas jullien
+898. coteaux du languedoc saut de cote 2019 chabanon
+899. coteaux du languedoc st preignan
+900. coteaux du languedoc syrah leone 2003 domaine peyre rose
+901. coteaux du languedoc syrah leone 2004 domaine peyre rose
+902. coteaux du languedoc syrah leone 2005 domaine peyre rose
+903. coteaux du languedoc syrah leone 2006 domaine peyre rose
+904. coteaux du languedoc syrah leone 2008 domaine peyre rose
+905. coteaux du languedoc syrah leone 2009 domaine peyre rose
+906. coteaux du laubance unique tilapaisesti loppu
+907. coteaux du layon
+908. coteaux du layon
+909. coteaux du layon
+910. coteaux du layon
+911. coteaux du layon 1896 2018
+912. coteaux du layon 1896 2018 domaine baudouin
+913. coteaux du layon 1968 moulin touchais
+914. coteaux du layon 1968 moulin touchais
+915. coteaux du layon 1968 moulin touchais
+916. coteaux du layon 1968 moulin touchais
+917. coteaux du layon 1968 moulin touchais
+918. coteaux du layon 1977 moulin touchais
+919. coteaux du layon 1981 moulin touchais
+920. coteaux du layon 1981 moulin touchais
+921. coteaux du layon 1981 moulin touchais
+922. coteaux du layon 1981 moulin touchais
+923. coteaux du layon 1981 moulin touchais
+924. coteaux du layon 1983 domaine de la haie longue
+925. coteaux du layon 1983 domaine de la haie longue lequeux
+926. coteaux du layon 1984 moulin touchais
+927. coteaux du layon 1984 moulin touchais
+928. coteaux du layon 1984 moulin touchais
+929. coteaux du layon 1984 moulin touchais
+930. coteaux du layon 1984 moulin touchais
+931. coteaux du layon 1986 lequeux
+932. coteaux du layon 1994 moulin touchais
+933. coteaux du layon 1994 moulin touchais
+934. coteaux du layon 1994 moulin touchais
+935. coteaux du layon 1994 moulin touchais
+936. coteaux du layon 1994 moulin touchais
+937. coteaux du layon 1995 domaine brize
+938. coteaux du layon 1996 moulin touchais
+939. coteaux du layon 1996 moulin touchais
+940. coteaux du layon 1996 moulin touchais
+941. coteaux du layon 1996 moulin touchais
+942. coteaux du layon 1996 moulin touchais
+943. coteaux du layon 1er cru chaume 2018
+944. coteaux du layon 1er cru chaume domaine de la soucherie 2016
+945. coteaux du layon 1er cru chaume domaine de la soucherie 2016
+946. coteaux du layon 1er cru chaume domaine des forges
+947. coteaux du layon 1er cru chaume domaine des forges
+948. coteaux du layon 2000 domaine des bleuces
+949. coteaux du layon 2019
+950. coteaux du layon 2021
+951. coteaux du layon 2021 deux vallees zoet
+952. coteaux du layon 2022 le clos de la bergerie domaine de la bergerie
+953. coteaux du layon 2023 chateau de plaisance
+954. coteaux du layon 2023 chenin blanc
+955. coteaux du layon 2023 tentation domaine des petits quarts
+956. coteaux du layon aoc st aubin 2024 domaine des barres
+957. coteaux du layon aop
+958. coteaux du layon aop
+959. coteaux du layon atomes crochus
+960. coteaux du layon beaulieu 2015 chateau de la mulonniere
+961. coteaux du layon bio 2021 domaine des gaudrieres zoet
+962. coteaux du layon carte d or
+963. coteaux du layon carte dor
+964. coteaux du layon carte dor domaine baumard loire france
+965. coteaux du layon chateau de plaisance coteaux du layon 2023
+966. coteaux du layon chateau de plaisance coteaux du layon 2023
+967. coteaux du layon chaume roulerie 2009
+968. coteaux du layon clos des bates domaine des bleuces
+969. coteaux du layon clos des bates domaine des bleuces demisec 2017
+970. coteaux du layon clos du ste catherine
+971. coteaux du layon confluences
+972. coteaux du layon cru saint aubin domaine des barres
+973. coteaux du layon cuvee ancienne
+974. coteaux du layon domaine de clayou 2018
+975. coteaux du layon domaine de clayou blanc
+976. coteaux du layon domaine de la ducquerie chaumes premier cru
+977. coteaux du layon domaine de lete 2022
+978. coteaux du layon domaine de sainte anne
+979. coteaux du layon domaine de terrebrune
+980. coteaux du layon domaine des 2 vallees
+981. coteaux du layon domaine des barres 2024
+982. coteaux du layon domaine des forges
+983. coteaux du layon domaine des forges 2021
+984. coteaux du layon domaine des forges saintaubin loire
+985. coteaux du layon domaine des gaudrieres loire frankrijk
+986. coteaux du layon domaine matignon clair de lune
+987. coteaux du layon excellence 2014 domaine de fiervaux
+988. coteaux du layon faye chaos
+989. coteaux du layon faye cosmos
+990. coteaux du layon grains nobles maria juby patrick baudoin 1997 0500 loire frankrijk
+991. coteaux du layon la cueillette des oiseaux domaine le fief noir 2024
+992. coteaux du layon lallegorie 2020 chateau de suronde
+993. coteaux du layon les 4 villages 2022 domaine fl
+994. coteaux du layon les 4 villages 2022 domaine fl
+995. coteaux du layon les 4 villages 2022 domaine fl
+996. coteaux du layon les acacias foucher lebrun
+997. coteaux du layon les athletes du vin 2022
+998. coteaux du layon les bates 2024
+999. coteaux du layon les bates 2025
+1000. coteaux du layon les bruandieres 2022
+23:43

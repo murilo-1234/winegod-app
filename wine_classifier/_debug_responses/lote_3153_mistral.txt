@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. cote de beaune les monsnieres le puy de lours 2022
+2. cote de beaune les pierres blanches blanc
+3. cote de beaune les pierres blanches rouge
+4. cote de beaune maranges bacheylegros
+5. cote de beaune paul dgenais 1992
+6. cote de beaune paul dugenais 1992
+7. cote de beaune paul dugenais 1992
+8. cote de beaune pierre ponnelle 1994
+9. cote de beaune pierre ponnelle 1994
+10. cote de beaune pierre ponnelle 1994
+11. cote de beaune rouge 2022
+12. cote de beaune rouge 675 joseph drouhin
+13. cote de beaune rouge aoc
+14. cote de beaune rouge village 2020
+15. cote de beaune village 1990
+16. cote de beaune village maison leroy 2017
+17. cote de beaune villages
+18. cote de beaune villages
+19. cote de beaune villages
+20. cote de beaune villages
+21. cote de beaune villages
+22. cote de beaune villages 2014 domaine dardhuy
+23. cote de beaune villages 2020 jadot
+24. cote de beaune villages 2022 jadot
+25. cote de beaune villages 2023 jadot
+26. cote de beaune villages aoc rotwein wein trocken frankreich 12 x 0
+27. cote de beaune villages aoc rotwein wein trocken frankreich 3 x 0
+28. cote de beaune villages aoc rotwein wein trocken frankreich 6 x 0
+29. cote de beaune villages chanson
+30. cote de beaune villages les roches rouges
+31. cote de beaunevillages
+32. cote de beaunevillages
+33. cote de beaunevillages
+34. cote de beaunevillages
+35. cote de beaunevillages
+36. cote de beaunevillages
+37. cote de beaunevillages 1991
+38. cote de beaunevillages 1991 red wine
+39. cote de beaunevillages 1991 rode wijn
+40. cote de beaunevillages 1991 rott vin
+41. cote de beaunevillages 2012
+42. cote de beaunevillages 2021
+43. cote de beaunevillages 2021
+44. cote de beaunevillages 2022 domaine roux
+45. cote de beaunevillages 2022 domaine roux
+46. cote de beaunevillages 2022 domaine roux
+47. cote de beaunevillages 2022 domaine roux
+48. cote de beaunevillages 2022 domaine roux
+49. cote de beaunevillages 2023
+50. cote de beaunevillages claude chonion 1993
+51. cote de beaunevillages claude chonion 1993
+52. cote de beaunevillages claude chonion 1993
+53. cote de beaunevillages rouge 2021
+54. cote de beaunevillages rouge 2022
+55. cote de bechalin
+56. cote de berne etincelle de gamay pet nat
+57. cote de bessay julienas
+58. cote de besset saintamour ac
+59. cote de beune villages
+60. cote de boeuf
+61. cote de boeuf ribeye steak on the bone 1 kg
+62. cote de boeuf rose syrah et marselan gourmet
+63. cote de boeuf syrah marselan gourmet pere et fils
+64. cote de bourg aoc chateau puy damour grain de folie
+65. cote de bourgogne wine alain garcia
+66. cote de brouilly
+67. cote de brouilly
+68. cote de brouilly
+69. cote de brouilly
+70. cote de brouilly
+71. cote de brouilly
+72. cote de brouilly
+73. cote de brouilly
+74. cote de brouilly
+75. cote de brouilly
+76. cote de brouilly
+77. cote de brouilly 1 alex foillard beaujolais alleen ophalen
+78. cote de brouilly 1959
+79. cote de brouilly 2018 alex foillard
+80. cote de brouilly 2019
+81. cote de brouilly 2020
+82. cote de brouilly 2020
+83. cote de brouilly 2020
+84. cote de brouilly 2020
+85. cote de brouilly 2020
+86. cote de brouilly 2020 domaine pierreandre dumas
+87. cote de brouilly 2020 guy breton
+88. cote de brouilly 2020 les douze perles jm aujoux
+89. cote de brouilly 2020 selene
+90. cote de brouilly 2021
+91. cote de brouilly 2021 alex foillard
+92. cote de brouilly 2021 alex foillard
+93. cote de brouilly 2021 alex foillard
+94. cote de brouilly 2021 chateau de grand pre
+95. cote de brouilly 2021 chateau de grand pre
+96. cote de brouilly 2022
+97. cote de brouilly 2022
+98. cote de brouilly 2022
+99. cote de brouilly 2022
+100. cote de brouilly 2022
+101. cote de brouilly 2023
+102. cote de brouilly 2023
+103. cote de brouilly 2023
+104. cote de brouilly 2023 100
+105. cote de brouilly 2023 jeanclaude lapalu bd vin nature
+106. cote de brouilly 2023 jeanclaude lapalu bd vin nature
+107. cote de brouilly alex foillard beaujolais
+108. cote de brouilly aop
+109. cote de brouilly bib
+110. cote de brouilly brulhie 2019
+111. cote de brouilly cave des vigneron de belair
+112. cote de brouilly chateau de grand pre romain zordan fleurie
+113. cote de brouilly chateau des ravatys cuvee mathilde
+114. cote de brouilly chateau thivin
+115. cote de brouilly chateau thivin 2023
+116. cote de brouilly chavannes 2022 nicolas rossignol
+117. cote de brouilly chavannes domaine joncy 2023
+118. cote de brouilly cuvee auguste 2020 chateau des ravatys
+119. cote de brouilly cuvee lois 2018 domaine laurent martray
+120. cote de brouilly cuvee mathilde courbe 2020 chateau des ravatys
+121. cote de brouilly cuvee metamorphoses
+122. cote de brouilly cuvee zaccharie
+123. cote de brouilly daniel bouland 2024
+124. cote de brouilly david large 2020
+125. cote de brouilly dom a foillard 2022
+126. cote de brouilly domaine baron de lecluse les garances
+127. cote de brouilly domaine baron de lecluse vieilles vignes
+128. cote de brouilly domaine bonnet cotton
+129. cote de brouilly domaine christophe pacalet beaujolais
+130. cote de brouilly domaine de conroy 1983
+131. cote de brouilly domaine de conroy 1983
+132. cote de brouilly domaine de conroy 1983
+133. cote de brouilly domaine de la voute des crozes 2018
+134. cote de brouilly domaine de montbriand
+135. cote de brouilly domaine du pavillon de chavannes
+136. cote de brouilly domaine dumas 2021
+137. cote de brouilly foudre n5 2019 domaine robert perroud
+138. cote de brouilly jean paul brun
+139. cote de brouilly jeanclaude lapalu 2016 0750 beaujolais frankrijk
+140. cote de brouilly la boucheratte julien duport
+141. cote de brouilly la chapelle 2021 chateau thivin
+142. cote de brouilly la chapelle 2023 bonnet cotton
+143. cote de brouilly la sueur au front julien duport
+144. cote de brouilly lafargevial 2021
+145. cote de brouilly lafargevial 2022
+146. cote de brouilly lafargevial 2022
+147. cote de brouilly lafargevial 2023
+148. cote de brouilly les 3 madones
+149. cote de brouilly les 3 madones 2021
+150. cote de brouilly les 7 vignes
+151. cote de brouilly les clochers 2021 vignerons de bel air
+152. cote de brouilly les feuillees 2017
+153. cote de brouilly les feuillees 2018 domaine laurent martray
+154. cote de brouilly les grilles bonnet cotton 2022 beaujolais france
+155. cote de brouilly les griottes de brulhie
+156. cote de brouilly les griottes de brulhie 2024 chateau thivin
+157. cote de brouilly les sept vignes 2024 chateau thivin
+158. cote de brouilly les sept vignes chateau thivin
+159. cote de brouilly les sept vignes chateau thivin 2023
+160. cote de brouilly lheronde domaine nicolas boudeau 2023
+161. cote de brouilly lieudit brouilly julien duport
+162. cote de brouilly lieudit brulhie 2020 chateau de la chaize
+163. cote de brouilly magnum 2022
+164. cote de brouilly marine bonnet 2018 bonnet cotton
+165. cote de brouilly rouge 2023
+166. cote de brouilly terres dorees 2022
+167. cote de brouilly tradition domaine de briante
+168. cote de brouilly zaccharie 2023 chateau thivin
+169. cote de buf au mont 10 septembre 2026
+170. cote de buf au mont 12 juin 2026
+171. cote de buf au mont 29 mai 2026
+172. cote de buf au mont 5 juin 2026
+173. cote de buf maturee vieilles vignes syrah et marselan rouge gourmet
+174. cote de caillot
+175. cote de caillot
+176. cote de caillot 2021
+177. cote de caillot domaine desire petit 2018
+178. cote de danube pinot noir rose
+179. cote de feule rouge 2009
+180. cote de flon
+181. cote de flon 2023
+182. cote de fonroque saintemilion grand cru 2020
+183. cote de fonroque stemilion grand cru aoc 2016
+184. cote de fonroque stemilion grand cru aoc 2017
+185. cote de gascogne domaine de millet gros manseng
+186. cote de jura clos jerminy 2019 christelle et gilles wicky
+187. cote de jura cuvee tradition 2009 domaine de la petite marne
+188. cote de jura la barraque savagnin 2018 jean francois ganevat
+189. cote de jura tradition 2006 domaine grand
+190. cote de l ange chateauneuf du pape 2010
+191. cote de l ange chateauneuf du pape 2012
+192. cote de l ange chateauneuf du pape classic rouge
+193. cote de l ange chateauneuf du pape secret de l ange 2015
+194. cote de l ange chateauneuf du pape vieilles vignes 2006
+195. cote de l ange chateauneuf du pape vieilles vignes 2009
+196. cote de l ange chateauneuf du pape vieilles vignes 2012
+197. cote de la houssaye rouge
+198. cote de la moliere 2021
+199. cote de lange 2010 chateauneuf du pape vieilles vignes
+200. cote de lange chateauneuf du pape blanc
+201. cote de lange cotes du rhone rhone france
+202. cote de lange secret de lange 2010
+203. cote de marloup bernard fleuriet et fils 2023 bio
+204. cote de night cote de nuitsvillages 2023
+205. cote de night cotes de nuitsvillages vin noe
+206. cote de nuis croix violette 2019
+207. cote de nuit ami 2020
+208. cote de nuits
+209. cote de nuits 2022 david duband
+210. cote de nuits 2022 david duband
+211. cote de nuits 2022 david duband
+212. cote de nuits 2022 david duband
+213. cote de nuits aops 2022
+214. cote de nuits blanc 2022 la maison romane
+215. cote de nuits byar 1990
+216. cote de nuits byar 1998
+217. cote de nuits coeur de pierres
+218. cote de nuits croix violette domaine frederic magnien 2017
+219. cote de nuits dorpen 1998
+220. cote de nuits dorpen ambroise 1999
+221. cote de nuits les essards 2023 domaine julien gerard fils
+222. cote de nuits les essards 2023 domaine julien gerard fils
+223. cote de nuits les essards 2023 domaine julien gerard fils
+224. cote de nuits les essards 2023 domaine julien gerard fils
+225. cote de nuits les essards 2023 domaine julien gerard fils
+226. cote de nuits les leurey domaine thibault ligerbelair 2018
+227. cote de nuits meix de la poulotte fixin red
+228. cote de nuits rouge 2021 la maison romane
+229. cote de nuits rouge bastian wolber 2022
+230. cote de nuits vieilles vignes a chopin et fils
+231. cote de nuits vill vaucrain rouge 2020 jadot
+232. cote de nuits vill vaucrain rouge 2021 jadot
+233. cote de nuits vill vaucrain rouge 2022 jadot
+234. cote de nuits vill vaucrain rouge 2023 jadot
+235. cote de nuits village
+236. cote de nuits village
+237. cote de nuits village
+238. cote de nuits village 2019 maison jane eyre
+239. cote de nuits village 2021
+240. cote de nuits village 2022 philippe livera
+241. cote de nuits village au leurey 2023
+242. cote de nuits village chardonnay 2024 valeria naudin
+243. cote de nuits village clos de la belle marguerite 1993
+244. cote de nuits village clos de la belle marguerite 1993
+245. cote de nuits village clos de la belle marguerite 1993
+246. cote de nuits village jane eyre 2015 maison jane eyre
+247. cote de nuits village le vaucrain
+248. cote de nuits village le vaucrain 2021
+249. cote de nuits village le vaucrain 2022
+250. cote de nuits village les chaillots
+251. cote de nuits village les retraits 2020 domaine jerome galeyrand
+252. cote de nuits village les retraits 2021 domaine jerome galeyrand
+253. cote de nuits village les retraits 2023 jerome galeyrand
+254. cote de nuits village les vaucrains 2018 antoine petitprez uliz
+255. cote de nuits village rouge
+256. cote de nuits village rouge 2023 jerome galeyrand
+257. cote de nuits village rouge laisse tomber 2023
+258. cote de nuits village sans millesime sarl les vins sarrien
+259. cote de nuits villages
+260. cote de nuits villages
+261. cote de nuits villages
+262. cote de nuits villages
+263. cote de nuits villages 1990
+264. cote de nuits villages 1998
+265. cote de nuits villages 2015
+266. cote de nuits villages 2021 domaine rossignol closerie des alisiers
+267. cote de nuits villages 2024
+268. cote de nuits villages ambroise 1999
+269. cote de nuits villages ambroise 1999
+270. cote de nuits villages aoc
+271. cote de nuits villages aop
+272. cote de nuits villages ardhuy
+273. cote de nuits villages aux faulques
+274. cote de nuits villages aux faulques domaine jeanmarc millot 2023
+275. cote de nuits villages aux faulques jeanmarc millot 2020
+276. cote de nuits villages aux montagnes rouge 2022 domaine charles lachaux
+277. cote de nuits villages aux vignottes 2022
+278. cote de nuits villages aux vignottes 2022
+279. cote de nuits villages bertrand ambroise
+280. cote de nuits villages blanc 2022 la combe a la damoda xavier durand
+281. cote de nuits villages blanc les monts de boncourt
+282. cote de nuits villages blanc nicole lamarche 2021
+283. cote de nuits villages chantemerles rouge 2018 pansiot rood
+284. cote de nuits villages clos du magny rouge 2022 domaine jean fery
+285. cote de nuits villages domaine berthautgerbet 2023
+286. cote de nuits villages domaine de bellene 2020 frankrijk bourgogne wit
+287. cote de nuits villages domaine joseph roty 2021 frankrijk bourgogne rood
+288. cote de nuits villages emphase antoine lienhardt
+289. cote de nuits villages en vierville
+290. cote de nuits villages en vierville
+291. cote de nuits villages en vierville domaine du clos des poulettes
+292. cote de nuits villages la croix violette domaine joseph roty 2022 frankrijk bourgogne rood
+293. cote de nuits villages le vaucrain 125 0
+294. cote de nuits villages les chaillots
+295. cote de nuits villages les essards 2023
+296. cote de nuits villages les essards 2023
+297. cote de nuits villages les monts de boncourt
+298. cote de nuits villages les monts de boncourt 2018
+299. cote de nuits villages les retraits 2022 jerome galeyrand
+300. cote de nuits villages lippe boileau 2021
+301. cote de nuits villages maxime cheurlin noellat 2017
+302. cote de nuits villages nicolas potel
+303. cote de nuits villages pierre andre pinot noir
+304. cote de nuits villages rouge
+305. cote de nuits villages rouge 2017 jeremy recchione
+306. cote de nuits villages rouge 2022
+307. cote de nuits villages rouge aoc les retraits 2021 camille thiriet
+308. cote de nuits villages rouge le clos de magny
+309. cote de nuits villages rouge les essards 2022 antoine lienhardt
+310. cote de nuits villages rouge les essards 2023 jeremy recchione
+311. cote de nuits villages rouge nicole lamarche 2021
+312. cote de nuits villages rouge pierre girardin 2019
+313. cote de nuits villages rouge pierre girardin 2020
+314. cote de nuits villages tilapaisesti loppu
+315. cote de nuits villages version nord jeanmarc millot 2023
+316. cote de nuits villages vi 2023 domaine xavier durand
+317. cote de nuits villages vieilles vignes 2020
+318. cote de nuits villages vieilles vignes domaine de bellene
+319. cote de nuits villages vieilles vignes domaine de bellene
+320. cote de nuits villages vieilles vignes domaine jeanmarc millot 2023
+321. cote de nuitsdorfer le vaucrain
+322. cote de nuitsdorpen 1990
+323. cote de nuitsvillage cuvee deslandes 2022 camille thiriet
+324. cote de nuitsvillage cuvee deslandes 2022 camille thiriet
+325. cote de nuitsvillage cuvee deslandes 2022 camille thiriet
+326. cote de nuitsvillage cuvee deslandes 2022 camille thiriet
+327. cote de nuitsvillage les monts de boncourt 2023 rood domaine pierre ravaut
+328. cote de nuitsvillage rouge domaine pillot henry
+329. cote de nuitsvillages
+330. cote de nuitsvillages
+331. cote de nuitsvillages
+332. cote de nuitsvillages
+333. cote de nuitsvillages 20
+334. cote de nuitsvillages 2014
+335. cote de nuitsvillages 2017
+336. cote de nuitsvillages 2018
+337. cote de nuitsvillages 2020
+338. cote de nuitsvillages 2020 ami
+339. cote de nuitsvillages 2020 vieilles vignes domaine de bellene
+340. cote de nuitsvillages 2021 ami
+341. cote de nuitsvillages 2022
+342. cote de nuitsvillages 2022
+343. cote de nuitsvillages 2023
+344. cote de nuitsvillages 2023 domaine serrigny
+345. cote de nuitsvillages 2023 numa cornut
+346. cote de nuitsvillages antoine lienhardt les essards 2023
+347. cote de nuitsvillages aoc 2013 leroy
+348. cote de nuitsvillages armand domaine julien gerard fils 2019
+349. cote de nuitsvillages au leurey
+350. cote de nuitsvillages au leurey vigne de 1937 2018 domaine thibault ligerbelair
+351. cote de nuitsvillages au leurey vigne de 1937 2019 domaine thibault ligerbelair
+352. cote de nuitsvillages au leurey vigne de 1937 2020 domaine thibault ligerbelair
+353. cote de nuitsvillages au leurey vigne de 1937 2021 domaine thibault ligerbelair
+354. cote de nuitsvillages au leurey vigne de 1937 2022 domaine thibault ligerbelair
+355. cote de nuitsvillages au leurey vigne de 1937 2023 domaine thibault ligerbelair
+356. cote de nuitsvillages aux faulques 2020 domaine jeanmarc millot
+357. cote de nuitsvillages aux faulques 2021
+358. cote de nuitsvillages aux faulques 2021 domaine jeanmarc millot
+359. cote de nuitsvillages aux faulques 2022 domaine jeanmarc millot
+360. cote de nuitsvillages aux faulques 2023 domaine jeanmarc millot
+361. cote de nuitsvillages aux faulques monopole 2017 domaine jeanmarc millot
+362. cote de nuitsvillages aux faulques monopole 2018 domaine jeanmarc millot
+363. cote de nuitsvillages aux faulques monopole 2019 domaine jeanmarc millot
+364. cote de nuitsvillages blanc monts de boncourt
+365. cote de nuitsvillages burgandy red
+366. cote de nuitsvillages clos du chapeau domaine de larlot 2019
+367. cote de nuitsvillages didier fornerol 2021
+368. cote de nuitsvillages domaine fery clos de magny 2021
+369. cote de nuitsvillages la berchere 2022 domaine decelle et fils
+370. cote de nuitsvillages la croix violette 2023
+371. cote de nuitsvillages la montagne blanc
+372. cote de nuitsvillages le meix fringuet 2017 domaine jean trapet pere fils
+373. cote de nuitsvillages le meix fringuet 2019 domaine jean trapet pere fils
+374. cote de nuitsvillages le meix fringuet 2020 domaine jean trapet pere fils
+375. cote de nuitsvillages le meix fringuet 2021 domaine jean trapet pere fils
+376. cote de nuitsvillages le meix fringuet 2023 domaine jean trapet pere fils
+377. cote de nuitsvillages le monts de boncourt
+378. cote de nuitsvillages le vaucrain
+379. cote de nuitsvillages le vaucrain
+380. cote de nuitsvillages les perrieres rouge 2014 frederic magnien
+381. cote de nuitsvillages les vignottes
+382. cote de nuitsvillages maison chanzy
+383. cote de nuitsvillages maison skyaasen 2020
+384. cote de nuitsvillages pinot noir les chaillots 2023 domaine bony gachot
+385. cote de nuitsvillages rouge 2017 maison edouard delaunay
+386. cote de nuitsvillages rouge 2020 maison edouard delaunay
+387. cote de nuitsvillages rouge 2022 maison edouard delaunay
+388. cote de nuitsvillages rouge 24 chapuis
+389. cote de nuitsvillages rouge croix violette
+390. cote de nuitsvillages version nord 2021
+391. cote de nuitsvillages vieilles vignes
+392. cote de nuitsvillages vieilles vignes 2018 domaine de bellene
+393. cote de nuitsvillages vieilles vignes domaine de bellene 2020
+394. cote de nuitsvillages vieilles vignes jerome galeyrand
+395. cote de provence 1610 2020 chateau grand boise
+396. cote de provence 1610 2021 chateau grand boise
+397. cote de provence 1610 blanc 2023 chateau grand boise
+398. cote de provence auro 2023 chateau grand boise
+399. cote de provence auro 2024 chateau grand boise
+400. cote de provence auro blanc 2024 chateau grand boise
+401. cote de provence charme des demoiselles 2024 vin rose
+402. cote de provence chateau leoube love by leoube rose bio
+403. cote de provence chateau sainte roseline prestige rose 2024
+404. cote de provence chateau sainte roseline prestige rose magnum 2023
+405. cote de provence chateau saintesprit celeste
+406. cote de provence grand boise 2023 chateau grand boise
+407. cote de provence grand boise blanc 2023 chateau grand boise
+408. cote de provence la londe cuvee 8 2013 chateau les valentines
+409. cote de provence la londe cuvee 8 2014 chateau les valentines
+410. cote de provence la londe cuvee 8 2015 chateau les valentines
+411. cote de provence rose 2022 domaine dille
+412. cote de provence rose 2023 la promenade
+413. cote de provence rose 2024 la promenade
+414. cote de provence rose les hauts du luc la bernade 2024
+415. cote de provence rose quintessence 2024
+416. cote de roses blanco
+417. cote de roses pinot noir
+418. cote de roses rosado
+419. cote de roses rose languedoc 2023 12 bottles
+420. cote deguisheim
+421. cote deguisheim assemblage de cepages blancs
+422. cote dentelles cotes du rhone 2024 chateau redortier prijs inclbtw
+423. cote des nuits village les vignottes 2022 domaine gros ch fils
+424. cote des roses
+425. cote des roses
+426. cote des roses
+427. cote des roses 2024 gerard bertrand
+428. cote des roses art edition rose 2023 lot 3 bouteilles
+429. cote des roses art edition rose 2023 lot 6 bouteilles
+430. cote des roses art edition rose 2024
+431. cote des roses art edition rose 2024
+432. cote des roses blanc
+433. cote des roses blanc chardonnay
+434. cote des roses chardonnay
+435. cote des roses chardonnay
+436. cote des roses chardonnay
+437. cote des roses chardonnay
+438. cote des roses chardonnay
+439. cote des roses chardonnay 2024 lot 6 bouteilles
+440. cote des roses chardonnay 2024 vin blanc
+441. cote des roses chardonnay gerard bertrand
+442. cote des roses chardonnay vin blanc demi bouteille 37 2022
+443. cote des roses magnum rose 1
+444. cote des roses pinot noir
+445. cote des roses pinot noir
+446. cote des roses pinot noir
+447. cote des roses pinot noir
+448. cote des roses pinot noir
+449. cote des roses pinot noir
+450. cote des roses pinot noir 2020
+451. cote des roses pinot noir 2023 lot 6 bouteilles
+452. cote des roses pinot noir 2023 vin rouge
+453. cote des roses pinot noir vin rouge 6 demi bouteilles 37 2022
+454. cote des roses pinot noir vin rouge demi bouteille 37 2022
+455. cote des roses rose
+456. cote des roses rose
+457. cote des roses rose
+458. cote des roses rose
+459. cote des roses rose
+460. cote des roses rose
+461. cote des roses rose 2024
+462. cote des roses rose 2024 magnum
+463. cote des roses rose 2024 magnum lot 6 bouteilles
+464. cote des roses rose 2025
+465. cote des roses rose 2025 lot 12 bouteilles de
+466. cote des roses rose 2025 lot 6 bouteilles
+467. cote des roses rose 2025 magnum 1
+468. cote des roses rose art edition 2023
+469. cote des roses rose cote des roses
+470. cote des roses rose languedocroussillon frankreich
+471. cote des roses rose languedocroussillon frankreich
+472. cote des roses rouge leger 2023
+473. cote des roses rouge leger 2024
+474. cote des roses rouge vin rouge leger 2023 6 bouteilles
+475. cote des roses rouge vin rouge leger 2024 6 bouteilles
+476. cote des roses sauvignon blanc
+477. cote des roses sauvignon blanc
+478. cote des roses sauvignon blanc 2023 gerard bertrand
+479. cote des roses sauvignon blanc 2023 lot 6 bouteilles
+480. cote des roses sauvignon blanc 2024 vin blanc
+481. cote des roses vin rose 2025 lot 12 bouteilles un magnum offert
+482. cote des roses vin rose 6 demi bouteilles 37 2024
+483. cote des roses vin rose demi bouteille 37 2025
+484. cote des sommets chardonnay
+485. cote des sommets chardonnay
+486. cote des sommets pinot noir
+487. cote des sommets rose
+488. cote di franze ciro classico superiore 2017
+489. cote dole aoc valais
+490. cote dor 2020 cuvee hemisphere nord domaine meocamuzet
+491. cote dor 2nd edition
+492. cote dor blanc les loueres
+493. cote dor bloc melk rozijn hazelnoot
+494. cote dor burgogne chardonnay
+495. cote dor chardonnay
+496. cote dor chardonnay 2023
+497. cote dor chardonnay bourgogne cote dor blanc frederic leprince 2022
+498. cote dor chocoladereep melk hele hazelnoten
+499. cote dor cote de nuits cote de beaune
+500. cote dor loriginal tablette chocolat au lait 200g
+501. cote dor melkchocolade reep 2pack
+502. cote dor mignonetten fondant 120st
+503. cote dor mignonnette noir de noir
+504. cote dor repen hele noot 45gr 1st melk
+505. cote dor tablette chocolat au lait a la pointe de sel et amandes 180 g
+506. cote dor tablette chocolat au lait aux noisettes entieres 180g
+507. cote dor tablette chocolat au lait fourre praline et double lait 200g
+508. cote dor tablette chocolat au lait raisins et noisettes entieres 180g
+509. cote dor tablette chocolat noir 70 bio 90g
+510. cote dor tablette chocolat noir aux amandes entieres 180g
+511. cote dor tablette chocolat noir aux noisettes entieres 180g
+512. cote dor tablette chocolat noir aux noix de pecan et noisettes 180g
+513. cote dor tablette chocolat noir fourre praline 200g
+514. cote dor tablette chocolat noir intense 70 100g
+515. cote dor tablette chocolat noir pistaches caramelisees 180g
+516. cote doux eichenfass aoc valais
+517. cote du brouilly volcaniques
+518. cote du couchois 2020
+519. cote du danube cabernet sauvignon chateau burgozone 2021
+520. cote du danube chardonnay 2020
+521. cote du danube pinot noir
+522. cote du danube pinot noir
+523. cote du danube pinot noir 2022
+524. cote du danube pinot noir ch burgozone 2022
+525. cote du danube pinot noir chateau burgozone 2023
+526. cote du danube pinot noir rose
+527. cote du danube viognier
+528. cote du danube viognier
+529. cote du danube viognier
+530. cote du danube viognier 2024
+531. cote du danube viognier burgozone 2021
+532. cote du forez dacite la madone 2024
+533. cote du jura blanc macle
+534. cote du jura chardonnay vieilles vignes 2019
+535. cote du jura fleur de chard 23 sainte marie
+536. cote du jura meme marie 2022 francois roussetmartin
+537. cote du jura pinot noir vieilles vignes 2020
+538. cote du jura rouge
+539. cote du jura savagnin 2016
+540. cote du jura savagnin domaine de savagny 2020 bl
+541. cote du jura savagnin ouille 22 sainte marie
+542. cote du jura savagnin professeur sous roche 2021 francois roussetmartin
+543. cote du jura savagnin professeur sous roche 2022 francois roussetmartin
+544. cote du jura tradition 2018 domaine rolet
+545. cote du jura trousseau 24 sainte marie
+546. cote du jura vin jaune 2012 didier grappe
+547. cote du marmandais anthophila rouge demilien jean 2019
+548. cote du marmandais be api rouge demilien jean 2023
+549. cote du py
+550. cote du py 2023
+551. cote du py 2023
+552. cote du py morgon 13 0
+553. cote du py morgon 2021
+554. cote du py morgon 2021
+555. cote du py morgon domaine jean foillard
+556. cote du py morgon jean foillard beaujolais france
+557. cote du py tinto 2021
+558. cote du rhone 2014 chateau des tours
+559. cote du rhone 2022 domaine dourea
+560. cote du rhone 2023 domaine des espiers
+561. cote du rhone acantalys vignerons de tavel 20222023 vin rouge
+562. cote du rhone arbouse
+563. cote du rhone blanc couzou 2020 marsanne roussanne viognier
+564. cote du rhone blanc cuvee cesar domaine de la roche audran southern rhone france 2024
+565. cote du rhone blanc domaine de la roche audran southern rhone france 2024
+566. cote du rhone blanc les silenes
+567. cote du rhone blanco guigal
+568. cote du rhone brezeme renaissance domaine lombard
+569. cote du rhone couzou jeanluc jamet vin blanc 2021
+570. cote du rhone la meme domaine gramenon
+571. cote du rhone la sagesse domaine gramenon
+572. cote du rhone laurent b domaine brusset
+573. cote du rhone lemouvante domaine gramenon
+574. cote du rhone les deux albion igp blanc
+575. cote du rhone les oliviers 2023 les vignerons destezargues
+576. cote du rhone les oliviers 2023 les vignerons destezargues
+577. cote du rhone ondine viognier grenache blanc
+578. cote du rhone parallele 45
+579. cote du rhone parallele 45 rose bio 2019
+580. cote du rhone poignee de raisins grameno organicbiodynamic
+581. cote du rhone rive droite rouge 2020
+582. cote du rhone rose rosae 2025 domaine raymond usseglio
+583. cote du rhone rose rosae 2025 domaine raymond usseglio
+584. cote du rhone rose rosae 2025 domaine raymond usseglio
+585. cote du rhone rose rosae 2025 domaine raymond usseglio
+586. cote du rhone rose rosae 2025 domaine raymond usseglio
+587. cote du rhone rouge 2023
+588. cote du rhone rouge domaine de la roche audran southern rhone france 2022
+589. cote du rhone rouge domaine de la roche audran southern rhone france 2023
+590. cote du rhone rouge domaine des carabiniers
+591. cote du rhone rouge fruit de lune
+592. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+593. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+594. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+595. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+596. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+597. cote du rhone rouge les argiles 2022 domaine raymond usseglio wine outlet
+598. cote du rhone rouge les argiles 2023 domaine raymond usseglio
+599. cote du rhone rouge les argiles 2023 domaine raymond usseglio
+600. cote du rhone rouge les argiles 2023 domaine raymond usseglio
+601. cote du rhone rouge les argiles 2023 domaine raymond usseglio
+602. cote du rhone rouge les argiles 2023 domaine raymond usseglio
+603. cote du rhone rouge nature domaine de la roche audran southern rhone france 2022
+604. cote du rhone rouge nature domaine de la roche audran southern rhone france 2023
+605. cote du rhone rouge nature domaine rocheaudran
+606. cote du rhone rouge visan domaine de la roche audran southern rhone france 2022
+607. cote du rhone syrah 2019 domaine jamet
+608. cote du rhone taparas rose 2024 les vignerons destezargues
+609. cote du rhone taparas rose 2024 les vignerons destezargues
+610. cote du rhone tinto guigal
+611. cote du rhone villages rouge 20212022 by domaine saint vincent rhone france
+612. cote du rhone villages saint gervais syrius
+613. cote du rhone villagetabardonne saintamant vin blanc 2020
+614. cote du roussillon latour de france vit
+615. cote du roussillon latour de france vit
+616. cote du roussillon les sorcieres clos des fees
+617. cote du roussillon lesquerde ri
+618. cote du roussillon lesquerde ri
+619. cote du roussillon lesquerde ri
+620. cote du roussillon vertigo blanc mas amiel
+621. cote du vivarais la ligure domaine gallety 2019 vin rouge
+622. cote du vivarais secret du hibou blanc mas de bagnols 2021
+623. cote est
+624. cote est domaine de kre vin de france rouge 2022
+625. cote est domaine lafage
+626. cote est domaine lafage 2024
+627. cote et mer branco
+628. cote et mer branco 2021
+629. cote et mer magnum 2021
+630. cote granuja
+631. cote granuja
+632. cote granuja 2019
+633. cote inverse seguret villages 2021 domaine des bosquets gigondas rhone frankrig
+634. cote jardin 2023
+635. cote jolie elderflower liqueur
+636. cote la cote pinot noir
+637. cote lavande malbec 2020 12 bottles
+638. cote lavande pinot noir
+639. cote lavande pinot noir 2021 12 bottles
+640. cote lavande rose
+641. cote lavande rose 2021
+642. cote lavande rose 2024 12 bottles
+643. cote lavande sauvignon blanc 2024 12 bottles
+644. cote luna
+645. cote luna
+646. cote mas
+647. cote mas
+648. cote mas 2019 rg du midi syrah gren
+649. cote mas 2019 rg du midi syrah gren
+650. cote mas 2022 syrah grenache pays doc languedoc france
+651. cote mas 2023
+652. cote mas 2023 sauvignon blanc vermentino pays doc languedoc france
+653. cote mas 2024
+654. cote mas 2025
+655. cote mas aurore
+656. cote mas aurore rose
+657. cote mas aurore rose
+658. cote mas aurore rose
+659. cote mas aurore rose languedoc rousillon francia
+660. cote mas aurore rose pays doc france bottle
+661. cote mas aurore rose pays doc france bottle
+662. cote mas blanc
+663. cote mas blanc
+664. cote mas blanc 2021 domaines paul mas
+665. cote mas blanc du midi
+666. cote mas blanc mediterranee
+667. cote mas blanc mediterranee 10
+668. cote mas blanc sauvignon blanc vermentino
+669. cote mas blanc sauvignon vermentino
+670. cote mas blanco
+671. cote mas blanco
+672. cote mas brut cremant di limoux
+673. cote mas brut rose cremant di limoux
+674. cote mas cremant de limoux brut
+675. cote mas cremant de limoux brut
+676. cote mas cremant de limoux brut
+677. cote mas cremant de limoux brut nv
+678. cote mas cremant de limoux rose
+679. cote mas cremant de limoux rose brut
+680. cote mas cremant limoux brut
+681. cote mas cremant limoux g
+682. cote mas cremant limoux rose g
+683. cote mas cru pezenas rouge
+684. cote mas estate st hilaire nv cremant de limoux brut
+685. cote mas frisante blanc de blanc brut
+686. cote mas frisante brut blanc de blancs
+687. cote mas frisante brut jean claude mas
+688. cote mas frisante sud de france brut blanc de blancs
+689. cote mas house blanc mediterranee 2014
+690. cote mas house rose aurore
+691. cote mas house rose aurore 2020
+692. cote mas house rouge intense mediterranee 2014
+693. cote mas intense rouge languedoc rousillon francia
+694. cote mas lesprit du midi viogniersauvignon blanc
+695. cote mas mediterranee blanc
+696. cote mas orange
+697. cote mas orange 2023
+698. cote mas orange vin de france
+699. cote mas orange vin de france
+700. cote mas orange wine
+701. cote mas organic rose
+702. cote mas picpoul
+703. cote mas piquepoul frisant
+704. cote mas red
+705. cote mas rose
+706. cote mas rose
+707. cote mas rose
+708. cote mas rose
+709. cote mas rose
+710. cote mas rose
+711. cote mas rose 6
+712. cote mas rose aurore
+713. cote mas rose aurore
+714. cote mas rose aurore
+715. cote mas rose aurore
+716. cote mas rose aurore
+717. cote mas rose aurore
+718. cote mas rose aurore
+719. cote mas rose aurore
+720. cote mas rose aurore 2022
+721. cote mas rose aurore 2022
+722. cote mas rose aurore 2023 igp pays doc
+723. cote mas rose aurore 2023 pays doc languedoc france
+724. cote mas rose aurore 2024 igp pays doc
+725. cote mas rose aurore pays doc igp 2022
+726. cote mas rose brut
+727. cote mas rose brut
+728. cote mas rouge
+729. cote mas rouge grenachesyrah
+730. cote mas rouge intense
+731. cote mas rouge intense
+732. cote mas rouge syrah grenache
+733. cote mas rouge syrah grenache 1 liter
+734. cote mas rouge syrah grenache 1 liter wine nexus
+735. cote mas rouge syrah grenache 2019
+736. cote mas rouge syrah grenache 2021 domaines paul mas
+737. cote mas sauvignon
+738. cote mas sauvignon blanc vermentino 2023 franta
+739. cote mas sauvignon vermentino
+740. cote mas sauvignon vermentino 2022
+741. cote mas sauvignon vermentino 2022 igp pays doc
+742. cote mas sauvignon vermentino 2024 igp pays doc
+743. cote mas sauvignon vermentino pays doc igp 2022
+744. cote mas syrah grenache
+745. cote mas syrah grenache
+746. cote mas syrah grenache
+747. cote mas syrah grenache 2022 igp pays doc
+748. cote mas syrah grenache 2024 igp pays doc
+749. cote mas syrah grenache pays doc igp 2021
+750. cote memorious pinot noir
+751. cote mer
+752. cote mer
+753. cote mer
+754. cote mer 2022
+755. cote mer collioure rouge 2021
+756. cote mer rose 2024 cotes de provence
+757. cote mer rouge aop collioure rectorie
+758. cote mer vermelho
+759. cote midi chardonnay
+760. cote midi pinot noir
+761. cote miel apiculteur miel dacacia de france 375g
+762. cote montgeorge
+763. cote nicault 2021
+764. cote noire centre piece 37 red roses
+765. cote noire centre piece white roses ivory white
+766. cote noire couture 4 roses blush
+767. cote noire couture 9 roses blush
+768. cote noire couture large carmine rose buds
+769. cote noire couture small carmine red rose buds
+770. cote noire french rose magenta
+771. cote noire gift set
+772. cote noire persian lime and tangerine 450g jade blue
+773. cote noire pink champagne 450g pink
+774. cote noire pink champagne grand diffuser
+775. cote obscur 2023
+776. cote obscur the dark side
+777. cote ocean blanc
+778. cote ocean french rose
+779. cote ocean rose
+780. cote ocean rose igp atlantique 2024
+781. cote ocean sauvignon blanc
+782. cote ocean sauvignon blanc
+783. cote ocean sauvignon blanc atlanique igp 2019
+784. cote ombrage 2020 white bordeaux france
+785. cote ombrage 2021 bordeaux blanc bordeaux france
+786. cote pelee
+787. cote pelee
+788. cote pelee
+789. cote pelee 2018 0
+790. cote pelee mondeuse rouge 2011
+791. cote pelee mondeuse rouge 2012
+792. cote pelee rouge 2016
+793. cote pelee rouge 2019
+794. cote pierre lys
+795. cote pierre lys pinot noir
+796. cote plage cuvee chichoulet vin de pays doc 2024
+797. cote roannaise 1878 domaine de la paroisse
+798. cote roannaise 2020
+799. cote roannaise bio tentation domaine vincent giraudon 2022
+800. cote roannaise chateau de champagny grande reserve
+801. cote roannaise chez muron 2021 domaine serol
+802. cote roannaise clos du puy rouge 2023 domaine des pothiers
+803. cote roannaise coup de cur domaine de la paroisse
+804. cote roannaise coup de foudre domaine de la paroisse
+805. cote roannaise coup de soleil domaine de la paroisse
+806. cote roannaise cuvee domaine 2021
+807. cote roannaise cuvee no 6 2021
+808. cote roannaise domaine de la rochette bio rouge la rochette
+809. cote roannaise domaine pluchot arris
+810. cote roannaise domaine rouge 2023 domaine des pothiers
+811. cote roannaise domaine serol eclat de granite
+812. cote roannaise eclat de granite 2023 domaine serol
+813. cote roannaise eclat de granite 2023 domaine serol 1
+814. cote roannaise eclat de granite 2024 domaine serol
+815. cote roannaise eclat de granite biodynamie domaine serol
+816. cote roannaise eclat de granite domaine serol 2022
+817. cote roannaise la chapelle rouge 2022 domaine des pothiers
+818. cote roannaise laudato si 2023 rouge domaine de la benisson dieu
+819. cote roannaise le rouge florent thinon
+820. cote roannaise les blondins
+821. cote roannaise les millerands 2023 domaine serol
+822. cote roannaise liger le fleuve 2021 domaine reniteo
+823. cote roannaise oudan 2023 domaine serol
+824. cote roannaise perdriziere 2022 domaine serol
+825. cote roannaise perdriziere 2023 domaine serol
+826. cote roannaise perdriziere 2023 domaine serol
+827. cote roche cote roche viognier 2022
+828. cote roche viognier
+829. cote roche viognier
+830. cote roche viognier
+831. cote roche viognier
+832. cote ronde chateauneufdupape 2019
+833. cote ronde chateauneufdupape 2019
+834. cote ronde chateauneufdupape 2019 personliche empfehlung
+835. cote ronde chateauneufdupape 2019 persoonlijke aanbeveling
+836. cote rote la cote blonde stephane ogier
+837. cote rotie
+838. cote rotie
+839. cote rotie
+840. cote rotie 1996
+841. cote rotie 1997 michel stephane ogier
+842. cote rotie 2000 michel and stephane ogier
+843. cote rotie 2010 soute reine d didier gerin
+844. cote rotie 2011 domaine stephane ogier
+845. cote rotie 2014
+846. cote rotie 2015 domaine rosiers
+847. cote rotie 2016
+848. cote rotie 2016
+849. cote rotie 2017
+850. cote rotie 2017 domaine b burgaud
+851. cote rotie 2018 la germine duclaux
+852. cote rotie 2019
+853. cote rotie 2019 domaine bott
+854. cote rotie 2020
+855. cote rotie 2020 aurelien chatagnier
+856. cote rotie 2020 francois merlin
+857. cote rotie 2021
+858. cote rotie 2022 amethyste vignobles levet rouge
+859. cote rotie 2022 chateau le devay
+860. cote rotie 2022 domaine francois et fils
+861. cote rotie 2022 domaine francois et fils
+862. cote rotie 2022 francois merlin
+863. cote rotie 2022 les binardes
+864. cote rotie 202220212020 syrah
+865. cote rotie 2023 domaine francois et fils
+866. cote rotie 3 brunes domaine lionel faury 2022
+867. cote rotie ampodium 2016 domaine rostaing
+868. cote rotie ampodium 2023 domaine rostaing
+869. cote rotie ampodium domaine rostaing
+870. cote rotie ampodium rostaing cote rotie 2021
+871. cote rotie ampodium rostaing cote rotie magnum 1 2020
+872. cote rotie ampodium rostaing cote rotie magnum 1 2021
+873. cote rotie ampuis domaine e guigal rhone france 2020
+874. cote rotie aoc domaine pichon 2021
+875. cote rotie aoc vin rouge brune et blonde
+876. cote rotie aop
+877. cote rotie barbarine 2012 domaine gangloff
+878. cote rotie barbarine 2014 domaine gangloff
+879. cote rotie bassenon
+880. cote rotie bassenon 2014 cave yves cuilleron
+881. cote rotie bassenon cave cuilleron 2023
+882. cote rotie belle helene 2012 domaine stephane ogier
+883. cote rotie belle helene dom s ogier 2018
+884. cote rotie bellissima 2022 louis cheze
+885. cote rotie bellissima 2023 louis cheze
+886. cote rotie besset domaine de rosiers
+887. cote rotie blonde du seigneur 2022 georges vernay
+888. cote rotie blonde du seigneur domaine georges vernay cote rotie 2022
+889. cote rotie bonnevaux
+890. cote rotie bonneveaux jeannine boutin
+891. cote rotie brune blonde rouge 2020 magnum guigal
+892. cote rotie brune blonde rouge 2021 guigal
+893. cote rotie brune et blonde
+894. cote rotie brune et blonde 1998
+895. cote rotie brune et blonde 2019 e guigal
+896. cote rotie brune et blonde 2020
+897. cote rotie brune et blonde 2021
+898. cote rotie brune et blonde e guigal
+899. cote rotie brune et blonde e guigal 2020
+900. cote rotie brune et blonde guigal cote rotie 2021
+901. cote rotie carmina 2013 domaine pierrejean villa
+902. cote rotie chamin seigneur 2012 domaine jeanmichel gerin
+903. cote rotie champin le seigneur 2021 domaine jean michel gerin
+904. cote rotie champin le seigneur 2021 domaine jean michel gerin
+905. cote rotie champin le seigneur 2021 domaine jean michel gerin
+906. cote rotie champin le seigneur 2023 jean michel gerin
+907. cote rotie champin seigneur 2003 domaine jeanmichel gerin
+908. cote rotie champin seigneur 2005 domaine jeanmichel gerin
+909. cote rotie champin seigneur 2011 domaine jeanmichel gerin
+910. cote rotie champin seigneur 2013 domaine jeanmichel gerin
+911. cote rotie champon 2020 clusel roch
+912. cote rotie chapoutier
+913. cote rotie chapoutier
+914. cote rotie chateau ampuis 2009 guigal
+915. cote rotie chateau ampuis 2010 guigal
+916. cote rotie chateau ampuis 2015 guigal
+917. cote rotie chateau dampuis
+918. cote rotie chateau dampuis 2015 guigal magnum
+919. cote rotie chateau dampuis 2017 eguigal
+920. cote rotie chateau dampuis 2017 guigal
+921. cote rotie chateau dampuis 2018 eguigal
+922. cote rotie chateau dampuis 2019
+923. cote rotie chateau dampuis guigal cote rotie 1996
+924. cote rotie chateau dampuis guigal cote rotie 2007
+925. cote rotie chateau dampuis guigal cote rotie 2019
+926. cote rotie chateau dampuis guigal cote rotie 2019
+927. cote rotie chateau dampuis rouge 2019 guigal
+928. cote rotie chateau de montlys 2021
+929. cote rotie chateau de montlys 2022
+930. cote rotie chateau de montlys 2022
+931. cote rotie chirat la rose brune
+932. cote rotie classique 2010 clusel roch
+933. cote rotie coeur de rose domaine de rosiers
+934. cote rotie coffret des 9 lieuxdits dom s ogier 2019
+935. cote rotie cote blonde
+936. cote rotie cote blonde
+937. cote rotie cote blonde
+938. cote rotie cote blonde 1995 domaine rostaing
+939. cote rotie cote blonde 1998
+940. cote rotie cote blonde 1998 de boisseyt chol
+941. cote rotie cote blonde 2015 stephane ogier
+942. cote rotie cote blonde 2018 jocelyne et yves lafoy
+943. cote rotie cote blonde 2023 domaine rostaing
+944. cote rotie cote blonde domaine rostaing
+945. cote rotie cote brune 2013
+946. cote rotie cote brune 2023 domaine rostaing
+947. cote rotie cote de boeuf 110419
+948. cote rotie cote rozier 2022 domaine francois et fils
+949. cote rotie cote rozier domaine billon cote rotie 2020
+950. cote rotie coteaux de bassenon 2019 maison stephan bd vin nature
+951. cote rotie coteaux de bassenon 2019 maison stephan bd vin nature
+952. cote rotie coteaux de bassenon aoc 2018
+953. cote rotie coteaux de bassenon aoc 2020
+954. cote rotie coteaux de bassenon vin rouge 2023
+955. cote rotie coteaux de tupin
+956. cote rotie coteaux de tupin 2019 maison stephan bd vin nature
+957. cote rotie coteaux de tupin 2019 maison stephan bd vin nature
+958. cote rotie coteaux de tupin aoc 2018
+959. cote rotie coteaux de tupin aoc 2022
+960. cote rotie cuvee reviniscence faury
+961. cote rotie declive 2023 maison bruyere et david
+962. cote rotie delas seigneur de maugiron 2008
+963. cote rotie dom xavier gerard
+964. cote rotie domaine billon les elotins 2018 rhone france
+965. cote rotie domaine burgaud
+966. cote rotie domaine chatagnier 2022
+967. cote rotie domaine de bonserine la sarrasine
+968. cote rotie domaine de bonserine la sarrasine
+969. cote rotie domaine du monteillet stephane montez fortis 2022
+970. cote rotie domaine jamet 2017
+971. cote rotie domaine les pierrelles
+972. cote rotie domaine pierre gaillard 2021
+973. cote rotie domaine victor berard 2022
+974. cote rotie drevon domaine de rosiers
+975. cote rotie drevon magnum domaine de rosiers
+976. cote rotie duclaux la germine
+977. cote rotie eminence domaine remi niero
+978. cote rotie enomis domaine les moutons vin rouge 2021
+979. cote rotie esprit de blonde pierre gaillard 2020 frankrijk rhone rood
+980. cote rotie fleur de montlys
+981. cote rotie fortis
+982. cote rotie fortis 2013 domaine du monteillet
+983. cote rotie fortis monteillet cote rotie 2021
+984. cote rotie gallet blanc 2012 domaine francois villard
+985. cote rotie gallet blanc francois villard 2020
+986. cote rotie gerin la vialliere
+987. cote rotie germine domaine duclaux 2022 rg
+988. cote rotie grandes places 2012 domaine du monteillet
+989. cote rotie grandes places stephane montez 2021 vin rouge
+990. cote rotie guigal
+991. cote rotie guigal la mouline 2018
+992. cote rotie guigal la turque 2018
+993. cote rotie la barbarine 2015 gangloff
+994. cote rotie la barbarine 2018 gangloff
+995. cote rotie la barbarine 2021 gangloff
+996. cote rotie la barbarine 2023 domaine gangloff
+997. cote rotie la barbarine gangloff 2020
+998. cote rotie la barbarine gangloff cote rotie 2023
+999. cote rotie la barbarine gangloff cote rotie 2023
+1000. cote rotie la belle helene ogier cote rotie 2019
+23:42

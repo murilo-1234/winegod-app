@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. vinho do porto grahams 10 anos
+2. vinho do porto grahams 10 anos
+3. vinho do porto furada pink douro
+4. vinho do porto furada pink
+5. vinho do porto furada family tawny
+6. vinho do porto foz tua white 40 anos
+7. vinho do porto fonseca white port
+8. vinho do porto fonseca white
+9. vinho do porto fonseca vintage serie limitada
+10. vinho do porto fonseca vintage 2016 douro
+11. vinho do porto fonseca vintage 2016
+12. vinho do porto fonseca vintage 2012
+13. vinho do porto fonseca vintage 2011
+14. vinho do porto fonseca vintage 2003 37
+15. vinho do porto fonseca vintage 2003
+16. vinho do porto fonseca vintage 2003
+17. vinho do porto fonseca vintage 2000
+18. vinho do porto fonseca vintage 2000
+19. vinho do porto fonseca vintage 1997
+20. vinho do porto fonseca vintage 1995
+21. vinho do porto fonseca terra prima reserva biologico
+22. vinho do porto fonseca tawny
+23. vinho do porto fonseca siroco x 6 unidades
+24. vinho do porto fonseca siroco
+25. vinho do porto fonseca ruby
+26. vinho do porto fonseca ruby
+27. vinho do porto fonseca quinta panascal vintage 2008
+28. vinho do porto fonseca quinta panascal vintage 2005
+29. vinho do porto fonseca quinta panascal vintage 2004
+30. vinho do porto fonseca lbv unfiltered
+31. vinho do porto fonseca late bottled vintage unfiltered
+32. vinho do porto fonseca guimaraes vintage 2018 douro
+33. vinho do porto fonseca guimaraens vintage 2012 37
+34. vinho do porto fonseca guimaraens vintage 2012
+35. vinho do porto fonseca guimaraens vintage 2008
+36. vinho do porto fonseca guimaraens vintage 2005
+37. vinho do porto fonseca guimaraens vintage 2004
+38. vinho do porto fonseca guimaraens vintage 2001
+39. vinho do porto fonseca guimaraens vintage 1998
+40. vinho do porto fonseca guimaraens vintage 1995 37
+41. vinho do porto fonseca guimaraens vintage 1991 37
+42. vinho do porto fonseca bin no27 tinto
+43. vinho do porto fonseca bin no 27 finest reserve
+44. vinho do porto fonseca bin no 27 1
+45. vinho do porto fonseca bin 27 finest reserve
+46. vinho do porto fonseca 40 anos old tawny
+47. vinho do porto fonseca 2016 vintage
+48. vinho do porto fonseca 20 anos tawny
+49. vinho do porto fonseca 20 anos tawny
+50. vinho do porto fonseca 10 anos tawny
+51. vinho do porto fonseca 10 anos tawny
+52. vinho do porto fonseca 10 anos douro
+53. vinho do porto fine tawny tinto taylors
+54. vinho do porto fine tawny sandeman
+55. vinho do porto fine ruby tinto taylors
+56. vinho do porto fine ruby sandeman
+57. vinho do porto fine ruby sandeman
+58. vinho do porto fine ruby grahams grahams
+59. vinho do porto fine ruby delaforce portugues
+60. vinho do porto fine rose vista alegre
+61. vinho do porto feuerheerds tawny 50 anos
+62. vinho do porto feuerheerds tawny 20 anos
+63. vinho do porto feuerheerds colheita 2014
+64. vinho do porto feuerheerds colheita 2013
+65. vinho do porto feuerheerds colheita 2012
+66. vinho do porto feuerheerds colheita 2011
+67. vinho do porto feuerheerds colheita 2010
+68. vinho do porto feuerheerds colheita 2009
+69. vinho do porto feuerheerds colheita 2007
+70. vinho do porto feuerheerds colheita 2006
+71. vinho do porto feuerheerds colheita 2005
+72. vinho do porto feuerheerds colheita 2004
+73. vinho do porto feuerheerds colheita 2003
+74. vinho do porto feuerheerds colheita 2001
+75. vinho do porto feuerheerds colheita 2000
+76. vinho do porto feuerheerds colheita 1997
+77. vinho do porto feuerheerds colheita 1968
+78. vinho do porto ferreira white
+79. vinho do porto ferreira white
+80. vinho do porto ferreira vintage vinhas velhas 2016
+81. vinho do porto ferreira vintage 2018 douro
+82. vinho do porto ferreira vintage 2018
+83. vinho do porto ferreira tawny tinto
+84. vinho do porto ferreira tawny portugal
+85. vinho do porto ferreira tawny douro
+86. vinho do porto ferreira tawny 10 anos com calice
+87. vinho do porto ferreira tawny
+88. vinho do porto ferreira tawny
+89. vinho do porto ferreira tawny
+90. vinho do porto ferreira ruby tinto
+91. vinho do porto ferreira ruby portugal
+92. vinho do porto ferreira ruby
+93. vinho do porto ferreira ruby
+94. vinho do porto ferreira ruby
+95. vinho do porto ferreira ruby
+96. vinho do porto ferreira reserva dona antonia tawny tinto
+97. vinho do porto ferreira porto vintage 2018 douro
+98. vinho do porto ferreira lbv
+99. vinho do porto ferreira lagrima
+100. vinho do porto ferreira duque de braganca tinto
+101. vinho do porto ferreira dona antonia tawny reserva 10 anos
+102. vinho do porto ferreira dona antonia tawny com lata
+103. vinho do porto ferreira dona antonia tawny 30 anos
+104. vinho do porto ferreira dona antonia tawny 20 anos
+105. vinho do porto ferreira dona antonia tawny 10 anos
+106. vinho do porto ferreira dona antonia tawny
+107. vinho do porto ferreira dona antonia reserva tinto
+108. vinho do porto ferreira dona antonia reserva tawny
+109. vinho do porto ferreira dona antonia reserva
+110. vinho do porto ferreira dona antonia branco
+111. vinho do porto ferreira dona antonia 20 anos porto
+112. vinho do porto ferreira dona antonia 10 anos branco 37 douro
+113. vinho do porto ferreira d antonia reserva tawny douro
+114. vinho do porto ferreira branco portugal
+115. vinho do porto ferreira branco
+116. vinho do porto ferreira branco
+117. vinho do porto ferreira branco
+118. vinho do porto ferreira branco
+119. vinho do porto ferreira branco
+120. vinho do porto ferreira branco
+121. vinho do porto ferreira 20 anos
+122. vinho do porto ferreira 10 anos
+123. vinho do porto fernao magalhaes tawny
+124. vinho do porto especial barros 102
+125. vinho do porto e tudo igual
+126. vinho do porto e os vinhos do douro
+127. vinho do porto duas familias very old tawny 40 anos douro
+128. vinho do porto dows vintage 2016 douro
+129. vinho do porto dows vintage 2016
+130. vinho do porto dows vintage 2003
+131. vinho do porto dows tawny 10 anos
+132. vinho do porto dows tawny
+133. vinho do porto dows rose
+134. vinho do porto dows quinta senhora da ribeira vintage 2013
+135. vinho do porto dows quinta do bomfim vintage 2006
+136. vinho do porto dows old tawny 30 anos caixa de madeira
+137. vinho do porto dows old tawny 30 anos
+138. vinho do porto dows old tawny 20 anos
+139. vinho do porto dows nirvana
+140. vinho do porto dows lbv miniatura x 10
+141. vinho do porto dows lbv 2020 douro
+142. vinho do porto dows lbv 2009 37
+143. vinho do porto dows lbv 2009
+144. vinho do porto dows lbv
+145. vinho do porto dows lagrima
+146. vinho do porto dows finest reserve
+147. vinho do porto dows fine white
+148. vinho do porto dows fine white
+149. vinho do porto dows fine tawny
+150. vinho do porto dows fine tawny
+151. vinho do porto dows fine tawny
+152. vinho do porto dows fine ruby
+153. vinho do porto dows fine ruby
+154. vinho do porto dows 30 anos
+155. vinho do porto dows 20 anos
+156. vinho do porto dows 10 anos 37
+157. vinho do porto dows 10 anos
+158. vinho do porto dow s 10 anos
+159. vinho do porto douro boys anniversary very old tawny douro
+160. vinho do porto dona antonia reserva tawny
+161. vinho do porto dona antonia reserva tawny
+162. vinho do porto dona antonia reserva branco douro
+163. vinho do porto dona antonia ferreira 10 anos douro
+164. vinho do porto dona antonia 10 anos
+165. vinho do porto dom rozes 50 anos
+166. vinho do porto dom manuel tawny
+167. vinho do porto dom manuel tawny
+168. vinho do porto dom manuel ruby
+169. vinho do porto dom manuel ruby
+170. vinho do porto dom manuel 10 anos
+171. vinho do porto dom jose tawny 2 tacas
+172. vinho do porto dom jose tawny
+173. vinho do porto dom jose tawny
+174. vinho do porto dom jose tawny
+175. vinho do porto dom jose tawny
+176. vinho do porto dom jose ruby tinto 2 tacas
+177. vinho do porto dom jose ruby real companhia tinto
+178. vinho do porto dom jose ruby
+179. vinho do porto dom jose ruby
+180. vinho do porto dom jose ruby
+181. vinho do porto dom jose ruby
+182. vinho do porto delaforce tawny
+183. vinho do porto delaforce ruby
+184. vinho do porto delaforce rose
+185. vinho do porto delaforce his eminence choice 10 year old
+186. vinho do porto delaforce fine tawny port
+187. vinho do porto delaforce fine tawny port
+188. vinho do porto delaforce fine tawny port
+189. vinho do porto delaforce fine ruby port
+190. vinho do porto delaforce curious ancient 20 years old
+191. vinho do porto delaforce 10 anos
+192. vinho do porto dalva vintage 2017 douro
+193. vinho do porto dalva vintage 2016 douro
+194. vinho do porto dalva vintage 2015 douro
+195. vinho do porto dalva vintage 2015
+196. vinho do porto dalva vintage 2011 douro
+197. vinho do porto dalva vintage 2011
+198. vinho do porto dalva vintage 2009 douro
+199. vinho do porto dalva vintage 2008 douro
+200. vinho do porto dalva vintage 2007 douro
+201. vinho do porto dalva vintage 2007
+202. vinho do porto dalva vintage 2005 douro
+203. vinho do porto dalva vintage 2004 douro
+204. vinho do porto dalva vintage 2003 douro
+205. vinho do porto dalva vintage 2000 douro
+206. vinho do porto dalva vintage 1997 douro
+207. vinho do porto dalva ruby douro
+208. vinho do porto dalva rose douro
+209. vinho do porto dalva lbv 2019 douro
+210. vinho do porto dalva golden white colheita 1971 douro
+211. vinho do porto dalva dry white douro
+212. vinho do porto dalva dry white 20 years old douro
+213. vinho do porto dalva dry white 10 years old douro
+214. vinho do porto dalva colheita dry white 1968 douro
+215. vinho do porto dalva colheita 2015 white
+216. vinho do porto dalva colheita 2015
+217. vinho do porto dalva colheita 2015
+218. vinho do porto dalva colheita 2014
+219. vinho do porto dalva colheita 2011
+220. vinho do porto dalva colheita 2010 douro
+221. vinho do porto dalva colheita 2010
+222. vinho do porto dalva colheita 2007 white
+223. vinho do porto dalva colheita 2007 douro
+224. vinho do porto dalva colheita 2007
+225. vinho do porto dalva colheita 2007
+226. vinho do porto dalva colheita 2005
+227. vinho do porto dalva colheita 2004 douro
+228. vinho do porto dalva colheita 2004
+229. vinho do porto dalva colheita 2004
+230. vinho do porto dalva colheita 2002 douro
+231. vinho do porto dalva colheita 2002
+232. vinho do porto dalva colheita 2001
+233. vinho do porto dalva colheita 2001
+234. vinho do porto dalva colheita 2000 douro
+235. vinho do porto dalva colheita 2000
+236. vinho do porto dalva colheita 1999 douro
+237. vinho do porto dalva colheita 1999
+238. vinho do porto dalva colheita 1999
+239. vinho do porto dalva colheita 1997 douro
+240. vinho do porto dalva colheita 1997
+241. vinho do porto dalva colheita 1995 douro
+242. vinho do porto dalva colheita 1995
+243. vinho do porto dalva colheita 1995
+244. vinho do porto dalva colheita 1994 douro
+245. vinho do porto dalva colheita 1994
+246. vinho do porto dalva colheita 1994
+247. vinho do porto dalva colheita 1994
+248. vinho do porto dalva colheita 1992 douro
+249. vinho do porto dalva colheita 1992
+250. vinho do porto dalva colheita 1991 douro
+251. vinho do porto dalva colheita 1991
+252. vinho do porto dalva colheita 1991
+253. vinho do porto dalva colheita 1990 douro
+254. vinho do porto dalva colheita 1990
+255. vinho do porto dalva colheita 1990
+256. vinho do porto dalva colheita 1985 douro
+257. vinho do porto dalva colheita 1985
+258. vinho do porto dalva colheita 1985
+259. vinho do porto dalva colheita 1985
+260. vinho do porto dalva colheita 1982 douro
+261. vinho do porto dalva colheita 1982
+262. vinho do porto dalva colheita 1982
+263. vinho do porto dalva colheita 1968 douro
+264. vinho do porto dalva colheita 1967
+265. vinho do porto dalva colheita 1966
+266. vinho do porto dalva colheita 1934 douro
+267. vinho do porto dalva 50 anos very old white
+268. vinho do porto dalva 50 anos
+269. vinho do porto dalva 40 years old dry white douro
+270. vinho do porto dalva 40 years old douro
+271. vinho do porto dalva 40 anos dry white
+272. vinho do porto dalva 30 years old douro
+273. vinho do porto dalva 30 anos
+274. vinho do porto dalva 20 years old douro
+275. vinho do porto dalva 20 anos
+276. vinho do porto dalva 10 years old tawny douro
+277. vinho do porto cruz white
+278. vinho do porto cruz tawny
+279. vinho do porto cruz tawny
+280. vinho do porto cruz ruby
+281. vinho do porto cruz pink
+282. vinho do porto cruz lagrima
+283. vinho do porto cruz especial reserva
+284. vinho do porto cruz especial reserva
+285. vinho do porto cruz colheita 2000
+286. vinho do porto cruz colheita 1999
+287. vinho do porto cruz colheita 1998
+288. vinho do porto cruz 40 anos
+289. vinho do porto cruz 30 anos
+290. vinho do porto cruz 10 anos
+291. vinho do porto cruz 10 anos
+292. vinho do porto croft vintage 2016
+293. vinho do porto croft vintage 2011
+294. vinho do porto croft vintage 2007
+295. vinho do porto croft tawny reserva
+296. vinho do porto croft tawny
+297. vinho do porto croft ruby tinto
+298. vinho do porto croft ruby
+299. vinho do porto croft ruby
+300. vinho do porto croft reserva tawny tinto
+301. vinho do porto croft reserva tawny 4
+302. vinho do porto croft reserva tawny
+303. vinho do porto croft reserva tawny
+304. vinho do porto croft reserva
+305. vinho do porto croft quinta da roeda vintage 2018 douro
+306. vinho do porto croft quinta da roeda vintage 2012
+307. vinho do porto croft pink
+308. vinho do porto croft pink
+309. vinho do porto croft lbv
+310. vinho do porto croft fine white
+311. vinho do porto croft fine tawny tinto
+312. vinho do porto croft fine tawny 10 anos tinto
+313. vinho do porto croft fine tawny
+314. vinho do porto croft fine tawny
+315. vinho do porto croft fine ruby vila nova de gaia
+316. vinho do porto croft fine ruby tinto
+317. vinho do porto croft branco
+318. vinho do porto croft 430 th
+319. vinho do porto croft 430 anos
+320. vinho do porto croft 20 anos tawny
+321. vinho do porto croft 10 anos tawny
+322. vinho do porto crasto porto tawny 20 anos
+323. vinho do porto crasto porto tawny 10 anos
+324. vinho do porto crasto 20 anos tawny
+325. vinho do porto crasto 10 anos tawny
+326. vinho do porto costa boal tawny 10 anos
+327. vinho do porto coroa de rei porto white
+328. vinho do porto coroa de rei porto tawny
+329. vinho do porto coroa de rei porto ruby
+330. vinho do porto coroa de rei porto reserva tawny
+331. vinho do porto coroa de rei porto reserva ruby
+332. vinho do porto coroa de rei porto 30 anos
+333. vinho do porto coroa de rei porto 10 anos
+334. vinho do porto conde de monsul white
+335. vinho do porto conde de monsul tawny tinto portugal
+336. vinho do porto conde de monsul tawny
+337. vinho do porto conceito vintage 2016 douro
+338. vinho do porto conceito tawny 10 anos douro
+339. vinho do porto conceito by barbeito porto ruby 2014 douro
+340. vinho do porto conceito by barbeito porto branco 2016 douro
+341. vinho do porto com frete gratis para o brasil
+342. vinho do porto cockburns tawny 20 anos
+343. vinho do porto cockburns tawny 10 anos
+344. vinho do porto cockburns quinta dos canais vintage 2013
+345. vinho do porto cockburns lbv 2019 douro
+346. vinho do porto cockburns fine tawny
+347. vinho do porto cockburns fine ruby
+348. vinho do porto cockburns 10 anos douro
+349. vinho do porto churchills vintage 2020
+350. vinho do porto churchills tawny 30 anos douro
+351. vinho do porto churchills tawny 20 anos douro
+352. vinho do porto churchills tawny 10 anos douro
+353. vinho do porto churchills tawny 10 anos
+354. vinho do porto churchills port experience douro
+355. vinho do porto churchills lbv 2019 douro
+356. vinho do porto churchill s vintage 2017
+357. vinho do porto churchill s 20 years old tawny douro
+358. vinho do porto cerimony tawny
+359. vinho do porto cerimony ruby
+360. vinho do porto ceremoy tawny
+361. vinho do porto ceremony white branco
+362. vinho do porto ceremony tawny vallegre
+363. vinho do porto ceremony tawny tto 1x
+364. vinho do porto ceremony tawny douro 6 un tinto portugal
+365. vinho do porto ceremony tawny desconto
+366. vinho do porto ceremony tawny desconto
+367. vinho do porto ceremony tawny desconto
+368. vinho do porto ceremony tawny 20 anos
+369. vinho do porto ceremony tawny 10 anos gfa de vidro
+370. vinho do porto ceremony tawny 10 anos
+371. vinho do porto ceremony tawny 10 anos
+372. vinho do porto ceremony tawny
+373. vinho do porto ceremony tawny
+374. vinho do porto ceremony tawny
+375. vinho do porto ceremony tawny
+376. vinho do porto ceremony ruby vallegre
+377. vinho do porto ceremony ruby tto 1x
+378. vinho do porto ceremony ruby desconto
+379. vinho do porto ceremony ruby
+380. vinho do porto ceremony ruby
+381. vinho do porto ceremony ruby
+382. vinho do porto ceremony ruby
+383. vinho do porto ceremony ruby
+384. vinho do porto ceremony porto tawny
+385. vinho do porto ceremony porto ruby
+386. vinho do porto ceremony porto lbv 2015
+387. vinho do porto ceremony lbv
+388. vinho do porto ceremony dry white
+389. vinho do porto ceremony branco seco
+390. vinho do porto ceremony branco doce
+391. vinho do porto ceremony branco
+392. vinho do porto ceremony 10 anos tinto
+393. vinho do porto ceremony
+394. vinho do porto ceremony
+395. vinho do porto caves santa marta ruby
+396. vinho do porto caves santa marta ruby
+397. vinho do porto caves santa marta 50 anos very old tawny douro
+398. vinho do porto cave santa marta white portugal
+399. vinho do porto castelares escolha do caldeira reserva
+400. vinho do porto caseiro tawny
+401. vinho do porto calem white dry
+402. vinho do porto calem white
+403. vinho do porto calem vintage 2022
+404. vinho do porto calem vintage 2016
+405. vinho do porto calem vintage 2015
+406. vinho do porto calem velhotes tawny
+407. vinho do porto calem velhotes tawny
+408. vinho do porto calem velhotes ruby
+409. vinho do porto calem velhotes mini white
+410. vinho do porto calem velhotes fine white douro
+411. vinho do porto calem velhotes fine tawny douro
+412. vinho do porto calem velhotes 10 years old douro
+413. vinho do porto calem velhotes 10 anos com caixa
+414. vinho do porto calem tawny 40 anos douro
+415. vinho do porto calem tawny 10 anos douro
+416. vinho do porto calem tawny
+417. vinho do porto calem special reserve tawny
+418. vinho do porto calem ruby
+419. vinho do porto calem rose
+420. vinho do porto calem lbv 2019
+421. vinho do porto calem especial reserva com saco
+422. vinho do porto calem colheita 2015 tawny
+423. vinho do porto calem colheita 2013 tawny
+424. vinho do porto calem colheita 2012 tawny
+425. vinho do porto calem colheita 2011 tawny
+426. vinho do porto calem colheita 2010 tawny
+427. vinho do porto calem colheita 2008 tawny
+428. vinho do porto calem colheita 2007 tawny
+429. vinho do porto calem colheita 2006 tawny
+430. vinho do porto calem colheita 2005 tawny
+431. vinho do porto calem colheita 2003 tawny
+432. vinho do porto calem colheita 2002 tawny
+433. vinho do porto calem colheita 1985 tawny
+434. vinho do porto calem 40 anos tawny
+435. vinho do porto calem 40 anos
+436. vinho do porto calem 30 anos tawny
+437. vinho do porto calem 30 anos
+438. vinho do porto calem 20 anos tawny
+439. vinho do porto calem 20 anos
+440. vinho do porto calem 10 anos tawny
+441. vinho do porto calem 10 anos com saco
+442. vinho do porto calem 10 anos
+443. vinho do porto cadao lbv 075
+444. vinho do porto cadao 20 anos 0
+445. vinho do porto burmester white douro
+446. vinho do porto burmester white
+447. vinho do porto burmester vintage 2022
+448. vinho do porto burmester vintage 2020
+449. vinho do porto burmester vintage 2016
+450. vinho do porto burmester tawny tinto
+451. vinho do porto burmester tawny 10 anos
+452. vinho do porto burmester tawny
+453. vinho do porto burmester tawny
+454. vinho do porto burmester tawny
+455. vinho do porto burmester tawny
+456. vinho do porto burmester sotto voce
+457. vinho do porto burmester ruby tinto portugal
+458. vinho do porto burmester ruby
+459. vinho do porto burmester ruby
+460. vinho do porto burmester ruby
+461. vinho do porto burmester ruby
+462. vinho do porto burmester quinta do arnozelo vintage 2021
+463. vinho do porto burmester quinta do arnozelo vintage 2019
+464. vinho do porto burmester old tawny 30 anos tinto
+465. vinho do porto burmester old tawny 20 anos tinto
+466. vinho do porto burmester old tawny 10 anos tinto
+467. vinho do porto burmester old tawny 10 anos tinto
+468. vinho do porto burmester lbv 2019
+469. vinho do porto burmester jockey club
+470. vinho do porto burmester extra dry white
+471. vinho do porto burmester colheita 2015 tawny
+472. vinho do porto burmester colheita 2014 tawny
+473. vinho do porto burmester colheita 2013 tawny
+474. vinho do porto burmester colheita 2012 tawny
+475. vinho do porto burmester colheita 2012
+476. vinho do porto burmester colheita 2011 tawny
+477. vinho do porto burmester colheita 2011
+478. vinho do porto burmester colheita 2010 tawny
+479. vinho do porto burmester colheita 2010
+480. vinho do porto burmester colheita 2009
+481. vinho do porto burmester colheita 2005
+482. vinho do porto burmester colheita 2004 tawny
+483. vinho do porto burmester colheita 1985 tawny
+484. vinho do porto burmester colheita 1975
+485. vinho do porto burmester colheita 1952 tawny
+486. vinho do porto burmester 40 anos tawny
+487. vinho do porto burmester 20 anos tawny
+488. vinho do porto burmester 20 anos tawny
+489. vinho do porto burmester 10 anos tawny
+490. vinho do porto burmester 10 anos tawny
+491. vinho do porto burmester 10 anos tawny
+492. vinho do porto burmester 10 anos tawny
+493. vinho do porto bulas white 30 anos douro
+494. vinho do porto bulas white 20 anos douro
+495. vinho do porto bulas white 10 anos douro
+496. vinho do porto bulas vintage 2019 douro
+497. vinho do porto bulas vintage 2018 douro
+498. vinho do porto bulas vintage 2017 douro
+499. vinho do porto bulas vintage 2016 douro
+500. vinho do porto bulas vintage 2015 douro
+501. vinho do porto bulas tawny reserve douro
+502. vinho do porto bulas tawny 40 anos douro
+503. vinho do porto bulas tawny 30 anos douro
+504. vinho do porto bulas tawny 20 anos douro
+505. vinho do porto bulas tawny 10 anos douro
+506. vinho do porto bulas ruby reserve douro
+507. vinho do porto bulas reserve white douro
+508. vinho do porto bulas reserve tawny
+509. vinho do porto bulas lbv 2016 douro
+510. vinho do porto bulas late botled vintage
+511. vinho do porto bulas fine ruby
+512. vinho do porto bulas dry white douro
+513. vinho do porto bulas dry white 20 anos douro
+514. vinho do porto bulas dry white 10 anos douro
+515. vinho do porto bulas 20 anos
+516. vinho do porto bulas 10 anos
+517. vinho do porto brigs rose
+518. vinho do porto branco vista alegre lagrima
+519. vinho do porto branco taylors white fine douro
+520. vinho do porto branco taylors fine white
+521. vinho do porto branco taylors fine white
+522. vinho do porto branco taylors fine white
+523. vinho do porto branco taylors chip dry
+524. vinho do porto branco taylors chip dry
+525. vinho do porto branco s pedro
+526. vinho do porto branco rozes extra seco
+527. vinho do porto branco rozes
+528. vinho do porto branco quinta da pacheca
+529. vinho do porto branco quinta da pacheca
+530. vinho do porto branco qpa extra dry
+531. vinho do porto branco offley
+532. vinho do porto branco messias white dry casa flora
+533. vinho do porto branco lagrima ramos pinto
+534. vinho do porto branco lagrima ramos pinto
+535. vinho do porto branco furada
+536. vinho do porto branco fine quinta do noval
+537. vinho do porto branco fernao magalhaes
+538. vinho do porto branco diamond quinta da boeira
+539. vinho do porto branco conceito by barbeito
+540. vinho do porto branco chip dry taylors
+541. vinho do porto branco caseiro
+542. vinho do porto branco calem lagrima
+543. vinho do porto borges vintage 1994
+544. vinho do porto borges tawny 10 anos
+545. vinho do porto borges tawny
+546. vinho do porto blackett white 10 anos douro
+547. vinho do porto blackett vintage 2017 douro
+548. vinho do porto blackett very old port douro
+549. vinho do porto blackett tawny reserve douro
+550. vinho do porto blackett extra dry white douro
+551. vinho do porto blackett 30 anos douro
+552. vinho do porto blackett 20 anos douro
+553. vinho do porto blackett 10 anos douro
+554. vinho do porto biologico
+555. vinho do porto bela luz vintage 2020 douro
+556. vinho do porto bela luz vintage 2020
+557. vinho do porto barros white
+558. vinho do porto barros vintage 2022
+559. vinho do porto barros vintage 2020
+560. vinho do porto barros vintage 2011
+561. vinho do porto barros vintage 2007
+562. vinho do porto barros vintage 2000
+563. vinho do porto barros tawny
+564. vinho do porto barros special reserve tawny
+565. vinho do porto barros special reserve ruby
+566. vinho do porto barros ruby
+567. vinho do porto barros lbv 2019
+568. vinho do porto barros lagrima white
+569. vinho do porto barros kit 5 garrafas white lagrima white tawny reserve tawny ruby
+570. vinho do porto barros extra dry white
+571. vinho do porto barros colheita 2015 tawny
+572. vinho do porto barros colheita 2014 tawny
+573. vinho do porto barros colheita 2013 tawny
+574. vinho do porto barros colheita 2012 tawny
+575. vinho do porto barros colheita 2012
+576. vinho do porto barros colheita 2011 tawny
+577. vinho do porto barros colheita 2011
+578. vinho do porto barros colheita 2010 tawny
+579. vinho do porto barros colheita 2010
+580. vinho do porto barros colheita 2009
+581. vinho do porto barros colheita 2008 tawny
+582. vinho do porto barros colheita 2007 tawny
+583. vinho do porto barros colheita 2005 tawny
+584. vinho do porto barros colheita 2004 tawny
+585. vinho do porto barros colheita 2002 tawny
+586. vinho do porto barros colheita 2001 tawny
+587. vinho do porto barros colheita 2001
+588. vinho do porto barros colheita 2000
+589. vinho do porto barros colheita 1998 tawny
+590. vinho do porto barros colheita 1998
+591. vinho do porto barros colheita 1996
+592. vinho do porto barros colheita 1978 tawny
+593. vinho do porto barros colheita 1974 edicao especial 25 de abril
+594. vinho do porto barros colheita 1974
+595. vinho do porto barros colheita 1964 tawny
+596. vinho do porto barros colheita 1961
+597. vinho do porto barros colheita 1950
+598. vinho do porto barros 40 anos tawny
+599. vinho do porto barros 30 anos tawny
+600. vinho do porto barros 25 abril
+601. vinho do porto barros 20 anos tawny
+602. vinho do porto barros 10 anos tawny
+603. vinho do porto barros 10 anos
+604. vinho do porto barao de vilar colheita tinto
+605. vinho do porto barao de vilar 40 anos
+606. vinho do porto barao de vilar 30 anos
+607. vinho do porto barao de vilar 20 anos
+608. vinho do porto barao de vilar 10 anos tinto
+609. vinho do porto antonio vieira de sousa 90th anniversary very old douro
+610. vinho do porto andresen fine ruby
+611. vinho do porto alves de sousa vintage 2020 douro
+612. vinho do porto alves de sousa porto vintage 2023 porto
+613. vinho do porto adriano ramos tawny adriano ramos
+614. vinho do porto adriano ramos ruby adriano ramos
+615. vinho do porto adriano ramos pinto tawny tinto
+616. vinho do porto adriano ramos pinto tawny
+617. vinho do porto adriano ramos pinto tawny
+618. vinho do porto adriano ramos pinto ruby tinto
+619. vinho do porto adriano ramos pinto ruby
+620. vinho do porto adriano ramos pinto ruby
+621. vinho do porto adriano ramos pinto reserva particular
+622. vinho do porto adriano ramos pinto reserva
+623. vinho do porto adriano ramos pinto reserva
+624. vinho do porto adriano ramos pinto quinado
+625. vinho do porto adriano ramos pinto porto white
+626. vinho do porto adriano ramos pinto lbv tinto
+627. vinho do porto adriano ramos pinto lagrimas branco
+628. vinho do porto adriano ramos pinto lagrima branco
+629. vinho do porto adriano ramos branco adriano ramos
+630. vinho do porto adriano lagrima branco
+631. vinho do porto 80 anos victory port taylors
+632. vinho do porto 5g very old port douro
+633. vinho do porto 40 anos maynards
+634. vinho do porto 40 anos maynards
+635. vinho do porto 20 anos maynards
+636. vinho do porto 20 anos maynards
+637. vinho do porto 10 anos tawny
+638. vinho do porto 10 anos offley
+639. vinho do porto 10 anos maynards
+640. vinho do porto 10 anos maynards
+641. vinho do porto 10 anos maynards
+642. vinho do porto
+643. vinho do pai reserva tinto 2022
+644. vinho do pai reserva branco 2021
+645. vinho do mar white
+646. vinho do mar red reserva
+647. vinho do jerez
+648. vinho do jeremias tinto
+649. vinho do galo menin douro 2019
+650. vinho do frade garrafao tinto suave
+651. vinho do douro tavedo rose 2024
+652. vinho do douro sao luiz tinto 2023
+653. vinho do douro sao luiz reserva branco 2024
+654. vinho do douro curva reserva branco 2024
+655. vinho do douro burmester tinto 2023
+656. vinho do douro boavista reserva tinto 2021 0
+657. vinho do douro boavista reserva red 2021 0
+658. vinho do douro boavista alicante bouschet 2021
+659. vinho do cuco alvarinho e loureiro regional minho branco 2014
+660. vinho do atlantico tinto
+661. vinho do atlantico branco
+662. vinho do altar reserva branco
+663. vinho dna99 pizzato single vineyard merlot 2022 tinto brasileiro reserva
+664. vinho dna99 pizzato single vineyard merlot 2022 tinto brasileiro reserva
+665. vinho dna99 merlot pizzato safra 2022
+666. vinho dna 99 pizzato tinto seco
+667. vinho divus tinto 2018
+668. vinho divai tinto alicante bouschet
+669. vinho divai reserva tinto
+670. vinho divai reserva branco
+671. vinho disznoko tokaji late harvest branco
+672. vinho disznoko tokaji late harvest 2021
+673. vinho disznoko tokaji aszu 5 puttonyos 2013
+674. vinho disznoko tokaji 6 puttonyos branco
+675. vinho disznoko tokaji 5 puttonyos branco
+676. vinho discordia tinto 2019
+677. vinho dirty rabbit petit verdot frances
+678. vinho dirty rabbit petit verdot
+679. vinho dinastia de reyes rose espanha
+680. vinho dinamo sauvignon blanc 2024 branco chile
+681. vinho dinamo sauvignon blanc
+682. vinho dinamo sauvignon blanc
+683. vinho dinamo merlot tinto
+684. vinho dinamo merlot
+685. vinho dinamo carmenere tinto
+686. vinho dinamo carmenere 2024 tinto chile
+687. vinho dinamo carmenere
+688. vinho dinamo cabernet sauvignon tinto
+689. vinho dinamo cabernet sauvignon
+690. vinho dinamica dnmc branco
+691. vinho dinamica dnmc baga
+692. vinho dimallo tannat
+693. vinho dimallo rose
+694. vinho dimallo carmenere
+695. vinho dimallo cabernet sauvignon
+696. vinho dimallo branco frisante moscato
+697. vinho dilema velvet tto suave
+698. vinho dilema malbec tinto
+699. vinho dilema malbec
+700. vinho dilema malbec
+701. vinho diemersfontein pinotage
+702. vinho dieci terre primitivo di manduria
+703. vinho dieci terre ceius
+704. vinho dieci terre barolo doc
+705. vinho diaz bayo crianza 15 meses
+706. vinho diaz bayo crianza 15 meses
+707. vinho diaz bayo 8 meses
+708. vinho diaz bayo 4u
+709. vinho diaz bayo 20 meses
+710. vinho diane de belgrave haut medoc
+711. vinho diamandes malbec
+712. vinho diamandes gran reserva malbeccab
+713. vinho dialogo tinto 2022
+714. vinho dialogo tinto 0
+715. vinho dialogo branco 2024
+716. vinho dialogo branco 0
+717. vinho diablo velvet merlot
+718. vinho diablo tinto assemblage dark red
+719. vinho diablo premium carmenere 2022
+720. vinho diablo golden chardonnay
+721. vinho diablo golden chardonnay
+722. vinho diablo golden branco chardonnay
+723. vinho diablo deep carmenere
+724. vinho diablo dark red tinto
+725. vinho diablo dark red desconto
+726. vinho diablo dark red desconto
+727. vinho diablo dark red chile
+728. vinho diablo dark red blend tinto seco chile garrafa
+729. vinho diablo dark red 2021
+730. vinho diablo dark red 2020
+731. vinho diablo dark red
+732. vinho diablo carmenere
+733. vinho diablo carmenere
+734. vinho diablo cabernet sauvignon
+735. vinho diablo cabernet sauvignon
+736. vinho diablo black cabernet sauvignon
+737. vinho diablo black cabernet sauvignon
+738. vinho diablo black caber sauv 2020
+739. vinho di porto borges soalheira premier cru 1931
+740. vinho di mallo tannat
+741. vinho di mallo rose
+742. vinho di mallo demi sec merlot
+743. vinho di dio tinto tannat gran reserva 2020 mena kaho
+744. vinho di dio tinto alicante bouschet gran reserva 2022 mena kaho
+745. vinho di dio branco trebbiano toscano gran reserva 2022 mena kaho
+746. vinho di dio branco sauvignon blanc gran reserva 2021 mena kaho
+747. vinho di bartolo branco suave
+748. vinho di bartolo branco seco
+749. vinho di bartolo bordo suave
+750. vinho dezzani moscato dasti branco
+751. vinho dezzani monferrato doc bianco
+752. vinho dezzani monferrato doc bianco
+753. vinho dezzani langhe doc nebbiolo
+754. vinho dezzani langhe doc nebbiolo
+755. vinho dezzani gavi docg
+756. vinho dezzani gavi docg
+757. vinho dezzani dolcetto dacqui doc
+758. vinho dezzani dolcetto dacqui doc
+759. vinho dezzani barbera doc barbaverde bio
+760. vinho dezzani barbera doc barbaverde bio
+761. vinho dezzani barbera d asti la luna e le stelle
+762. vinho dezzani barbera d asti la luna e le stelle
+763. vinho dez tostoes
+764. vinho devils fantastic sweet casillero del diablo
+765. vinho devils carnaval phenomenal sauvignon
+766. vinho deu la deu reserva alvarinho verde
+767. vinho deu la deu alvarinho verde
+768. vinho destiny bay mystae 2019
+769. vinho destiny bay magna praemia 2019
+770. vinho destiny bay destinae 2019
+771. vinho destino malbec rose
+772. vinho destino malbec
+773. vinho destino malbec
+774. vinho destino chardonnay
+775. vinho desalcoolizado tinto freixenet
+776. vinho desalcoolizado merlot vinoh oak
+777. vinho desalcoolizado mayos tinto
+778. vinho desalcoolizado chardonnay vinoh oak
+779. vinho desalcoolizado cabernet sauvignon vinoh oak
+780. vinho desalcoolizado branco freixenet
+781. vinho desafio bonarda
+782. vinho depaula monastrell
+783. vinho depasso nero davola leggeramente appassito sicilia doc
+784. vinho denario sauvignon blanc branco 1x
+785. vinho denario reserva cabernet franc tto 1x
+786. vinho denario malbec tto 1x
+787. vinho demiseco bordo
+788. vinho demisec rose sem alcool freixenet
+789. vinho demisec i heart shiraz tinto
+790. vinho demisec i heart sauvignon blanc branco
+791. vinho demisec i heart merlot tinto
+792. vinho demisec i heart malbec tinto
+793. vinho demisec branco sem alcool freixenet
+794. vinho demi sec macaw cabernet sauvignon
+795. vinho demi panache familia carra vinho rose limao
+796. vinho demarine sangiovese puglia
+797. vinho demarine rosso puglia
+798. vinho demarine rosso
+799. vinho demarine pinot griggio pugliaa
+800. vinho delor reserve bordeaux
+801. vinho delle venezie doc 92 pinot grigio branco
+802. vinho della stella lambrusco branco
+803. vinho dell ornellaia le volte toscana 2022 13
+804. vinho delicia de baco crianza 2019
+805. vinho delas freres cotesdurhone saintesprit
+806. vinho del salento 12 e mezzo negroamaro
+807. vinho del salento 12 e mezzo negroamaro
+808. vinho del rei tinto velha madeira box com 36 unidades
+809. vinho del rei tinto velha madeira box com 12 unidades
+810. vinho del rei tinto velha madeira
+811. vinho del rei tinto suave bordo premium bag in box
+812. vinho del rei tinto suave bordo box com 36 unidades
+813. vinho del rei tinto suave bordo box com 12 unidades desconto
+814. vinho del rei tinto suave bordo bag in box
+815. vinho del rei tinto suave bordo
+816. vinho del rei tinto suave 78 cabernet e bordo box com 12 unidades
+817. vinho del rei tinto suave 78 cabernet e bordo
+818. vinho del rei tinto seco bordo box com 36 unidades
+819. vinho del rei tinto seco bordo box com 12 unidades
+820. vinho del rei tinto seco bordo bag in box
+821. vinho del rei tinto seco bordo
+822. vinho del rei tinto seco 78 cabernet e bordo box com 12 unidades
+823. vinho del rei tinto seco 78 cabernet e bordo
+824. vinho del rei tinto demisec bordo box com 36 unidades
+825. vinho del rei tinto demisec bordo box com 12 unidades
+826. vinho del rei tinto demisec bordo
+827. vinho del rei tinto demisec bordo
+828. vinho del rei rose suave isabel box com 36 unidades
+829. vinho del rei rose suave isabel box com 12 unidades
+830. vinho del rei rose suave isabel
+831. vinho del rei fino tinto suave cabernet sauvignon box com 18 unidades
+832. vinho del rei fino tinto suave cabernet sauvignon box com 12 unidades
+833. vinho del rei fino tinto suave cabernet sauvignon
+834. vinho del rei fino tinto seco cabernet sauvignon box com 18 unidades
+835. vinho del rei fino tinto seco cabernet sauvignon box com 12 unidades
+836. vinho del rei fino tinto seco cabernet sauvignon bag in box
+837. vinho del rei fino tinto seco cabernet sauvignon
+838. vinho del rei branco suave niagara box com 36 unidades desconto
+839. vinho del rei branco suave niagara box com 12 unidades
+840. vinho del rei branco suave niagara bag in box
+841. vinho del rei branco suave niagara
+842. vinho del rei branco seco niagara box com 36 unidades
+843. vinho del rei branco seco niagara box com 12 unidades
+844. vinho del rei branco seco niagara bag in box
+845. vinho del rei branco seco niagara
+846. vinho del rei branco seco moscato lorena
+847. vinho del grano tinto suave uva bordo
+848. vinho del grano tinto suave uva bordo
+849. vinho del grano tinto suave
+850. vinho del grano tinto seco uva bordo
+851. vinho del grano tinto seco uva bordo
+852. vinho del grano tinto seco
+853. vinho del grano rose suave uva bordo
+854. vinho del grano rose suave uva bordo
+855. vinho del grano rose
+856. vinho del grano gold tinto suave
+857. vinho del grano gold tinto seco bordo 6x
+858. vinho del grano gold tinto seco
+859. vinho del grano gold tinto bordo seco 1lpor unidade
+860. vinho del grano gold suave tinto
+861. vinho del grano gold suave branco
+862. vinho del grano gold seco tinto
+863. vinho del grano gold seco tinto
+864. vinho del grano gold rose
+865. vinho del grano gold niagara branco seco
+866. vinho del grano gold demisec tinto
+867. vinho del grano gold demisec
+868. vinho del grano gold bordo tinto suave
+869. vinho del grano gold bordo suave tinto
+870. vinho del grano gold bordo suave rose
+871. vinho del grano gold bordo suave rose
+872. vinho del grano gold bordo rose
+873. vinho del grano branco suave
+874. vinho del grano branco seco
+875. vinho dei respiri nero davola sicilia doc
+876. vinho degustacao vertical 3 gf calcu futa cabernet sauvignon
+877. vinho degustacao vertical
+878. vinho defesa esporao branco
+879. vinho defesa do esporao tinto
+880. vinho defesa do esporao tinto
+881. vinho defesa do esporao branco
+882. vinho defesa do esporao branco
+883. vinho defesa
+884. vinho decordi sorbello rose
+885. vinho decordi primitivo puglia
+886. vinho debut cabernet sauvignon
+887. vinho debut cabernet sauvignon
+888. vinho de wetshof danie de wet pinotage 2023
+889. vinho de torrao reserva
+890. vinho de talha tinto biologico 2017
+891. vinho de talha tinto biologico 2016
+892. vinho de talha tinto 2018
+893. vinho de talha tinto
+894. vinho de talha esporao branco
+895. vinho de talha doc cardeira amphorenwein 2021 14 vol
+896. vinho de talha alentejo doc adega de borba tinto 2017
+897. vinho de talha
+898. vinho de sousa reserva rose
+899. vinho de sobremesa vin santo del chianti 2016 borgo scopeto italiano classico
+900. vinho de sobremesa sauternes chateau rieussec 2018 premier grand cru classe bordeaux franca doce botritizado aromatico
+901. vinho de sobremesa sauternes carmes de rieussec 2011 bordeaux franca doce complexo e envelhecido
+902. vinho de sobremesa porto messias tawny
+903. vinho de sobremesa porto messias ruby
+904. vinho de sobremesa porto messias 40 anos
+905. vinho de sobremesa porto coroa de rei colheita 1994
+906. vinho de sobremesa moscatel roxo de setubal
+907. vinho de sobremesa moscatel de setubal
+908. vinho de sobremesa late harvest chileno balduzzi
+909. vinho de sobremesa coroa de rei porto white
+910. vinho de sobremesa coroa de rei porto reserva tawny
+911. vinho de sobremesa coroa de rei porto reserva ruby
+912. vinho de sobremesa coroa de rei porto 30 anos
+913. vinho de sobremesa
+914. vinho de missa licoroso primavera
+915. vinho de missa canonico salton
+916. vinho de missa canonico salton
+917. vinho de mesa villa piacenza blend tinto suave
+918. vinho de mesa villa piacenza blend tinto suave
+919. vinho de mesa vailatti tinto seco
+920. vinho de mesa tinto torres salmos 14 2021
+921. vinho de mesa tinto torres dolce floralis moscatel nv 15
+922. vinho de mesa tinto suave sao victor
+923. vinho de mesa tinto suave rio valley
+924. vinho de mesa tinto suave pinhal alto bordo
+925. vinho de mesa tinto suave long neck
+926. vinho de mesa tinto suave granja tonatto bordo pampas
+927. vinho de mesa tinto suave graciema vinicola cavalleri
+928. vinho de mesa tinto suave cortes
+929. vinho de mesa tinto suave cantina do sertao rio valley
+930. vinho de mesa tinto suave
+931. vinho de mesa tinto suave
+932. vinho de mesa tinto seco rio valley
+933. vinho de mesa tinto seco pinhal alto isabelbordo
+934. vinho de mesa tinto seco long neck
+935. vinho de mesa tinto seco graciema vinicola cavalleri
+936. vinho de mesa tinto seco del grano gold 750m
+937. vinho de mesa tinto seco cantina do sertao rio valley
+938. vinho de mesa tinto seco
+939. vinho de mesa tinto seco
+940. vinho de mesa tinto penfolds koonunga sycab 145 2023
+941. vinho de mesa tinto los vascos cromas cabernet sauvignon 2022 14
+942. vinho de mesa tinto
+943. vinho de mesa tinto
+944. vinho de mesa suave da nona herminia
+945. vinho de mesa seco lorena
+946. vinho de mesa santoinho frutado branco pet
+947. vinho de mesa rose suave vigolo vattaro
+948. vinho de mesa rose suave rio valley
+949. vinho de mesa rose suave canonico joao paulo ii
+950. vinho de mesa rose suave
+951. vinho de mesa rose seco terrenus
+952. vinho de mesa rose cantina do sertao rio valley
+953. vinho de mesa rosado suave long neck
+954. vinho de mesa rosado suave campino
+955. vinho de mesa rosado suave
+956. vinho de mesa rosado seco
+957. vinho de mesa real grei tinto bib
+958. vinho de mesa pergola rose suave
+959. vinho de mesa pergola rose suave
+960. vinho de mesa mateus rose 0
+961. vinho de mesa mateus rose 0
+962. vinho de mesa leziria tinto bag in box
+963. vinho de mesa halberth branco niagara seco
+964. vinho de mesa halberth branco niagara seco
+965. vinho de mesa faisao frutado branco 0 caixa com 6
+966. vinho de mesa dom bosco tinto suave
+967. vinho de mesa collina tinto suave
+968. vinho de mesa branco suave niagara dom tapparo
+969. vinho de mesa branco suave graciema vinicola cavalleri
+970. vinho de mesa branco suave cantina do sertao rio valley
+971. vinho de mesa branco suave amare
+972. vinho de mesa branco seco pinhal alto niagara
+973. vinho de mesa branco seco pinhal alto lorena
+974. vinho de mesa branco seco pet cappelletti
+975. vinho de mesa branco seco graciema vinicola cavalleri
+976. vinho de mesa branco los vascos cabernet sauvignon 2022 14
+977. vinho de mesa branco amanhecer
+978. vinho de mesa branco
+979. vinho de mesa bordo suave jota pe
+980. vinho de mesa alma de pias tinto box
+981. vinho de mesa alma de pias tinto box
+982. vinho de mesa alma de pias branco box
+983. vinho de mesa alma de pias branco box
+984. vinho de mesa alma de pias branco 0
+985. vinho de martino viejas tinajas cinsault 2018
+986. vinho de martino varietal sauv blanc
+987. vinho de martino varietal carmenere
+988. vinho de martino varietal cabernet sauvignon
+989. vinho de martino sauvignon blanc reserva ruta
+990. vinho de martino nuevo mundo reserva maipo
+991. vinho de martino legado gran reserva sauv blanc
+992. vinho de martino legado gran reserva pinot noir
+993. vinho de martino legado gran reserva chardonnay bug
+994. vinho de martino legado gran reserva chardonnay
+995. vinho de martino legado gran reserva chardonnay
+996. vinho de martino legado gran reserva cabernet sauvignon
+997. vinho de martino legado gran reserva cab sauvignon
+998. vinho de martino isla de maipo cabernet sauvignon 2017
+999. vinho de martino gran reserva sauvignon blanc organico
+1000. vinho de martino gran reserva chardonay

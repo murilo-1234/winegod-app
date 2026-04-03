@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. toscolo chianti docg 2022
+2. toscolo chianti docg
+3. toscolo chianti docg
+4. toscolo chianti classico riserva docg 2016 tuscany italy
+5. toscolo chianti classico riserva 2019
+6. toscolo chianti classico riserva 2019
+7. toscolo chianti classico docg 2018 tuscany italy
+8. toscolo chianti 2023
+9. toscolo chianti 2022
+10. toscolo chianti 2022
+11. toscolo chianti
+12. toscolo chianti
+13. toscolo chianti
+14. tosco alto mendoza malbec 2013
+15. tosco alto mendoza malbec
+16. toscianello sparkling white wine
+17. toscianello sparkling rose wine
+18. toscianello frizzante rose
+19. toscianello frizzante bianco
+20. toschi pinot noir 2021
+21. toschi pinot noir 2016
+22. toschi pink moscato 2018
+23. toschi nocello walnut liqueur 24
+24. toschi nocello walnut liqueur
+25. toschi nocello walnut liqueur
+26. toschi nocello walnut liqueur
+27. toschi nocello walnut liqueur
+28. toschi nocello walnut liqueur
+29. toschi nocello walnut liqueur
+30. toschi nocello walnut liqueur
+31. toschi nocello
+32. toschi nocello
+33. toschi nocello
+34. toschi moscato 2022
+35. toschi lemoncello liqueur
+36. toschi lemoncello
+37. toschi lemoncello
+38. toschi lemoncello
+39. toschi lemoncello
+40. toscello orange bitters
+41. toscello aromatic bitters
+42. toscata rosso igt lenaia casa di terra
+43. toscano sangiovese sotirio igt podernuovo a palazzone toscana
+44. toscano rosso le volte 2022 tenuta dellornellaia
+45. toscano rosso le volte 2020 magnum tenuta dellornellaia
+46. toscano rosso igt masseto selezione 2021 in owc tenuta dell ornellaia
+47. toscano rosso igt masseto 2021 ornellaia
+48. toscano rosso igt masseto 2019 in owc singola ornellaia
+49. toscano rosso igt massetino 2021 ornellaia
+50. toscano igp olio extravergine di oliva dievole
+51. toscano garibaldi 5
+52. toscano enrico igt supertoscaner
+53. toscano doc pinot grigio coldorcia 2023
+54. toscano cabernet franc argirio igt podernuovo a palazzone toscana
+55. toscano abboccato igt 2017 laltra donna
+56. toscanini reserve tannat
+57. toscanini reserva chardonnay
+58. toscanini espumoso extra brut
+59. toscanini crudo 6 blend
+60. toscanini crudo 1 tannat
+61. toscanini cabernet sauvignon reserva familiar uruguay
+62. toscanini barrel selection cabernettannat
+63. toscanini adagio espressivo tinto 2018
+64. toscani vedomare rosso 2020
+65. toscani vedomare rosso 2018
+66. toscani loli sparkling rose 2022 case only
+67. toscanetti 2021 igt
+68. toscanello rosso oro cappuccino 5
+69. toscanello rosso caffe
+70. toscanello riserva coniac mustiuc indulcit 5
+71. toscanello regular 5
+72. toscanello aroma rosso oro
+73. toscanello aroma rosso cafee
+74. toscanell0 5 caffe rosso
+75. toscana viognier igt montedonico 2023 terenzi
+76. toscana viognier igt montedonico 2023 terenzi
+77. toscana viognier igt montedonico 2023 terenzi
+78. toscana viognier igt belvento 2024 petra
+79. toscana viognier igt belvento 2024 petra
+80. toscana viognier igt belvento 2024 petra
+81. toscana viognier igt bauci 2023 la fralluca
+82. toscana viognier igt bauci 2023 la fralluca
+83. toscana viognier igt bauci 2023 la fralluca
+84. toscana viognier igt bauci 2023 la fralluca
+85. toscana viognier igt bauci 2023 la fralluca
+86. toscana vermentino nero igt 2024 terenzuola
+87. toscana vermentino nero igt 2024 terenzuola
+88. toscana vermentino nero igt 2024 terenzuola
+89. toscana vermentino nero igt 2024 terenzuola
+90. toscana vermentino nero igt 2024 terenzuola
+91. toscana vermentino nero igt 2024 terenzuola
+92. toscana vermentino nero igt 2024 terenzuola
+93. toscana vermentino le bozze igt 2024 grottaia
+94. toscana vermentino le bozze igt 2024 grottaia
+95. toscana vermentino le bozze igt 2024 grottaia
+96. toscana vermentino le bozze igt 2024 grottaia
+97. toscana vermentino le bozze igt 2024 grottaia
+98. toscana vermentino igt terre di lavinia casa di terra
+99. toscana vermentino igt sereno e nuvole 2021 dianella
+100. toscana vermentino igt perlato del bosco 2022 tua rita
+101. toscana vermentino igt massovivo tenuta ammiraglia frescobaldi
+102. toscana vermentino igt massovivo 2025 frescobaldi
+103. toscana vermentino igt massovivo 2025 frescobaldi
+104. toscana vermentino igt massovivo 2025 frescobaldi
+105. toscana vermentino igt massovivo 2025 frescobaldi
+106. toscana vermentino igt massovivo 2025 frescobaldi
+107. toscana vermentino igt massovivo 2025 frescobaldi
+108. toscana vermentino igt massovivo 2024 frescobaldi
+109. toscana vermentino igt massovivo 2024 frescobaldi
+110. toscana vermentino igt massovivo 2024 frescobaldi
+111. toscana vermentino igt la pettegola 2024 banfi
+112. toscana vermentino igt la pettegola 2024 banfi
+113. toscana vermentino igt la pettegola 2024 banfi
+114. toscana vermentino igt la pettegola 2024 banfi
+115. toscana vermentino igt i biondi 2024 tenuta il quinto
+116. toscana vermentino igt i biondi 2024 tenuta il quinto
+117. toscana vermentino igt i biondi 2024 tenuta il quinto
+118. toscana vermentino igt belvento 2024 petra
+119. toscana vermentino igt belvento 2024 petra
+120. toscana vermentino igt belvento 2024 petra
+121. toscana vermentino igt belvento 2024 petra
+122. toscana vermentino igt belvento 2024 petra
+123. toscana vermentino igt badalei 2024 banfi
+124. toscana vermentino igt badalei 2024 banfi
+125. toscana vermentino igt badalei 2024 banfi
+126. toscana vermentino igt badalei 2024 banfi
+127. toscana vermentino igt 2025 la spinetta rivetti
+128. toscana vermentino igt 2024 rocca di frassinello
+129. toscana vermentino igt 2024 rocca di frassinello
+130. toscana vermentino igt 2024 rocca di frassinello
+131. toscana vermentino igt 2024 rocca di frassinello
+132. toscana vermentino igt 2024 la spinetta rivetti
+133. toscana vendemmia tardiva igt dolci ricordi dianella
+134. toscana velarosa igt belvento 2024 petra
+135. toscana velarosa igt belvento 2024 petra
+136. toscana velarosa igt belvento 2024 petra
+137. toscana velarosa igt belvento 2024 petra
+138. toscana trebbiano igt lerta 2023 paolo marchionni
+139. toscana trebbiano igt lerta 2023 paolo marchionni
+140. toscana trebbiano igt lerta 2023 paolo marchionni
+141. toscana trebbiano igt lerta 2023 paolo marchionni
+142. toscana trebbiano igt lerta 2023 paolo marchionni
+143. toscana trebbiano igt 2023 capezzana
+144. toscana trebbiano igt 2023 capezzana
+145. toscana trebbiano igt 2023 capezzana
+146. toscana trebbiano igt 2022
+147. toscana syrah merlot igt bst 2023 ambrogio e giovanni folonari
+148. toscana syrah merlot igt bst 2023 ambrogio e giovanni folonari
+149. toscana syrah merlot igt bst 2023 ambrogio e giovanni folonari
+150. toscana syrah merlot igt bst 2023 ambrogio e giovanni folonari
+151. toscana syrah merlot igt bst 2023 ambrogio e giovanni folonari
+152. toscana syrah igt vigna piezza 2021 podere concori
+153. toscana syrah igt vigna piezza 2021 podere concori
+154. toscana syrah igt vigna piezza 2021 podere concori
+155. toscana syrah igt sambrena 2023 tenuta la novella
+156. toscana syrah igt sambrena 2023 tenuta la novella
+157. toscana syrah igt sambrena 2023 tenuta la novella
+158. toscana syrah igt sambrena 2023 tenuta la novella
+159. toscana syrah igt sambrena 2023 tenuta la novella
+160. toscana syrah igt sambrena 2023 tenuta la novella
+161. toscana syrah igt sambrena 2022 tenuta la novella
+162. toscana syrah igt sambrena 2022 tenuta la novella
+163. toscana syrah igt sambrena 2022 tenuta la novella
+164. toscana syrah igt pitis 2018 la fralluca
+165. toscana syrah igt pitis 2018 la fralluca
+166. toscana syrah igt pitis 2018 la fralluca
+167. toscana syrah igt per sempre 2016 tua rita
+168. toscana syrah igt per sempre 2011 tua rita
+169. toscana syrah collezione privata 2020 isole e olena
+170. toscana syrah
+171. toscana sauvignon blanc igt gemella 2023 bindella
+172. toscana sauvignon blanc igt gemella 2023 bindella
+173. toscana sauvignon blanc igt gemella 2023 bindella
+174. toscana sangiovese soldera case basse 2020 azienda agricola case basse di gianfranco soldera
+175. toscana sangiovese soldera case basse 2019 azienda agricola case basse di gianfranco soldera
+176. toscana sangiovese soldera case basse 2018 azienda agricola case basse di gianfranco soldera
+177. toscana sangiovese soldera case basse 2017 azienda agricola case basse di gianfranco soldera
+178. toscana sangiovese soldera case basse 2016 azienda agricola case basse di gianfranco soldera
+179. toscana sangiovese soldera case basse 2015 azienda agricola case basse di gianfranco soldera
+180. toscana sangiovese in bianco igt 2023
+181. toscana sangiovese il nero di casanova igt la spinetta 2021
+182. toscana sangiovese igt tin 2020 montesecondo
+183. toscana sangiovese igt tin 2020 montesecondo
+184. toscana sangiovese igt tin 2020 montesecondo
+185. toscana sangiovese igt tenuta le potazzine 2021
+186. toscana sangiovese igt soldera case basse 2019
+187. toscana sangiovese igt scopetone 2023
+188. toscana sangiovese igt scopetone 2021
+189. toscana sangiovese igt scopetone 2018
+190. toscana sangiovese igt scopetone
+191. toscana sangiovese igt sambrena 2023 tenuta la novella
+192. toscana sangiovese igt sambrena 2023 tenuta la novella
+193. toscana sangiovese igt sambrena 2023 tenuta la novella
+194. toscana sangiovese igt sambrena 2023 tenuta la novella
+195. toscana sangiovese igt sambrena 2023 tenuta la novella
+196. toscana sangiovese igt sambrena 2023 tenuta la novella
+197. toscana sangiovese igt rosso dei barbi 2023 fattoria dei barbi
+198. toscana sangiovese igt rosso dei barbi 2023 fattoria dei barbi
+199. toscana sangiovese igt rosso dei barbi 2023 fattoria dei barbi
+200. toscana sangiovese igt montesecondo 2024 montesecondo
+201. toscana sangiovese igt montesecondo 2024 montesecondo
+202. toscana sangiovese igt montesecondo 2024 montesecondo
+203. toscana sangiovese igt montesecondo 2024 montesecondo
+204. toscana sangiovese igt montesecondo 2024 montesecondo
+205. toscana sangiovese igt il nero 2022 la spinetta rivetti
+206. toscana sangiovese igt il nero 2021 la spinetta rivetti
+207. toscana sangiovese igt brigo 2022 giuseppe gorelli
+208. toscana sangiovese igt brigo 2022 giuseppe gorelli
+209. toscana sangiovese igt brigo 2022 giuseppe gorelli
+210. toscana sangiovese igt belvento 2024 petra
+211. toscana sangiovese igt belvento 2024 petra
+212. toscana sangiovese igt belvento 2024 petra
+213. toscana sangiovese igt belvento 2024 petra
+214. toscana sangiovese igt belvento 2024 petra
+215. toscana sangiovese igt belvento 2023 petra
+216. toscana sangiovese igt belvento 2023 petra
+217. toscana sangiovese igt belvento 2023 petra
+218. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+219. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+220. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+221. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+222. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+223. toscana sangiovese igt bakkanali rosso 2023 bakkanali
+224. toscana sangiovese igt badilante 2023 podere 414
+225. toscana sangiovese igt badilante 2023 podere 414
+226. toscana sangiovese igt badilante 2023 podere 414
+227. toscana sangiovese igt badilante 2023 podere 414
+228. toscana sangiovese igt badilante 2023 podere 414
+229. toscana sangiovese igt arialdo dalle nostre mani
+230. toscana sangiovese igt arialdo dalle nostre mani
+231. toscana sangiovese igt arialdo dalle nostre mani
+232. toscana sangiovese igt alto 2021 petra
+233. toscana sangiovese igt alto 2021 petra
+234. toscana sangiovese igt alto 2021 petra
+235. toscana sangiovese igt alto 2021 magnum petra cassetta di legno
+236. toscana sangiovese igt alto 2021 magnum petra cassetta di legno
+237. toscana sangiovese igt alto 2021 magnum petra cassetta di legno
+238. toscana sangiovese igt alberaia 2021 tenuta delle macchie
+239. toscana sangiovese igt alberaia 2021 tenuta delle macchie
+240. toscana sangiovese igt alberaia 2021 tenuta delle macchie
+241. toscana sangiovese igt alberaia 2021 tenuta delle macchie
+242. toscana sangiovese igt alberaia 2021 tenuta delle macchie
+243. toscana sangiovese igt 2024 caparzo
+244. toscana sangiovese igt 2024 caparzo
+245. toscana sangiovese igt 2024 caparzo
+246. toscana sangiovese igt 2024 caparzo
+247. toscana sangiovese igt 2024 caparzo
+248. toscana sangiovese igt 2021
+249. toscana sangiovese igt 2018
+250. toscana sangiovese igt
+251. toscana sangiovese duca di saragnano 2021 barbanera
+252. toscana sangiovese caparzo
+253. toscana sangiovese 2023 cantina vignaioli scansano
+254. toscana sangiovese 2023
+255. toscana sangiovese 2020 sesta di sopra
+256. toscana sangiovese 2019
+257. toscana rouge 2021
+258. toscana rosso virtus igt prima domus
+259. toscana rosso tignanello tenuta marchesi antinori 2022
+260. toscana rosso tignanello 1990 antinori
+261. toscana rosso ticche igt 2018
+262. toscana rosso therra igt podernuovo a palazzone toscana
+263. toscana rosso terre nuove 2024 agostina pieri
+264. toscana rosso tenuta adamo
+265. toscana rosso syrah igt per sempre 2020 tua rita
+266. toscana rosso syrah igt per sempre 2020 tua rita
+267. toscana rosso syrah igt per sempre 2020 tua rita
+268. toscana rosso syrah igt colle al fico 2022 petra
+269. toscana rosso syrah igt colle al fico 2022 petra
+270. toscana rosso syrah igt colle al fico 2022 petra
+271. toscana rosso syrah igt colle al fico 2022 magnum petra cassetta di legno
+272. toscana rosso syrah igt colle al fico 2022 magnum petra cassetta di legno
+273. toscana rosso syrah igt colle al fico 2022 magnum petra cassetta di legno
+274. toscana rosso syrah igt colle al fico 2022 magnum petra cassetta di legno
+275. toscana rosso syrah igt colle al fico 2022 magnum petra cassetta di legno
+276. toscana rosso simbiosi 2019 tenuta i colli bindi sergardi
+277. toscana rosso simbiosi 2019 tenuta i colli bindi sergardi
+278. toscana rosso simbiosi 2019 tenuta i colli bindi sergardi
+279. toscana rosso senza solfiti aggiunti igt bio buccia nera
+280. toscana rosso senza solfiti aggiunti igt bio buccia nera
+281. toscana rosso sangiovese monsanto 0
+282. toscana rosso sangiovese igt caparzo
+283. toscana rosso sangiovese e cabernet sauvignon igt bst 2024 ambrogio e giovanni folonari
+284. toscana rosso sangiovese e cabernet sauvignon igt bst 2024 ambrogio e giovanni folonari
+285. toscana rosso sangiovese e cabernet sauvignon igt bst 2024 ambrogio e giovanni folonari
+286. toscana rosso sangiovese e cabernet sauvignon igt bst 2024 ambrogio e giovanni folonari
+287. toscana rosso sangiovese e cabernet sauvignon igt bst 2024 ambrogio e giovanni folonari
+288. toscana rosso sangiovese caparzo
+289. toscana rosso sangiovese
+290. toscana rosso saffredi maremma 2018 igt fattoria le pupille toscana
+291. toscana rosso riro igt da bere freddo barbanera
+292. toscana rosso promis 2023 ca marcanda gaja
+293. toscana rosso onirico igt prima domus
+294. toscana rosso nove legni igt 2018
+295. toscana rosso mormoreto 2022 frescobaldi
+296. toscana rosso mormoreto 2022 frescobaldi
+297. toscana rosso mormoreto 2022 frescobaldi
+298. toscana rosso mora del roveto igt 2019 jeroboam cassetta legno usiglian del vescovo
+299. toscana rosso montevertine 2022
+300. toscana rosso montesodi igt
+301. toscana rosso monteraponi baron ugo 2019
+302. toscana rosso message in a bottle 2021 il palagio sting
+303. toscana rosso loupe montesecondo 2020 tuscany italy
+304. toscana rosso le volte dellornellaia igt 2024 ornellaia
+305. toscana rosso le difese igt 2023 tenuta san guido
+306. toscana rosso le difese igt
+307. toscana rosso le difese 2018 tenuta san guido
+308. toscana rosso la rossa igt certosa di belriguardo
+309. toscana rosso inedito igt 2024 terre del marchesato
+310. toscana rosso igt yantra 2023 tenuta sette cieli
+311. toscana rosso igt yantra 2023 tenuta sette cieli
+312. toscana rosso igt yantra 2023 tenuta sette cieli
+313. toscana rosso igt yantra 2023 tenuta sette cieli
+314. toscana rosso igt yantra 2023 tenuta sette cieli
+315. toscana rosso igt volta di bertinga magnum cassa di legno bertinga
+316. toscana rosso igt volta di bertinga magnum cassa di legno bertinga
+317. toscana rosso igt volta di bertinga jeroboam cassa di legno bertinga
+318. toscana rosso igt volta di bertinga bertinga
+319. toscana rosso igt volta di bertinga bertinga
+320. toscana rosso igt villa pacina 2018 pacina
+321. toscana rosso igt villa antinori 2023 magnum villa antinori antinori cassetta di legno
+322. toscana rosso igt villa antinori 2023 magnum villa antinori antinori cassetta di legno
+323. toscana rosso igt villa antinori 2023 magnum villa antinori antinori cassetta di legno
+324. toscana rosso igt villa antinori 2023 magnum villa antinori antinori cassetta di legno
+325. toscana rosso igt villa antinori 2023 magnum villa antinori antinori cassetta di legno
+326. toscana rosso igt villa antinori 2023 antinori
+327. toscana rosso igt villa antinori 2023 antinori
+328. toscana rosso igt villa antinori 2023 antinori
+329. toscana rosso igt villa antinori 2023 antinori
+330. toscana rosso igt villa antinori 2023 antinori
+331. toscana rosso igt villa antinori 0
+332. toscana rosso igt vigorello 2020 san felice
+333. toscana rosso igt vigorello 2020 san felice
+334. toscana rosso igt vigorello 2020 san felice
+335. toscana rosso igt vigorello 2020 san felice
+336. toscana rosso igt vigorello 2020 magnum san felice cassetta di legno
+337. toscana rosso igt vigorello 2020 magnum san felice cassetta di legno
+338. toscana rosso igt vigorello 2020 magnum san felice cassetta di legno
+339. toscana rosso igt vignanova 2021 paterna
+340. toscana rosso igt vignanova 2021 paterna
+341. toscana rosso igt vignanova 2021 paterna
+342. toscana rosso igt vignanova 2021 paterna
+343. toscana rosso igt vigna alceo castello dei rampolla
+344. toscana rosso igt turpino 2020 querciabella
+345. toscana rosso igt turpino 2020 querciabella
+346. toscana rosso igt turpino 2020 querciabella
+347. toscana rosso igt turpino 2017 querciabella
+348. toscana rosso igt tosco 2024 villa poggio salvi
+349. toscana rosso igt tosco 2024 villa poggio salvi
+350. toscana rosso igt tosco 2024 villa poggio salvi
+351. toscana rosso igt tosco 2024 villa poggio salvi
+352. toscana rosso igt toscania
+353. toscana rosso igt tignanello 2022 tenuta tignanello antinori
+354. toscana rosso igt tignanello 2022 tenuta tignanello antinori
+355. toscana rosso igt tignanello 2022 tenuta tignanello antinori
+356. toscana rosso igt tignanello 2022 tenuta tignanello antinori
+357. toscana rosso igt tignanello 2022 magnum tenuta tignanello antinori cassetta di legno
+358. toscana rosso igt tignanello 2022 magnum tenuta tignanello antinori cassetta di legno
+359. toscana rosso igt tignanello 2022 magnum tenuta tignanello antinori cassetta di legno
+360. toscana rosso igt tignanello 2022 magnum tenuta tignanello antinori cassetta di legno
+361. toscana rosso igt tignanello 2022 magnum tenuta tignanello antinori cassetta di legno
+362. toscana rosso igt tignanello 2022 magnum cassa legno antinori
+363. toscana rosso igt tignanello 2022 antinori
+364. toscana rosso igt tignanello 2021 magnum antinori cassetta di legno
+365. toscana rosso igt tignanello 2021 magnum antinori cassetta di legno
+366. toscana rosso igt tignanello 2021 magnum antinori cassetta di legno
+367. toscana rosso igt tignanello 2021 magnum antinori cassetta di legno
+368. toscana rosso igt tignanello 2021 magnum antinori cassetta di legno
+369. toscana rosso igt tignanello 2021 doppio magnum antinori
+370. toscana rosso igt tignanello 2021 antinori
+371. toscana rosso igt tignanello 2021 antinori
+372. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+373. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+374. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+375. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+376. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+377. toscana rosso igt tignanello 2020 mathusalem antinori cassetta di legno
+378. toscana rosso igt tignanello 2020 jeroboam antinori cassetta di legno
+379. toscana rosso igt tignanello 2020 jeroboam antinori cassetta di legno
+380. toscana rosso igt tignanello 2020 jeroboam antinori cassetta di legno
+381. toscana rosso igt tignanello 2020 jeroboam antinori cassetta di legno
+382. toscana rosso igt tignanello 2020 jeroboam antinori cassetta di legno
+383. toscana rosso igt tignanello 2019 magnum antinori cassetta di legno
+384. toscana rosso igt tignanello 2019 magnum antinori cassetta di legno
+385. toscana rosso igt tignanello 2019 magnum antinori cassetta di legno
+386. toscana rosso igt tignanello 2019 magnum antinori cassetta di legno
+387. toscana rosso igt tignanello 2019 magnum antinori cassetta di legno
+388. toscana rosso igt tignanello 2017 mathusalem antinori cassetta di legno
+389. toscana rosso igt tignanello 2017 mathusalem antinori cassetta di legno
+390. toscana rosso igt tignanello 2017 mathusalem antinori cassetta di legno
+391. toscana rosso igt tignanello 2017 mathusalem antinori cassetta di legno
+392. toscana rosso igt tignanello 2017 mathusalem antinori cassetta di legno
+393. toscana rosso igt tignanello 2017 doppio magnum antinori
+394. toscana rosso igt tignanello 2016 tenuta tignanello antinori
+395. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+396. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+397. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+398. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+399. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+400. toscana rosso igt tignanello 2016 mathusalem antinori cassetta di legno
+401. toscana rosso igt tignanello 2016 magnum antinori cassetta di legno
+402. toscana rosso igt tignanello 2016 magnum antinori cassetta di legno
+403. toscana rosso igt tignanello 2016 magnum antinori cassetta di legno
+404. toscana rosso igt tignanello 2016 magnum antinori cassetta di legno
+405. toscana rosso igt tignanello 2016 magnum antinori cassetta di legno
+406. toscana rosso igt tignanello 2015 mathusalem antinori cassetta di legno
+407. toscana rosso igt tignanello 2015 mathusalem antinori cassetta di legno
+408. toscana rosso igt tignanello 2015 mathusalem antinori cassetta di legno
+409. toscana rosso igt tignanello 2015 mathusalem antinori cassetta di legno
+410. toscana rosso igt tignanello 2015 mathusalem antinori cassetta di legno
+411. toscana rosso igt tignanello 2015 antinori
+412. toscana rosso igt tignanello 2015 antinori
+413. toscana rosso igt tignanello 2011 magnum antinori
+414. toscana rosso igt teuto 2020 tenuta podernovo tenute lunelli
+415. toscana rosso igt teuto 2020 tenuta podernovo tenute lunelli
+416. toscana rosso igt teuto 2020 tenuta podernovo tenute lunelli
+417. toscana rosso igt testamatta 2022 bibi graetz
+418. toscana rosso igt testamatta 2022 bibi graetz
+419. toscana rosso igt testamatta 2022 bibi graetz
+420. toscana rosso igt testamatta 2022 bibi graetz
+421. toscana rosso igt testamatta 2022 bibi graetz
+422. toscana rosso igt tenuta frescobaldi di castiglioni 2023 frescobaldi
+423. toscana rosso igt tenuta frescobaldi di castiglioni 2023 frescobaldi
+424. toscana rosso igt tenuta frescobaldi di castiglioni 2023 frescobaldi
+425. toscana rosso igt tenuta frescobaldi di castiglioni 2023 frescobaldi
+426. toscana rosso igt tenuta frescobaldi di castiglioni 2023 frescobaldi
+427. toscana rosso igt tenuta di trinoro vini franchetti
+428. toscana rosso igt tenuta di trinoro 2021 tenuta di trinoro vini franchetti
+429. toscana rosso igt tenuta di trinoro 2021 tenuta di trinoro vini franchetti
+430. toscana rosso igt tenuta di trinoro 2021 tenuta di trinoro vini franchetti
+431. toscana rosso igt tenuta di trinoro 2020 tenuta di trinoro vini franchetti
+432. toscana rosso igt tenuta di trinoro 2020 tenuta di trinoro vini franchetti
+433. toscana rosso igt tenuta di trinoro 2020 tenuta di trinoro vini franchetti
+434. toscana rosso igt tenuta di trinoro 2018 tenuta di trinorofranchetti
+435. toscana rosso igt tau 2017 leuta
+436. toscana rosso igt tassinaia 2022 castello del terriccio
+437. toscana rosso igt tassinaia 2022 castello del terriccio
+438. toscana rosso igt tassinaia 2022 castello del terriccio
+439. toscana rosso igt tassinaia 2022 castello del terriccio
+440. toscana rosso igt tassinaia 2022 castello del terriccio
+441. toscana rosso igt tassinaia 2021 castello del terriccio
+442. toscana rosso igt tassinaia 2019 castello del terriccio
+443. toscana rosso igt syrah collezione privata 2021 isole e olena
+444. toscana rosso igt syrah collezione privata 2021 isole e olena
+445. toscana rosso igt syrah collezione privata 2021 isole e olena
+446. toscana rosso igt syrah collezione privata 2020 isole e olena
+447. toscana rosso igt syrah collezione privata 2020 isole e olena
+448. toscana rosso igt syrah collezione privata 2020 isole e olena
+449. toscana rosso igt syrah colle al fico 2022 petra
+450. toscana rosso igt syrah 2023 michele satta
+451. toscana rosso igt syrah 2023 michele satta
+452. toscana rosso igt syrah 2023 michele satta
+453. toscana rosso igt syrah 2023 michele satta
+454. toscana rosso igt syrah 2023 michele satta
+455. toscana rosso igt supertuscan madonna nera
+456. toscana rosso igt summus 2020 banfi
+457. toscana rosso igt summus 2020 banfi
+458. toscana rosso igt summus 2020 banfi
+459. toscana rosso igt sono montenidoli 2017 montenidoli
+460. toscana rosso igt sono montenidoli 2017 montenidoli
+461. toscana rosso igt sono montenidoli 2017 montenidoli
+462. toscana rosso igt solus pianirossi
+463. toscana rosso igt solus pianirossi
+464. toscana rosso igt solaia 2022 magnum antinori cassetta di legno
+465. toscana rosso igt solaia 2022 magnum antinori cassetta di legno
+466. toscana rosso igt solaia 2022 magnum antinori cassetta di legno
+467. toscana rosso igt solaia 2022 magnum antinori cassetta di legno
+468. toscana rosso igt solaia 2022 magnum antinori cassetta di legno
+469. toscana rosso igt solaia 2022 antinori
+470. toscana rosso igt solaia 2022 antinori
+471. toscana rosso igt solaia 2022 antinori
+472. toscana rosso igt solaia 2022 antinori
+473. toscana rosso igt solaia 2022 antinori
+474. toscana rosso igt solaia 2021 antinori
+475. toscana rosso igt solaia 2020 antinori
+476. toscana rosso igt solaia 2019 magnum antinori cassetta di legno
+477. toscana rosso igt solaia 2019 magnum antinori cassetta di legno
+478. toscana rosso igt solaia 2019 magnum antinori cassetta di legno
+479. toscana rosso igt solaia 2019 magnum antinori cassetta di legno
+480. toscana rosso igt solaia 2019 magnum antinori cassetta di legno
+481. toscana rosso igt solaia 2019 jeroboam antinori cassetta di legno
+482. toscana rosso igt solaia 2019 jeroboam antinori cassetta di legno
+483. toscana rosso igt solaia 2019 jeroboam antinori cassetta di legno
+484. toscana rosso igt solaia 2019 jeroboam antinori cassetta di legno
+485. toscana rosso igt solaia 2019 jeroboam antinori cassetta di legno
+486. toscana rosso igt solaia 2018 jeroboam antinori cassetta di legno
+487. toscana rosso igt solaia 2018 jeroboam antinori cassetta di legno
+488. toscana rosso igt solaia 2018 jeroboam antinori cassetta di legno
+489. toscana rosso igt solaia 2018 jeroboam antinori cassetta di legno
+490. toscana rosso igt solaia 2018 jeroboam antinori cassetta di legno
+491. toscana rosso igt solaia 2017 magnum antinori cassetta di legno
+492. toscana rosso igt solaia 2017 magnum antinori cassetta di legno
+493. toscana rosso igt solaia 2017 magnum antinori cassetta di legno
+494. toscana rosso igt solaia 2017 magnum antinori cassetta di legno
+495. toscana rosso igt solaia 2017 magnum antinori cassetta di legno
+496. toscana rosso igt solaia 2015 antinori
+497. toscana rosso igt solaia 2014 magnum antinori cassetta di legno
+498. toscana rosso igt solaia 2014 magnum antinori cassetta di legno
+499. toscana rosso igt solaia 2014 magnum antinori cassetta di legno
+500. toscana rosso igt solaia 2014 magnum antinori cassetta di legno
+501. toscana rosso igt solaia 2014 magnum antinori cassetta di legno
+502. toscana rosso igt solaia 2014 jeroboam antinori cassetta di legno
+503. toscana rosso igt solaia 2014 jeroboam antinori cassetta di legno
+504. toscana rosso igt solaia 2014 jeroboam antinori cassetta di legno
+505. toscana rosso igt solaia 2014 jeroboam antinori cassetta di legno
+506. toscana rosso igt solaia 2014 jeroboam antinori cassetta di legno
+507. toscana rosso igt solaia 2012 antinori
+508. toscana rosso igt solaia 2012 antinori
+509. toscana rosso igt solaia 2012 antinori
+510. toscana rosso igt solaia 2012 antinori
+511. toscana rosso igt solaia 2012 antinori
+512. toscana rosso igt solaia 2011 magnum antinori
+513. toscana rosso igt solaia 2011 magnum antinori
+514. toscana rosso igt solaia 2011 magnum antinori
+515. toscana rosso igt solaia 2011 magnum antinori
+516. toscana rosso igt solaia 2011 magnum antinori
+517. toscana rosso igt solaia 2011 antinori
+518. toscana rosso igt solaia 2011 antinori
+519. toscana rosso igt solaia 2011 antinori
+520. toscana rosso igt solaia 2011 antinori
+521. toscana rosso igt solaia 2011 antinori
+522. toscana rosso igt solaia 2010 magnum antinori cassetta di legno
+523. toscana rosso igt solaia 2010 magnum antinori cassetta di legno
+524. toscana rosso igt solaia 2010 magnum antinori cassetta di legno
+525. toscana rosso igt solaia 2010 magnum antinori cassetta di legno
+526. toscana rosso igt solaia 2010 magnum antinori cassetta di legno
+527. toscana rosso igt solaia 2010 jeroboam antinori cassetta di legno
+528. toscana rosso igt solaia 2010 jeroboam antinori cassetta di legno
+529. toscana rosso igt solaia 2010 jeroboam antinori cassetta di legno
+530. toscana rosso igt solaia 2010 jeroboam antinori cassetta di legno
+531. toscana rosso igt solaia 2010 jeroboam antinori cassetta di legno
+532. toscana rosso igt solaia 2010 antinori
+533. toscana rosso igt solaia 2010 antinori
+534. toscana rosso igt solaia 2010 antinori
+535. toscana rosso igt solaia 2010 antinori
+536. toscana rosso igt solaia 2010 antinori
+537. toscana rosso igt solaia 2009 jeroboam antinori cassetta di legno
+538. toscana rosso igt solaia 2009 jeroboam antinori cassetta di legno
+539. toscana rosso igt solaia 2009 jeroboam antinori cassetta di legno
+540. toscana rosso igt solaia 2009 jeroboam antinori cassetta di legno
+541. toscana rosso igt solaia 2009 jeroboam antinori cassetta di legno
+542. toscana rosso igt solaia 2008 magnum antinori cassetta di legno
+543. toscana rosso igt solaia 2008 magnum antinori cassetta di legno
+544. toscana rosso igt solaia 2008 magnum antinori cassetta di legno
+545. toscana rosso igt solaia 2008 magnum antinori cassetta di legno
+546. toscana rosso igt solaia 2008 magnum antinori cassetta di legno
+547. toscana rosso igt solaia 2007 antinori
+548. toscana rosso igt solaia 2007 antinori
+549. toscana rosso igt solaia 2007 antinori
+550. toscana rosso igt solaia 2007 antinori
+551. toscana rosso igt solaia 2007 antinori
+552. toscana rosso igt solaia 2006 magnum antinori cassetta di legno
+553. toscana rosso igt solaia 2006 magnum antinori cassetta di legno
+554. toscana rosso igt solaia 2006 magnum antinori cassetta di legno
+555. toscana rosso igt solaia 2006 magnum antinori cassetta di legno
+556. toscana rosso igt solaia 2006 magnum antinori cassetta di legno
+557. toscana rosso igt solaia 2006 jeroboam antinori cassetta di legno
+558. toscana rosso igt solaia 2006 jeroboam antinori cassetta di legno
+559. toscana rosso igt solaia 2006 jeroboam antinori cassetta di legno
+560. toscana rosso igt solaia 2006 jeroboam antinori cassetta di legno
+561. toscana rosso igt solaia 2006 jeroboam antinori cassetta di legno
+562. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+563. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+564. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+565. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+566. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+567. toscana rosso igt solaia 2005 magnum antinori cassetta di legno
+568. toscana rosso igt solaia 2004 jeroboam antinori cassetta di legno
+569. toscana rosso igt solaia 2004 jeroboam antinori cassetta di legno
+570. toscana rosso igt solaia 2004 jeroboam antinori cassetta di legno
+571. toscana rosso igt solaia 2004 jeroboam antinori cassetta di legno
+572. toscana rosso igt solaia 2004 jeroboam antinori cassetta di legno
+573. toscana rosso igt solaia 2003 magnum antinori cassetta di legno
+574. toscana rosso igt solaia 2003 magnum antinori cassetta di legno
+575. toscana rosso igt solaia 2003 magnum antinori cassetta di legno
+576. toscana rosso igt solaia 2003 magnum antinori cassetta di legno
+577. toscana rosso igt solaia 2003 magnum antinori cassetta di legno
+578. toscana rosso igt solaia 2003 jeroboam antinori cassetta di legno
+579. toscana rosso igt solaia 2003 jeroboam antinori cassetta di legno
+580. toscana rosso igt solaia 2003 jeroboam antinori cassetta di legno
+581. toscana rosso igt solaia 2003 jeroboam antinori cassetta di legno
+582. toscana rosso igt solaia 2003 jeroboam antinori cassetta di legno
+583. toscana rosso igt solaia 2003 antinori
+584. toscana rosso igt solaia 2003 antinori
+585. toscana rosso igt solaia 2003 antinori
+586. toscana rosso igt solaia 2003 antinori
+587. toscana rosso igt solaia 2003 antinori
+588. toscana rosso igt solaia 2002 magnum antinori cassetta di legno
+589. toscana rosso igt solaia 2002 magnum antinori cassetta di legno
+590. toscana rosso igt solaia 2002 magnum antinori cassetta di legno
+591. toscana rosso igt solaia 2002 magnum antinori cassetta di legno
+592. toscana rosso igt solaia 2002 magnum antinori cassetta di legno
+593. toscana rosso igt solaia 2001 magnum antinori cassetta di legno
+594. toscana rosso igt solaia 2001 magnum antinori cassetta di legno
+595. toscana rosso igt solaia 2001 magnum antinori cassetta di legno
+596. toscana rosso igt solaia 2001 magnum antinori cassetta di legno
+597. toscana rosso igt solaia 2001 magnum antinori cassetta di legno
+598. toscana rosso igt solaia 2001 jeroboam antinori cassetta di legno
+599. toscana rosso igt solaia 2001 jeroboam antinori cassetta di legno
+600. toscana rosso igt solaia 2001 jeroboam antinori cassetta di legno
+601. toscana rosso igt solaia 2001 jeroboam antinori cassetta di legno
+602. toscana rosso igt solaia 2001 jeroboam antinori cassetta di legno
+603. toscana rosso igt solaia 2000 magnum antinori cassetta di legno
+604. toscana rosso igt solaia 2000 magnum antinori cassetta di legno
+605. toscana rosso igt solaia 2000 magnum antinori cassetta di legno
+606. toscana rosso igt solaia 2000 magnum antinori cassetta di legno
+607. toscana rosso igt solaia 2000 magnum antinori cassetta di legno
+608. toscana rosso igt solaia 2000 jeroboam antinori cassetta di legno
+609. toscana rosso igt solaia 2000 jeroboam antinori cassetta di legno
+610. toscana rosso igt solaia 2000 jeroboam antinori cassetta di legno
+611. toscana rosso igt solaia 2000 jeroboam antinori cassetta di legno
+612. toscana rosso igt solaia 2000 jeroboam antinori cassetta di legno
+613. toscana rosso igt soffocone di vincigliata bibi graetz 2023
+614. toscana rosso igt soffocone di vincigliata 2023 bibi graetz
+615. toscana rosso igt soffocone di vincigliata 2023 bibi graetz
+616. toscana rosso igt soffocone di vincigliata 2023 bibi graetz
+617. toscana rosso igt soffocone di vincigliata 2023 bibi graetz
+618. toscana rosso igt sister moon il palagio sting
+619. toscana rosso igt sister moon il palagio sting
+620. toscana rosso igt sister moon 2020 il palagio sting
+621. toscana rosso igt siepi 2022 mazzei castello di fonterutoli
+622. toscana rosso igt siepi 2022 mazzei castello di fonterutoli
+623. toscana rosso igt siepi 2022 mazzei castello di fonterutoli
+624. toscana rosso igt siepi 2022 mazzei castello di fonterutoli
+625. toscana rosso igt siepi 2022 mazzei castello di fonterutoli
+626. toscana rosso igt scapigliato 2022 agricola calafata
+627. toscana rosso igt scapigliato 2022 agricola calafata
+628. toscana rosso igt scapigliato 2022 agricola calafata
+629. toscana rosso igt sassoalloro 2019 biondi santi
+630. toscana rosso igt sasso al poggio 2022 piccini
+631. toscana rosso igt sasso al poggio 2022 piccini
+632. toscana rosso igt sasso al poggio 2022 piccini
+633. toscana rosso igt sasso al poggio 2022 piccini
+634. toscana rosso igt sasso al poggio 2022 piccini
+635. toscana rosso igt sasso al poggio 2021 piccini wine outlet
+636. toscana rosso igt sasso al poggio 2021 piccini wine outlet
+637. toscana rosso igt sasso al poggio 2021 piccini wine outlet
+638. toscana rosso igt sasso al poggio 2021 piccini wine outlet
+639. toscana rosso igt sasso al poggio 2021 piccini wine outlet
+640. toscana rosso igt sassi chiusi magnum cassa di legno bertinga
+641. toscana rosso igt sassi chiusi magnum cassa di legno bertinga
+642. toscana rosso igt sassi chiusi bertinga
+643. toscana rosso igt sassi chiusi bertinga
+644. toscana rosso igt santinovo 2020 cerbaiona
+645. toscana rosso igt sangiovese sezzana 2008 la spinetta rivetti
+646. toscana rosso igt sangiovese sassontino 2008 la spinetta rivetti
+647. toscana rosso igt sangiovese alto 2021 petra
+648. toscana rosso igt sancaba 2023 azienda agricola franchetti
+649. toscana rosso igt sancaba 2023 azienda agricola franchetti
+650. toscana rosso igt sancaba 2023 azienda agricola franchetti
+651. toscana rosso igt sancaba 2023 azienda agricola franchetti
+652. toscana rosso igt sancaba 2023 azienda agricola franchetti
+653. toscana rosso igt san vito 2020 cerbaiona
+654. toscana rosso igt sammarco castello dei rampolla
+655. toscana rosso igt rosso dei notri 2022 tua rita
+656. toscana rosso igt rosso dei notri 2022 tua rita
+657. toscana rosso igt rosso dei notri 2022 tua rita
+658. toscana rosso igt rosso dei notri 2022 tua rita
+659. toscana rosso igt romitorio 2022 castello romitorio
+660. toscana rosso igt romitorio 2021 castello romitorio
+661. toscana rosso igt romitorio 2021 castello romitorio
+662. toscana rosso igt romitorio 2021 castello romitorio
+663. toscana rosso igt romito 2019 castello romitorio
+664. toscana rosso igt romito 2019 castello romitorio
+665. toscana rosso igt romito 2019 castello romitorio
+666. toscana rosso igt riserva 1985 montevertine
+667. toscana rosso igt riecine 2021 riecine
+668. toscana rosso igt riecine 2021 riecine
+669. toscana rosso igt riecine 2021 riecine
+670. toscana rosso igt riecine 2021 riecine
+671. toscana rosso igt redigaffi 2020 tua rita
+672. toscana rosso igt redigaffi 2020 tua rita
+673. toscana rosso igt redigaffi 2020 tua rita
+674. toscana rosso igt punta di adine magnum cassa di legno bertinga
+675. toscana rosso igt punta di adine magnum cassa di legno bertinga
+676. toscana rosso igt punta di adine magnum cassa di legno bertinga
+677. toscana rosso igt punta di adine jeroboam cassa di legno bertinga
+678. toscana rosso igt punta di adine jeroboam cassa di legno bertinga
+679. toscana rosso igt punta di adine jeroboam cassa di legno bertinga
+680. toscana rosso igt punta di adine bertinga
+681. toscana rosso igt punta di adine bertinga
+682. toscana rosso igt punta di adine 2017 bertinga
+683. toscana rosso igt pugnitello 2021 san felice
+684. toscana rosso igt pugnitello 2021 san felice
+685. toscana rosso igt pugnitello 2021 san felice
+686. toscana rosso igt poggio querciolo casa di terra
+687. toscana rosso igt poggio de paoli 2022 tenuta lenzini
+688. toscana rosso igt poggio de paoli 2022 tenuta lenzini
+689. toscana rosso igt poggio de paoli 2022 tenuta lenzini
+690. toscana rosso igt poggio de paoli 2022 tenuta lenzini
+691. toscana rosso igt poggio de paoli 2022 tenuta lenzini
+692. toscana rosso igt poggio badiola 2022 mazzei castello di fonterutoli
+693. toscana rosso igt poggio badiola 2022 mazzei castello di fonterutoli
+694. toscana rosso igt poggio badiola 2022 mazzei castello di fonterutoli
+695. toscana rosso igt poggio badiola 2022 mazzei castello di fonterutoli
+696. toscana rosso igt podere la palazzetta 2024
+697. toscana rosso igt pinot nero sancaba 2019 franchetti
+698. toscana rosso igt pievasciata 2022 0
+699. toscana rosso igt pianirossi
+700. toscana rosso igt pianirossi
+701. toscana rosso igt pian del ciampolo 2023 montevertine
+702. toscana rosso igt petra 2022 petra cassetta di legno
+703. toscana rosso igt petra 2022 petra cassetta di legno
+704. toscana rosso igt petra 2022 petra cassetta di legno
+705. toscana rosso igt petra 2022 petra cassetta di legno
+706. toscana rosso igt petra 2022 petra cassetta di legno
+707. toscana rosso igt petra 2022 petra
+708. toscana rosso igt petra 2022 petra
+709. toscana rosso igt petra 2022 petra
+710. toscana rosso igt petra 2022 petra
+711. toscana rosso igt petra 2021 petra
+712. toscana rosso igt petra 2021 magnum petra cassetta di legno
+713. toscana rosso igt petra 2021 magnum petra cassetta di legno
+714. toscana rosso igt petra 2021 magnum petra cassetta di legno
+715. toscana rosso igt petra 2021 magnum petra cassetta di legno
+716. toscana rosso igt petra 2021 magnum petra cassetta di legno
+717. toscana rosso igt petra 2018 petra
+718. toscana rosso igt perlato del bosco 2021 tua rita
+719. toscana rosso igt perlato del bosco 2021 tua rita
+720. toscana rosso igt perlato del bosco 2021 tua rita
+721. toscana rosso igt pergolaia 2020 caiarossa wine outlet
+722. toscana rosso igt pergolaia 2020 caiarossa wine outlet
+723. toscana rosso igt pergolaia 2020 caiarossa wine outlet
+724. toscana rosso igt pergolaia 2020 caiarossa
+725. toscana rosso igt pergolaia 2020 caiarossa
+726. toscana rosso igt pergolaia 2020 caiarossa
+727. toscana rosso igt pergolaia 2020 caiarossa
+728. toscana rosso igt pergolaia 2020 caiarossa
+729. toscana rosso igt percarlo 2022 magnum in owc san giusto a rentennano
+730. toscana rosso igt percarlo 2021 san giusto a rentennano
+731. toscana rosso igt percarlo 2021 san giusto a rentennano
+732. toscana rosso igt percarlo 2021 magnum in owc san giusto a rentennano
+733. toscana rosso igt percarlo 2020 san giusto a rentennano
+734. toscana rosso igt percarlo 2020 san giusto a rentennano
+735. toscana rosso igt percarlo 2019 san giusto a rentennano
+736. toscana rosso igt percarlo 2019 jerobom in owc san giusto a rentennano
+737. toscana rosso igt peperino 2022 teruzzi
+738. toscana rosso igt peperino 2022 teruzzi
+739. toscana rosso igt peperino 2022 teruzzi
+740. toscana rosso igt peperino 2022 teruzzi
+741. toscana rosso igt peperino 2022 teruzzi
+742. toscana rosso igt pelofino fattoria le pupille
+743. toscana rosso igt pelofino fattoria le pupille
+744. toscana rosso igt palazzi 2021 tenuta di trinoro vini franchetti
+745. toscana rosso igt palazzi 2021 tenuta di trinoro vini franchetti
+746. toscana rosso igt palazzi 2021 tenuta di trinoro vini franchetti
+747. toscana rosso igt palazzi 2021 tenuta di trinoro vini franchetti
+748. toscana rosso igt palazzi 2021 magnum tenuta di trinoro vini franchetti
+749. toscana rosso igt palazzi 2021 magnum tenuta di trinoro vini franchetti
+750. toscana rosso igt palazzi 2021 magnum tenuta di trinoro vini franchetti
+751. toscana rosso igt palazzi 2009 tenuta di trinorofranchetti
+752. toscana rosso igt pactio magnum cassa di legno tenuta fertuna
+753. toscana rosso igt pactio fertuna
+754. toscana rosso igt pactio 2022 tenuta fertuna
+755. toscana rosso igt pactio 2022 tenuta fertuna
+756. toscana rosso igt pactio 2022 tenuta fertuna
+757. toscana rosso igt pactio 2022 tenuta fertuna
+758. toscana rosso igt oreno 2020 tenuta sette ponti
+759. toscana rosso igt oreno 2018 tenuta sette ponti
+760. toscana rosso igt oreno 2018 tenuta sette ponti
+761. toscana rosso igt mura dellarce 2021 selezione tenuta fertuna
+762. toscana rosso igt mura dellarce 2021 selezione tenuta fertuna
+763. toscana rosso igt mormoreto magnum cassa di legno frescobaldi
+764. toscana rosso igt mormoreto jeroboam cassa di legno frescobaldi
+765. toscana rosso igt mormoreto frescobaldi
+766. toscana rosso igt mormoreto frescobaldi
+767. toscana rosso igt moreccino casa di terra
+768. toscana rosso igt montevertine 2022 montevertine
+769. toscana rosso igt montevertine 2021 magnum montevertine
+770. toscana rosso igt montenidoli 2021 montenidoli
+771. toscana rosso igt montenidoli 2021 montenidoli
+772. toscana rosso igt montenidoli 2021 montenidoli
+773. toscana rosso igt montenidoli 2021 montenidoli
+774. toscana rosso igt montenidoli 2021 montenidoli
+775. toscana rosso igt monsanto 2022 castello di monsanto
+776. toscana rosso igt monsanto 2022 castello di monsanto
+777. toscana rosso igt monsanto 2022 castello di monsanto
+778. toscana rosso igt monsanto 2022 castello di monsanto
+779. toscana rosso igt monsanto 2022 castello di monsanto
+780. toscana rosso igt modus 2022 ruffino
+781. toscana rosso igt modus 2022 ruffino
+782. toscana rosso igt modus 2022 ruffino
+783. toscana rosso igt modus 2022 ruffino
+784. toscana rosso igt modus 2022 ruffino
+785. toscana rosso igt modus 2022 ruffino
+786. toscana rosso igt modus 2020 ruffino
+787. toscana rosso igt modus 1999 ruffino
+788. toscana rosso igt merlotquercegrosse 0
+789. toscana rosso igt merlot quercegobbe 2022 petra
+790. toscana rosso igt melograno 2024 podere concori
+791. toscana rosso igt melograno 2024 podere concori
+792. toscana rosso igt melograno 2024 podere concori
+793. toscana rosso igt melograno 2024 podere concori
+794. toscana rosso igt melograno 2024 podere concori
+795. toscana rosso igt melograno 2022 magnum podere concori
+796. toscana rosso igt melograno 2022 magnum podere concori
+797. toscana rosso igt melograno 2022 magnum podere concori
+798. toscana rosso igt melograni 2018 teruzzi
+799. toscana rosso igt melograni 2018 teruzzi
+800. toscana rosso igt melograni 2018 teruzzi
+801. toscana rosso igt melograni 2018 teruzzi
+802. toscana rosso igt melograni 2018 teruzzi
+803. toscana rosso igt melograni 2018 magnum teruzzi cassetta di legno
+804. toscana rosso igt melograni 2018 magnum teruzzi cassetta di legno
+805. toscana rosso igt melograni 2018 magnum teruzzi cassetta di legno
+806. toscana rosso igt melograni 2017 teruzzi
+807. toscana rosso igt melograni 2017 teruzzi
+808. toscana rosso igt melograni 2017 teruzzi
+809. toscana rosso igt melograni 2017 teruzzi
+810. toscana rosso igt mediterra 2023 poggio al tesoro marilisa allegrini
+811. toscana rosso igt mediterra 2023 poggio al tesoro marilisa allegrini
+812. toscana rosso igt mediterra 2023 poggio al tesoro marilisa allegrini
+813. toscana rosso igt mediterra 2023 poggio al tesoro marilisa allegrini
+814. toscana rosso igt mediterra 2023 poggio al tesoro marilisa allegrini
+815. toscana rosso igt matarocchio 2011 tenuta guado al tasso
+816. toscana rosso igt masseto 2022 tenuta masseto
+817. toscana rosso igt masseto 2022 tenuta masseto
+818. toscana rosso igt masseto 2022 tenuta masseto
+819. toscana rosso igt masseto 2022 tenuta masseto
+820. toscana rosso igt masseto 2022 tenuta masseto
+821. toscana rosso igt masseto 2022 magnum tenuta masseto cassetta di legno
+822. toscana rosso igt masseto 2022 magnum tenuta masseto cassetta di legno
+823. toscana rosso igt masseto 2022 magnum tenuta masseto cassetta di legno
+824. toscana rosso igt masseto 2022 magnum tenuta masseto cassetta di legno
+825. toscana rosso igt masseto 2022 magnum tenuta masseto cassetta di legno
+826. toscana rosso igt masseto 2010 tenuta masseto
+827. toscana rosso igt masseto 2010 tenuta masseto
+828. toscana rosso igt masseto 2010 tenuta masseto
+829. toscana rosso igt masseto 2010 tenuta masseto
+830. toscana rosso igt masseto 2010 tenuta masseto
+831. toscana rosso igt masseto 2001 tenuta masseto
+832. toscana rosso igt masseto 2001 tenuta masseto
+833. toscana rosso igt masseto 2001 tenuta masseto
+834. toscana rosso igt masseto 2001 tenuta masseto
+835. toscana rosso igt masseto 2001 tenuta masseto
+836. toscana rosso igt masseto 1998 tenuta masseto
+837. toscana rosso igt masseto 1998 tenuta masseto
+838. toscana rosso igt masseto 1998 tenuta masseto
+839. toscana rosso igt masseto 1998 tenuta masseto
+840. toscana rosso igt masseto 1998 tenuta masseto
+841. toscana rosso igt massetino 2023 tenuta masseto
+842. toscana rosso igt massetino 2023 tenuta masseto
+843. toscana rosso igt massetino 2023 tenuta masseto
+844. toscana rosso igt massetino 2023 tenuta masseto
+845. toscana rosso igt massetino 2023 tenuta masseto
+846. toscana rosso igt massetino 2023 ornellaia
+847. toscana rosso igt manero rosso 2025 tenute del cerro
+848. toscana rosso igt manero rosso 2025 tenute del cerro
+849. toscana rosso igt manero rosso 2025 tenute del cerro
+850. toscana rosso igt manero rosso 2025 tenute del cerro
+851. toscana rosso igt manero rosso 2025 tenute del cerro
+852. toscana rosso igt manero rosso 2024 tenute del cerro
+853. toscana rosso igt manero rosso 2024 tenute del cerro
+854. toscana rosso igt manero rosso 2024 tenute del cerro
+855. toscana rosso igt manero rosso 2024 tenute del cerro
+856. toscana rosso igt manero rosso 2024 tenute del cerro
+857. toscana rosso igt manero rosso 2023 tenute del cerro
+858. toscana rosso igt manero rosso 2023 tenute del cerro
+859. toscana rosso igt manero rosso 2023 tenute del cerro
+860. toscana rosso igt lux vitis 2022 tenuta lucefrescobaldi
+861. toscana rosso igt lux vitis 2022 luce della vite
+862. toscana rosso igt lux vitis 2022 luce della vite
+863. toscana rosso igt lux vitis 2022 luce della vite
+864. toscana rosso igt lux vitis 2022 luce della vite
+865. toscana rosso igt lux vitis 2022 luce della vite
+866. toscana rosso igt lux vitis 2020 frescobaldi
+867. toscana rosso igt lux vitis 2019 frescobaldi
+868. toscana rosso igt lux vitis 2018 frescobaldi
+869. toscana rosso igt lupicaia 2019 castello del terriccio
+870. toscana rosso igt lupicaia 2019 castello del terriccio
+871. toscana rosso igt lupicaia 2019 castello del terriccio
+872. toscana rosso igt lumeo 2021 azienda agricola toscani
+873. toscana rosso igt lumeo 2021 azienda agricola toscani
+874. toscana rosso igt lumeo 2021 azienda agricola toscani
+875. toscana rosso igt ludus agricola ludus
+876. toscana rosso igt ludus agricola ludus
+877. toscana rosso igt ludus agricola ludus
+878. toscana rosso igt lucente 2023 tenuta lucefrescobaldi
+879. toscana rosso igt lucente 2023 luce della vite
+880. toscana rosso igt lucente 2023 luce della vite
+881. toscana rosso igt lucente 2023 luce della vite
+882. toscana rosso igt lucente 2023 luce della vite
+883. toscana rosso igt lucente 2023 luce della vite
+884. toscana rosso igt lucente 2021 tenuta luce
+885. toscana rosso igt lucente 2021 astucciato tenuta luce
+886. toscana rosso igt lucente 2017 frescobaldi
+887. toscana rosso igt luce 2022 tenuta lucefrescobaldi
+888. toscana rosso igt luce 2022 luce della vite
+889. toscana rosso igt luce 2022 luce della vite
+890. toscana rosso igt luce 2022 luce della vite
+891. toscana rosso igt luce 2019 magnum frescobaldi
+892. toscana rosso igt luce 2019 frescobaldi
+893. toscana rosso igt luce 2018 frescobaldi
+894. toscana rosso igt luce 2017 frescobaldi
+895. toscana rosso igt lenzini franco 2023 tenuta lenzini
+896. toscana rosso igt lenzini franco 2023 tenuta lenzini
+897. toscana rosso igt lenzini franco 2023 tenuta lenzini
+898. toscana rosso igt le volte dellornellaia 2023 ornellaia
+899. toscana rosso igt le volte dellornellaia 2023 ornellaia
+900. toscana rosso igt le volte dellornellaia 2023 ornellaia
+901. toscana rosso igt le volte dellornellaia 2023 ornellaia
+902. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia astuccio
+903. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia astuccio
+904. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia astuccio
+905. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia
+906. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia
+907. toscana rosso igt le volte dellornellaia 2023 magnum ornellaia
+908. toscana rosso igt le volte dellornellaia 2023 jeroboam ornellaia cassetta di legno
+909. toscana rosso igt le volte dellornellaia 2023 jeroboam ornellaia cassetta di legno
+910. toscana rosso igt le volte dellornellaia 2023 jeroboam ornellaia cassetta di legno
+911. toscana rosso igt le veglie di neri 2019 dianella
+912. toscana rosso igt le stanze del poliziano 2021 poliziano
+913. toscana rosso igt le stanze del poliziano 2021 poliziano
+914. toscana rosso igt le stanze del poliziano 2021 poliziano
+915. toscana rosso igt le stanze del poliziano 2020 magnum poliziano cassetta di legno
+916. toscana rosso igt le stanze del poliziano 2020 magnum poliziano cassetta di legno
+917. toscana rosso igt le stanze del poliziano 2020 magnum poliziano cassetta di legno
+918. toscana rosso igt le stanze del poliziano 2020 magnum poliziano cassetta di legno
+919. toscana rosso igt le pergole torte 2022 montevertine
+920. toscana rosso igt le pergole torte 2022 montevertine
+921. toscana rosso igt le pergole torte 2022 magnum cassa legno montevertine
+922. toscana rosso igt le pergole torte 2021 montevertine
+923. toscana rosso igt le pergole torte 2021 magnum montevertine
+924. toscana rosso igt le pergole torte 2021 magnum montevertine
+925. toscana rosso igt le pergole torte 2021 magnum montevertine
+926. toscana rosso igt le pergole torte 2021 magnum montevertine
+927. toscana rosso igt le pergole torte 2021 magnum montevertine
+928. toscana rosso igt le pergole torte 2020 montevertine
+929. toscana rosso igt le pergole torte 2019 montevertine
+930. toscana rosso igt le pergole torte 2019 magnum montevertine
+931. toscana rosso igt le pergole torte 2019 magnum montevertine
+932. toscana rosso igt le pergole torte 2019 magnum montevertine
+933. toscana rosso igt le pergole torte 2019 magnum montevertine
+934. toscana rosso igt le pergole torte 2019 magnum montevertine
+935. toscana rosso igt le pergole torte 2019 magnum in owc montevertine
+936. toscana rosso igt le pergole torte 2018 montevertine
+937. toscana rosso igt le pergole torte 2018 montevertine
+938. toscana rosso igt le pergole torte 2018 montevertine
+939. toscana rosso igt le pergole torte 2018 montevertine
+940. toscana rosso igt le pergole torte 2018 montevertine
+941. toscana rosso igt le pergole torte 2018 montevertine
+942. toscana rosso igt le pergole torte 2018 magnum montevertine
+943. toscana rosso igt le pergole torte 2018 magnum montevertine
+944. toscana rosso igt le pergole torte 2018 magnum montevertine
+945. toscana rosso igt le pergole torte 2018 magnum montevertine
+946. toscana rosso igt le pergole torte 2018 magnum montevertine
+947. toscana rosso igt le pergole torte 2016 magnum in owc montevertine
+948. toscana rosso igt le pergole torte 2016 imperial montevertine cassetta di legno
+949. toscana rosso igt le pergole torte 2016 imperial montevertine cassetta di legno
+950. toscana rosso igt le pergole torte 2016 imperial montevertine cassetta di legno
+951. toscana rosso igt le pergole torte 2016 imperial montevertine cassetta di legno
+952. toscana rosso igt le pergole torte 2016 imperial montevertine cassetta di legno
+953. toscana rosso igt le pergole torte 2015 montevertine
+954. toscana rosso igt le pergole torte 2015 imperial montevertine cassetta di legno
+955. toscana rosso igt le pergole torte 2015 imperial montevertine cassetta di legno
+956. toscana rosso igt le pergole torte 2015 imperial montevertine cassetta di legno
+957. toscana rosso igt le pergole torte 2015 imperial montevertine cassetta di legno
+958. toscana rosso igt le pergole torte 2015 imperial montevertine cassetta di legno
+959. toscana rosso igt le pergole torte 2013 doppio magnum jeroboam montevertine
+960. toscana rosso igt le pergole torte 1985 montevertine
+961. toscana rosso igt le ombre 2015 poggio mandorlo
+962. toscana rosso igt le due arbie 2022 dievole
+963. toscana rosso igt le due arbie 2022 dievole
+964. toscana rosso igt le due arbie 2022 dievole
+965. toscana rosso igt le difese 2022 tenuta san guido
+966. toscana rosso igt le cupole tenuta di trinoro franchetti
+967. toscana rosso igt le cupole tenuta di trinoro franchetti
+968. toscana rosso igt le cupole 2023 tenuta di trinoro vini franchetti
+969. toscana rosso igt le cupole 2023 tenuta di trinoro vini franchetti
+970. toscana rosso igt le cupole 2023 tenuta di trinoro vini franchetti
+971. toscana rosso igt le cupole 2023 tenuta di trinoro vini franchetti
+972. toscana rosso igt le cupole 2023 tenuta di trinoro vini franchetti
+973. toscana rosso igt le cupole 2021 tenuta di trinorofranchetti
+974. toscana rosso igt lavischio 2024 villa poggio salvi
+975. toscana rosso igt lavischio 2024 villa poggio salvi
+976. toscana rosso igt lavischio 2024 villa poggio salvi
+977. toscana rosso igt lapparita 2008 castello di ama
+978. toscana rosso igt lapparita 1990 castello di ama
+979. toscana rosso igt la massa 2019 tenuta la massa
+980. toscana rosso igt la madonnina
+981. toscana rosso igt la madonnina
+982. toscana rosso igt la gioia 2020 riecine
+983. toscana rosso igt la gioia 2020 riecine
+984. toscana rosso igt la gioia 2020 riecine
+985. toscana rosso igt la gioia 2020 riecine
+986. toscana rosso igt ir rosso 2022 casanova di neri
+987. toscana rosso igt ir rosso 2022 casanova di neri
+988. toscana rosso igt ir rosso 2022 casanova di neri
+989. toscana rosso igt ir rosso 2022 casanova di neri
+990. toscana rosso igt il poggiomandorlo 2016 poggio mandorlo
+991. toscana rosso igt il matto delle giungaie 2017 dianella
+992. toscana rosso igt il matto delle giuncaie 2021 dianella
+993. toscana rosso igt il matto delle giuncaie 2021 dianella
+994. toscana rosso igt il matto delle giuncaie 2021 dianella
+995. toscana rosso igt il gentile di casanova 2020 la spinetta rivetti
+996. toscana rosso igt il colorino di casanova 2021 la spinetta rivetti
+997. toscana rosso igt i cipressi 2022 felsina
+998. toscana rosso igt hebo 2024 petra
+999. toscana rosso igt hebo 2024 petra
+1000. toscana rosso igt hebo 2024 petra

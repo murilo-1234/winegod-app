@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. domaine combier clos des grives 2023 crozeshermitage
+2. domaine combier clos des grives 2023 crozeshermitage
+3. domaine combier clos des grives 2023
+4. domaine combier clos des grives
+5. domaine combier clos de grives crozes hermitage 2023
+6. domaine combier cap nord crozes hermitage 2023
+7. domaine combier cap nord 2023 crozeshermitage
+8. domaine combier cap nord 2023 crozeshermitage
+9. domaine combier cap nord 2023 crozeshermitage
+10. domaine combier cap nord 2023 crozeshermitage
+11. domaine combier cap nord 2023
+12. domaine combier cap nord 2022 crozeshermitage
+13. domaine combier cap nord 2022 crozeshermitage
+14. domaine combier cap nord 2022 crozeshermitage
+15. domaine combier 2024
+16. domaine combier 2023
+17. domaine combier 2023
+18. domaine combier 2022 crozeshermitage cuvee
+19. domaine combier
+20. domaine combel la serre igp cotes du lot la vigne juste derriere 2020 6 x
+21. domaine combel la serre igp cotes du lot la vigne juste derriere 2020
+22. domaine combel la serre igp cotes du lot de la terre a la lune 2022 6 x
+23. domaine combel la serre igp cotes du lot de la terre a la lune 2022
+24. domaine combel la serre cahors les peyres levades magnum 2020
+25. domaine combel la serre cahors les peyres levades 2020
+26. domaine combel la serre cahors le pur fruit du causse 2022
+27. domaine combel la serre cahors le lac aux cochons 2019 6x
+28. domaine combel la serre cahors le lac aux cochons 2019
+29. domaine combel la serre cahors 2020
+30. domaine combe queyzaire cotes du rhone 2019 rhone valley france
+31. domaine combe nocturne 2023
+32. domaine combe juliere rasteau 2017
+33. domaine combe des ducs sourire de venus
+34. domaine combe des ducs douceur de bourboulenc
+35. domaine combe blanche minervois la chandeliere
+36. domaine combe blanche minervois calamiac terroir 2015
+37. domaine combe blanche la galine 2020 minervois la liviniere
+38. domaine combe blanche la chandeliere 2021 minervois la liviniere
+39. domaine colonge et fils beaujolais village
+40. domaine colombette sauvignon blanc tradition
+41. domaine colombette pinot noir premium
+42. domaine colombette grenache rose
+43. domaine colombette grenache rose
+44. domaine colombette grenache rose
+45. domaine colombette chardonnay demi muid
+46. domaine colombette barbejo souvignier muscaris
+47. domaine collotte marsannay vieilles vignes 2024
+48. domaine collotte marsannay vieilles vignes 2023
+49. domaine collotte marsannay vieilles vignes 2022
+50. domaine collotte marsannay rouge les boivin
+51. domaine collotte marsannay rose 2024
+52. domaine collotte marsannay rose 2023
+53. domaine collotte marsannay rose 2023
+54. domaine collotte marsannay rose 2022
+55. domaine collotte marsannay rose 2022
+56. domaine collotte marsannay rose
+57. domaine collotte marsannay rose
+58. domaine collotte marsannay les grasses tetes 2023
+59. domaine collotte marsannay les grasses tetes 2023
+60. domaine collotte marsannay les grasses tetes 2023
+61. domaine collotte marsannay les grasses tetes 2022
+62. domaine collotte marsannay les grasses tetes 2022
+63. domaine collotte marsannay les grasses tetes 2022
+64. domaine collotte marsannay les grasses tetes 2021
+65. domaine collotte marsannay les grasses tetes 2020
+66. domaine collotte marsannay les champsalomon cote de nuits france 2022
+67. domaine collotte marsannay les champsalomon 2017
+68. domaine collotte marsannay les bovins 2018
+69. domaine collotte marsannay les boivins 2022
+70. domaine collotte marsannay le clos de jeu 2022
+71. domaine collotte marsannay le clos de jeu 2022
+72. domaine collotte marsannay le clos de jeu
+73. domaine collotte marsannay grasses tetes 2019
+74. domaine collotte marsannay en combereau cote de nuits france 2022
+75. domaine collotte marsannay cuvee vieilles vignes 2023
+76. domaine collotte marsannay cuvee vieilles vignes 2022
+77. domaine collotte marsannay cuvee vieilles vignes 2018
+78. domaine collotte marsannay cuvee vieille vignes 2020
+79. domaine collotte marsannay champ salomon 2022
+80. domaine collotte marsannay champ salomon 2021
+81. domaine collotte marsannay blanc 2022
+82. domaine collotte marsannay blanc 2022
+83. domaine collotte marsannay blanc 2022
+84. domaine collotte les grasses tetes marsannay rouge
+85. domaine collotte les grasses tetes marsannay france pinot noir 2020
+86. domaine collotte les evocelles gevreychambertain france pinot noir 2020
+87. domaine collotte les champstions fixin rouge 2022
+88. domaine collotte les boivins marsannay 2023 burgundy france
+89. domaine collotte les boivins marsannay 2022
+90. domaine collotte gevreychambertin les evocelles cote de nuits france 2022
+91. domaine collotte gevreychambertin les evocelles 2022
+92. domaine collotte gevreychambertin les evocelles 2021
+93. domaine collotte gevreychambertin les evocelles 2020
+94. domaine collotte gevreychambertin les evocelles 2020
+95. domaine collotte gevreychambertin 2022
+96. domaine collotte gevreychambertin 2022
+97. domaine collotte gevreychambertin 2021
+98. domaine collotte gevreychambertin 2020
+99. domaine collotte gevreychambertin 2019
+100. domaine collotte gevreychambertin
+101. domaine collotte gevrey chambertin les evocelles 2022
+102. domaine collotte gevrey chambertin les evocelles 2022
+103. domaine collotte gevrey chambertin les evocelles 2021
+104. domaine collotte gevrey chambertin evocelles 2023
+105. domaine collotte gevrey chambertin evocelles 2023
+106. domaine collotte gevrey chambertin 2023
+107. domaine collotte gevrey chambertin 2021
+108. domaine collotte gevrey chambertin 2020
+109. domaine collotte fixin les crais de chene vieilles vignes 2009
+110. domaine collotte fixin les crais de chene 2023
+111. domaine collotte fixin les champstions cote de nuits france 2022
+112. domaine collotte fixin les champstions 2017
+113. domaine collotte en combereau marsannay 2023 burgundy france
+114. domaine collotte cremant de bourgogne nv
+115. domaine collotte cremant de bourgogne brut burgundy france nv
+116. domaine collotte cremant de bourgogne brut
+117. domaine collotte chambollemusigny cuvee vieilles vignes 2020
+118. domaine collotte chambolle musigny vieilles vignes 2022
+119. domaine collotte bourgogne rouge 2023 france
+120. domaine collotte bourgogne rouge 2023
+121. domaine collotte bourgogne rouge 2022 france
+122. domaine collotte bourgogne pinot noir noble souche 2020
+123. domaine collotte bourgogne pinot noir cuvee de noble souche 2023
+124. domaine collotte bourgogne blanc chardonnay 2023
+125. domaine collotte bourgogne blanc 2023
+126. domaine collotte bourgogne blanc 2023
+127. domaine collotte bourgogne blanc 2023
+128. domaine collotte aligote 2023
+129. domaine collotte aligote 2020
+130. domaine collin cuvee selection brut cremant de limoux france
+131. domaine collin cremant limoux
+132. domaine collin cremant de limoux nv
+133. domaine collin cremant de limoux cuvee tradition
+134. domaine collin cremant de limoux
+135. domaine collet silex craie
+136. domaine collet pere et fils les forets chablis premier cru france 2019
+137. domaine collet heritage
+138. domaine collet extreme blanc de blancs 2015
+139. domaine collet et fils petit chablis 2023
+140. domaine collet et fils chablis 2023
+141. domaine collet coutinaux 2014
+142. domaine collet champagne silex craie
+143. domaine collet champagne silex craie
+144. domaine collet champagne rose
+145. domaine collet champagne extra brut silex craie nv
+146. domaine collet champagne extra brut silex craie nv
+147. domaine collet champagne extra brut fons dionisii 2016
+148. domaine collet chablis borgona francia
+149. domaine collet caractere blanc de noirs 2015
+150. domaine colinot les mazelots 2009
+151. domaine colinot cote du moutier 2010
+152. domaine colinot aop irancy rouge 2010
+153. domaine colinot aop irancy rouge 2010
+154. domaine colinot aop irancy rouge 2010
+155. domaine colinot aop irancy rouge 2010
+156. domaine colinot aop irancy rouge 2009
+157. domaine colinot aop irancy rouge 2009
+158. domaine colinot aop irancy rouge 2009
+159. domaine colinot aop irancy rouge 2009
+160. domaine colin perles grises
+161. domaine colin marc et ses fils saintaubin 2023
+162. domaine colin marc et ses fils saintaubin 1er cru en remilly 2023
+163. domaine colin marc et ses fils saintaubin 1er cru en montceau 2023
+164. domaine colin marc et ses fils pulignymontrachet le trezin bl 2023
+165. domaine colin marc et ses fils chassagnemontrachet vieilles vignes rge 2023
+166. domaine colin marc et ses fils chassagnemontrachet 1er cru les champgains bl 2023
+167. domaine colin coteaux du vendomois vieilles vignes 2022
+168. domaine colin coteaux du vendomois rose gris bodin 2024
+169. domaine colette regnie
+170. domaine colette gros chablis 1er cru fourneaux 2020
+171. domaine colbois veilles vignes chardonnay chablis
+172. domaine colbois chitry 2022
+173. domaine colbois chardonnay chablis
+174. domaine colbois chablis vit
+175. domaine colbois chablis vieilles vignes vit
+176. domaine colbois chablis 2022
+177. domaine colbois chablis 1er cru cote de jouan vit
+178. domaine colbois bourgogne chitry vit
+179. domaine colbois bourgogne chitry les dames rod
+180. domaine colbois blandad vinlada 32 flaskor
+181. domaine colbois aligote 2022
+182. domaine colbois 1er cru cote de jouan 2022
+183. domaine colbois 1er cr
+184. domaine coillot pere et fils marsannay les ouzelois 2021
+185. domaine coillot marsannay les grasses tetes cote de nuits france 2019
+186. domaine coillot marsannay les grasses tetes 2022
+187. domaine coillot marsannay charmes aux pretres cote de nuits france 2020
+188. domaine coillot les grasses tetes marsannay 2020
+189. domaine coillot gevreychambertin vieilles vignes 2022
+190. domaine coillot gevreychambertin vieilles vignes
+191. domaine coillot gevreychambertin vieilles vignes
+192. domaine coillot cotes de nuits villages 2016
+193. domaine coillot cote de nuitsvillages burgundy france 2022
+194. domaine coillot cote de nuits villages 2020
+195. domaine coillot bourgogne rouge
+196. domaine coillot bourgogne pinot noir 2022
+197. domaine coillot bourgogne pinot noir 2018
+198. domaine coillot bourgogne cote dor 2021
+199. domaine cogne pinot noir val du loire 2023
+200. domaine coffinetduvernay les blanchots dessous chassagne montrachet 2020
+201. domaine coffinetduvernay chassagnemontrachet 2023 les voillenotsdessus
+202. domaine coffinetduvernay chassagnemontrachet 2021
+203. domaine coffinetduvernay chassagnemontrachet 2019
+204. domaine coffinetduvernay chassagne montrachet 1er cru morgeout les grands clos 2019
+205. domaine coffinetduvernay chardonnay les fairendes premier cru chassagnemontrachet burgundy france 2022
+206. domaine coffinetduvernay batard montrachet 2001
+207. domaine coffinet duvernay les grands clos chassagne montrachet 1er cru aoc 2020 vino bianco
+208. domaine coffinet duvernay la maltroie chassagne montrachet 1er cru aoc 2019 vino bianco
+209. domaine coffinet chassagne montrachet les voillenots 2021
+210. domaine cochedury volnay premier cru 2020
+211. domaine cochedury volnay 2020
+212. domaine cochedury volnay 1er cru hospices de beaune general muteau 2018
+213. domaine cochedury volnay 1er cru hospices de beaune gauvin 2017
+214. domaine cochedury volnay 1er cru 2021
+215. domaine cochedury volnay 1er cru 2021
+216. domaine cochedury volnay 1er cru 2019
+217. domaine cochedury volnay 1er cru 2018
+218. domaine cochedury volnay 1er cru 2017
+219. domaine cochedury pulignymontrachet 1er cru enseigneres 2018
+220. domaine cochedury pulignymontrachet 1er cru enseigneres 2015
+221. domaine cochedury puligny montrachet les enseigneres 2017
+222. domaine cochedury puligny montrachet les enseigneres 2016
+223. domaine cochedury puligny montrachet les enseigneres 2013
+224. domaine cochedury pommard epenots 1er cru hospices de beaune dom goblet 2018
+225. domaine cochedury pommard epenots 1er cru hospices de beaune chaudron 2019
+226. domaine cochedury perrieres premier cru meursault 2011 wit
+227. domaine cochedury monthelie rouge 2022
+228. domaine cochedury monthelie rouge 2018
+229. domaine cochedury monthelie rouge 2016
+230. domaine cochedury monthelie 2021
+231. domaine cochedury monthelie 2016
+232. domaine cochedury meursault rouge 2017
+233. domaine cochedury meursault les rougeots 2022
+234. domaine cochedury meursault les rougeots 2022
+235. domaine cochedury meursault les rougeots 2016
+236. domaine cochedury meursault les rougeots 2011
+237. domaine cochedury meursault les rougeots 2011
+238. domaine cochedury meursault les rougeots 1999
+239. domaine cochedury meursault les rougeots 1999
+240. domaine cochedury meursault les chevalieres 2022
+241. domaine cochedury meursault les chevalieres 2006
+242. domaine cochedury meursault les chevalieres 2006
+243. domaine cochedury meursault les chevalieres 2006
+244. domaine cochedury meursault les chevalieres 2006
+245. domaine cochedury meursault burgundy 2019
+246. domaine cochedury meursault blanc 2022
+247. domaine cochedury meursault blanc 2015
+248. domaine cochedury meursault 2022
+249. domaine cochedury meursault 2021
+250. domaine cochedury meursault 2021
+251. domaine cochedury meursault 2021
+252. domaine cochedury meursault 2021
+253. domaine cochedury meursault 2020
+254. domaine cochedury meursault 2020
+255. domaine cochedury meursault 2019
+256. domaine cochedury meursault 2018
+257. domaine cochedury meursault 2018
+258. domaine cochedury meursault 2016
+259. domaine cochedury meursault 2015
+260. domaine cochedury meursault 2015
+261. domaine cochedury meursault 2014
+262. domaine cochedury meursault 1er cru les rougeots 2019
+263. domaine cochedury meursault 1er cru les rougeots 2018
+264. domaine cochedury meursault 1er cru les rougeots 2012
+265. domaine cochedury meursault 1er cru les perrieres 2016
+266. domaine cochedury meursault 1er cru les genevrieres 2018
+267. domaine cochedury meursault 1er cru les genevrieres 2016
+268. domaine cochedury meursault 1er cru les chevalieres 2022
+269. domaine cochedury meursault 1er cru les caillerets 2004
+270. domaine cochedury meursault 1er cru les caillerets 2004
+271. domaine cochedury meursault 1er cru caillerets 2019
+272. domaine cochedury meursault
+273. domaine cochedury hospices du beaune pommardepenots 1er cru cuvee dom goblet 2018
+274. domaine cochedury cortoncharlemagne grand cru 2015
+275. domaine cochedury cortoncharlemagne grand cru 2013
+276. domaine cochedury cortoncharlemagne grand cru 2012
+277. domaine cochedury cortoncharlemagne grand cru 2012
+278. domaine cochedury cortoncharlemagne grand cru 2009
+279. domaine cochedury cortoncharlemagne grand cru 2009
+280. domaine cochedury corton rouge grand cru hospices de beaune charlotte dumay 2017
+281. domaine cochedury corton grand cru charlotte dumay hospices de beaune 2017
+282. domaine cochedury corton charlemagne grand cru ac 2015
+283. domaine cochedury corton charlemagne grand cru ac 2013
+284. domaine cochedury corton charlemagne grand cru 2016
+285. domaine cochedury corton charlemagne grand cru
+286. domaine cochedury corton charlemagne 2006
+287. domaine cochedury bourgogne rouge 2022
+288. domaine cochedury bourgogne rouge 2019
+289. domaine cochedury bourgogne rouge 2018
+290. domaine cochedury bourgogne rouge 2017
+291. domaine cochedury bourgogne blanc 2022
+292. domaine cochedury bourgogne blanc 2022
+293. domaine cochedury bourgogne blanc 2022
+294. domaine cochedury bourgogne blanc 2022
+295. domaine cochedury bourgogne blanc 2022
+296. domaine cochedury bourgogne blanc 2021
+297. domaine cochedury bourgogne blanc 2019
+298. domaine cochedury bourgogne blanc 2018
+299. domaine cochedury bourgogne blanc 2017
+300. domaine cochedury bourgogne blanc 2015
+301. domaine cochedury bourgogne aligote 2018
+302. domaine cochedury bourgogne aligote 2011
+303. domaine cochedury bourgogne aligote 2010
+304. domaine cochedury auxeyduresses rouge 2019
+305. domaine cochedury auxeyduresses rouge 2017
+306. domaine cochedury auxey duressess 2021
+307. domaine cochedury auxey duresses rouge 2022
+308. domaine cochedury auxey duresses rouge 2021
+309. domaine cochedury auxey duresses rouge 2021
+310. domaine cochedury auxey duresses rouge 2015
+311. domaine cochedury auxey duresses rouge 2014
+312. domaine cochedury auxey duresses 2022
+313. domaine cochedury 2020 bourgogne blanc
+314. domaine coche dury meursault blanc 2022
+315. domaine coche dury meursault blanc 2019
+316. domaine coche dury meursault 2022 burgundy france
+317. domaine coche dury meursault 2016
+318. domaine coche dury les rougeots meursault 2019
+319. domaine coche dury cuvee muteau hospices de beaunvolnay 1er cru aop
+320. domaine coche dury bourgogne blanc 2022 burgundy france
+321. domaine coche dury 2019 vin de meursault
+322. domaine coccinelles cotes du rhone
+323. domaine cmrecnjak pusipel
+324. domaine cluzel condrieu 2019
+325. domaine cluzel condrieu
+326. domaine cluselroch vin de france serine 2021
+327. domaine cluselroch vin de france rouge serine 2022
+328. domaine cluselroch vin de france rouge serine 2022
+329. domaine cluselroch vin de france rouge serine 2022
+330. domaine cluselroch vin de france rouge serine 2022
+331. domaine cluselroch vin de france rouge le vin du spoutnick 2022
+332. domaine cluselroch vin de france rouge le vin du spoutnick 2022
+333. domaine cluselroch vin de france rouge le vin du spoutnick 2022
+334. domaine cluselroch vin de france rouge le vin du spoutnick 2022
+335. domaine cluselroch vin de france rouge le vin du spoutnick 2021
+336. domaine cluselroch vin de france rouge le vin du spoutnick 2021
+337. domaine cluselroch vin de france rouge le vin du spoutnick 2021
+338. domaine cluselroch vin de france rouge le vin du spoutnick 2021
+339. domaine cluselroch sur le mont blanc vin de france 2021
+340. domaine cluselroch rouge serine rhone vin de france 2021
+341. domaine cluselroch rouge serine
+342. domaine cluselroch les schistes coterotie 2020
+343. domaine cluselroch les schistes 2023
+344. domaine cluselroch les grandes places cote rotie rhone france 2021
+345. domaine cluselroch les grandes places cote rotie rhone france 2020
+346. domaine cluselroch cotes du rhone les vergers france 2019
+347. domaine cluselroch cotes du rhone les vergers 2019
+348. domaine cluselroch coterotie vialliere 2021
+349. domaine cluselroch coterotie vialliere 2021
+350. domaine cluselroch coterotie vialliere 2021
+351. domaine cluselroch coterotie vialliere 2021
+352. domaine cluselroch coterotie vialliere 2020
+353. domaine cluselroch coterotie vialliere 2020
+354. domaine cluselroch coterotie vialliere 2020
+355. domaine cluselroch coterotie vialliere 2020
+356. domaine cluselroch coterotie les schistes
+357. domaine cluselroch coterotie les grandes places 2019
+358. domaine cluselroch coterotie les grandes places
+359. domaine cluselroch coterotie les grandes places
+360. domaine cluselroch coterotie grands places
+361. domaine cluselroch coterotie cuvee les schistes 2019 6 x
+362. domaine cluselroch coterotie cuvee les schistes 2019
+363. domaine cluselroch coterotie champon 2021
+364. domaine cluselroch coterotie champon 2021
+365. domaine cluselroch coterotie champon 2021
+366. domaine cluselroch coterotie champon 2021
+367. domaine cluselroch coterotie champon 2020
+368. domaine cluselroch coteaux du lyonnais traboules 2021
+369. domaine cluselroch coteaux du lyonnais traboules 2019
+370. domaine cluselroch coteaux du lyonnais galet
+371. domaine cluselroch coteaux du lyonnais galet
+372. domaine cluselroch cote rotie les schistes rhone france 2021
+373. domaine cluselroch cote rotie les schistes rhone france 2021
+374. domaine cluselroch cote rotie les schistes rhone france 2015
+375. domaine cluselroch cote rotie les grandesplaces 2012
+376. domaine cluselroch cote rotie cuvee vialliere rhone france 2021
+377. domaine cluselroch classique 2015
+378. domaine clusel roch verchery 2021 condrieu
+379. domaine clusel roch verchery 2021 condrieu
+380. domaine clusel roch verchery 2021 condrieu
+381. domaine clusel roch verchery 2021 condrieu
+382. domaine clusel roch les schistes 2020 coterotie
+383. domaine clusel roch les schistes 2020 coterotie
+384. domaine clusel roch les schistes 2020 coterotie
+385. domaine clusel roch les schistes 2020 coterotie
+386. domaine clusel roch les grandes places 2020 coterotie
+387. domaine clusel roch les grandes places 2020 coterotie
+388. domaine clusel roch les grandes places 2020 coterotie
+389. domaine clusel roch les grandes places 2020 coterotie
+390. domaine clusel roch coterotie vialliere 2018
+391. domaine clusel roch coterotie les schistes 2020
+392. domaine clusel roch coterotie les grandes places 2020
+393. domaine clusel roch coterotie le champon 2020
+394. domaine clusel roch coterotie le champon 2019
+395. domaine clusel roch cote rotie champon 2018
+396. domaine cluny gevrey chambertin vielles vignes 2022
+397. domaine cluny gevrey chambertin vielles vignes 2021
+398. domaine cluny gevrey chambertin 1st cru champeaux 2020
+399. domaine cluny gevrey chambertin 1er cru les champeaux 2022
+400. domaine cluny gevrey chambertin 1er cru les champeaux 2021
+401. domaine cluny gevrey chambertin 1 cru champeaux 2020
+402. domaine cluny chambolle musigny les charmes 1er cru 2020
+403. domaine cluny chambolle musigny les charmes 1 cru 2020
+404. domaine cluny chambolle musigny 1st cru les charmes 2019
+405. domaine cluny chambolle musigny 1er cru les charmes 2022
+406. domaine cluny chambolle musigny 1er cru les charmes 2021
+407. domaine cluny chambolle musigny 1 cru les charmes 2019
+408. domaine clotilde davenne saint bris la preferee 2022
+409. domaine clotilde davenne saint bris la preferee 2022
+410. domaine clotilde davenne petit chablis 2021
+411. domaine clotilde davenne cremant de bourgogne rose
+412. domaine clotilde davenne cremant de bourgogne rose
+413. domaine clotilde davenne cremant de bourgogne nv
+414. domaine clotilde davenne cremant de bourgogne nv
+415. domaine clotilde davenne cremant de bourgogne
+416. domaine clotilde davenne cremant de bourgogne
+417. domaine clotilde davenne chablis vieilles vignes 2022
+418. domaine clotilde davenne chablis vieilles vignes 2022
+419. domaine clotilde davenne chablis premier cru montmains
+420. domaine clotilde davenne chablis 2022
+421. domaine clotilde davenne chablis 2022
+422. domaine clotilde davenne chablis 2020
+423. domaine clotilde davenne chablis 2020
+424. domaine clotilde davenne chablis 2019
+425. domaine clotilde davenne chablis 2019
+426. domaine clotilde davenne chablis
+427. domaine clotilde davenne bourgogne blanc 2020
+428. domaine closel savennieres clos du papillon 2020
+429. domaine closel la jalousie savennieres 2020
+430. domaine clos tart clos tart
+431. domaine clos sixte lirac
+432. domaine clos saintjean deus ex machina chateauneufdupape
+433. domaine clos saintjean combe des fous chateauneufdupape
+434. domaine clos saintjean chateauneufdupape
+435. domaine clos saint jean les calades
+436. domaine clos saint jean
+437. domaine clos perraud muscadet sevre et maine sur lie
+438. domaine clos marfisi gratta di sole blanc aop patrimonio 2017
+439. domaine clos godeaux les maupas chinon 2021 cabernet franc
+440. domaine clos frantin vosneromanee 1er cru les malconsorts 2020
+441. domaine clos frantin vosneromanee 1er cru les malconsorts 2020
+442. domaine clos frantin vosneromanee 1er cru les malconsorts 2019
+443. domaine clos frantin vosneromanee 1er cru les malconsorts 2019
+444. domaine clos frantin echezeaux grand cru 2020
+445. domaine clos frantin echezeaux grand cru 2020
+446. domaine clos frantin echezeaux grand cru 2019
+447. domaine clos frantin echezeaux grand cru 2019
+448. domaine clos frantin echezeaux grand cru 2018
+449. domaine clos frantin echezeaux grand cru 2018
+450. domaine clos frantin clos de vougeot grand cru 2018
+451. domaine clos frantin clos de vougeot grand cru 2018
+452. domaine clos frantin clos de vougeot grand cru 2017
+453. domaine clos frantin clos de vougeot grand cru 2017
+454. domaine clos frantin clos de vougeot grand cru 2014
+455. domaine clos frantin chambertin grand cru 2020
+456. domaine clos frantin chambertin grand cru 2020
+457. domaine clos frantin chambertin grand cru 2019
+458. domaine clos frantin chambertin grand cru 2019
+459. domaine clos du tueboeuf thierry puzelat rouillon 2022
+460. domaine clos du tueboeuf thierry puzelat le brin de chevre 2020
+461. domaine clos du tueboeuf thierry puzelat firleuse romorantin 2022
+462. domaine clos du fief beaujolais villages 2022
+463. domaine clos des vignes du maynes megamix vol 2 2021
+464. domaine clos des vignes du maynes macon cruzille aragonite 2021
+465. domaine clos des vignes du maynes les crays 2019
+466. domaine clos des vignes du maynes cuvee 910 23
+467. domaine clos des rocs pouillyloche clos des rocs revelation sans soufre 2020 12 bottles
+468. domaine clos des rocs pouillyloche clos des rocs monopole magnum 2020 12 bottles
+469. domaine clos des rocs pouillyloche clos des rocs monopole 2020 12 bottles
+470. domaine clos des rocs pouillyloche clos des rocs monopole 2016
+471. domaine clos des rocs pouillyfuisse pierre longue 2020 12 bottles
+472. domaine clos des rocs morgon chemin des croix 2020 12 bottles
+473. domaine clos des rocs maconloche en pres foret magnum 2021 12 bottles
+474. domaine clos des rocs maconloche en pres foret burgundy france 2022
+475. domaine clos des rocs maconloche en pres foret 2022 12 bottles
+476. domaine clos des rocs maconloche en charpaux 2022 12 bottles
+477. domaine clos des rocs macon en pres foret 2022 12 bottles
+478. domaine clos des rocs en pres foret maconloche burgundy france chardonnay 2024
+479. domaine clos des rocs
+480. domaine clos des rochers la petite fleur des rochers rose 2021
+481. domaine clos des rochers cremant de luxembourg brut
+482. domaine clos des jardins 2023
+483. domaine clos des jardins
+484. domaine clos des fees igp cotes catalanes vieilles vignes grenache blanc 2022
+485. domaine clos des fees herve bizeul les sorcieres cotes du catalanes blanc 2022
+486. domaine clos des fees cotes du roussillon villages vieilles vignes rouge 2020
+487. domaine clos des fees cotes du roussillon villages le clos des fees rouge 2009
+488. domaine clos des fees cotes du roussillon villages la petite siberie 2019
+489. domaine clos des fees cotes du roussillon les sorcieres rouge 2020
+490. domaine clos del ray la noia grenache noir
+491. domaine clos de tart moreysaintdenis 1er cru la forge de tart 2021
+492. domaine clos de tart morey saint denis 2023
+493. domaine clos de tart grand cru monopole 2015
+494. domaine clos de tart grand cru clos de tart 2021
+495. domaine clos de tart grand cru clos de tart 2013 museum release
+496. domaine clos de tart grand cru 2019
+497. domaine clos de la roilette fleurie 2023
+498. domaine clos de la chapelle volnay 1er cru tallepieds 2016
+499. domaine clos de la chapelle volnay 1er cru en carelle 2023
+500. domaine clos de la chapelle volnay 1er cru en carelle 2018
+501. domaine clos de la chapelle volnay 1er cru clos de la chapelle 2023
+502. domaine clos de la chapelle volnay 1er cru clos de la chapelle 2010
+503. domaine clos de la chapelle sous fretille 1er cru pernand vergelesses blanc 2021
+504. domaine clos de la chapelle pernand vergelesses 1er cru 2022
+505. domaine clos de la chapelle meursault cuvee confluence 2023
+506. domaine clos de la chapelle meursault 1er cru charmes 2023
+507. domaine clos de la chapelle les vignes blanches meursault 2022
+508. domaine clos de la chapelle les reversees 1er cru beaune blanc 2022
+509. domaine clos de la chapelle les chanlins 2016
+510. domaine clos de la chapelle grands epenots pommard premier
+511. domaine clos de la chapelle en carelle 1er cru volnay 2018
+512. domaine clos de la chapelle corton bressandes 2020
+513. domaine clos de la chapelle beaune 1er cru les reversees blanc 2023
+514. domaine clos de la chapelle beaune 1er cru les reversees 2019
+515. domaine clos de la chapelle 1er cru beaune champs pimont 2023
+516. domaine clos de la bonnette
+517. domaine clos de caveau vacqueyras aoc rouge lao muse bio magnum 1 2007
+518. domaine clos de caveau vacqueyras aoc rouge carmin brillant bio magnum 1 2010
+519. domaine clos de caveau en vallee du rhone
+520. domaine clos de caveau cotes du rhone aoc rouge cuvee les bateliers bio 2011
+521. domaine clos corse figari amphora blanc 2022
+522. domaine clos canarelli corse figari blanc 2022
+523. domaine clos baste pacherenc du vicbilh doux bio 2022 0 white
+524. domaine cloche 2021 sauvignon blanc
+525. domaine cloche 2020 trinite orange
+526. domaine cloche 2020 delaware orange
+527. domaine clerget morey saint denis 2021
+528. domaine clerget chambolle musigny 2021
+529. domaine clerget chambolle musigny 2020
+530. domaine clerget chambolle musigny 1er cru les charmes 2021
+531. domaine clerget chambolle musigny 1er cru les charmes 2021
+532. domaine clerget bourgogne rouge 2021
+533. domaine clerget bourgogne rouge 2020
+534. domaine clement menetou salon 2022
+535. domaine clement lavallee saintbris les copains dabord
+536. domaine clement lavallee chablis burgundy fr 2021
+537. domaine clement florian berthier coteaux du giennois 2023
+538. domaine clemence jacob volnay 1 cru les brouillards 2022
+539. domaine clemence jacob savignylesbeaune 1 cru aux gravains blanc 2023
+540. domaine clemence jacob pommard 1 cru les charmots 2022
+541. domaine clemence jacob moreysaintdenis 1 cru mont luisants 2023
+542. domaine clemence jacob meursault village 2024
+543. domaine clemence jacob maranges les mesurees blanc 2023
+544. domaine clemence jacob hautes cotes de beaune blanc 2023
+545. domaine clemence jacob gevreychambertin village 2023
+546. domaine clemence jacob coteaux bourguignon blanc 2023
+547. domaine clemence jacob bourgogne rouge 2023
+548. domaine clemence jacob bourgogne blanc 2023
+549. domaine clemence jacob bourgogne aligote 2023
+550. domaine clef de st thomas pierre troupel wei 2016
+551. domaine clef de st thomas pierre troupel branco 2016
+552. domaine clef de st thomas pierre troupel 2016
+553. domaine clef de st thomas aop chateauneufdupape rouge 2019
+554. domaine clef de st thomas aop chateauneufdupape rouge 2019
+555. domaine clef de st thomas aop chateauneufdupape rouge 2019
+556. domaine clef de st thomas aop chateauneufdupape rouge 2019
+557. domaine clef de st thomas aop chateauneufdupape rouge 2016
+558. domaine clef de st thomas aop chateauneufdupape rouge 2016
+559. domaine clef de st thomas aop chateauneufdupape rouge 2016
+560. domaine clef de st thomas aop chateauneufdupape rouge 2016
+561. domaine clef de st thomas aop chateauneufdupape blanc 2016
+562. domaine clef de st thomas aop chateauneufdupape blanc 2016
+563. domaine clef de st thomas aop chateauneufdupape blanc 2016
+564. domaine clef de st thomas aop chateauneufdupape blanc 2015
+565. domaine clef de st thomas aop chateauneufdupape blanc 2015
+566. domaine clef de st thomas aop chateauneufdupape blanc 2015
+567. domaine clef de saint thomas pierre troupel chateauneuf du pape
+568. domaine clef de saint thomas chateauneufdupape pierre trou
+569. domaine cle de sol silene 2016
+570. domaine clavery vermentino viognier
+571. domaine clavery blanc 2022 equilibre et fraicheur du languedoc
+572. domaine clavel syrius grenache syrah carignan
+573. domaine clavel syrius cotes du rhone village
+574. domaine clavel syrius cotes du rhone village
+575. domaine clavel syrius
+576. domaine clavel syrious viogner roussanne
+577. domaine clavel regulus rose cotes du rhone
+578. domaine clavel regulus cotes du rhone rouge 2024
+579. domaine clavel regulus cotes du rhone
+580. domaine clavel regul
+581. domaine clavel pic saint loup la bonne pioche 2023
+582. domaine clavel mon histoire rouge
+583. domaine clavel mescladis coteaux du languedoc aoc
+584. domaine clavel liura 2023
+585. domaine clavel les garrigues coteaux du languedoc aoc
+586. domaine clavel le mas coteaux du languedoc aoc
+587. domaine clavel le mas bio 2020
+588. domaine clavel le mas bio 2019
+589. domaine clavel le mas bio 2018
+590. domaine clavel le mas
+591. domaine clavel languedoc rouge le mas
+592. domaine clavel languedoc les mas rouge 14vol 2023
+593. domaine clavel languedoc les garrigues rouge 14vol 2022
+594. domaine clavel languedoc cascaille blanc 135vol 2022
+595. domaine clavel des clous pic saint loup bio 2014
+596. domaine clavel cotes du rhone white
+597. domaine clavel cotes du rhone villages saint gervais 2020 clair de lune
+598. domaine clavel cotes du rhone villages rouge
+599. domaine clavel cotes du rhone villages blanc
+600. domaine clavel cotes du rhone regulus blanc
+601. domaine clavel cotes du rhone red
+602. domaine clavel cotes du rhone 2015 regulus
+603. domaine clavel cotes du rhone
+604. domaine clavel cote du rhone villages st gervais syri
+605. domaine clavel cordelia cotes du rhone villages chusclan 2018 case only
+606. domaine clavel clare de lune
+607. domaine clavel clair de lune saintgervais rouge 2020
+608. domaine clavel clair de lune saintgervais blanc 2023
+609. domaine clavel cascaille la mejanelle bio 2016
+610. domaine clavel cascaille la mejanelle bio 2016
+611. domaine clavel bonne pioche pic saint loup bio 2020
+612. domaine clavel bonne pioche pic saint loup bio 2018
+613. domaine clavel bonne pioche pic saint loup bio 2017
+614. domaine clavel bonne pioche pic saint loup bio
+615. domaine clavel bonne pioche pic saint loup 14vol 2022
+616. domaine clavel bonne pioche 2023
+617. domaine clausel terres de cure cotes du rhone villages 2022
+618. domaine clausel terres de cure
+619. domaine clausel les baies romaines
+620. domaine clausel le petit mazet
+621. domaine clausel la source doree
+622. domaine clausel la fontaine du cerisier
+623. domaine clausel jardin de gagniere
+624. domaine clausel ctes du rhne villages ac
+625. domaine clausel cotes du rhone villages ac terre de cure
+626. domaine clausel cotes du rhone villages ac terre de cure
+627. domaine clausel cotes du cotes du rhone villages ac terre de cure 2022
+628. domaine claudy clavien syrah encre de la terre 2023
+629. domaine claudy clavien paien larmes du terroir 2022
+630. domaine claudie jobard rully rouge la chaume 2023
+631. domaine claudie jobard rully montagne la folie blanc 2023
+632. domaine claudie jobard rully montagne la folie blanc 2023
+633. domaine claudie jobard rully montagne la folie 2023
+634. domaine claudie jobard rully montagne la folie 2018
+635. domaine claudie jobard rully montagne la folie
+636. domaine claudie jobard rully la chaume 2022
+637. domaine claudie jobard rully la chaume
+638. domaine claudie jobard rully en villerange blanc 2023
+639. domaine claudie jobard rully en villerange blanc 2023
+640. domaine claudie jobard rully en villerange 2023
+641. domaine claudie jobard rully blanc montagne la folie 2022
+642. domaine claudie jobard rouge la chaume rully
+643. domaine claudie jobard pommard vieilles vignes 2021
+644. domaine claudie jobard pommard vieilles vignes
+645. domaine claudie jobard pommard vieille vignes
+646. domaine claudie jobard pommard vaumuriens 2022
+647. domaine claudie jobard pommard les vaumuriens 2023
+648. domaine claudie jobard pommard la chaume
+649. domaine claudie jobard pommard 1er cru les charmots 2023
+650. domaine claudie jobard pommard 1er cru les charmots 2021
+651. domaine claudie jobard pommard 1er cru les charmots 2020
+652. domaine claudie jobard pommard 1er cru les charmots
+653. domaine claudie jobard montagny 1er cru madeleine blanc 2023
+654. domaine claudie jobard montagny 1er cru madeleine blanc 2023
+655. domaine claudie jobard montagny 1er cru madeleine
+656. domaine claudie jobard montagne la folie blanc rully
+657. domaine claudie jobard milliane bourgogne rouge cote dor 2022
+658. domaine claudie jobard madeleine montagny premier cru 2022
+659. domaine claudie jobard bourgogne rouge cote dor milliane
+660. domaine claudie jobard bourgogne cote dor milliane rouge 2023
+661. domaine claudie jobard bourgogne cote dor milliane rouge 2023
+662. domaine claudie jobard beaune 1er cru les epenottes 2023
+663. domaine claudie jobard beaune 1er cru les epenottes 2021
+664. domaine claudie jobard beaune 1er cru les epenottes
+665. domaine claude riffaut la noue 2022
+666. domaine claude riffault sancerre les chasseignes 2023
+667. domaine claude riffault sancerre ac les chasseignes 2020 bio
+668. domaine claude riffault monoparcelle 469 sancerre 2022
+669. domaine claude riffault les chasseignes 2023
+670. domaine claude riffault les chailloux 2023
+671. domaine claude riffault la noue 2023
+672. domaine claude nouveau le chainey santenay blanc
+673. domaine claude nouveau bourgogne hautcotes de beaune vieilles vignes rouge
+674. domaine claude nouveau aop santenay premier cru clos rousseau 2022 pinot noir
+675. domaine claude marechal volnay 2024 13 ck
+676. domaine claude marechal volnay 2023 135 ck
+677. domaine claude marechal savignylesbeaune white 2024 14 ck
+678. domaine claude marechal savignylesbeaune vielles vignes 2023 135 ck
+679. domaine claude marechal savignylesbeaune vielles vignes 2023 135 ck
+680. domaine claude marechal savignylesbeaune vielles vignes 2022 135 ck
+681. domaine claude marechal savignylesbeaune vielles vignes 2021 13 ck
+682. domaine claude marechal savignylesbeaune vieilles vignes 2024 13 ck
+683. domaine claude marechal savignylesbeaune vieilles vignes 2024 13 ck
+684. domaine claude marechal savignylesbeaune blanc 2023
+685. domaine claude marechal savignylesbeaune 1er cru les lavieres 2024 13 ck
+686. domaine claude marechal savignylesbeaune 1er cru les lavieres 2023 13 ck
+687. domaine claude marechal savignylesbeaune 1er cru les lavieres 2022 135 ck
+688. domaine claude marechal pommard la chaniere 2024 13 ck
+689. domaine claude marechal pommard la chaniere 2024 13 ck
+690. domaine claude marechal pommard la chaniere 2023 135 ck
+691. domaine claude marechal pommard la chaniere 2023 13 ck
+692. domaine claude marechal pommard la chaniere 2023
+693. domaine claude marechal pommard la chaniere 2022 13 ck
+694. domaine claude marechal pommard la chaniere 2022
+695. domaine claude marechal pommard la chaniere 2021 134 ck
+696. domaine claude marechal ladoix les chaillots 2024 13 ck
+697. domaine claude marechal ladoix les chaillots 2023 13 ck
+698. domaine claude marechal choreylesbeaune 2024 13 ck
+699. domaine claude marechal choreylesbeaune 2023 13 ck
+700. domaine claude marechal choreylesbeaune 2022 14 ck
+701. domaine claude marechal choreylesbeaune 2022
+702. domaine claude marechal choreylesbeaune 2021 13 ck
+703. domaine claude marechal chorey les beaune 2022
+704. domaine claude marechal bourgogne rouge cuvee gravel 2024 13 ck
+705. domaine claude marechal bourgogne rouge cuvee gravel 2024 13 ck
+706. domaine claude marechal bourgogne rouge cuvee gravel 2023 135 ck
+707. domaine claude marechal bourgogne rouge cuvee gravel 2023 135 ck
+708. domaine claude marechal bourgogne blanc cuvee antoine 2024 14 ck
+709. domaine claude marechal beaune les bons feuvres 2024 13 ck
+710. domaine claude marechal beaune 2023 145 ck
+711. domaine claude lafond igp val de loire cabernet cot 2014
+712. domaine claude jobard rully la chaume rouge
+713. domaine claude dugat la marie 2020 gevreychambertin
+714. domaine claude dugat la marie 2020 gevreychambertin
+715. domaine claude dugat la marie 2020 gevreychambertin
+716. domaine claude dugat griottechambertin 2020
+717. domaine claude dugat griottechambertin 2020
+718. domaine claude dugat griottechambertin 2020
+719. domaine claude dugat gevreychambertin 2022
+720. domaine claude dugat gevreychambertin 2020
+721. domaine claude dugat gevreychambertin 2020
+722. domaine claude dugat gevreychambertin 2020
+723. domaine claude dugat gevrey chambertin 2021
+724. domaine claude dugat gevrey chambertin 2020
+725. domaine claude dugat chambertin 1er cru lavaux st jacques 2020
+726. domaine claude dugat chambertin 1er cru lavaux st jacques 2020
+727. domaine claude dugat chambertin 1er cru lavaux st jacques 2020
+728. domaine claude dugat bourgogne rouge 2021
+729. domaine claude dugat bourgogne rouge 2021
+730. domaine claude dugat bourgogne rouge 2017
+731. domaine claude dugat
+732. domaine claude branger terroir les gras moutons muscadet sevre et maine
+733. domaine claude branger muscadet sevreetmaine chateauthebaud
+734. domaine clau du sol triptyque 2022
+735. domaine clau du sol triptyque
+736. domaine clau du sol ton ton 12 ton 2023
+737. domaine clau de nell cabernet franc 2021
+738. domaine clau de nell anjou cuve violette 2016
+739. domaine clau de nell anjou cabernet franc 2015
+740. domaine clau de nell
+741. domaine clarendon syrah 2021
+742. domaine clarendon syrah 2018
+743. domaine clarendon syrah 2013
+744. domaine clarendon syrah
+745. domaine clarendon old vines grenache
+746. domaine clarendon old vines grenache
+747. domaine clarendon old vine grenache 2020
+748. domaine clarendon hickinbotham grenache 2013
+749. domaine clarendon bdx 2020
+750. domaine clarence dillon clarendelle saint emilion
+751. domaine clarence dillon bordeaux rose 2024
+752. domaine clarence dillon bordeaux medoc 2022
+753. domaine clarence dillon bordeaux blanc 2024
+754. domaine claquepepin le poire bouche blanc poire
+755. domaine clape vdf vin des amis 2021
+756. domaine clape vdf vin des amis 2020
+757. domaine clape vdf vin des amis 2019
+758. domaine clape vdf vin des amis 2018
+759. domaine clape vdf vin des amis 2017
+760. domaine clape vdf vin des amis 2016
+761. domaine clape saintperay blanc 2021
+762. domaine clape saintperay 2023
+763. domaine clape saintperay 2021
+764. domaine clape saintperay 2020
+765. domaine clape saintperay 2019
+766. domaine clape saintperay 2018
+767. domaine clape saintperay 2016
+768. domaine clape saint peray blanc 2022
+769. domaine clape saint peray blanc
+770. domaine clape cotes du rhone 2023
+771. domaine clape cotes du rhone 2021
+772. domaine clape cotes du rhone 2021
+773. domaine clape cotes du rhone 2020
+774. domaine clape cotes du rhone 2019
+775. domaine clape cotes du rhone 2018
+776. domaine clape cotes du rhone 2017
+777. domaine clape cornas rhone valley france 2022
+778. domaine clape cornas renaissance 2021
+779. domaine clape cornas renaissance 2020
+780. domaine clape cornas renaissance 2019
+781. domaine clape cornas renaissance 2018
+782. domaine clape cornas renaissance 2016
+783. domaine clape cornas renaissance 2015
+784. domaine clape cornas renaissance 2014
+785. domaine clape cornas renaissance 2011
+786. domaine clape cornas renaissance 2010
+787. domaine clape cornas 2022
+788. domaine clape cornas 2021
+789. domaine clape cornas 2020
+790. domaine clape cornas 2019
+791. domaine clape cornas 2019
+792. domaine clape cornas 2018
+793. domaine clape cornas 2017
+794. domaine clape cornas 2017
+795. domaine clape cornas 2016
+796. domaine clape cornas 2015
+797. domaine clape cornas 2014
+798. domaine clape cornas 2013
+799. domaine clape cornas 2012
+800. domaine clape cornas 2011
+801. domaine clape cornas 2010
+802. domaine clape cornas 2009
+803. domaine clape cornas 2006
+804. domaine clape cornas 2002
+805. domaine clape cornas 2001
+806. domaine clape cornas 2000
+807. domaine clape cornas
+808. domaine clape cornas
+809. domaine clape 2016 cornas clape
+810. domaine clairneaux sancerre 2023
+811. domaine claire clavel syrius stgervais
+812. domaine claire clavel syrius cotesducotes du rhonevillages saintgervais rouge 2022
+813. domaine claire clavel syrius cotesducotes du rhonevillages saintgervais blanc 2023
+814. domaine claire clavel regulus rouge
+815. domaine claire clavel regulus cotesducotes du rhone rouge 2024
+816. domaine claire clavel regulus cotesducotes du rhone blanc 2024
+817. domaine claire clavel regulus blanc
+818. domaine claire clavel cordelia cotesdurhonevillages chusclan rouge 2021
+819. domaine claire clavel cordelia chusclan
+820. domaine claire clavel clair de lune cotesducotes du rhonevillages saintgervais rouge 2021
+821. domaine claire clavel clair de lune cotesducotes du rhonevillages saintgervais blanc 2023
+822. domaine claire clavel clair de lune
+823. domaine clairdau rose de marsannay
+824. domaine clairdau marsannay rose 2022
+825. domaine clairdau chambollemusigny
+826. domaine cirotte sancerre 2014 le chene marchand
+827. domaine ciringa vinarstvi tement fosilni breg 2020 sauvignon blanc slovinsko mladsi slovinsky bratr jednoho z nejelegantnejsich sauvignonu blanc sveta z vinice zieregg
+828. domaine ciringa sauvignon blanc
+829. domaine ciringa reserve sauvignon blanc magnum 2017
+830. domaine ciringa reserve sauvignon blanc 2017
+831. domaine ciringa pruh sauvignon blanc magnum 2019
+832. domaine ciringa pruh sauvignon blanc 2019
+833. domaine ciringa pruh sauvignon blanc 2018
+834. domaine ciringa fosilni breg sauvignon blanc 2022
+835. domaine ciringa fosilni breg sauvignon blanc 2022
+836. domaine ciringa fosilni breg sauvignon blanc 2022
+837. domaine ciringa fosilni breg sauvignon blanc
+838. domaine ciringa fosilni breg magnum 2022
+839. domaine ciringa fosilni breg magnum 2021
+840. domaine ciringa fosilni breg dessert wine 2017
+841. domaine ciringa fosilni breg 2022
+842. domaine ciringa fosilni breg 2017
+843. domaine ciringa fosilni breg
+844. domaine ciringa fosilini berg 2020
+845. domaine ciringa folsini breg sauvingon blanc
+846. domaine ciringa 2022 fosilini breg sauvignon blanc
+847. domaine cindy dupre beaujolais villages 2022 blanc
+848. domaine christopher newman pommard vieilles vignes 2014
+849. domaine christophe semaska viognier 2020
+850. domaine christophe semaska dauguste coteaux du vienne syrah 2020
+851. domaine christophe semaska coterotie aoc chateau de montlys
+852. domaine christophe semaska condrieu lys dor 2023
+853. domaine christophe roumier ruchottes chambertin grand cru 2018
+854. domaine christophe roumier ruchottes chambertin grand cru 2018
+855. domaine christophe roumier ruchottes chambertin grand cru 2018
+856. domaine christophe roumier ruchottes chambertin grand cru 2018
+857. domaine christophe pichon st joseph 2019 cotes du rhone
+858. domaine christophe petit chablis 2022
+859. domaine christophe pacalet moulin a vent 2021
+860. domaine christophe pacalet moulin a vent 2021
+861. domaine christophe pacalet moulin a vent 2021
+862. domaine christophe pacalet moulin a vent 2021
+863. domaine christophe pacalet julienas 2021
+864. domaine christophe pacalet julienas 2021
+865. domaine christophe pacalet julienas 2021
+866. domaine christophe pacalet julienas 2021
+867. domaine christophe pacalet chenas 2021
+868. domaine christophe pacalet chenas 2021
+869. domaine christophe pacalet chenas 2021
+870. domaine christophe pacalet chenas 2021
+871. domaine christophe pacalet beaujolais blanc 2021
+872. domaine christophe pacalet beaujolais blanc 2021
+873. domaine christophe pacalet beaujolais blanc 2021
+874. domaine christophe pacalet beaujolais blanc 2021
+875. domaine christophe mittnacht terres detoiles pinot noir alsace france 2024
+876. domaine christophe mittnacht terres detoiles pinot noir
+877. domaine christophe mittnacht terres detoiles pinot blanc 2022
+878. domaine christophe mittnacht terres detoiles osterberg grand cru gewurztraminer 2017
+879. domaine christophe mittnacht terres detoiles gyotaku 2024
+880. domaine christophe mittnacht terres detoiles gyotaku 2023
+881. domaine christophe mittnacht rosacker grand cru
+882. domaine christophe mittnacht riesling terres detoiles 2024
+883. domaine christophe mittnacht pinot gris
+884. domaine christophe mittnacht pinot blanc 2023
+885. domaine christophe mittnacht gewurztraminer terres detoiles 2022
+886. domaine christophe marin origines cotes catalanes grenache 2020
+887. domaine christophe marin maury blanc olivia 2021
+888. domaine christophe marin causseil de mouillere cotes catalanes grenache 2020
+889. domaine christophe fils chablis 2032 burgundy france
+890. domaine christophe fils chablis 1er cru mont de milieu
+891. domaine christophe et fils petit chablis 2022
+892. domaine christophe et fils petit chablis 2020
+893. domaine christophe et fils petit chablis 2019
+894. domaine christophe et fils petit chablis
+895. domaine christophe et fils chablis vieilles vignes 2023
+896. domaine christophe et fils chablis premier cru montee de tonnerre 2022
+897. domaine christophe et fils chablis premier cru mont de milieu 2021
+898. domaine christophe et fils chablis premier cru fourchaume 2022
+899. domaine christophe et fils chablis premier cru fourchaume 2021
+900. domaine christophe et fils chablis premier cru fourchaume
+901. domaine christophe et fils chablis montee de tonnerre 2021
+902. domaine christophe et fils chablis fourchaume 1er cru 2022
+903. domaine christophe et fils chablis 2022
+904. domaine christophe et fils chablis 2021
+905. domaine christophe et fils chablis
+906. domaine christophe curtat saint joseph nomade rouge 2022
+907. domaine christophe chablis 2023
+908. domaine christophe buisson saintromain 2011
+909. domaine christophe buisson nuits st g 1er argillieres 2011
+910. domaine christophe buisson nsg 1er cru argillieres 2013
+911. domaine christophe buisson auxeyduresses rouge 2013
+912. domaine christophe buisson auxeyduresses rouge 2011
+913. domaine christophe bellang meursault 2018
+914. domaine christine et gilles paris fleurie grand pre
+915. domaine christine elodie patrick chalmeau bourgogne aligote 2020
+916. domaine christiane chambeyronmanin coterotie cote brune
+917. domaine christiane chambeyronmanin cote brune
+918. domaine christian salmon sancerre vieilles vignes 2012
+919. domaine christian salmon sancerre blanc 2021
+920. domaine christian salmon sancerre aoc 2024 loire valley
+921. domaine christian salmon sancerre aoc 2023 loire valley
+922. domaine christian salmon sancerre aoc 2022 loire valley
+923. domaine christian salmon sancerre aoc 2021 loire valley
+924. domaine christian salmon sancerre aoc 2020 loire valley
+925. domaine christian salmon sancerre aoc 2019 loire valley
+926. domaine christian salmon sancerre aoc 2018 loire valley
+927. domaine christian salmon sancerre ac 2024
+928. domaine christian salmon sancerre ac
+929. domaine christian salmon sancerre 2024
+930. domaine christian salmon sancerre 2024
+931. domaine christian salmon sancerre 2023
+932. domaine christian salmon sancerre 2022
+933. domaine christian salmon pouillyfume 6 fl a 0
+934. domaine christian salmon pouilly fume clos des criots aoc 2022
+935. domaine christian salmon pouilly fume clos des criots aoc 2021
+936. domaine christian salmon pouilly fume clos des criots 2022
+937. domaine christian salmon clos des criots pouillyfume
+938. domaine christian salmon clos des criots pouilly fume
+939. domaine christian rouchier antraigue rouge 2021
+940. domaine christian moreau valmur grand cru chablis 2021
+941. domaine christian moreau vaillon 1er cru cuvee guy moreau chablis 2016
+942. domaine christian moreau vaillon 1er cru chablis 2020
+943. domaine christian moreau vaillon 1er cru chablis 2019
+944. domaine christian moreau petit chablis 2023
+945. domaine christian moreau pere fils vaillons chablis premier cru france 2023
+946. domaine christian moreau pere fils chablis village 2024
+947. domaine christian moreau pere fils chablis 2020
+948. domaine christian moreau pere fils chablis 1er cru vaillons 2022
+949. domaine christian moreau pere fils
+950. domaine christian moreau pere et fils vaudesir 2020
+951. domaine christian moreau pere et fils petit chablis 2023
+952. domaine christian moreau pere et fils petit chablis 2022
+953. domaine christian moreau pere et fils chablis valmur grand cru 2020
+954. domaine christian moreau pere et fils chablis vaillon 1er cru cuvee guy moreau 2023
+955. domaine christian moreau pere et fils chablis vaillon 1er cru 2023
+956. domaine christian moreau pere et fils chablis grand cru vaudesir 2023
+957. domaine christian moreau pere et fils chablis grand cru valmur 2023
+958. domaine christian moreau pere et fils chablis grand cru valmur 2022
+959. domaine christian moreau pere et fils chablis grand cru les clos clos des hospices 2023
+960. domaine christian moreau pere et fils chablis grand cru les clos clos des hospices 2022
+961. domaine christian moreau pere et fils chablis grand cru les clos 2023
+962. domaine christian moreau pere et fils chablis grand cru les clos 2023
+963. domaine christian moreau pere et fils chablis grand cru les clos 2023
+964. domaine christian moreau pere et fils chablis grand cru les clos 2022
+965. domaine christian moreau pere et fils chablis grand cru les clos 2021
+966. domaine christian moreau pere et fils chablis grand cru les clos 2021
+967. domaine christian moreau pere et fils chablis grand cru blanchot 2023
+968. domaine christian moreau pere et fils chablis 2024
+969. domaine christian moreau pere et fils chablis 2023
+970. domaine christian moreau pere et fils chablis 2022
+971. domaine christian moreau pere et fils chablis 1er cru vaillon 2022
+972. domaine christian moreau pere et fils 2022 chablis
+973. domaine christian moreau pere et fils 2022 chablis
+974. domaine christian moreau pere et fils 2022 chablis
+975. domaine christian moreau grand cru les clos
+976. domaine christian moreau chablis vaillon 2021
+977. domaine christian moreau chablis les clos grand cru 2022
+978. domaine christian moreau chablis grand cru vaudesir 2022
+979. domaine christian moreau chablis grand cru vaudesir 2022
+980. domaine christian moreau chablis grand cru valmur 2022
+981. domaine christian moreau chablis grand cru valmur 2021
+982. domaine christian moreau chablis grand cru valmur
+983. domaine christian moreau chablis grand cru les clos clos des hospices 2023
+984. domaine christian moreau chablis grand cru les clos 2022
+985. domaine christian moreau chablis grand cru les clos 2022
+986. domaine christian moreau chablis grand cru les clos 2022
+987. domaine christian moreau chablis grand cru les clos 2021
+988. domaine christian moreau chablis grand cru les clos
+989. domaine christian moreau chablis grand cru les clos
+990. domaine christian moreau chablis grand cru blanchot
+991. domaine christian moreau chablis clos des hospices 2022
+992. domaine christian moreau chablis 2023
+993. domaine christian moreau chablis 2023
+994. domaine christian moreau chablis 2023
+995. domaine christian moreau chablis 2023
+996. domaine christian moreau chablis 2021
+997. domaine christian moreau chablis 2019
+998. domaine christian moreau chablis 1er cru vaillons cuvee guy moreau 2022
+999. domaine christian moreau chablis 1er cru vaillons 2021
+1000. domaine christian moreau chablis 1er cru vaillons 2020

@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. louis latour bourgogne pinot noir 2023
+2. louis latour bourgogne pinot noir 2022 france
+3. louis latour bourgogne pinot noir 2022
+4. louis latour bourgogne pinot noir 2022
+5. louis latour bourgogne pinot noir 2022
+6. louis latour bourgogne pinot noir 2022
+7. louis latour bourgogne pinot noir 2022
+8. louis latour bourgogne pinot noir 2022
+9. louis latour bourgogne pinot noir 2022
+10. louis latour bourgogne pinot noir 2022
+11. louis latour bourgogne pinot noir 2022
+12. louis latour bourgogne pinot noir 2022
+13. louis latour bourgogne pinot noir 2022
+14. louis latour bourgogne pinot noir 2022
+15. louis latour bourgogne pinot noir
+16. louis latour bourgogne pinot noir
+17. louis latour bourgogne pinot noir
+18. louis latour bourgogne pinot noir
+19. louis latour bourgogne pinot noir
+20. louis latour bourgogne pinot noir
+21. louis latour bourgogne pinot noir
+22. louis latour bourgogne pinot noir
+23. louis latour bourgogne pinot noir
+24. louis latour bourgogne pinot noir
+25. louis latour bourgogne pinot noir
+26. louis latour bourgogne pinot noir
+27. louis latour bourgogne pinot noir
+28. louis latour bourgogne les pierres dorees pinot noir 2021
+29. louis latour bourgogne gamay pack of 3
+30. louis latour bourgogne gamay cuvee latour 2021
+31. louis latour bourgogne gamay 2023
+32. louis latour bourgogne gamay 2023
+33. louis latour bourgogne gamay 2023
+34. louis latour bourgogne gamay 2023
+35. louis latour bourgogne gamay 2020
+36. louis latour bourgogne gamay
+37. louis latour bourgogne gamay
+38. louis latour bourgogne cuvee latour rouge 2023
+39. louis latour bourgogne cuvee latour rouge 2022
+40. louis latour bourgogne cuvee latour rouge 2022
+41. louis latour bourgogne cuvee latour rouge 2022
+42. louis latour bourgogne cuvee latour rouge 2022
+43. louis latour bourgogne cuvee latour rouge 2021
+44. louis latour bourgogne cuvee latour 2023
+45. louis latour bourgogne cuvee latour 2022
+46. louis latour bourgogne cuvee latour 2018
+47. louis latour bourgogne cuvee latour
+48. louis latour bourgogne chardonnay 2024
+49. louis latour bourgogne chardonnay 2024
+50. louis latour bourgogne chardonnay 2024
+51. louis latour bourgogne chardonnay 2024
+52. louis latour bourgogne chardonnay 2024
+53. louis latour bourgogne chardonnay 2024
+54. louis latour bourgogne chardonnay 2023
+55. louis latour bourgogne chardonnay 2023
+56. louis latour bourgogne chardonnay 2023
+57. louis latour bourgogne chardonnay 2023
+58. louis latour bourgogne chardonnay 2023
+59. louis latour bourgogne chardonnay 2023
+60. louis latour bourgogne chardonnay 2023
+61. louis latour bourgogne chardonnay 2023
+62. louis latour bourgogne chardonnay 2022
+63. louis latour bourgogne chardonnay
+64. louis latour bourgogne chardonnay
+65. louis latour bourgogne chardonnay
+66. louis latour bourgogne chardonnay
+67. louis latour bourgogne chardonnay
+68. louis latour bourgogne chardonnay
+69. louis latour bourgogne chardonnay
+70. louis latour bourgogne chardonnay
+71. louis latour bourgogne chardonnay
+72. louis latour bourgogne chardonnay
+73. louis latour bourgogne chardonnay
+74. louis latour bourgogne branco
+75. louis latour bourgogne bourgogne aoc 2015 vino rosso
+76. louis latour bourgogne blanc 23
+77. louis latour bourgogne aligote rating js89
+78. louis latour bourgogne aligote 2024
+79. louis latour bourgogne aligote 2023
+80. louis latour bourgogne aligote 2023
+81. louis latour bourgogne aligote 2023
+82. louis latour bourgogne aligote 2022 frisk hvidvin pa tilbud
+83. louis latour bourgogne aligote 2022
+84. louis latour bourgogne aligote 2022
+85. louis latour bourgogne aligote 2021
+86. louis latour bourgogne aligote 2020
+87. louis latour bourgogne aligote
+88. louis latour bourgogne aligote
+89. louis latour bourgogne aligote
+90. louis latour bourgogne aligot 2023
+91. louis latour bourgogne
+92. louis latour bonnes mares 1993
+93. louis latour blagny 1er cru sous le dos dane 2020
+94. louis latour bienvenuesbatardmontrachet grand cru
+95. louis latour bellevue pinot noir 2024
+96. louis latour beaune vignes franches 2017
+97. louis latour beaune vignes franches 1er cru rating ws93 js93
+98. louis latour beaune vignes franches 1er cru 2020
+99. louis latour beaune vignes franches 1er cru 2018
+100. louis latour beaune vignes franches 1er cru
+101. louis latour beaune vignes franches 1 er cru 2020
+102. louis latour beaune vignes franches 1 er cru 2020
+103. louis latour beaune vignes franches 1 er cru 2020
+104. louis latour beaune vignes franche 1er cru 2018
+105. louis latour beaune rouge les vignes franches premier cru 2020
+106. louis latour beaune rouge les vignes franches premier cru 2020
+107. louis latour beaune rouge les vignes franches premier cru 2020
+108. louis latour beaune rouge les vignes franches premier cru 2019
+109. louis latour beaune rouge les vignes franches premier cru 2019
+110. louis latour beaune rouge les vignes franches premier cru
+111. louis latour beaune rouge 2022
+112. louis latour beaune rouge 2022
+113. louis latour beaune rouge 2022
+114. louis latour beaune rouge 2020
+115. louis latour beaune rouge 2018
+116. louis latour beaune primeur cru vignes franche 2017
+117. louis latour beaune perrieres premier cru 2019
+118. louis latour beaune perrieres 2022
+119. louis latour beaune blanc vireclesse 2012
+120. louis latour beaune blanc 2020
+121. louis latour beaune blanc 2019
+122. louis latour beaune blanc
+123. louis latour beaune blanc
+124. louis latour beaune blanc
+125. louis latour beaune blanc
+126. louis latour beaune 2022
+127. louis latour beaune 1er vignes franches 2020
+128. louis latour beaune 1er cru vigne franches rouge 2017
+129. louis latour beaune 1er cru perrieres 2020
+130. louis latour beaune 1er cru domaine latour
+131. louis latour beaune 1er cru clos du roi 2020
+132. louis latour beaune 1er cru clos du roi
+133. louis latour beaune 1er cru aux cras
+134. louis latour beaujoulaisvillages chameroy 21
+135. louis latour beaujolaisvillages 2024
+136. louis latour beaujolaisvillages 2023
+137. louis latour beaujolaisvillage chameroy 2024
+138. louis latour beaujolais villlages chameroy
+139. louis latour beaujolais villages chameroy 2024
+140. louis latour beaujolais villages 2024
+141. louis latour beaujolais villages 2024
+142. louis latour beaujolais villages 2024
+143. louis latour beaujolais villages 2023 half bottle
+144. louis latour beaujolais villages 2023 half bottle
+145. louis latour beaujolais villages 2023 half bottle
+146. louis latour beaujolais villages
+147. louis latour beaujolais villages
+148. louis latour beaujolais brouilly
+149. louis latour batardmontrachet grand cru clos poirier 2020
+150. louis latour batardmontrachet grand cru clos poirier 2020
+151. louis latour batardmontrachet grand cru 2018
+152. louis latour batardmontrachet grand cru 2018
+153. louis latour batardmontrachet clos poirier grand cru
+154. louis latour batardmontrachet
+155. louis latour batard montrachet grand cru clos poirier 2020
+156. louis latour batard montrachet grand cru clos poirier 2020
+157. louis latour batard montrachet grand cru clos poirier 2020
+158. louis latour batard montrachet grand cru clos poirier 2020
+159. louis latour batard montrachet grand cru clos poirer 2019
+160. louis latour batard montrachet grand cru blanc
+161. louis latour batard montrachet grand cru 2022
+162. louis latour batard montrachet grand cru 2002
+163. louis latour batard montrachet grand cru
+164. louis latour batard montrachet 2004
+165. louis latour ardeche viognier
+166. louis latour ardeche viognier
+167. louis latour ardeche chardonnay white 2019
+168. louis latour ardeche chardonnay vin alb sec
+169. louis latour ardeche chardonnay igp ardeche 2023
+170. louis latour ardeche chardonnay bourgogne 2021
+171. louis latour ardeche chardonnay 2023 x 6
+172. louis latour ardeche chardonnay 2023
+173. louis latour ardeche chardonnay 2023
+174. louis latour ardeche chardonnay 2023
+175. louis latour ardeche chardonnay 2023
+176. louis latour ardeche chardonnay 2023
+177. louis latour ardeche chardonnay 2023
+178. louis latour ardeche chardonnay 2023
+179. louis latour ardeche chardonnay 2023
+180. louis latour ardeche chardonnay 2023
+181. louis latour ardeche chardonnay 2023
+182. louis latour ardeche chardonnay 2023
+183. louis latour ardeche chardonnay 2023
+184. louis latour ardeche chardonnay 2022
+185. louis latour ardeche chardonnay 2022
+186. louis latour ardeche chardonnay 2022
+187. louis latour ardeche chardonnay 2022
+188. louis latour ardeche chardonnay 2022
+189. louis latour ardeche chardonnay 2021
+190. louis latour ardeche chardonnay 2020
+191. louis latour ardeche chardonnay 2018
+192. louis latour ardeche chardonnay
+193. louis latour ardeche chardonnay
+194. louis latour ardeche chardonnay
+195. louis latour ardeche chardonnay
+196. louis latour ardeche chardonnay
+197. louis latour ardeche chardonnay
+198. louis latour ardeche chardonnay
+199. louis latour ardeche chardonnay
+200. louis latour ardeche chardonnay
+201. louis latour ardeche chardonnay
+202. louis latour ardeche chardonnay
+203. louis latour ardeche chardonnay
+204. louis latour ardeche chardonnay
+205. louis latour ardeche chardonnay
+206. louis latour ardeche chardonnay
+207. louis latour aop vosneromanee rouge 2019
+208. louis latour aop vosneromanee rouge 2019
+209. louis latour aop vosneromanee rouge 2019
+210. louis latour aop vosneromanee rouge 2019
+211. louis latour aop vireclesse blanc 2020
+212. louis latour aop vireclesse blanc 2020
+213. louis latour aop vireclesse blanc 2020
+214. louis latour aop vireclesse blanc 2020
+215. louis latour aop saintveran blanc 2020
+216. louis latour aop saintveran blanc 2020
+217. louis latour aop saintveran blanc 2020
+218. louis latour aop rully rouge 2019
+219. louis latour aop rully rouge 2019
+220. louis latour aop rully rouge 2019
+221. louis latour aop rully rouge 2019
+222. louis latour aop pulignymontrachet blanc 2020
+223. louis latour aop pulignymontrachet blanc 2020
+224. louis latour aop pulignymontrachet blanc 2020
+225. louis latour aop pulignymontrachet blanc 2020
+226. louis latour aop pulignymontrachet blanc 2019
+227. louis latour aop pulignymontrachet blanc 2019
+228. louis latour aop pulignymontrachet blanc 2019
+229. louis latour aop pulignymontrachet blanc 2019
+230. louis latour aop moreysaintdenis rouge 2019
+231. louis latour aop moreysaintdenis rouge 2019
+232. louis latour aop moreysaintdenis rouge 2019
+233. louis latour aop moreysaintdenis rouge 2019
+234. louis latour aop montagny blanc 2019
+235. louis latour aop montagny blanc 2019
+236. louis latour aop montagny blanc 2019
+237. louis latour aop montagny blanc 2019
+238. louis latour aop meursault blanc 2019
+239. louis latour aop meursault blanc 2019
+240. louis latour aop meursault blanc 2019
+241. louis latour aop meursault blanc 2019
+242. louis latour aop mercurey rouge 2019
+243. louis latour aop mercurey rouge 2019
+244. louis latour aop mercurey rouge 2019
+245. louis latour aop mercurey rouge 2019
+246. louis latour aop marsannay rouge 2019
+247. louis latour aop marsannay rouge 2019
+248. louis latour aop marsannay rouge 2019
+249. louis latour aop marsannay rouge 2019
+250. louis latour aop maconvillages blanc 2020
+251. louis latour aop maconvillages blanc 2020
+252. louis latour aop maconvillages blanc 2020
+253. louis latour aop givry rouge 2018
+254. louis latour aop givry rouge 2018
+255. louis latour aop givry rouge 2018
+256. louis latour aop givry rouge 2018
+257. louis latour aop cotedenuitsvillages rouge 2019
+258. louis latour aop cotedenuitsvillages rouge 2019
+259. louis latour aop cotedenuitsvillages rouge 2019
+260. louis latour aop chassagnemontrachet rouge 2019
+261. louis latour aop chassagnemontrachet rouge 2019
+262. louis latour aop chassagnemontrachet rouge 2019
+263. louis latour aop chassagnemontrachet rouge 2019
+264. louis latour aop chassagnemontrachet rouge 2018
+265. louis latour aop chassagnemontrachet rouge 2018
+266. louis latour aop chassagnemontrachet rouge 2018
+267. louis latour aop chassagnemontrachet rouge 2018
+268. louis latour aop chassagnemontrachet blanc 2020
+269. louis latour aop chassagnemontrachet blanc 2020
+270. louis latour aop chassagnemontrachet blanc 2020
+271. louis latour aop chassagnemontrachet blanc 2020
+272. louis latour aop chassagnemontrachet blanc 2019
+273. louis latour aop chassagnemontrachet blanc 2019
+274. louis latour aop chassagnemontrachet blanc 2019
+275. louis latour aop chassagnemontrachet blanc 2019
+276. louis latour aop chambollemusigny rouge 2019
+277. louis latour aop chambollemusigny rouge 2019
+278. louis latour aop chambollemusigny rouge 2019
+279. louis latour aop chambollemusigny rouge 2019
+280. louis latour aop bourgogne hautescotes de beaune rouge 2019
+281. louis latour aop bourgogne hautescotes de beaune rouge 2019
+282. louis latour aop bourgogne hautescotes de beaune rouge 2019
+283. louis latour aop bourgogne aligote blanc 2020
+284. louis latour aop bourgogne aligote blanc 2020
+285. louis latour aop bourgogne aligote blanc 2020
+286. louis latour aop bourgogne aligote blanc 2020
+287. louis latour aop aloxecorton rouge 2019
+288. louis latour aop aloxecorton rouge 2019
+289. louis latour aop aloxecorton rouge 2019
+290. louis latour aop aloxecorton rouge 2019
+291. louis latour aloxecorton les chaillots premier cru 2020
+292. louis latour aloxecorton domaine latour 2021
+293. louis latour aloxecorton 1er cru les chaillots
+294. louis latour aloxecorton
+295. louis latour aloxe corton red 2016
+296. louis latour aloxe corton les chaillots premier cru 2020
+297. louis latour aloxe corton les chaillots premier cru 2020
+298. louis latour aloxe corton les chaillots premier cru
+299. louis latour aloxe corton les chaillots
+300. louis latour aloxe corton domaine latour rating js93
+301. louis latour aloxe corton domaine latour 2023
+302. louis latour aloxe corton domaine latour 2022
+303. louis latour aloxe corton domaine latour 2022
+304. louis latour aloxe corton domaine latour 2022
+305. louis latour aloxe corton domaine latour 2022
+306. louis latour aloxe corton domaine latour 2022
+307. louis latour aloxe corton domaine latour 2021
+308. louis latour aloxe corton domaine latour 2021
+309. louis latour aloxe corton domaine latour 2021
+310. louis latour aloxe corton domaine latour 2021
+311. louis latour aloxe corton domaine latour 2019
+312. louis latour aloxe corton domaine latour 2018
+313. louis latour aloxe corton domaine latour 2018
+314. louis latour aloxe corton domaine latour
+315. louis latour aloxe corton domaine latour
+316. louis latour aloxe corton domaine latour
+317. louis latour aloxe corton challiot
+318. louis latour aloxe corton 2013
+319. louis latour aloxe corton 1st cru les chaillots 2020
+320. louis latour aloxe corton
+321. louis latour aloxe corton
+322. louis latour aligote 2024
+323. louis latour 2023 sous le puits pulignymontrachet 1er cru 2023
+324. louis latour 2023 pouillyfuisse 2023
+325. louis latour 2023 pouilly fuisse white
+326. louis latour 2023 pouilly fuisse
+327. louis latour 2023 pouilly fuisse
+328. louis latour 2023 marsannay rouge
+329. louis latour 2023 latour montagny les buys 2023
+330. louis latour 2023 chassagnemontrachet 2023
+331. louis latour 2023 chassagnemontrachet
+332. louis latour 2023 chablis la chanfleure 2023
+333. louis latour 2022 pulignymontrachet sous le puits 2022
+334. louis latour 2022 marsannay rouge
+335. louis latour 2022 marsannay rouge
+336. louis latour 2022 bourgogne rouge
+337. louis latour 2022 bourgogne pinot noir cuvee latour 2022
+338. louis latour 2021 rully blanc
+339. louis latour 2021 mercurey rouge
+340. louis latour 2020 volnay 1er cru en chevret
+341. louis latour 2020 pommard epenots premier cru
+342. louis latour 2020 meursaultblagny chateau de blagny premier cru
+343. louis latour 2020 mercurey rouge
+344. louis latour 2020 gevreychambertin
+345. louis latour 2019 pouillyvinzelles en paradis
+346. louis latour 2019 chassagnemontrachet
+347. louis latour 2018 meursault goutte dor premier cru
+348. louis latour 2018 corton grand cru clos de la vigne au saint
+349. louis latour 2018 corton clos de la vigne au saint
+350. louis latour 2003 vosne romanee
+351. louis latour 2 bottle gift pack macon fleurie
+352. louis latour 2 bottle gift pack ardeche valmoissine
+353. louis latour
+354. louis lator pouilly fuisse
+355. louis lator corton charlemagne 2018
+356. louis lator chameroy white
+357. louis julian 4bottle set 4
+358. louis jolliet vsop
+359. louis jolliet vsop
+360. louis jardot cote de nuits villages 1997
+361. louis jardot cote de nuits villages 1997
+362. louis jardot cote de nuits dorpen 1997
+363. louis jadot vosnes romanee 2021
+364. louis jadot vosnes romanee 2021
+365. louis jadot vosneromanee romanee saint vivant grand cru 1990
+366. louis jadot vosneromanee pinot noir
+367. louis jadot vosneromanee magnum 1
+368. louis jadot vosneromanee les beaux monts 2016
+369. louis jadot vosneromanee 2021
+370. louis jadot vosneromanee 2020
+371. louis jadot vosneromanee 2020
+372. louis jadot vosneromanee 2020
+373. louis jadot vosneromanee 2020
+374. louis jadot vosneromanee 2015
+375. louis jadot vosneromanee 1er cru les suchots
+376. louis jadot vosneromanee 1er cru les chaumes 2019
+377. louis jadot vosneromanee 1er cru les chaumes 2009
+378. louis jadot vosneromanee 1er cru les beaux monts 2012
+379. louis jadot vosneromanee
+380. louis jadot vosneromanee
+381. louis jadot vosne romanee suchots
+382. louis jadot vosne romanee petits monts
+383. louis jadot vosne romanee malconsorts
+384. louis jadot vosne romanee les suchots 2010
+385. louis jadot vosne romanee les suchots 1er cru
+386. louis jadot vosne romanee les beaux monts premier cru 1998
+387. louis jadot vosne romanee les beaux monts 1er cru 2007
+388. louis jadot vosne romanee chaumes
+389. louis jadot vosne romanee beaumonts
+390. louis jadot vosne romanee ac
+391. louis jadot vosne romanee 2018
+392. louis jadot vosne romanee 1er cru suchots
+393. louis jadot vosne romanee 1er cru malconsorts 2012
+394. louis jadot vosne romanee 1er cru les suchots 2022
+395. louis jadot vosne romanee 1er cru les suchots 2018 maison
+396. louis jadot vosne romanee 1er cru les suchots 2018
+397. louis jadot vosne romanee 1er cru les petits monts
+398. louis jadot vosne romanee 1er cru les chaumes
+399. louis jadot vosne romanee 1er cru les beaux monts
+400. louis jadot vosne romanee 1er cru les beaux mont rouge
+401. louis jadot vosne romanee 1er cru les beau monts
+402. louis jadot vosne romanee
+403. louis jadot vosne romanee
+404. louis jadot vosne romanee
+405. louis jadot volnay santenots rouge
+406. louis jadot volnay rouge 2015
+407. louis jadot volnay rogue
+408. louis jadot volnay les santenots 1er cru wood pinot noir
+409. louis jadot volnay en lormeau premier cru volnay 2015
+410. louis jadot volnay clos des chenes premier cru 2022
+411. louis jadot volnay clos de la barre monopole tinto 2017
+412. louis jadot volnay clos de la barre monopole
+413. louis jadot volnay clos de la barre 2019
+414. louis jadot volnay clos de la barre 2013
+415. louis jadot volnay clos de chenes 2022
+416. louis jadot volnay clos chenes
+417. louis jadot volnay clos barre
+418. louis jadot volnay 1er cru santenots 2015
+419. louis jadot volnay 1er cru santenots
+420. louis jadot volnay 1er cru clos de la barre monopole 2018
+421. louis jadot volnay 1er cru clos de la barre monopole 2011
+422. louis jadot volnay 1er cru clos de la barre 2023
+423. louis jadot volnay 1er cru clos de la barre 2023
+424. louis jadot volnay 1er cru clos de la barre
+425. louis jadot volnay 1er cru chanlin
+426. louis jadot volnay 1er cru 2022
+427. louis jadot volnay 1er cru 2022
+428. louis jadot volnay
+429. louis jadot volnay
+430. louis jadot volnay
+431. louis jadot vignes franches clos des ursules monopole premier cru 1999
+432. louis jadot steel chardonnay unoaked chardonnay
+433. louis jadot steel chardonnay 2023
+434. louis jadot steel chardonnay 2022
+435. louis jadot steel chardonnay
+436. louis jadot steel chardonnay
+437. louis jadot st aubin 2022
+438. louis jadot sous roches monthelie 2022
+439. louis jadot savignylesbeaunes clos des guettes 1er cru 2023
+440. louis jadot savignylesbeaune rouge 2017
+441. louis jadot savignylesbeaune rouge 2013
+442. louis jadot savignylesbeaune rouge
+443. louis jadot savignylesbeaune premier cru la dominode 2023 135
+444. louis jadot savignylesbeaune premier cru la dominode 12pack 2023 135
+445. louis jadot savignylesbeaune premier cru clos des guettes rouge 2022
+446. louis jadot savignylesbeaune premier cru clos des guettes rouge 2021
+447. louis jadot savignylesbeaune la dominode premier cru 2022
+448. louis jadot savignylesbeaune blanc 2000
+449. louis jadot savignylesbeaune 2015
+450. louis jadot savignylesbeaune 1er cru les lavieres
+451. louis jadot savignylesbeaune 1er cru la dominode
+452. louis jadot savignylesbeaune 1er cru clos des guettes
+453. louis jadot savigny les beaune rouge 2021
+454. louis jadot savigny les beaune premier cru la dominode 2023
+455. louis jadot savigny les beaune les hauts jarrons 2022
+456. louis jadot savigny les beaune la dominode 2022
+457. louis jadot savigny les beaune la dominode 2019
+458. louis jadot savigny les beaune la dominode 2002
+459. louis jadot savigny les beaune clos des guettes rouge france 2022
+460. louis jadot savigny les beaune clos des guettes blanc france 2022
+461. louis jadot savigny les beaune 1er cru les narbantons
+462. louis jadot savigny les beaune 1er cru les lavieres rouge 2017
+463. louis jadot savigny les beaune 1er cru les lavieres rogue
+464. louis jadot savigny les beaune 1er cru la dominode 2020
+465. louis jadot savigny les beaune 1er cru la dominode
+466. louis jadot savigny les beaune 1er cru la dominode
+467. louis jadot savigny les beaune 1er cru clos des guettes domaine gagey
+468. louis jadot savigny les beaune 1er cru clos des guettes blanc 2022
+469. louis jadot savigny les beaune 1er cru clos des guettes blanc 2021
+470. louis jadot savigny les beaune 1er cru clos des guettes blanc 2020 domaine gagey
+471. louis jadot savigny les beaune 1er cru clos des guettes blanc 2019
+472. louis jadot savigny les beaune
+473. louis jadot santenay rouge 2017
+474. louis jadot santenay clos malte
+475. louis jadot santenay clos des gatsulards 2013
+476. louis jadot santenay clos des gatsulards
+477. louis jadot santenay clos de malte rouge domaine louis jadot 2021
+478. louis jadot santenay clos de malte rouge domaine louis jadot 2020
+479. louis jadot santenay clos de malte rouge 2021
+480. louis jadot santenay clos de malte rouge 2021
+481. louis jadot santenay clos de malte rouge 2020
+482. louis jadot santenay clos de malte rouge 2019
+483. louis jadot santenay clos de malte rouge 2017
+484. louis jadot santenay clos de malte rouge
+485. louis jadot santenay clos de malte premier cru 2000
+486. louis jadot santenay clos de malte blanc cote de beaune france 2022
+487. louis jadot santenay clos de malte blanc 2022
+488. louis jadot santenay clos de malte blanc 2021
+489. louis jadot santenay clos de malte blanc
+490. louis jadot santenay clos de malte blanc
+491. louis jadot santenay clos de malte blanc
+492. louis jadot santenay clos de malte 2022
+493. louis jadot santenay clos de malte 2019
+494. louis jadot santenay clos de malte 2017
+495. louis jadot santenay clos de malte 2016
+496. louis jadot santenay clos de malte 2016
+497. louis jadot santenay clos de malte 2007
+498. louis jadot santenay clos de malte 2006
+499. louis jadot santenay clos de malte 2005
+500. louis jadot santenay clos de malte 2004
+501. louis jadot santenay clos de malte 2003
+502. louis jadot santenay clos de malte 2002
+503. louis jadot santenay clos de malte 2001
+504. louis jadot santenay clos de malte 2000
+505. louis jadot santenay clos de malte
+506. louis jadot santenay 2015
+507. louis jadot santenay 1er cru les gravieres
+508. louis jadot saintveran
+509. louis jadot saintveran
+510. louis jadot saintveran
+511. louis jadot saintromain bourgogne 2022
+512. louis jadot saintromain 2017
+513. louis jadot saintaubin blanc 2000
+514. louis jadot saintaubin 1er cru en remilly 2022
+515. louis jadot saintaubin 1er cru en remilly 2022
+516. louis jadot saintaubin
+517. louis jadot saint veran aoc 0
+518. louis jadot saint veran 2022
+519. louis jadot saint veran 2022
+520. louis jadot saint veran
+521. louis jadot saint veran
+522. louis jadot saint romain white
+523. louis jadot saint romain 2014
+524. louis jadot saint aubin remilly
+525. louis jadot saint aubin blanc 2000
+526. louis jadot saint amour cellier des cros 2021
+527. louis jadot rully rouge 2001
+528. louis jadot rully blanc 1999
+529. louis jadot rully blanc
+530. louis jadot rully blanc
+531. louis jadot rully aop rully 2023
+532. louis jadot rully aop rully 2023
+533. louis jadot rully aop rully 2023
+534. louis jadot rully aop rully 2023
+535. louis jadot rully aop rully 2023
+536. louis jadot rully
+537. louis jadot ruchotteschambertin grand cru 1990
+538. louis jadot rouge pinot noir bourgogne
+539. louis jadot rose r
+540. louis jadot rose french wine 2023
+541. louis jadot rose de marsannay domaine clairdau 2023
+542. louis jadot rose de marsannay domaine clairdau 2022
+543. louis jadot rose burgundy
+544. louis jadot rose
+545. louis jadot rose
+546. louis jadot rose
+547. louis jadot rose
+548. louis jadot rose
+549. louis jadot rose
+550. louis jadot romaneesaintvivant grand cru 1996
+551. louis jadot romaneesaintvivant grand cru 1994
+552. louis jadot romanee st vivant 1995
+553. louis jadot romanee saint vivant
+554. louis jadot referts puligny montrachet premier cru 2018 case of 6
+555. louis jadot pulignymontrachet premier cru la garenne ac francja 075
+556. louis jadot pulignymontrachet premier cru la garenne ac francja 0
+557. louis jadot pulignymontrachet les referts 1er cru
+558. louis jadot pulignymontrachet les folatieres 1er cru
+559. louis jadot pulignymontrachet la garenne 2015
+560. louis jadot pulignymontrachet la garenne 1er cru
+561. louis jadot pulignymontrachet cote de beaune 2018
+562. louis jadot pulignymontrachet chardonnay
+563. louis jadot pulignymontrachet chardonnay
+564. louis jadot pulignymontrachet blanc 2023
+565. louis jadot pulignymontrachet blanc 2022
+566. louis jadot pulignymontrachet blanc 2021
+567. louis jadot pulignymontrachet blanc 2020
+568. louis jadot pulignymontrachet blanc
+569. louis jadot pulignymontrachet blanc
+570. louis jadot pulignymontrachet 2023
+571. louis jadot pulignymontrachet 2022
+572. louis jadot pulignymontrachet 2021 hvidvin pa tilbud
+573. louis jadot pulignymontrachet 2021 bourgogne
+574. louis jadot pulignymontrachet 1er cru les referts 2009
+575. louis jadot pulignymontrachet 1er cru les combettes
+576. louis jadot pulignymontrachet 1er cru la garenne blanc 2020
+577. louis jadot pulignymontrachet 1er cru la garenne
+578. louis jadot pulignymontrachet 1er cru folatieres blanc
+579. louis jadot pulignymontrachet 1er cru clos de la garenne magenta
+580. louis jadot pulignymontrachet
+581. louis jadot pulignymontrachet
+582. louis jadot pulignymontrachet
+583. louis jadot pulignymontrachet
+584. louis jadot puligny montrahet premier cru referts 2022
+585. louis jadot puligny montrachet les referts
+586. louis jadot puligny montrachet les referts
+587. louis jadot puligny montrachet les folatieres 2022
+588. louis jadot puligny montrachet les folatieres 1er cru magnum 2012
+589. louis jadot puligny montrachet les combettes 1er cru 2015
+590. louis jadot puligny montrachet les combettes 1985
+591. louis jadot puligny montrachet la garenne premier cru 2021
+592. louis jadot puligny montrachet la garenne 1er cru 2022
+593. louis jadot puligny montrachet folatieres premier cru 2000
+594. louis jadot puligny montrachet folatieres
+595. louis jadot puligny montrachet combettes
+596. louis jadot puligny montrachet clos de la garenne 1999
+597. louis jadot puligny montrachet chardonnay 2017
+598. louis jadot puligny montrachet caillerets
+599. louis jadot puligny montrachet blanc 2021
+600. louis jadot puligny montrachet 2023
+601. louis jadot puligny montrachet 2022
+602. louis jadot puligny montrachet 2021
+603. louis jadot puligny montrachet 2021
+604. louis jadot puligny montrachet 2021
+605. louis jadot puligny montrachet 2020
+606. louis jadot puligny montrachet 2019
+607. louis jadot puligny montrachet 2019
+608. louis jadot puligny montrachet 1er cru les referts 1er cru domaine des heritiers 2022
+609. louis jadot puligny montrachet 1er cru les referts 1er cru domaine des heritiers 2019
+610. louis jadot puligny montrachet 1er cru les folatieres domaine des heritiers louis jadot
+611. louis jadot puligny montrachet 1er cru les folatieres
+612. louis jadot puligny montrachet 1er cru les chalumeaux
+613. louis jadot puligny montrachet 1er cru la garenne 2014
+614. louis jadot puligny montrachet 1er cru la garenne
+615. louis jadot puligny montrachet 1er cru clos de la garenne duc de magenta 2023
+616. louis jadot puligny montrachet 1er cru clos de la garenne domaine de duc de magenta
+617. louis jadot puligny montrachet
+618. louis jadot puligny montrachet
+619. louis jadot puligny montrachet
+620. louis jadot puligny
+621. louis jadot prieur brunet aop santenay tinto 2020
+622. louis jadot prieur brunet aop santenay rot 2020
+623. louis jadot preuses chablis grand cru france 2022
+624. louis jadot premier cru les boudots nuitssaintgeorges 2020
+625. louis jadot poullyfuisse
+626. louis jadot poully fuisse
+627. louis jadot poully fuisse
+628. louis jadot pouily fuisse
+629. louis jadot pouillyfuisse premier cru 2023
+630. louis jadot pouillyfuisse premier cru 2022
+631. louis jadot pouillyfuisse petites pierres
+632. louis jadot pouillyfuisse chardonnay
+633. louis jadot pouillyfuisse chardonnay
+634. louis jadot pouillyfuisse 2024
+635. louis jadot pouillyfuisse 2024
+636. louis jadot pouillyfuisse 2023
+637. louis jadot pouillyfuisse 2023
+638. louis jadot pouillyfuisse 2023
+639. louis jadot pouillyfuisse 2023
+640. louis jadot pouillyfuisse 2023
+641. louis jadot pouillyfuisse 2023
+642. louis jadot pouillyfuisse 2023
+643. louis jadot pouillyfuisse 2023
+644. louis jadot pouillyfuisse 2023
+645. louis jadot pouillyfuisse 2023
+646. louis jadot pouillyfuisse 2023
+647. louis jadot pouillyfuisse 2022
+648. louis jadot pouillyfuisse 2022
+649. louis jadot pouillyfuisse 2021
+650. louis jadot pouillyfuisse 2021
+651. louis jadot pouillyfuisse 2020
+652. louis jadot pouillyfuisse 2018
+653. louis jadot pouillyfuisse 2007
+654. louis jadot pouillyfuisse
+655. louis jadot pouillyfuisse
+656. louis jadot pouillyfuisse
+657. louis jadot pouillyfuisse
+658. louis jadot pouillyfuisse
+659. louis jadot pouillyfuisse
+660. louis jadot pouillyfuisse
+661. louis jadot pouilly fuissie
+662. louis jadot pouilly fuisse r
+663. louis jadot pouilly fuisse premier cru blanc 2021
+664. louis jadot pouilly fuisse petites pierres 2020
+665. louis jadot pouilly fuisse chardonnay france 2023
+666. louis jadot pouilly fuisse chardonnay
+667. louis jadot pouilly fuisse chardonnay
+668. louis jadot pouilly fuisse ac francja 0
+669. louis jadot pouilly fuisse 2024
+670. louis jadot pouilly fuisse 2023
+671. louis jadot pouilly fuisse 2023
+672. louis jadot pouilly fuisse 2023
+673. louis jadot pouilly fuisse 2023
+674. louis jadot pouilly fuisse 2019
+675. louis jadot pouilly fuisse 2017
+676. louis jadot pouilly fuisse
+677. louis jadot pouilly fuisse
+678. louis jadot pouilly fuisse
+679. louis jadot pouilly fuisse
+680. louis jadot pouilly fuisse
+681. louis jadot pouilly fuisse
+682. louis jadot pouilly fuisse
+683. louis jadot pouilly fuisse
+684. louis jadot pouilly fuisse
+685. louis jadot pouilly fuisse
+686. louis jadot pouilly fuisse
+687. louis jadot pouilly fuisse
+688. louis jadot pouilly fuisse
+689. louis jadot pouilly fuisse
+690. louis jadot pouilly fuisse
+691. louis jadot poncereau fleurie
+692. louis jadot poncereau fleurie
+693. louis jadot poncereau fleurie
+694. louis jadot pommard rugiens 2022
+695. louis jadot pommard rugiens 2011
+696. louis jadot pommard rugiens 1er cru
+697. louis jadot pommard rouge
+698. louis jadot pommard pinot noir
+699. louis jadot pommard pinot noir
+700. louis jadot pommard les rugiens 1er cru
+701. louis jadot pommard les epenots 2013
+702. louis jadot pommard les epenots 2013
+703. louis jadot pommard cote de beaune france 2022
+704. louis jadot pommard clos de la commaraine 2017
+705. louis jadot pommard clos de la commaraine 2015
+706. louis jadot pommard clos de la commaraine 2015
+707. louis jadot pommard burgundy r
+708. louis jadot pommard ac francja 0
+709. louis jadot pommard 2023
+710. louis jadot pommard 2022
+711. louis jadot pommard 2022
+712. louis jadot pommard 2022
+713. louis jadot pommard 2021
+714. louis jadot pommard 2021
+715. louis jadot pommard 2021
+716. louis jadot pommard 2021
+717. louis jadot pommard 2021
+718. louis jadot pommard 2021
+719. louis jadot pommard 2020
+720. louis jadot pommard 2020
+721. louis jadot pommard 2020
+722. louis jadot pommard 2020
+723. louis jadot pommard 2019 french red wine
+724. louis jadot pommard 2019
+725. louis jadot pommard 2019
+726. louis jadot pommard 2018 15liter
+727. louis jadot pommard 2018
+728. louis jadot pommard 2018
+729. louis jadot pommard 2015
+730. louis jadot pommard 2015
+731. louis jadot pommard 1er cru les rugiens 2022
+732. louis jadot pommard 1er cru les rugiens 2022
+733. louis jadot pommard 1er cru les rugiens
+734. louis jadot pommard 1er cru les epenots
+735. louis jadot pommard 1er cru la commaraine 13alc
+736. louis jadot pommard 1er cru commaraine 2012
+737. louis jadot pommard 1er cru clos de la commaraine 2017
+738. louis jadot pommard 1er cru clos de la commaraine
+739. louis jadot pommard
+740. louis jadot pommard
+741. louis jadot pommard
+742. louis jadot pommard
+743. louis jadot pommard
+744. louis jadot pommard
+745. louis jadot pommard
+746. louis jadot pommard
+747. louis jadot pommard
+748. louis jadot pommard
+749. louis jadot pommard
+750. louis jadot pommard
+751. louis jadot pinot noir san valentin
+752. louis jadot pinot noir media botella
+753. louis jadot pinot noir couvent jacobins
+754. louis jadot pinot noir couvent des jacobins 2019
+755. louis jadot pinot noir couvent des jacobins
+756. louis jadot pinot noir burgundy
+757. louis jadot pinot noir bourgogne
+758. louis jadot pinot noir bourgogne
+759. louis jadot pinot noir bourgogne
+760. louis jadot pinot noir 750 mlt 125
+761. louis jadot pinot noir 2019
+762. louis jadot pinot noir
+763. louis jadot pinot noir
+764. louis jadot pinot noir
+765. louis jadot pinot noir
+766. louis jadot pinot noir
+767. louis jadot pinot noir
+768. louis jadot pinot noir
+769. louis jadot pinot noir
+770. louis jadot petit chablis 2023
+771. louis jadot petit chablis 2021
+772. louis jadot petit chablis 2020
+773. louis jadot petit chablis 2018
+774. louis jadot petit chablis
+775. louis jadot petit chablis
+776. louis jadot petit chablis
+777. louis jadot petit chablis
+778. louis jadot petit chablis
+779. louis jadot pernard vergelesses clos de la croix de pierre domaine louis jadot chardonnay
+780. louis jadot pernandvergelles clos de la croix pierre 2019
+781. louis jadot pernandvergelesses croix de pierres blanc 2022
+782. louis jadot pernandvergelesses clos de la croix de pierre 2018 6x
+783. louis jadot pernandvergelesses clos de la croix de pierre 2018
+784. louis jadot pernandvergelesses clos de la croix de pierre 1er cru 2023
+785. louis jadot pernandvergelesses clos de la croix de pierre
+786. louis jadot pernandvergelesses clos de la croix de pierre
+787. louis jadot pernandvergelesses blanc 2000
+788. louis jadot pernandvergelesses 2022
+789. louis jadot pernandvergelesses 1er cru croix de pierre 2018
+790. louis jadot pernandvergelesses 1er cru clos de la croix de pierre 2021
+791. louis jadot pernandvergelesses 1er cru clos de la croix de pierre
+792. louis jadot pernandvergelesses 1999 rouge
+793. louis jadot pernandvergelesses 1999 blanc
+794. louis jadot pernand verglesses premier cru clos la croix de pierre 2022 13
+795. louis jadot pernand verglesses premier cru clos la croix de pierre 12pack 2022 13
+796. louis jadot pernand verglesses les combottes blanc
+797. louis jadot pernand vergelesses premier cru clos de la crois de pierre 2021
+798. louis jadot pernand vergelesses les combottes domaine gagey
+799. louis jadot pernand vergelesses les combottes blanc
+800. louis jadot pernand vergelesses les combottes 2022
+801. louis jadot pernand vergelesses clos de la croix de pierre rouge 2021
+802. louis jadot pernand vergelesses clos de la croix de pierre blanc 2223
+803. louis jadot pernand vergelesses clos de la croix de pierre blanc 2020
+804. louis jadot pernand vergelesses 1er cru clos de la croix de pierre rouge domaine des heritiers
+805. louis jadot nuitsstgeorges r
+806. louis jadot nuitsstgeorges pinot noir les boudots
+807. louis jadot nuitssaintgeorges premier cru les boudots 2022
+808. louis jadot nuitssaintgeorges premier cru les boudots 2021
+809. louis jadot nuitssaintgeorges premier cru les boudots 2020
+810. louis jadot nuitssaintgeorges premier cru cote de nuits 2014
+811. louis jadot nuitssaintgeorges magnum 1
+812. louis jadot nuitssaintgeorges les vaucrains 2013
+813. louis jadot nuitssaintgeorges les vaucrains 1er cru
+814. louis jadot nuitssaintgeorges les saintgeorges 2020
+815. louis jadot nuitssaintgeorges 2022
+816. louis jadot nuitssaintgeorges 20212
+817. louis jadot nuitssaintgeorges 2020
+818. louis jadot nuitssaintgeorges 2018
+819. louis jadot nuitssaintgeorges 1er cru les vaucrains
+820. louis jadot nuitssaintgeorges 1er cru les boudots rogue
+821. louis jadot nuitssaintgeorges 1er cru les boudots 2019
+822. louis jadot nuitssaintgeorges 1er cru les boudots 2017
+823. louis jadot nuitssaintgeorges 1er cru aoc les boudots
+824. louis jadot nuitssaintgeorges
+825. louis jadot nuitssaintgeorges
+826. louis jadot nuitssaintgeorges
+827. louis jadot nuitssaintgeorges
+828. louis jadot nuitssaint georges
+829. louis jadot nuits st georges pinot noir
+830. louis jadot nuits st georges les vaucrains 2020
+831. louis jadot nuits st georges les porrets st georges 1996
+832. louis jadot nuits st georges les boudots 2005
+833. louis jadot nuits st georges les boudots
+834. louis jadot nuits st georges boudots 2019
+835. louis jadot nuits st georges
+836. louis jadot nuits saint georges vaucrains
+837. louis jadot nuits saint georges saint georges
+838. louis jadot nuits saint georges ac francja 0
+839. louis jadot nuits saint georges 2022
+840. louis jadot nuits saint georges 2022
+841. louis jadot nuits saint georges 2022
+842. louis jadot nuits saint georges 2019
+843. louis jadot nuits saint georges 2011
+844. louis jadot nuits saint georges 1er cru les perrieres
+845. louis jadot nuits saint georges 1er cru les boudots 2016 domaine gagey
+846. louis jadot nuits saint georges 1er cru les boudots 2014 domaine gagey
+847. louis jadot nuits saint georges 1er cru les boudots 2011
+848. louis jadot nuits saint georges 1er cru les boudots
+849. louis jadot nuits saint georges 1er cru les boudots
+850. louis jadot nuits saint georges
+851. louis jadot nuits saint georges
+852. louis jadot nuits saint georges
+853. louis jadot nuits saint georges
+854. louis jadot nsg clos des corvees 1990
+855. louis jadot musigny grand cru cote de nuits burgundy france 2022
+856. louis jadot musigny grand cru cote de nuits burgundy france 2022
+857. louis jadot musigny grand cru 2020
+858. louis jadot musigny grand cru 2016
+859. louis jadot musigny grand cru 2016
+860. louis jadot musigny grand cru 2004 1
+861. louis jadot musigny grand cru 2001
+862. louis jadot musigny grand cru 1999 bourgogne frankrig
+863. louis jadot musigny grand cru
+864. louis jadot musigny grand cru
+865. louis jadot musigny 2020
+866. louis jadot musigny 2019
+867. louis jadot musigny 2018
+868. louis jadot musigny 2004
+869. louis jadot musigny
+870. louis jadot musigny
+871. louis jadot moulinavent clos de rochegres 2021
+872. louis jadot moulinavent chateau des jacques clos de rochegres 2009
+873. louis jadot moulinavent chateau des jacques clos de 2017
+874. louis jadot moulinavent chateau des jacques 2022
+875. louis jadot moulinavent chateau des jacques
+876. louis jadot moulin a vent la roche de jacques 2009
+877. louis jadot moulin a vent la roche chateau des jacques
+878. louis jadot moulin a vent clos du grand carquelin chateau des jacques
+879. louis jadot moulin a vent clos des thorins chateau des jacques 2018
+880. louis jadot moulin a vent clos de rochegres chateau des jacques 2018
+881. louis jadot moulin a vent clos de rochegres chateau des jacques
+882. louis jadot moulin a vent chateau des jacques 2019
+883. louis jadot morgon cote du py chateau des jacques
+884. louis jadot morgon cote du py 2013
+885. louis jadot morgon chateau des jacques 2019
+886. louis jadot morgon
+887. louis jadot moreysaintdenis premier cru 2022
+888. louis jadot moreysaintdenis clos des ormes 2022
+889. louis jadot moreysaintdenis clos des ormes 1er cru
+890. louis jadot moreysaintdenis 2023
+891. louis jadot moreysaintdenis 2017
+892. louis jadot moreysaintdenis 2017
+893. louis jadot moreysaintdenis 2017
+894. louis jadot moreysaintdenis 2012
+895. louis jadot morey saint denis premier cru 2006
+896. louis jadot morey saint denis clos ormes
+897. louis jadot morey saint denis 1er cru tinto 2017
+898. louis jadot morey saint denis 1er cru rot 2017
+899. louis jadot morey saint denis 1er cru clos des ormes
+900. louis jadot morey saint denis 1er cru clos des ormes
+901. louis jadot moray saint denis 1er cru clos des ormes aop moreysaintdenis rouge 2017
+902. louis jadot moray saint denis 1er cru clos des ormes aop moreysaintdenis rouge 2017
+903. louis jadot moray saint denis 1er cru clos des ormes aop moreysaintdenis rouge 2017
+904. louis jadot montrachet grand cru magnum 2006
+905. louis jadot montrachet grand cru 2022
+906. louis jadot montrachet grand cru 2020
+907. louis jadot montrachet grand cru 2018
+908. louis jadot montrachet grand cru 2018
+909. louis jadot montrachet grand cru 2018
+910. louis jadot montrachet grand cru 2017
+911. louis jadot montrachet grand cru 2015 in bond per 3
+912. louis jadot montrachet grand cru 2015
+913. louis jadot montrachet grand cru 2005
+914. louis jadot montrachet grand cru
+915. louis jadot montrachet grand cru
+916. louis jadot montrachet 2008
+917. louis jadot montrachet
+918. louis jadot monthelie sous roches cote de beaune france 2022
+919. louis jadot monthelie sous roches
+920. louis jadot monthelie rouge 2000
+921. louis jadot montee de tonnerre premier cru chablis 2019
+922. louis jadot montagny les chaniots premier cru 2023
+923. louis jadot montagny 1er cru les chaniots 2019 6x
+924. louis jadot montagny 1er cru les chaniots 2019
+925. louis jadot meursault r
+926. louis jadot meursault premier cru les perrieres 2022
+927. louis jadot meursault poruzot premier cru 2001
+928. louis jadot meursault porusot 1er cru
+929. louis jadot meursault perrieres premier cru 2022
+930. louis jadot meursault perrieres premier cru 2000
+931. louis jadot meursault perrieres blanc
+932. louis jadot meursault narvaux blanc
+933. louis jadot meursault narvaux 2014
+934. louis jadot meursault magnum 2017
+935. louis jadot meursault magnum 1
+936. louis jadot meursault les tillets 2019
+937. louis jadot meursault les tillets
+938. louis jadot meursault les tillets
+939. louis jadot meursault les tillets
+940. louis jadot meursault les perrieres 1er cru
+941. louis jadot meursault les genevrieres 1999
+942. louis jadot meursault les chevalieres
+943. louis jadot meursault les charmes 2020
+944. louis jadot meursault genevrieres 1st cru 1998
+945. louis jadot meursault genevrieres 1er cru blanc 2021
+946. louis jadot meursault genevrieres 1er cru 2020
+947. louis jadot meursault clos du cromin 2017
+948. louis jadot meursault charmes premier cru meursault 2020
+949. louis jadot meursault charmes premier cru meursault 2019
+950. louis jadot meursault charmes premier cru 2022
+951. louis jadot meursault charmes premier cru 2021
+952. louis jadot meursault charmes premier cru 2000
+953. louis jadot meursault charmes 1er cru blanc
+954. louis jadot meursault charmes
+955. louis jadot meursault charmes
+956. louis jadot meursault chardonnnay
+957. louis jadot meursault chardonnay 13
+958. louis jadot meursault chardonnay
+959. louis jadot meursault bourgogne 2021 uovertruffen chardonnay
+960. louis jadot meursault bourgogne 2021
+961. louis jadot meursault bourgogne 2021
+962. louis jadot meursault blanc
+963. louis jadot meursault blagny 1er cru 2019
+964. louis jadot meursault ac francja 0
+965. louis jadot meursault 2023
+966. louis jadot meursault 2023
+967. louis jadot meursault 2022
+968. louis jadot meursault 2022
+969. louis jadot meursault 2022
+970. louis jadot meursault 2022
+971. louis jadot meursault 2022
+972. louis jadot meursault 2022
+973. louis jadot meursault 2021
+974. louis jadot meursault 2021
+975. louis jadot meursault 2021
+976. louis jadot meursault 2018
+977. louis jadot meursault 2018
+978. louis jadot meursault 2016
+979. louis jadot meursault 2016
+980. louis jadot meursault 2015
+981. louis jadot meursault 2000
+982. louis jadot meursault 1er cru les perrieres 2005
+983. louis jadot meursault 1er cru les perrieres
+984. louis jadot meursault 1er cru genevrieres
+985. louis jadot meursault 1er cru genevrieres
+986. louis jadot meursault 1er cru charmes
+987. louis jadot meursault 1er cru charmes
+988. louis jadot meursault 1er cru charmes
+989. louis jadot meursault 1er cru charmes
+990. louis jadot meursault 1er cru blagny
+991. louis jadot meursault
+992. louis jadot meursault
+993. louis jadot meursault
+994. louis jadot meursault
+995. louis jadot meursault
+996. louis jadot meursault
+997. louis jadot meursault
+998. louis jadot meursault
+999. louis jadot meursault
+1000. louis jadot meursault

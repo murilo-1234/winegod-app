@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. gevreychambertin premier cru champeaux tres vieilles vignes 2018
+2. gevreychambertin premier cru cherbaudes rouge 2022 maison edouard delaunay
+3. gevreychambertin premier cru domaine bachelet les corbeaux 2022
+4. gevreychambertin premier cru fonteny 2017 maison camille giroud
+5. gevreychambertin premier cru lavautsaintjacques 2014 domaine claire et stephane follinarbelet
+6. gevreychambertin premier cru lavauxsaintjacques 1998 domaine armand rousseau pere fils
+7. gevreychambertin premier cru lavauxsaintjacques 2007 domaine armand rousseau pere fils
+8. gevreychambertin premier cru le fonteny domaine serafin
+9. gevreychambertin premier cru les cazetiers
+10. gevreychambertin premier cru les cherbaudes
+11. gevreychambertin premier cru les combottes 2004 domaine dujac
+12. gevreychambertin premier cru les corbeaux domaine serafin
+13. gevreychambertin premier cru perriere domaine des perdrix 2013
+14. gevreychambertin premier cru petite chapelle vieilles vignes 2018
+15. gevreychambertin premier cru vieilles vignes 2022 domaine prieure roch
+16. gevreychambertin premiere cru cherbaudes 2018
+17. gevreychambertin premiere cru cherbaudes 2018
+18. gevreychambertin pressonnier 2020 domaine machard de gramont
+19. gevreychambertin racine du temps tres vieilles vignes 2015 domaine rene bouvier
+20. gevreychambertin racine du temps tres vieilles vignes 2017 domaine rene bouvier
+21. gevreychambertin racine du temps tres vieilles vignes 2018 domaine rene bouvier 2018 domaine rene bouvier
+22. gevreychambertin racine du temps tres vieilles vignes 2019 domaine rene bouvier
+23. gevreychambertin racine du temps tres vieilles vignes 2020 domaine rene bouvier
+24. gevreychambertin racine du temps tres vieilles vignes 2021 domaine rene bouvier
+25. gevreychambertin racine du temps tres vieilles vignes 2022 domaine rene bouvier
+26. gevreychambertin racine du temps tres vieilles vignes 2023 domaine rene bouvier
+27. gevreychambertin racines croisees 2018 henri pion rouge
+28. gevreychambertin regnard 2023 valeria naudin
+29. gevreychambertin rene bouvier
+30. gevreychambertin robert pain 1991
+31. gevreychambertin robert pain 1991
+32. gevreychambertin robert pain 1991
+33. gevreychambertin robert pain 1991
+34. gevreychambertin rouge 2017 maison edouard delaunay
+35. gevreychambertin rouge 2020 david duband
+36. gevreychambertin rouge 2020 maison edouard delaunay
+37. gevreychambertin rouge 2021 maison edouard delaunay
+38. gevreychambertin rouge 2022
+39. gevreychambertin rouge 2022 maison edouard delaunay
+40. gevreychambertin rouge les crais 2023 domaine huguenot pinot noir
+41. gevreychambertin seuvrees 2021 domaine michel magnien
+42. gevreychambertin symphonie 2022
+43. gevreychambertin symphonie 2022
+44. gevreychambertin symphonie 2023
+45. gevreychambertin terres blanches 2022
+46. gevreychambertin terres blanches maison philippe charlopin
+47. gevreychambertin vallet freres 2015 13
+48. gevreychambertin vieille vigne 2016 domaine fourrier
+49. gevreychambertin vieille vigne 2021 domaine fourrier
+50. gevreychambertin vieille vigne 2022
+51. gevreychambertin vieille vigne 2022 domaine fourrier
+52. gevreychambertin vieille vigne 2022 domaine fourrier
+53. gevreychambertin vieilles vigne 2019 domaine faiveley
+54. gevreychambertin vieilles vignes
+55. gevreychambertin vieilles vignes
+56. gevreychambertin vieilles vignes
+57. gevreychambertin vieilles vignes 2003 domaine serafin pere fils
+58. gevreychambertin vieilles vignes 2006 domaine serafin pere fils
+59. gevreychambertin vieilles vignes 2007 domaine serafin pere fils
+60. gevreychambertin vieilles vignes 2008 domaine serafin pere fils
+61. gevreychambertin vieilles vignes 2009 domaine serafin pere fils
+62. gevreychambertin vieilles vignes 2010 domaine serafin pere fils
+63. gevreychambertin vieilles vignes 2012 domaine serafin pere fils
+64. gevreychambertin vieilles vignes 2013
+65. gevreychambertin vieilles vignes 2013 domaine rossignoltrapet
+66. gevreychambertin vieilles vignes 2014 domaine harmandgeoffroy
+67. gevreychambertin vieilles vignes 2014 domaine rossignoltrapet
+68. gevreychambertin vieilles vignes 2015 domaine harmandgeoffroy
+69. gevreychambertin vieilles vignes 2015 domaine serafin pere fils
+70. gevreychambertin vieilles vignes 2016 domaine geantetpansiot
+71. gevreychambertin vieilles vignes 2016 domaine perrotminot
+72. gevreychambertin vieilles vignes 2016 domaine serafin pere fils
+73. gevreychambertin vieilles vignes 2017 domaine rossignoltrapet
+74. gevreychambertin vieilles vignes 2017 domaine serafin pere fils
+75. gevreychambertin vieilles vignes 2018
+76. gevreychambertin vieilles vignes 2018
+77. gevreychambertin vieilles vignes 2018
+78. gevreychambertin vieilles vignes 2018 domaine rossignoltrapet
+79. gevreychambertin vieilles vignes 2018 domaine serafin pere fils
+80. gevreychambertin vieilles vignes 2018 philippe rossignol gevreychambertin bourgogne frankrig
+81. gevreychambertin vieilles vignes 2019
+82. gevreychambertin vieilles vignes 2019
+83. gevreychambertin vieilles vignes 2019
+84. gevreychambertin vieilles vignes 2019 domaine rossignoltrapet
+85. gevreychambertin vieilles vignes 2019 domaine serafin pere fils
+86. gevreychambertin vieilles vignes 2019 maison roche de bellene
+87. gevreychambertin vieilles vignes 2020
+88. gevreychambertin vieilles vignes 2020
+89. gevreychambertin vieilles vignes 2020 domaine rossignoltrapet
+90. gevreychambertin vieilles vignes 2021
+91. gevreychambertin vieilles vignes 2021
+92. gevreychambertin vieilles vignes 2021 0
+93. gevreychambertin vieilles vignes 2021 domaine bernard coillot pere et fils
+94. gevreychambertin vieilles vignes 2021 domaine philippe naddef
+95. gevreychambertin vieilles vignes 2021 domaine rossignoltrapet
+96. gevreychambertin vieilles vignes 2021 rood domaine harmandgeoffroy
+97. gevreychambertin vieilles vignes 2022
+98. gevreychambertin vieilles vignes 2022
+99. gevreychambertin vieilles vignes 2022 0
+100. gevreychambertin vieilles vignes 2022 chateau de marsannay
+101. gevreychambertin vieilles vignes 2022 domaine pierre labet
+102. gevreychambertin vieilles vignes 2022 domaine rossignoltrapet
+103. gevreychambertin vieilles vignes 2022 domaine serafin
+104. gevreychambertin vieilles vignes 2022 domaine serafin
+105. gevreychambertin vieilles vignes 2022 domaine serafin
+106. gevreychambertin vieilles vignes 2022 domaine serafin
+107. gevreychambertin vieilles vignes 2023
+108. gevreychambertin vieilles vignes 2023 0
+109. gevreychambertin vieilles vignes domaine faiveley 2022
+110. gevreychambertin vieilles vignes domaine geantet pansiot
+111. gevreychambertin vieilles vignes domaine harmandgeoffroy
+112. gevreychambertin vieilles vignes domaine henri magnien 2017
+113. gevreychambertin vieilles vignes domaine henri magnien 2020
+114. gevreychambertin vieilles vignes domaine henri magnien 2021
+115. gevreychambertin vieilles vignes domaine heresztynmazzini 2023
+116. gevreychambertin vieilles vignes domaine rossignoltrapet 2021
+117. gevreychambertin vieilles vignes domaine rossignoltrapet 2022
+118. gevreychambertin vieilles vignes domaine seguinmanuel burgundy france 2022
+119. gevreychambertin vieilles vignes domaine tortochot 2022
+120. gevreychambertin vieilles vignes maison philippe charlopin
+121. gevreychambertin vieilles vignes tortochot domaine 2023
+122. gevreychambertin vieilles vignes village
+123. gevreychambertin vielles vignes 2019
+124. gevreychambertin vielles vignes 2021 fourrier
+125. gevreychambertin vielles vignes domaine rossignoltrapet burgundy france
+126. gevreychambertin vielles vignes les corvees dom m guillard 2023
+127. gevreychambertin viellles vignes 2018
+128. gevreychambertin viellles vignes 2021
+129. gevreychambertin vignes belles 2022 domaine drouhinlaroze
+130. gevreychambertin village
+131. gevreychambertin village 2005 domaine serafin pere fils
+132. gevreychambertin village 2008 domaine serafin pere fils
+133. gevreychambertin village 2010 domaine serafin 2010 domaine serafin pere fils
+134. gevreychambertin village 2015 david duband 2015 domaine david duband
+135. gevreychambertin village 2022 nicole lamarche
+136. gevreychambertin village domaine arlaud
+137. gevreychambertin village domaine serafin
+138. gevreychambertin village rouge 2020 domaine didier amiot
+139. gevreychambertin village vieilles vignes domaine serafin
+140. gevreychambertin vinhas velhas
+141. gevreychambertin vv 1er cru aux echezeaux 2022
+142. gevreychambertin vv 2022 domaine marc roy
+143. gevreychambertin vv rossignoltrapet
+144. gevulde eierplank
+145. gevulde eitjes kerrie
+146. gevulde en gegaarde kalkoenrollade met hazelnoot en abrikoos
+147. gevulde en gegaarde kalkoenrollade met peperkoek en kastanje
+148. gevulde gehaktballen met jus
+149. gevulde gehaktballen met satesmaak
+150. gevulde gehaktballen met stroganoffsaus
+151. gevulde kalkoen
+152. gevulde kipfilet middenoosterse kruiden
+153. gevulde koek
+154. gevulde kwartel met bospaddenstoelen
+155. gevulde oranjehoen kip met truffel en paddenstoel
+156. gevulde paaseitjes in luxe wit doosje brievenbuspost
+157. gevulde pepers met tonijn op olie 290 gr
+158. gevulde speculaas
+159. gew cab
+160. gewaardeerd 488 op 5 gebaseerd op 25 klantbeoordelingen
+161. gewaardeerd 494 op 5 gebaseerd op 17 klantbeoordelingen
+162. gewaardeerd 500 op 5 gebaseerd op 1 klantbeoordeling
+163. gewaardeerd 500 op 5 gebaseerd op 16 klantbeoordelingen
+164. gewaardeerd 500 op 5 gebaseerd op 6 klantbeoordelingen
+165. gewassen
+166. geweldig mooie moezel riesling van klassieke topproducent maximin grunhaus
+167. gewuerztraminer white wine abv 12 parallel import
+168. gewulve
+169. gewulve 2021 les jardins en chantants
+170. gewurrztraminer
+171. gewurstraminer 2011 kolbenhof hofstatter
+172. gewurstraminer 2019 grande reserve
+173. gewurstraminer alto adige doc linea selezione s 15000
+174. gewurstraminer aromatheque twist sip 2021
+175. gewurstraminer la magnolia
+176. gewurstraminer la magnolia
+177. gewurtraminer lageder
+178. gewurtraminer lageder
+179. gewurtraminer tuzko
+180. gewurtstraminer michel leon vieille vigne
+181. gewurtzraminer selection cave hunawihr blanc
+182. gewurtztraminer
+183. gewurtztraminer
+184. gewurtztraminer
+185. gewurtztraminer
+186. gewurtztraminer 2019
+187. gewurtztraminer 2020 mitterberg igt weingut in der eben
+188. gewurtztraminer 2021 gustave lorentz alsace france
+189. gewurtztraminer 2024 villa wolf
+190. gewurtztraminer alto adige doc 375 kurtatsch
+191. gewurtztraminer annabelle domaine camille braun 2018
+192. gewurtztraminer brandborg vineyard winery 2018 elkton oregon
+193. gewurtztraminer cantina terlano
+194. gewurtztraminer cuvee anne domaines schlumberger
+195. gewurtztraminer cuvee christine vendemmia tardiva domaines schlumberger
+196. gewurtztraminer cuvee particuliere ortenberg
+197. gewurtztraminer domaine pierre adam alsace 2021
+198. gewurtztraminer fruchtig 2021 weingut matthias dostert
+199. gewurtztraminer girlan
+200. gewurtztraminer grand cru furstentum
+201. gewurtztraminer grand cru kaefferkopf domaine camille braun 2019
+202. gewurtztraminer grand cru kessler domaines schlumberger
+203. gewurtztraminer hesperide
+204. gewurtztraminer les princes abbes domaines schlumberger
+205. gewurtztraminer les princes abbes domaines schlumberger
+206. gewurtztraminer orchidees sauvages mure
+207. gewurtztraminer philippe mich 075
+208. gewurtztraminer reserve 2020 magnum domaine fernand engel
+209. gewurtztraminer reserve 2023 domaine fernand engel
+210. gewurtztraminer vinarstvi vratil
+211. gewurz
+212. gewurz 2022
+213. gewurz 2023
+214. gewurz 2023
+215. gewurz 2024 0 bio
+216. gewurz 3
+217. gewurz boite herbes de provence
+218. gewurz boite herbes salades
+219. gewurz boite lavande culinaire
+220. gewurz boite romarin
+221. gewurz boite thym
+222. gewurz cuvee weiss
+223. gewurz muehlforst
+224. gewurz tapir 2020
+225. gewurz traminer doc 2020
+226. gewurzdose mit spruch
+227. gewurzdosen spruch 3er set
+228. gewurze fur tandoori35g bio
+229. gewurzluiken
+230. gewurzmischung fur bruschetta 100g
+231. gewurzmuhle
+232. gewurzorangen lachs
+233. gewurzorangen mousse
+234. gewurzreibe gusseisen
+235. gewurzt mure orchidees sauvage
+236. gewurzt selection de grains nobles frey sol 2017
+237. gewurztarminer
+238. gewurztraminer
+239. gewurztraminer
+240. gewurztraminer
+241. gewurztraminer
+242. gewurztraminer
+243. gewurztraminer
+244. gewurztraminer
+245. gewurztraminer
+246. gewurztraminer
+247. gewurztraminer
+248. gewurztraminer
+249. gewurztraminer
+250. gewurztraminer
+251. gewurztraminer
+252. gewurztraminer
+253. gewurztraminer
+254. gewurztraminer
+255. gewurztraminer
+256. gewurztraminer
+257. gewurztraminer
+258. gewurztraminer
+259. gewurztraminer
+260. gewurztraminer
+261. gewurztraminer
+262. gewurztraminer
+263. gewurztraminer
+264. gewurztraminer
+265. gewurztraminer
+266. gewurztraminer
+267. gewurztraminer
+268. gewurztraminer
+269. gewurztraminer
+270. gewurztraminer
+271. gewurztraminer
+272. gewurztraminer
+273. gewurztraminer
+274. gewurztraminer
+275. gewurztraminer
+276. gewurztraminer
+277. gewurztraminer
+278. gewurztraminer
+279. gewurztraminer
+280. gewurztraminer
+281. gewurztraminer
+282. gewurztraminer
+283. gewurztraminer
+284. gewurztraminer
+285. gewurztraminer
+286. gewurztraminer
+287. gewurztraminer 0
+288. gewurztraminer 120
+289. gewurztraminer 1840 alto adige doc 2021 hlun
+290. gewurztraminer 1840 h lun
+291. gewurztraminer 2007
+292. gewurztraminer 2009
+293. gewurztraminer 2011 michele et jean luc stoecke
+294. gewurztraminer 2011 pegasus bay waipara new zealand
+295. gewurztraminer 2011 vendanges tardives blessing
+296. gewurztraminer 2014 steiner
+297. gewurztraminer 2014 vieilles vignes
+298. gewurztraminer 2015
+299. gewurztraminer 2015
+300. gewurztraminer 2015 grand cru brand dalsace cave de turckheim
+301. gewurztraminer 2016
+302. gewurztraminer 2016
+303. gewurztraminer 2016 domaine prive de la maison gpc
+304. gewurztraminer 2016 grand cru rosacker cave vinicole hunawihr alsace frankrig
+305. gewurztraminer 2016 grand cru schoenenbourg domaine becker
+306. gewurztraminer 2016 grande reserve vin dalsace egrappe75cl
+307. gewurztraminer 2016 reserve
+308. gewurztraminer 2016 trimbach ribeauville alsace frankrig
+309. gewurztraminer 2017
+310. gewurztraminer 2017
+311. gewurztraminer 2017
+312. gewurztraminer 2017 aoc alsace selection de grains nobles
+313. gewurztraminer 2017 cesconi
+314. gewurztraminer 2017 semeli
+315. gewurztraminer 2017 svr
+316. gewurztraminer 2017 white kologisk
+317. gewurztraminer 2018
+318. gewurztraminer 2018
+319. gewurztraminer 2018
+320. gewurztraminer 2018
+321. gewurztraminer 2018 doc
+322. gewurztraminer 2018 domaine allimantlaugner
+323. gewurztraminer 2018 domaine trimbach
+324. gewurztraminer 2018 grand cru altenberg de bergheim alsace wine sweet
+325. gewurztraminer 2018 grand cru altenberg de bergheim vin dalsace doux
+326. gewurztraminer 2018 grand cru bruderthal domaine neumeyer
+327. gewurztraminer 2018 remy lutz
+328. gewurztraminer 2018 sables et galets d alsace cave de turckheim
+329. gewurztraminer 2018 vendanges tardives alsace wine sweet
+330. gewurztraminer 2018 vendanges tardives vin dalsace doux
+331. gewurztraminer 2019
+332. gewurztraminer 2019
+333. gewurztraminer 2019
+334. gewurztraminer 2019 fels gpc
+335. gewurztraminer 2019 marcel deiss
+336. gewurztraminer 2019 vieilles vignes alsace wine mediumsweet
+337. gewurztraminer 2019 vieilles vignes vin dalsace moelleux
+338. gewurztraminer 2020
+339. gewurztraminer 2020
+340. gewurztraminer 2020 collection cave de ribeauville alsace frankrig
+341. gewurztraminer 2020 coteaux de remich gpc
+342. gewurztraminer 2020 evidence gustave lorentz
+343. gewurztraminer 2020 hartmann dona
+344. gewurztraminer 2020 in der eben
+345. gewurztraminer 2020 kuhlmannplatz
+346. gewurztraminer 2020 les princes abbes domaine schlumberger
+347. gewurztraminer 2020 vendanges tardives
+348. gewurztraminer 2020 vendanges tardives aoc alsace
+349. gewurztraminer 20202021 domaine koch pierre fils
+350. gewurztraminer 2021
+351. gewurztraminer 2021
+352. gewurztraminer 2021
+353. gewurztraminer 2021
+354. gewurztraminer 2021
+355. gewurztraminer 2021
+356. gewurztraminer 2021
+357. gewurztraminer 2021
+358. gewurztraminer 2021
+359. gewurztraminer 2021 0
+360. gewurztraminer 2021 bench 1775 winery
+361. gewurztraminer 2021 decideret
+362. gewurztraminer 2021 freyermuth
+363. gewurztraminer 2021 hubert beck alsace
+364. gewurztraminer 2021 taureau domaine neumeyer
+365. gewurztraminer 2021 tramin alto adige doc
+366. gewurztraminer 2021 trentino doc maso bergamini
+367. gewurztraminer 2022
+368. gewurztraminer 2022
+369. gewurztraminer 2022
+370. gewurztraminer 2022
+371. gewurztraminer 2022
+372. gewurztraminer 2022
+373. gewurztraminer 2022
+374. gewurztraminer 2022
+375. gewurztraminer 2022
+376. gewurztraminer 2022
+377. gewurztraminer 2022
+378. gewurztraminer 2022
+379. gewurztraminer 2022 13 vol
+380. gewurztraminer 2022 aoc alsace le seducteur
+381. gewurztraminer 2022 bioweingut zohlhof
+382. gewurztraminer 2022 castel sallegg
+383. gewurztraminer 2022 coteau du hautkoenigsbourg alsace wine semidry
+384. gewurztraminer 2022 coteau du hautkoenigsbourg vin dalsace demi sec
+385. gewurztraminer 2022 ct alsace cave de turckheim
+386. gewurztraminer 2022 cuvee olivier
+387. gewurztraminer 2022 dry 075 liter
+388. gewurztraminer 2022 fels gpc
+389. gewurztraminer 2022 lafoa colterenzio
+390. gewurztraminer 2022 lieselehof
+391. gewurztraminer 2022 lieselehof
+392. gewurztraminer 2022 maceration alsace aoc pierre frick
+393. gewurztraminer 2022 semi dry halbtrocken 075 liter
+394. gewurztraminer 2022 strasserhof valle isarco doc alto adige
+395. gewurztraminer 2022 vieilles vignes
+396. gewurztraminer 2022domein steenberg
+397. gewurztraminer 2023
+398. gewurztraminer 2023
+399. gewurztraminer 2023
+400. gewurztraminer 2023
+401. gewurztraminer 2023
+402. gewurztraminer 2023
+403. gewurztraminer 2023
+404. gewurztraminer 2023
+405. gewurztraminer 2023
+406. gewurztraminer 2023
+407. gewurztraminer 2023
+408. gewurztraminer 2023
+409. gewurztraminer 2023
+410. gewurztraminer 2023 075 liter
+411. gewurztraminer 2023 aoc alsace cur de cru
+412. gewurztraminer 2023 bellutti weinberghof
+413. gewurztraminer 2023 bio
+414. gewurztraminer 2023 bottega vinai
+415. gewurztraminer 2023 cantina valle isarco doc alto adige
+416. gewurztraminer 2023 doc altoadige hartmann dona
+417. gewurztraminer 2023 domaine albert man
+418. gewurztraminer 2023 domaine henry fuchs
+419. gewurztraminer 2023 dorfbourg vendanges tardives
+420. gewurztraminer 2023 girlan
+421. gewurztraminer 2023 grand cru wineck schlossberg
+422. gewurztraminer 2023 graziano fontana
+423. gewurztraminer 2023 lieu dit dorfbourg
+424. gewurztraminer 2023 lieu dit hinterbourg
+425. gewurztraminer 2023 lieudit husaren
+426. gewurztraminer 2023 louis aromatico
+427. gewurztraminer 2023 monfort
+428. gewurztraminer 2023 vigna kastelaz elena walch
+429. gewurztraminer 2024
+430. gewurztraminer 2024
+431. gewurztraminer 2024
+432. gewurztraminer 2024
+433. gewurztraminer 2024
+434. gewurztraminer 2024
+435. gewurztraminer 2024
+436. gewurztraminer 2024
+437. gewurztraminer 2024
+438. gewurztraminer 2024
+439. gewurztraminer 2024
+440. gewurztraminer 2024 alto adige doc wilhelm walch tramin sudtirol
+441. gewurztraminer 2024 aoc valais
+442. gewurztraminer 2024 bellussi
+443. gewurztraminer 2024 cantina valle isarco doc alto adige
+444. gewurztraminer 2024 christophe mittnacht bd vin nature
+445. gewurztraminer 2024 christophe mittnacht bd vin nature
+446. gewurztraminer 2024 cuvee des demoiselles alsace wine sweet
+447. gewurztraminer 2024 cuvee des demoiselles vin dalsace doux
+448. gewurztraminer 2024 cuvee saint urbain
+449. gewurztraminer 2024 domaine kleinknecht alsace
+450. gewurztraminer 2024 elena walch
+451. gewurztraminer 2024 kellerei ersteneue 0 145 vol
+452. gewurztraminer 2024 kettmeir
+453. gewurztraminer 2024 le petitlullier
+454. gewurztraminer 2024 san michele appiano
+455. gewurztraminer 2024 st michael eppan
+456. gewurztraminer 2024 terlan
+457. gewurztraminer 2024 tremisse
+458. gewurztraminer 2024 villa wolf
+459. gewurztraminer 2024 vinothek julius kimmle
+460. gewurztraminer 2025
+461. gewurztraminer 2025
+462. gewurztraminer 2025
+463. gewurztraminer 2025
+464. gewurztraminer 2025
+465. gewurztraminer 2025
+466. gewurztraminer 2025
+467. gewurztraminer 2025 abbazia di novacella alto adige valle isarco doc
+468. gewurztraminer 22
+469. gewurztraminer 3
+470. gewurztraminer 350 nn 2023
+471. gewurztraminer 350 nn 2023
+472. gewurztraminer 350 nn 2023
+473. gewurztraminer 5
+474. gewurztraminer 60
+475. gewurztraminer aac 2022 henri kieffer fils
+476. gewurztraminer abbazia di novacella
+477. gewurztraminer abbazia di novacella
+478. gewurztraminer abbazia di novacella
+479. gewurztraminer abbazia di novacella
+480. gewurztraminer abbes domaines schlumberger 2018
+481. gewurztraminer ac eugene meyer
+482. gewurztraminer adega giovanni tasca
+483. gewurztraminer adobe emiliana
+484. gewurztraminer ahn goellebour
+485. gewurztraminer aime alto adige doc 2024
+486. gewurztraminer aime girlan 2019
+487. gewurztraminer aime girlan 2021
+488. gewurztraminer aime girlan weiwein aus trentinosudtirol gewurztraminer
+489. gewurztraminer albert boxler 2020 frankrijk elzas wit
+490. gewurztraminer albert boxler 2023 frankrijk elzas wit
+491. gewurztraminer albert hertz biowine
+492. gewurztraminer alois lageder
+493. gewurztraminer alsace
+494. gewurztraminer alsace
+495. gewurztraminer alsace ac kritt 2023
+496. gewurztraminer alsace aoc maceration 2021 pierre frick
+497. gewurztraminer alsace bio
+498. gewurztraminer alsace blanc domaine dirlercade 2022
+499. gewurztraminer alsace eugenie klipfel
+500. gewurztraminer alsace eugenie klipfel
+501. gewurztraminer alsace grand cru ac eichberg 2017
+502. gewurztraminer alsace grand cru brand
+503. gewurztraminer alsace grand cru froehn
+504. gewurztraminer alsace grand cru mandelberg
+505. gewurztraminer alsace grand cru praelatenberg ab 2020 domaine engel
+506. gewurztraminer alsace grand cru sonnenglanz
+507. gewurztraminer alsace hubert beck 2022
+508. gewurztraminer alsace hubert beck 2022
+509. gewurztraminer alsace moelleux aop 2023
+510. gewurztraminer alsace passion
+511. gewurztraminer alsace reserve 2022
+512. gewurztraminer alsace reserve aoc hunawihr
+513. gewurztraminer alsace selection de grains nobles
+514. gewurztraminer alsace vendanges tardives
+515. gewurztraminer alsace vendanges tardives
+516. gewurztraminer alsace vieilles vignes
+517. gewurztraminer altenberg de bergheim
+518. gewurztraminer altenberg de wolxheim 2020
+519. gewurztraminer altenbourg 18
+520. gewurztraminer altenbourg 2013 domaine weinbach
+521. gewurztraminer alterberg grand cru ribeauville 2016
+522. gewurztraminer alto adige 2024
+523. gewurztraminer alto adige doc
+524. gewurztraminer alto adige doc
+525. gewurztraminer alto adige doc
+526. gewurztraminer alto adige doc
+527. gewurztraminer alto adige doc 2022
+528. gewurztraminer alto adige doc 2022
+529. gewurztraminer alto adige doc 2022 franz haas
+530. gewurztraminer alto adige doc 2023
+531. gewurztraminer alto adige doc 2023
+532. gewurztraminer alto adige doc 2023
+533. gewurztraminer alto adige doc 2023 brunnenhof
+534. gewurztraminer alto adige doc 2023 rottensteiner
+535. gewurztraminer alto adige doc 2024
+536. gewurztraminer alto adige doc 2024
+537. gewurztraminer alto adige doc 2024 franz haas
+538. gewurztraminer alto adige doc 2025 elena walch
+539. gewurztraminer alto adige doc 2025 k martini sohn
+540. gewurztraminer alto adige doc 2025 muri gries
+541. gewurztraminer alto adige doc abbazia di novacella 2024
+542. gewurztraminer alto adige doc abbazia novacella
+543. gewurztraminer alto adige doc alois lageder
+544. gewurztraminer alto adige doc am sand alois lageder
+545. gewurztraminer alto adige doc artyo tenuta weger
+546. gewurztraminer alto adige doc auratus ritterhof
+547. gewurztraminer alto adige doc caldaro 2023
+548. gewurztraminer alto adige doc colterenzio
+549. gewurztraminer alto adige doc colterenzio
+550. gewurztraminer alto adige doc colterenzio
+551. gewurztraminer alto adige doc colterenzio
+552. gewurztraminer alto adige doc elena walch 2025
+553. gewurztraminer alto adige doc flora girlan
+554. gewurztraminer alto adige doc girlan
+555. gewurztraminer alto adige doc joseph 2023 hofstatter
+556. gewurztraminer alto adige doc joseph 2024 hofstatter
+557. gewurztraminer alto adige doc joseph hofstatter
+558. gewurztraminer alto adige doc justina kellerei st pauls
+559. gewurztraminer alto adige doc kaltern
+560. gewurztraminer alto adige doc konrad oberhofer 2023
+561. gewurztraminer alto adige doc kurtatsch arenis cortaccia
+562. gewurztraminer alto adige doc murigries
+563. gewurztraminer alto adige doc nussbaumer tramin
+564. gewurztraminer alto adige doc ritterhof
+565. gewurztraminer alto adige doc ritterhof
+566. gewurztraminer alto adige doc san michele appiano
+567. gewurztraminer alto adige doc sanct valentin san michele appiano
+568. gewurztraminer alto adige doc st michael eppan
+569. gewurztraminer alto adige doc terlan
+570. gewurztraminer alto adige doc tramin 2024
+571. gewurztraminer alto adige doc vigna kolbenhof 2021 hofstatter
+572. gewurztraminer alto adige doc vigna kolbenhof 2022 hofstatter
+573. gewurztraminer alto adige doc vigna pirchschrait 2009 in cassa legno hofstatter
+574. gewurztraminer alto adige doc weingut steinhaus
+575. gewurztraminer alto adige doc zemmer 2024
+576. gewurztraminer alto adige hofstatter
+577. gewurztraminer alto adige sanct valentin doc 2024 san michele appiano
+578. gewurztraminer alto adige valle isarco doc 2022 cantina valle isarco
+579. gewurztraminer alto adige valle isarco doc 2023 kuenhof
+580. gewurztraminer alto adige valle venosta doc 2021 falkenstein
+581. gewurztraminer altoadige doc 2022
+582. gewurztraminer am sand alto adige doc 2020
+583. gewurztraminer am sand mitterberg igt 2022
+584. gewurztraminer amber 2020
+585. gewurztraminer amber 2021
+586. gewurztraminer amelie
+587. gewurztraminer american
+588. gewurztraminer ancestral
+589. gewurztraminer andlau
+590. gewurztraminer andrian 2022
+591. gewurztraminer aoc 2022 bio domaine gmetz
+592. gewurztraminer aoc 2022 bio domaine gmetz
+593. gewurztraminer aoc alsace
+594. gewurztraminer aoc grand cru winzenberg domaine pierre sperry 2017
+595. gewurztraminer aoc le seducteur 2019
+596. gewurztraminer aoc valais fernand cina sa salgesch
+597. gewurztraminer aoc valais fernand cina sa salgesch 2024
+598. gewurztraminer aoc zurich 2023 hamacht weine
+599. gewurztraminer aop
+600. gewurztraminer aop alsace 2020
+601. gewurztraminer aop alsace 2023
+602. gewurztraminer aop alsace grand cru rosacker 2016
+603. gewurztraminer arenis kellerei kurtatsch
+604. gewurztraminer aristos 2022 alto adige valle isarco doc
+605. gewurztraminer aristos doc 2020 cantina valle isarco
+606. gewurztraminer arliz
+607. gewurztraminer aromatico doc warth moser
+608. gewurztraminer atagis
+609. gewurztraminer auslese
+610. gewurztraminer auslese
+611. gewurztraminer auslese
+612. gewurztraminer auslese
+613. gewurztraminer auslese 0 bassermann jordan
+614. gewurztraminer auslese 2019
+615. gewurztraminer auslese bergdoltreif nett
+616. gewurztraminer auslese bio orange edelsuss nahe weingut im zwolberich
+617. gewurztraminer auslese enselberg zeit 2021
+618. gewurztraminer auslese weingut friedrich becker 2012 duitsland pfalz wit
+619. gewurztraminer barrique
+620. gewurztraminer barrique
+621. gewurztraminer bassermann jordan
+622. gewurztraminer bbhm
+623. gewurztraminer beck 2021 mediumsweet
+624. gewurztraminer bergheim
+625. gewurztraminer bergsig estate
+626. gewurztraminer bild
+627. gewurztraminer bild 2023
+628. gewurztraminer bildstoeckle
+629. gewurztraminer bildstoeckle pige
+630. gewurztraminer bildstoeckle sylvain hertzog
+631. gewurztraminer bio
+632. gewurztraminer bio
+633. gewurztraminer bio 2023 schwarzhof zeni
+634. gewurztraminer bio alsace marcel deiss
+635. gewurztraminer bio aoc alsazia vino bianco amabile francia cave de ribeauville
+636. gewurztraminer bio les authentiques domaine hering aoc alsace
+637. gewurztraminer bio les fous domaine leon boesch 2023
+638. gewurztraminer bio selection de grains nobles 2010
+639. gewurztraminer bio vallee noble domaine leon boesch 2023
+640. gewurztraminer blanc 2025 les jamelles
+641. gewurztraminer blanc alsace aoc 2019
+642. gewurztraminer blanck 2022
+643. gewurztraminer blanck 2023
+644. gewurztraminer blechkleinmacher falkenberg 2018
+645. gewurztraminer bodega luigi bosca
+646. gewurztraminer boeckel 2024
+647. gewurztraminer boeckel andree schmitt 13 0
+648. gewurztraminer bollenberg
+649. gewurztraminer bollenberg 2019 domaine valentin zusslin
+650. gewurztraminer bollenberg cuvee mariefrance 2023
+651. gewurztraminer bollenberg moelleux 2020
+652. gewurztraminer bourdic pays doc
+653. gewurztraminer brand
+654. gewurztraminer brand de turckheim grand cru 2011
+655. gewurztraminer brand grand cru 2019
+656. gewurztraminer breakaway entalkoholisiert paket
+657. gewurztraminer bruno sorg alsace france 2021 135 vol
+658. gewurztraminer burg
+659. gewurztraminer calcaire 2010 zind humbrecht
+660. gewurztraminer campaner 2018
+661. gewurztraminer campaner linea selezione cantina di caldaro
+662. gewurztraminer cantina bolzano
+663. gewurztraminer cantina di caldaro kaltern 2021
+664. gewurztraminer cantina di terlano
+665. gewurztraminer capoalago 2021 madonna delle vittorie
+666. gewurztraminer caroline bio vendange tardive alsace kuentzbas
+667. gewurztraminer casata monfort
+668. gewurztraminer case 6
+669. gewurztraminer castel sallegg 2024
+670. gewurztraminer castel turmhof doc
+671. gewurztraminer catrala limited edition 2020
+672. gewurztraminer cave de cleebourg 2022
+673. gewurztraminer ceslar kellerei bozen
+674. gewurztraminer charles joseph
+675. gewurztraminer charles muller bio bl
+676. gewurztraminer chasseurs de lune 2019 bestheim 12
+677. gewurztraminer chasseurs de lune 2020 bestheim
+678. gewurztraminer chasseurs de lune 2021 bestheim
+679. gewurztraminer chasseurs de lune 2021 bestheim 12
+680. gewurztraminer classic
+681. gewurztraminer classic
+682. gewurztraminer classic
+683. gewurztraminer classic 2022 famille hugel
+684. gewurztraminer classic 2023
+685. gewurztraminer classic 2023
+686. gewurztraminer classic aoc alsace blanc 2019
+687. gewurztraminer classic bestheim
+688. gewurztraminer classic domaine hugel
+689. gewurztraminer classic famille hugel
+690. gewurztraminer classic famille hugel
+691. gewurztraminer classique domaine paul blanck
+692. gewurztraminer clos des anges
+693. gewurztraminer clos st theobald 2016 domaine schoffit ml 750 cod bpa241
+694. gewurztraminer clos windsbuhl
+695. gewurztraminer clos windsbuhl
+696. gewurztraminer clos windsbuhl 2018
+697. gewurztraminer clos windsbuhl 2019
+698. gewurztraminer clos windsbuhl 2020
+699. gewurztraminer clos windsbuhl 2021
+700. gewurztraminer clos windsbuhl vendanges tardives 2005
+701. gewurztraminer coin noble cave des onze communes
+702. gewurztraminer colheita tardia 2015
+703. gewurztraminer collection cave de ribeauville 2022
+704. gewurztraminer collines du bourdic
+705. gewurztraminer colterenzio
+706. gewurztraminer colterenzio
+707. gewurztraminer comtes deguisheim
+708. gewurztraminer comtes deguisheim
+709. gewurztraminer comtes deguisheim 2009 0
+710. gewurztraminer comtes deguisheim 2011 0
+711. gewurztraminer concerto grosso sudtirol doc 2022 elena walch
+712. gewurztraminer concilio
+713. gewurztraminer concilio
+714. gewurztraminer confidentiel 2020
+715. gewurztraminer confidentiel 2024 bio
+716. gewurztraminer crosano trentino doc 2020 albino armani bile suche 0
+717. gewurztraminer cuvee anne selezione acini nobili
+718. gewurztraminer cuvee camille 2023
+719. gewurztraminer cuvee christine vendanges tardives 2022 domaines schlumberger
+720. gewurztraminer cuvee christine vendemmia tardiva
+721. gewurztraminer cuvee des folastries 2020
+722. gewurztraminer cuvee des seig de ribeaupierre trimbach 2013
+723. gewurztraminer cuvee des seigneurs de ribeaupierre 2011 trimbach
+724. gewurztraminer cuvee marine 2024
+725. gewurztraminer cuvee particuliere domaine jean sipp
+726. gewurztraminer cuvee prestige
+727. gewurztraminer cuvee prestige 2022
+728. gewurztraminer cuvee prestige eliane mor
+729. gewurztraminer cuvee reserve 1993 les caves de bennwihr
+730. gewurztraminer cuvee tradition 2021 cave de beblenheim
+731. gewurztraminer cuvee wahlenbourg paul ginglinger alsace frankrig 2022
+732. gewurztraminer czekolada
+733. gewurztraminer dalsace aoc 2018 domaine allimant laugner
+734. gewurztraminer dalsace aoc 2023 sophie schaal
+735. gewurztraminer dalsace hengst grand cru
+736. gewurztraminer dalsace herrenweg de turckheim
+737. gewurztraminer dalsace rangen de thann clos st urbain grand cru
+738. gewurztraminer dalsace trimbach
+739. gewurztraminer dalsace wolfberger 2016
+740. gewurztraminer dambach la ville 2020
+741. gewurztraminer damian
+742. gewurztraminer damian kornell
+743. gewurztraminer damian sudtirol doc 2024 tenuta kornell
+744. gewurztraminer de riquewihr grains nobles 2008
+745. gewurztraminer de riquewihr vendange tardive 2009
+746. gewurztraminer demidoux
+747. gewurztraminer des chasseurs de lune
+748. gewurztraminer des chasseurs de lune
+749. gewurztraminer desilva doc 2022 peter solva
+750. gewurztraminer doc
+751. gewurztraminer doc
+752. gewurztraminer doc
+753. gewurztraminer doc 0
+754. gewurztraminer doc 0
+755. gewurztraminer doc 0
+756. gewurztraminer doc 2019 elena walch
+757. gewurztraminer doc 2020
+758. gewurztraminer doc 2020 sanct valentin san michel appiano
+759. gewurztraminer doc 2021 cantina terlan
+760. gewurztraminer doc 2021 elena walch
+761. gewurztraminer doc 2021 franz haas
+762. gewurztraminer doc 2022 kellerei terlan
+763. gewurztraminer doc 2023
+764. gewurztraminer doc 2024 14 vol
+765. gewurztraminer doc abbazia di novacella
+766. gewurztraminer doc alto adige arenis 2023 kellerei kurtatsch
+767. gewurztraminer doc alto adige colterenzio
+768. gewurztraminer doc alto adige sermajer 2022
+769. gewurztraminer doc alto adige sermajer 2023
+770. gewurztraminer doc aristos valle isarco
+771. gewurztraminer doc aristos valle isarco
+772. gewurztraminer doc bio 6 bottiglie
+773. gewurztraminer doc bio cesconi
+774. gewurztraminer doc ersteneue
+775. gewurztraminer doc exil 2022 baron di pauli
+776. gewurztraminer doc kies cantina roeno
+777. gewurztraminer doc kies cantina roeno
+778. gewurztraminer doc konrad oberhofer vigna pirschrait 2006 hofstatter
+779. gewurztraminer doc kossler
+780. gewurztraminer doc kossler
+781. gewurztraminer doc nussbaumer 2021 cantina tramin
+782. gewurztraminer doc roberta fugatti
+783. gewurztraminer doc sandbichler h lun
+784. gewurztraminer doc st michael eppan
+785. gewurztraminer doc st michael eppan 2024
+786. gewurztraminer doc st pauls 2024
+787. gewurztraminer doc stoass 2024 pfitscher
+788. gewurztraminer doc sudtirol kellerei auer
+789. gewurztraminer doc trentino 2023 vivallis
+790. gewurztraminer doc trydentgorna adyga 2023 falkenstein
+791. gewurztraminer dom familial dopff 2020 c6
+792. gewurztraminer domaine de la deviniere
+793. gewurztraminer domaine edmond rentz
+794. gewurztraminer domaine et tradition 2019
+795. gewurztraminer domaine et tradition 2022
+796. gewurztraminer domaine stoeffler
+797. gewurztraminer domaine stoeffler selection de grains nobles
+798. gewurztraminer domaine stoeffler vendanges tardives
+799. gewurztraminer domein aldenborgh
+800. gewurztraminer dopff 1993
+801. gewurztraminer dopff 1993 vitt vin fran alsace
+802. gewurztraminer dopff 1993 white wine from alsace
+803. gewurztraminer dopff 1993 witte wijn uit de elzas
+804. gewurztraminer dopff irion 2023
+805. gewurztraminer dopff irion alsace
+806. gewurztraminer dottinger castelberg auslese
+807. gewurztraminer dry hermann j wiemer 2024
+808. gewurztraminer dulce gw botellin
+809. gewurztraminer eclipse depices 2015 andre kleinknecht alsace
+810. gewurztraminer edition rosenduft vdpgutswein deoko039
+811. gewurztraminer ehrenstetter olberg auslese
+812. gewurztraminer einmal anders
+813. gewurztraminer elefante pisador orange bodega pablo fallabrino 2025
+814. gewurztraminer elena walch
+815. gewurztraminer elena walch
+816. gewurztraminer elena walch
+817. gewurztraminer elena walch
+818. gewurztraminer elena walch
+819. gewurztraminer elena walch kastelaz
+820. gewurztraminer elena walch kastelaz
+821. gewurztraminer en 2022 0
+822. gewurztraminer en 2023 0
+823. gewurztraminer en 2024 0
+824. gewurztraminer endrizzi doc
+825. gewurztraminer enopere
+826. gewurztraminer entdeckerpaket 6 flaschen von trocken bis su
+827. gewurztraminer essentiel
+828. gewurztraminer essentiel freyburger
+829. gewurztraminer estate
+830. gewurztraminer estate 2020 famille hugel
+831. gewurztraminer estate grown cave spring vineyard
+832. gewurztraminer estate selection
+833. gewurztraminer estate selection
+834. gewurztraminer etiquette rouge 2023
+835. gewurztraminer ex passione honninger schlossberg dolina renu mittelrhein niemcy 0
+836. gewurztraminer exil alto adige doc 2019 baron di pauli
+837. gewurztraminer expression
+838. gewurztraminer expression 2019
+839. gewurztraminer expression domaine agape 2017
+840. gewurztraminer feinfruchtig
+841. gewurztraminer feinherb 2023 ausdruck feine balance
+842. gewurztraminer feld kobler
+843. gewurztraminer festival doc 2024 kellerei meran
+844. gewurztraminer feuerstein 2021 baron longo
+845. gewurztraminer fischbach 21
+846. gewurztraminer fleur 2022
+847. gewurztraminer fleur dautomne 2023
+848. gewurztraminer flora girlan 2019
+849. gewurztraminer fontana
+850. gewurztraminer forchir
+851. gewurztraminer forchir
+852. gewurztraminer frankstein grand cru alsace ac 2018
+853. gewurztraminer franz haas
+854. gewurztraminer froehn 2019 domaine edmond rentz
+855. gewurztraminer froehn domaine edmond rentz
+856. gewurztraminer fronholz
+857. gewurztraminer fronholz 2012 domaine ostertag
+858. gewurztraminer fronholz 2015 domaine ostertag
+859. gewurztraminer fronholz 2016 domaine ostertag
+860. gewurztraminer fronholz reserve prestige 2017
+861. gewurztraminer furstentum grand cru 2018 domaine albert mann
+862. gewurztraminer furstentum grand cru 2022
+863. gewurztraminer gaensbrunnen 2021
+864. gewurztraminer gc brand albert boxler 2015 0750 elzas frankrijk
+865. gewurztraminer gc brand albert boxler 2018 0750 elzas frankrijk
+866. gewurztraminer gc mambourg 2020 domaine jm bernhard
+867. gewurztraminer gc marckrain
+868. gewurztraminer gc pfersigberg
+869. gewurztraminer gd cru frankstein mersiol 2012
+870. gewurztraminer germany
+871. gewurztraminer germany
+872. gewurztraminer girlan
+873. gewurztraminer girlan
+874. gewurztraminer girlan 2021
+875. gewurztraminer girlan flora
+876. gewurztraminer girlan flora
+877. gewurztraminer girlan flora 2021
+878. gewurztraminer givre 8 de jung 2016
+879. gewurztraminer gloeckelberg
+880. gewurztraminer gloeckelberg grand cru ribeauville 2017
+881. gewurztraminer goccia doro 2022 cantina di trento
+882. gewurztraminer gols tenuta griesserhof
+883. gewurztraminer gols tenuta griesserhof
+884. gewurztraminer gpc aop 2020
+885. gewurztraminer gpc aop 2021
+886. gewurztraminer gpc aop 2022
+887. gewurztraminer gpc aop 2023
+888. gewurztraminer grabba
+889. gewurztraminer graf alto adige doc 2020
+890. gewurztraminer graf von meran doc 2024 kellerei meran
+891. gewurztraminer grains nobles 2008
+892. gewurztraminer gran cru steiner maceration domaine pierre frick 2022
+893. gewurztraminer gran reserva morande
+894. gewurztraminer grand cru 2015
+895. gewurztraminer grand cru 2018 rosacker
+896. gewurztraminer grand cru altenberg bergheim 2020 domaine fernand engel
+897. gewurztraminer grand cru altenberg de bergbeten 2018
+898. gewurztraminer grand cru altenberg de bergheim 2013 gustave lorentz
+899. gewurztraminer grand cru altenberg old vines 2011 alsace grand cru gustave lorentz bouteille
+900. gewurztraminer grand cru aoc alsazia vino bianco amabile francia cave de ribeauville
+901. gewurztraminer grand cru brand 2020 cave de turckheim 140
+902. gewurztraminer grand cru brand albert boxler 2019 frankrijk elzas wit
+903. gewurztraminer grand cru brand cave de turckheim
+904. gewurztraminer grand cru dopff irion sporen 202223
+905. gewurztraminer grand cru eichberg
+906. gewurztraminer grand cru eichberg 2020
+907. gewurztraminer grand cru eichberg 2021 domaine schneider paul
+908. gewurztraminer grand cru eichberg 2022 domaine schneider paul
+909. gewurztraminer grand cru eichberg wolfberger
+910. gewurztraminer grand cru frankstein
+911. gewurztraminer grand cru frankstein alsace hubert beck
+912. gewurztraminer grand cru froehn 2018 cave de beblenheim
+913. gewurztraminer grand cru furstentum 2022 domaine weinbach
+914. gewurztraminer grand cru furstentum 2023 domaine weinbach
+915. gewurztraminer grand cru furstentum 2024 domaine weinbach
+916. gewurztraminer grand cru goldert clos saintimer la chapelle 2019 ernest burn blanc
+917. gewurztraminer grand cru h kieffer 2022 bl
+918. gewurztraminer grand cru hatschbourg 1996 jean weingand
+919. gewurztraminer grand cru hatschbourg 2021 joseph cattin
+920. gewurztraminer grand cru hengst
+921. gewurztraminer grand cru hengst 2011
+922. gewurztraminer grand cru hengst vendange tardive 2001 domaine josmeyer
+923. gewurztraminer grand cru kaefferkopf 2016
+924. gewurztraminer grand cru kaefferkopf 2017 geschickt
+925. gewurztraminer grand cru kaefferkopf 2021 henri ehrhart
+926. gewurztraminer grand cru kaefferkopf 2023 etienne simonis blanc
+927. gewurztraminer grand cru kaefferkopf alsace
+928. gewurztraminer grand cru kaefferkopf henri ehrhart 2023
+929. gewurztraminer grand cru kanslerberg
+930. gewurztraminer grand cru kessler
+931. gewurztraminer grand cru kessler 2018
+932. gewurztraminer grand cru kessler 2022
+933. gewurztraminer grand cru kessler selection de grains nobles alsace gewurztraminer blanc domaine dirlercade 2011
+934. gewurztraminer grand cru kirchberg de barr 2018
+935. gewurztraminer grand cru kirchberg de barr bio domaine hering aoc alsace
+936. gewurztraminer grand cru kitterle 2012 domaine schlumberger
+937. gewurztraminer grand cru kitterle 2021
+938. gewurztraminer grand cru kitterle 2022
+939. gewurztraminer grand cru mambourg
+940. gewurztraminer grand cru mambourg 2016 domaine weinbach
+941. gewurztraminer grand cru mambourg michel fonne
+942. gewurztraminer grand cru marckrain 2020
+943. gewurztraminer grand cru meyerfonne wineckschlossberg 2023
+944. gewurztraminer grand cru osterberg 2019 andre kientzler blanc
+945. gewurztraminer grand cru pfersigberg 2022
+946. gewurztraminer grand cru pfersigberg paul ginglinger alsace frankrig 2018
+947. gewurztraminer grand cru pfingstberg 2020
+948. gewurztraminer grand cru pfingstberg vendanges tardives domaine haegelin 2015
+949. gewurztraminer grand cru praelatenberg 2022
+950. gewurztraminer grand cru rosacker 2013
+951. gewurztraminer grand cru schoenenbourg 2016
+952. gewurztraminer grand cru schoenenbourg 2017
+953. gewurztraminer grand cru shoenenbourg 2017
+954. gewurztraminer grand cru spiegel
+955. gewurztraminer grand cru spiegel alsace gewurztraminer blanc domaine dirlercade 2015
+956. gewurztraminer grand cru sporen de riquewihr sigil
+957. gewurztraminer grand cru sporen vendages tardives 2017 domaine meyer fonne
+958. gewurztraminer grand cru steingrubler sec wunsch mann 2023
+959. gewurztraminer grand cru vendanges tardives 1994 lorentz
+960. gewurztraminer grand cru vorbourg 2023
+961. gewurztraminer grand cru vorbourg vendanges tardives 2018 schlegel boeglin blanc
+962. gewurztraminer grand cru winzenberg 2018 hubert meyer
+963. gewurztraminer grand cru zinnkoepfle bio vendanges tardives domaine leon boesch 2022
+964. gewurztraminer grand cru zotzenberg
+965. gewurztraminer grand cru zotzenberg
+966. gewurztraminer grand cru zotzenberg 2022
+967. gewurztraminer grand reserve 2018
+968. gewurztraminer grande reserve
+969. gewurztraminer grande reserve 2019
+970. gewurztraminer granite de dambachlaville 2020 beckhartweg
+971. gewurztraminer grapillon feudo di san maurizio
+972. gewurztraminer grd cru brand dopff2017 c6
+973. gewurztraminer grossi laue
+974. gewurztraminer gruss
+975. gewurztraminer gt fruchtig
+976. gewurztraminer haguenau
+977. gewurztraminer hart cuvee caroline 2015 domaine schoffit ml 750 cod bpa82
+978. gewurztraminer hauller alsace
+979. gewurztraminer hautnah mitterberg igt
+980. gewurztraminer heimbourg
+981. gewurztraminer heimbourg
+982. gewurztraminer hengst 2022 alsace grand cru andre ehrhart
+983. gewurztraminer hengst grand cru 1997
+984. gewurztraminer hengst grand cru 2018
+985. gewurztraminer hengst grand cru 2020
+986. gewurztraminer hengst grand cru 2021
+987. gewurztraminer henri kieffer 2023 bl
+988. gewurztraminer henry fuchs alsazia
+989. gewurztraminer herrenweg de turckheim vieilles vignes 2008 domaine zindhumbrecht
+990. gewurztraminer heuben steinbach
+991. gewurztraminer hieronymus und alexander gutswein weingut rappenhof
+992. gewurztraminer hlun
+993. gewurztraminer hlun
+994. gewurztraminer hlun sandbichler
+995. gewurztraminer hlun sandbichler
+996. gewurztraminer hoffstatter
+997. gewurztraminer hofstatter kolbenhof
+998. gewurztraminer hofstatter kolbenhof
+999. gewurztraminer hohenstein dolomiti biologico baron longo
+1000. gewurztraminer hospice de colmar 2020

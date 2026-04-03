@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. domaine vincent latour jean latour labille meursault charmes 2020
+2. domaine vincent latour meursault 1er cru goutte dor 2021
+3. domaine vincent latour meursault charmes 1er cru 2021
+4. domaine vincent latour meursault charmes 2017
+5. domaine vincent latour meursault grand charrons 2018
+6. domaine vincent latour meursault perrieres 1er cru 2021
+7. domaine vincent ledy 2018 nuitssaintgeorges 1er cru les porets saintgeorges vielles vignes
+8. domaine vincent ledy 2022 choreylesbeaune les beaumonts
+9. domaine vincent ledy 2022 nuitssaintgeorges 1er cru les porets saintgeorges vielles vignes
+10. domaine vincent ledy choreylesbeaune les beaumonts
+11. domaine vincent ledy choreylesbeaune les beaumonts 2017
+12. domaine vincent ledy choreylesbeaune les beaumonts 2018
+13. domaine vincent ledy hautescotes de nuits la vacherotte 2017
+14. domaine vincent ledy les beaumonts choreylesbeaune 2018
+15. domaine vincent ledy nuitsstgeorges 1er vv les porets saintgeorges 2017
+16. domaine vincent ledy savignylesbeaune 2021
+17. domaine vincent ledy savignylesbeaune vieilles vignes 2019
+18. domaine vincent legou ladoix 2015
+19. domaine vincent legou ladoix rouge
+20. domaine vincent morgon charmes 2015
+21. domaine vincent paris cornas 2019
+22. domaine vincent paris cornas granit 30
+23. domaine vincent paris cornas granit 30
+24. domaine vincent paris cornas granit 30 2022
+25. domaine vincent paris cornas granit 30 rhone france
+26. domaine vincent paris cornas granit 30 rhone france 2021
+27. domaine vincent paris cornas granit 60 2011
+28. domaine vincent paris cornas granit 60 2021
+29. domaine vincent paris cornas granit 60 2022
+30. domaine vincent paris cornas granit 60 2022
+31. domaine vincent paris crozeshermitage
+32. domaine vincent paris granit 30 cornas
+33. domaine vincent paris granit 30 cornas 2010
+34. domaine vincent paris granit 30 cornas 2021 northern rhone france
+35. domaine vincent paris granit 60 cornas 2011
+36. domaine vincent paris granit 60 cornas rouge 2023
+37. domaine vincent paris granit 60 vieilles vignes cornas 2021
+38. domaine vincent paris granit blanc igp ardeche 2017
+39. domaine vincent paris granit blanc igp ardeche france 2021
+40. domaine vincent paris saint joseph
+41. domaine vincent paris saint joseph les cotes 2019
+42. domaine vincent paris selection syrah 2019
+43. domaine vincent paris st joseph 2019
+44. domaine vincent paris vdp syrah 2019
+45. domaine vincent paris vin de pays des collines rhodaniennes selection syrah
+46. domaine vincent pinard charlouise 2022
+47. domaine vincent pinard flores 2023
+48. domaine vincent pinard flores 2023
+49. domaine vincent pinard flores sancerre 2023
+50. domaine vincent pinard grand chemarin 2018
+51. domaine vincent pinard le chateau 2022
+52. domaine vincent pinard le chateau 2022
+53. domaine vincent pinard nuance 2023
+54. domaine vincent pinard petit chemarin 2018
+55. domaine vincent pinard sancerre blanc le petit chemarin 2019
+56. domaine vincent pinard sancerre charlouise 2022
+57. domaine vincent pinard sancerre charlouise rge 2021
+58. domaine vincent pinard sancerre charlouise rge 2022
+59. domaine vincent pinard sancerre chene marchand
+60. domaine vincent pinard sancerre chene marchand 2022
+61. domaine vincent pinard sancerre chene marchand 2023
+62. domaine vincent pinard sancerre chene marchand bl 2022
+63. domaine vincent pinard sancerre cuvee flores 2020
+64. domaine vincent pinard sancerre flores
+65. domaine vincent pinard sancerre flores 2022
+66. domaine vincent pinard sancerre flores 2024
+67. domaine vincent pinard sancerre flores bl 2024
+68. domaine vincent pinard sancerre grand chemarin 2022
+69. domaine vincent pinard sancerre grand chemarin bl 2018
+70. domaine vincent pinard sancerre grand chemarin bl 2022
+71. domaine vincent pinard sancerre grand chemarin bl 2023
+72. domaine vincent pinard sancerre harmonie 2022
+73. domaine vincent pinard sancerre le chateau 2022
+74. domaine vincent pinard sancerre nuance 2022
+75. domaine vincent pinard sancerre nuance bl 2022
+76. domaine vincent pinard sancerre nuance bl 2024
+77. domaine vincent pinard sancerre petit chemarin 2020
+78. domaine vincent pinard sancerre petit chemarin 2022
+79. domaine vincent pinard sancerre petit chemarin bl 2019
+80. domaine vincent pinard sancerre petit chemarin bl 2022
+81. domaine vincent pinard sancerre pinot noir 2022
+82. domaine vincent pinard sancerre rge 2023
+83. domaine vincent pinard sancerre rose 2022
+84. domaine vincent pinard sancerre vendanges entieres 2022
+85. domaine vincent pinard sancerre vendanges entieres rge 2022
+86. domaine vincent pouilly fuisse marie antoinette 2017
+87. domaine vincent pouilly fuisse marie antoinette 2019
+88. domaine vincent pouilly fume le clos 2018
+89. domaine vincent prunier auxey duresses 1er cru 2020
+90. domaine vincent prunier auxey duresses 1er cru 2020
+91. domaine vincent prunier bourgogne chardonnay
+92. domaine vincent prunier chassagne montrachet blanc 2022
+93. domaine vincent prunier chassagne montrachet rouge 2020
+94. domaine vincent prunier chassagnemontrachet 2022
+95. domaine vincent prunier chassagnemontrachet 2022
+96. domaine vincent prunier monthelie 1er cru les duresses rouge 2020
+97. domaine vincent prunier passetoutgrain bourgogne 2022
+98. domaine vincent prunier pernand vergelesses blanc 2022
+99. domaine vincent prunier saintromain 2022
+100. domaine vincent prunier saintromain 2022
+101. domaine vincent prunier volnay 1er cru 2020
+102. domaine vincent prunier volnay 1er cru robardelle rouge 2017
+103. domaine vincent prunier volnay 2020
+104. domaine vincent prunier volnay 2020
+105. domaine vincent saint veran chateau fuisse 2011
+106. domaine vincent saint veran chateau fuisse 2016
+107. domaine vincent saint veran chateau fuisse 2017
+108. domaine vincent saint veran chateau fuisse 2018
+109. domaine vincent sauvestre bourgogne white
+110. domaine vincent sophie chassagnemontrachet les embrazees 1er cru 2021
+111. domaine vincent sophie morey beaurepaire 2022
+112. domaine vincent sophie morey bourgogne chardonnay 2020
+113. domaine vincent sophie morey bourgogne pinot noir 2022
+114. domaine vincent sophie morey chassagnemontrachet vieilles vignes 2023
+115. domaine vincent sophie morey puligny montrachet 1er cru clos de la truffiere 2016
+116. domaine vincent sophie morey santenay blanc 1er cru beaurepaire 2021
+117. domaine vincent sophie morey santenay blanc les hates 2023
+118. domaine vincent sophie morey santenay les hates 2015
+119. domaine vincent sophie santenay passetemps 1er cru 2021
+120. domaine vincent stoeffler pinot blanc
+121. domaine vincent stoeffler pinot blanc
+122. domaine vincent stoeffler riesling tradition
+123. domaine vincent wengier chablis 1er cru vaillons 2022
+124. domaine vincent wengier chablis 1er cru vaillons 2022
+125. domaine vincent wengier chablis 1er cru vaillons 2022
+126. domaine vincent wengier chablis 1er cru vaillons 2023
+127. domaine vincent wengier chablis 2022
+128. domaine vincent wengier chablis 2022
+129. domaine vincent wengier chablis 2022
+130. domaine vincent wengier chablis 2024
+131. domaine vincent wengier petit chablis 2022
+132. domaine vincent wengier petit chablis 2023
+133. domaine vincent wengier petit chablis 2023
+134. domaine vincent wengier petit chablis 2023
+135. domaine vincey
+136. domaine vincey auge 2018
+137. domaine vincey auge 2020
+138. domaine vincey auge 2020
+139. domaine vincey auge 2021
+140. domaine vincey champage chemin de chalons mesnilsuroger blanc de blancs grand cru brut nature 2020
+141. domaine vincey champagne auge le mesnilsuroger blanc de blancs grand cru brut nature 2020
+142. domaine vincey champagne coin gris chardonnay doger blanc de blancs grand cru brut nature 2020
+143. domaine vincey champagne grand cru le grand jardin 2015
+144. domaine vincey champagne grand cru oger 2021
+145. domaine vincey champagne interlude chadonnay doger blanc de blancs grand cru brut nature 2021 base nv
+146. domaine vincey champagne le grand jardin chardonnay doger blanc de blancs grand cru brut nature 2020
+147. domaine vincey champagne oger grand cru interlude nv
+148. domaine vincey chemin de chalons 2018
+149. domaine vincey chemin de chalons 2020
+150. domaine vincey chemin de chalons 2020
+151. domaine vincey chemin de chalons 2020
+152. domaine vincey chemin de chalons 2021
+153. domaine vincey coin gris 2020
+154. domaine vincey coin gris 2021
+155. domaine vincey coteaux blanc 2020
+156. domaine vincey endogene b19
+157. domaine vincey interlude
+158. domaine vincey interlude chardonnay grand cru oger future arrival
+159. domaine vincey interlude iv
+160. domaine vincey interlude nv v21
+161. domaine vincey la premiere 2014
+162. domaine vincey la premiere 2014
+163. domaine vincey la premiere 2014
+164. domaine vincey la premiere 2015
+165. domaine vincey la premiere 2015
+166. domaine vincey la premiere 2015
+167. domaine vincey la premiere 2015 magnum
+168. domaine vincey le grand jardin 2014
+169. domaine vincey le grand jardin 2014
+170. domaine vincey le grand jardin 2015
+171. domaine vincey le grand jardin 2015
+172. domaine vincey le grand jardin 2019
+173. domaine vincey le grand jardin 2019
+174. domaine vincey le grand jardin 2020
+175. domaine vincey le grand jardin 2020
+176. domaine vincey le grand jardin 2021
+177. domaine vincey le grand jardin oger grand cru brut nature 2015
+178. domaine vincey le mesnil sur oger 2019
+179. domaine vincey le mesnil sur oger 2019
+180. domaine vincey les vignes de germinon 2021
+181. domaine vincey lieudit auge 2020
+182. domaine vincey lieudit auge 2020
+183. domaine vincey lieudit chemin de chalons 2020
+184. domaine vincey lieudit chemin de chalons 2020
+185. domaine vincey lieudit coin gris 2020
+186. domaine vincey lieudit coin gris 2020
+187. domaine vincey lieudit le grand jardin 2020
+188. domaine vincey lieudit le grand jardin 2020
+189. domaine vincey oger 2017
+190. domaine vincey oger 2017
+191. domaine vincey oger 2018
+192. domaine vincey oger 2019
+193. domaine vincey oger 2019
+194. domaine vincey oger 2019
+195. domaine vincey oger 2020
+196. domaine vincey oger 2020
+197. domaine vincey oger 2020
+198. domaine vincey oger 2020
+199. domaine vincey oger 2021
+200. domaine vincey oger 2021
+201. domaine vincey oger 2021
+202. domaine vincey oger 2021 mathusalem
+203. domaine vincey oger blanc de blancs grand cru brut nature 2020
+204. domaine vincey oger grand cru
+205. domaine vincey oger grand cru 2017
+206. domaine vincey oger grand cru extra brut 2017
+207. domaine vincey smagning i champagneklderen torsdag den 15 januar kl 1900
+208. domaine vinci coste 2023
+209. domaine vinci maquis 2008
+210. domaine vindiou les grands champs saintjoseph
+211. domaine vindiou tourbillon de la vie 2022
+212. domaine vinent charleux
+213. domaine vinet clos de la houssaie muscadet 2018
+214. domaine vinet maleco brut
+215. domaine vinoceros les eternels 1985
+216. domaine vinoceros mac a bu 2024
+217. domaine vinoceros muscat 2024
+218. domaine vinoceros vinocblanc 2024
+219. domaine vinoceros vinocrouge 2021
+220. domaine violotguillemard les maisondieu bourgogne
+221. domaine violotguillemard pinot beurrot bourgogne
+222. domaine viranel aromes sauvages 2020
+223. domaine viranel aromes sauvages alicante bouschet 2017
+224. domaine viranel aromes sauvages alicantebouschet pays doc 2020 bottle
+225. domaine viranel cessenon 2015 trilogie
+226. domaine viranel rendezvous cabernet sauvignon cabernet franc 2014
+227. domaine viranel trilogie rouge 2018
+228. domaine virely rougeot meursault 2023
+229. domaine viret colonnades 2011
+230. domaine viret cosmoculture wines mixed case
+231. domaine viret dolia grande jarre gsm 2018 vin de france
+232. domaine viret dolia grande jarre gsm 2018 vin de france
+233. domaine viret dolia grande jarre gsm 2018 vin de france
+234. domaine viret emergence
+235. domaine viret energie 2021
+236. domaine viret energie red blend
+237. domaine viret energie vin de france rouge 2021
+238. domaine viret la coudee dor 2023
+239. domaine viret mareotis 2011
+240. domaine viret renaissance
+241. domaine viret renaissance
+242. domaine viret renaissance 2013
+243. domaine viret renaissance 2017
+244. domaine viret renaissance 2019
+245. domaine viret renaissance vdf 2016
+246. domaine viret solstice 2014
+247. domaine viret solstice blanc dry 2021
+248. domaine viret sylibre vdf 2018
+249. domaine viret vin de france rouge renaissance 2019
+250. domaine virgile joly saturne rouge 2019
+251. domaine virgile joly saturne rouge 2019
+252. domaine virginie thunevin 2018
+253. domaine virginie thunevin blanc 2023
+254. domaine virginie thunevin blanc 2023
+255. domaine virolys vire clesse blanc 2023
+256. domaine vismino grand saperavi 2021 aop napareuli rot 2021
+257. domaine vismino grand saperavi 2021 aop napareuli tinto 2021
+258. domaine vismino grand saperavi 2021 pdo napareuli rouge 2021
+259. domaine vismino grand saperavi 2021 pdo napareuli rouge 2021
+260. domaine vismino grand saperavi 2021 pdo napareuli rouge 2021
+261. domaine vismino khikhvi blanc 2021 pdo napareuli blanc 2021
+262. domaine vismino khikhvi blanc 2021 pdo napareuli blanc 2021
+263. domaine vismino khikhvi blanc 2021 pdo napareuli blanc 2021
+264. domaine vismino khikhvi branco 2021 aop artana branco 2021
+265. domaine vismino khikhvi wei 2021 aop artana wei 2021
+266. domaine vitallis macon fuisse 2023
+267. domaine vitallis pouilly fuisse 1er cru pouilly 2022
+268. domaine viticole de la ville de colmar cremant dalsace chardonnay nv
+269. domaine viticole de la ville de colmar gewurztraminer
+270. domaine viticole de la ville de colmar gewurztraminer 2023
+271. domaine viticole de la ville de colmar muscat 2024
+272. domaine viticole de la ville de colmar pinot blanc 2023
+273. domaine viticole de la ville de colmar pinot gris
+274. domaine viticole de la ville de colmar pinot gris 2023
+275. domaine viticole de la ville de colmar riesling 2023
+276. domaine voarick aop givry blanc 2018
+277. domaine voarick aop givry blanc 2018
+278. domaine voarick aop givry blanc 2018
+279. domaine voarick aop givry blanc 2018
+280. domaine voarick givry rouge 2020
+281. domaine vocoret 1er cru vaillon chablis 2020
+282. domaine vocoret 2021 chablis le clos grand cru
+283. domaine vocoret 2023 chablis
+284. domaine vocoret 2023 vocoret chablis vaillons 2023
+285. domaine vocoret and fils 2022 chablis
+286. domaine vocoret blanchot chablis grand cru 2020
+287. domaine vocoret chablis
+288. domaine vocoret chablis 2019
+289. domaine vocoret chablis les bas de chapelot 2014
+290. domaine vocoret chablis les vaillons 2023
+291. domaine vocoret chablis les vaillons 2023
+292. domaine vocoret chablis les vaillons 2023
+293. domaine vocoret et fils 2023 chablis 1er cru montee de tonnerre 2023
+294. domaine vocoret et fils 2023 les clos
+295. domaine vocoret et fils 2023 vocoret chablis 2023
+296. domaine vocoret et fils blanchot chablis grand cru 2022
+297. domaine vocoret et fils chablis 1er cru cote de lechet 2024 125 ck
+298. domaine vocoret et fils chablis 1er cru forest vieilles vignes 2023
+299. domaine vocoret et fils chablis 1er cru forets 2024 125 ck
+300. domaine vocoret et fils chablis 1er cru montee de tonnerre 2024 125 ck
+301. domaine vocoret et fils chablis 1er cru vaillons 2017
+302. domaine vocoret et fils chablis 1er cru vaillons 2024 125 ck
+303. domaine vocoret et fils chablis 1er cru vaillons vieilles vignes 2022
+304. domaine vocoret et fils chablis 1er cru vaillons vieilles vignes 2023
+305. domaine vocoret et fils chablis 2022
+306. domaine vocoret et fils chablis 2023
+307. domaine vocoret et fils chablis 2024 12 ck
+308. domaine vocoret et fils chablis grand cru blanchot 2020
+309. domaine vocoret et fils chablis grand cru blanchot 2024 125 ck
+310. domaine vocoret et fils chablis grand cru les clos 2024
+311. domaine vocoret et fils chablis grand cru les clos 2024 125 ck
+312. domaine vocoret et fils chablis les forets vieilles vignes 2018
+313. domaine vocoret et fils chablis vieilles vignes 2024 125 ck
+314. domaine vocoret et fils les forets chablis premier cru 2019
+315. domaine vocoret et fils vaillons chablis premier cru
+316. domaine vocoret et fils valmur chablis grand cru 2022
+317. domaine vocoret et fils vaudesir chablis grand cru 2022
+318. domaine vocoret fils chablis
+319. domaine vocoret fils chablis
+320. domaine vocoret fils chablis
+321. domaine vocoret fils chablis
+322. domaine vocoret fils chablis 1er cru les montmains 13vol 2022
+323. domaine vocoret fils chablis 1er cru les vaillons 13vol 2021
+324. domaine vocoret fils chablis 2023
+325. domaine vocoret fils chablis 2023
+326. domaine vocoret fils chablis blanchot grand cru
+327. domaine vocoret fils chablis foret premier cru 2022
+328. domaine vocoret fils chablis grand cru blanchot 2023
+329. domaine vocoret fils chablis grand cru les clos 13vol 2022
+330. domaine vocoret fils chablis grand cru les clos 2022
+331. domaine vocoret fils chablis les clos grand cru 2023
+332. domaine vocoret fils chablis montee de tonnerre premier cru
+333. domaine vocoret fils chablis montee de tonnerre premier cru 2023
+334. domaine vocoret fils chablis premier cru vaillon
+335. domaine vocoret fils chablis vaillons premier cru
+336. domaine vocoret fils chablis vieilles vignes 125vol 2022
+337. domaine vocoret fils chablis vv 2022
+338. domaine vocoret fils les forets 1er cru vv chablis 2017
+339. domaine vocoret fils montee de tonnerre 1er cru chablis 2020
+340. domaine vocoret fils premier cru vaillons chablis 2020
+341. domaine vocoret fils vaillons chablis premier cru 2024
+342. domaine voiret beaune 1er cru pertuisots
+343. domaine voiret beaune 1er cru pertuisots
+344. domaine voirinjumel blanc de blancs grand cru
+345. domaine voirinjumel blanc de blancs grand cru
+346. domaine voirinjumel blanc de blancs grand cru 12 fl
+347. domaine voirinjumel blanc de blancs grand cru jeroboam
+348. domaine voirinjumel cuvee 555 grand cru
+349. domaine voirinjumel cuvee 555 grand cru
+350. domaine voirinjumel rose blanc de noirs
+351. domaine voirinjumel vintage 2014 blanc de blancs grand cru
+352. domaine voirinjumel vintage 2014 blanc de blancs grand cru
+353. domaine voirinjumel zero blanc de blancs
+354. domaine vouette et sorbee extra brut blanc dargile lv19
+355. domaine vouette et sorbee fidele brut nature 2017
+356. domaine vouette et sorbee fidele lv20
+357. domaine vouette et sorbee saignee de sorbee lv19
+358. domaine vouette et sorbee texture brut nature lv18
+359. domaine vougeraie vosne romanee aux champs perdrix
+360. domaine vrignaud chablis
+361. domaine vrignaud chablis
+362. domaine vrignaud chablis
+363. domaine vrignaud chablis 1er cru fourchaume
+364. domaine vrignaud chablis 1er cru fourchaume 2021
+365. domaine vrignaud chablis 1er cru fourchaume les cotes de fontenay
+366. domaine vrignaud chablis 1er cru fourchaume les vaupulans
+367. domaine vrignaud chablis 1er cru mont de milieu
+368. domaine vrignaud chablis 2022
+369. domaine vrignaud chablis les champreaux
+370. domaine vrignaud fourchaume chablis 1er cru 2022
+371. domaine vrignaud petit chablis
+372. domaine vuillemez macon villages 2022
+373. domaine vuillemez pere et fils maconvillages 2024
+374. domaine vullien methode traditionnelle brut
+375. domaine w fevre chablis beauroy 2022
+376. domaine w fevre chablis bougros
+377. domaine w fevre chablis bougros 2007
+378. domaine w fevre chablis fourchaume 2022
+379. domaine wach cremant dalsace brut aoc 2020 107 z
+380. domaine wachau
+381. domaine wachau 2018 riesling federspiel terrassen
+382. domaine wachau 2018 riesling federspiel terrassen
+383. domaine wachau 2021 bruck riesling federspiel spitz
+384. domaine wachau 2023
+385. domaine wachau federspiel gruner veltliner 2023
+386. domaine wachau federspiel terrassen gruner veltliner
+387. domaine wachau gruner veltliner 2023
+388. domaine wachau gruner veltliner federspiel terrassen
+389. domaine wachau gruner veltliner federspiel terrassen
+390. domaine wachau gruner veltliner secection
+391. domaine wachau gruner veltliner selection single bottle
+392. domaine wachau gruner veltliner smaragd ried achleiten 2019
+393. domaine wachau gruner vetliner
+394. domaine wardy
+395. domaine wardy arak
+396. domaine wardy arak
+397. domaine wardy bekaa valley 2019 wit
+398. domaine wardy bekaa valley red 2020
+399. domaine wardy bekaa valley rose 2022
+400. domaine wardy bekaa valley white 2023
+401. domaine wardy beqaa valley red 2018 lebanon
+402. domaine wardy cabernet sauvignon 2019
+403. domaine wardy chardonnay 2020
+404. domaine wardy chateau les cedres
+405. domaine wardy chateau les cedres 2014
+406. domaine wardy chateau les cedres 2014
+407. domaine wardy chateau les cedres 2015
+408. domaine wardy cinsault 2021
+409. domaine wardy clos blanc
+410. domaine wardy clos blanc bekaa liban blanc 2017
+411. domaine wardy clos blanc bekaa liban blanc 2017
+412. domaine wardy clos blanc bekaa liban blanc 2017
+413. domaine wardy clos blanc bekaa libanon wei 2017
+414. domaine wardy clos branco bekaa libano branco 2017
+415. domaine wardy grenache 2022
+416. domaine wardy merlot 2019
+417. domaine wardy obeidi 2017
+418. domaine wardy obeidi 2017
+419. domaine wardy obeidi 2018
+420. domaine wardy perle du chateau
+421. domaine wardy perle du chateau 2022
+422. domaine wardy private selection white 2017
+423. domaine wardy sauvignon blanc 2021
+424. domaine wardy syrah 2019
+425. domaine wardy viognier 2018
+426. domaine wassler alsace riesling grand cru frankstein
+427. domaine wassler gewurztraminer 2019
+428. domaine wassler muscat 2021
+429. domaine wassler pinot blanc 2020
+430. domaine wassler pinot gris 2020
+431. domaine wassler pinot noir 2021
+432. domaine wassler riesling 2020
+433. domaine wassler sylvaner 2020
+434. domaine watanabe vintage 2017
+435. domaine watanabe vintage 2018
+436. domaine watanabe vintage 2019
+437. domaine watanabe vintage 2020
+438. domaine watanabe vintage 2021
+439. domaine watson irancy 2022
+440. domaine watson irancy 2022
+441. domaine weinbach
+442. domaine weinbach alsace clos des capucins pinot gris 2021
+443. domaine weinbach alsace colette riesling 2021
+444. domaine weinbach alsace colette riesling 2022
+445. domaine weinbach alsace france pinot blanc 2023
+446. domaine weinbach alsace gewurztraminer les treilles du loup 2020
+447. domaine weinbach alsace grand cru schlossberg cuvee sainte catherine riesling 2022
+448. domaine weinbach alsace grand cru schlossberg riesling 2022
+449. domaine weinbach alsace les treilles du loup gewurztraminer 2021
+450. domaine weinbach alsace les treilles du loup gewurztraminer 2021
+451. domaine weinbach alsace muscat 2019
+452. domaine weinbach alsace mvo maceration vogelgarten o intrant 2021
+453. domaine weinbach alsace pinot gris clos des capucins 2022
+454. domaine weinbach alsace riesling 2019
+455. domaine weinbach alsace riesling 2022
+456. domaine weinbach alsace riesling cuvee colette 2020
+457. domaine weinbach alsace riesling cuvee colette 2021
+458. domaine weinbach alsace riesling cuvee theo 2018
+459. domaine weinbach alsace riesling cuvee theo 2021
+460. domaine weinbach alsace sylvaner 2021
+461. domaine weinbach alsace theo riesling 2021
+462. domaine weinbach alsace theo riesling 2021
+463. domaine weinbach alsace theo riesling 2022
+464. domaine weinbach altenbourg alsace aoc riesling
+465. domaine weinbach altenbourg pinot gris vendanges tardives 2019
+466. domaine weinbach altenbourg riesling alsace 2023 white semidry 135 075
+467. domaine weinbach clos des capucins cuvee sainte catherine alsace pinot gris 2020
+468. domaine weinbach clos des capucins cuvee theo riesling alsace 2020
+469. domaine weinbach clos des capucins pinot gris 2022
+470. domaine weinbach clos des capucins pinot gris alsace
+471. domaine weinbach clos des capucins pinot gris alsacia bot
+472. domaine weinbach clos des capucins pinot noir 2023
+473. domaine weinbach colette riesling
+474. domaine weinbach cuvee colette alsace riesling
+475. domaine weinbach cuvee colette riesling 2022
+476. domaine weinbach cuvee colette riesling alsacia bot
+477. domaine weinbach cuvee laurence gewurztraminer
+478. domaine weinbach cuvee laurence gewurztraminer
+479. domaine weinbach cuvee saint catherine pinot gris 2020
+480. domaine weinbach cuvee sainte catherine pinot gris 2020
+481. domaine weinbach cuvee theo alsace riesling
+482. domaine weinbach cuvee theo gewurtzraminer vin dalsace
+483. domaine weinbach cuvee theo riesling alsacia bot
+484. domaine weinbach gewurtztraminer grand cru mambourg vendagnes tardives
+485. domaine weinbach gewurztraminer
+486. domaine weinbach gewurztraminer altenbourg
+487. domaine weinbach gewurztraminer altenbourg 2022
+488. domaine weinbach gewurztraminer altenbourg alsace france
+489. domaine weinbach gewurztraminer cuvee laurence
+490. domaine weinbach gewurztraminer cuvee laurence
+491. domaine weinbach gewurztraminer cuvee laurence
+492. domaine weinbach gewurztraminer cuvee laurence 2020
+493. domaine weinbach gewurztraminer cuvee laurence alsace 2019
+494. domaine weinbach gewurztraminer cuvee theo
+495. domaine weinbach gewurztraminer furstentum grand cru
+496. domaine weinbach gewurztraminer furstentum grand cru
+497. domaine weinbach gewurztraminer furstentum grand gru alsace france
+498. domaine weinbach gewurztraminer les treilles du loup
+499. domaine weinbach gewurztraminer les treilles du loup
+500. domaine weinbach gewurztraminer les treilles du loup 2020
+501. domaine weinbach gewurztraminer les treilles du loup 2020
+502. domaine weinbach gewurztraminer les treilles du loup 2022
+503. domaine weinbach gewurztraminer les treilles du loup 2023
+504. domaine weinbach gewurztraminer les treilles du loup alsace 2022
+505. domaine weinbach gewurztraminer reserve 2015
+506. domaine weinbach les caracoles pinot gris 2023
+507. domaine weinbach les treilles du loup gewurztraminer
+508. domaine weinbach les treilles du loup gewurztraminer alsacia bot
+509. domaine weinbach les vignes du precheur
+510. domaine weinbach les vignes du precheur
+511. domaine weinbach les vignes du precheur
+512. domaine weinbach les vignes du precheur alsace
+513. domaine weinbach les vignes du precheur vin dalsace 2022
+514. domaine weinbach les vignes du precheur white alsace 2022
+515. domaine weinbach les vignes du precheurs 2023
+516. domaine weinbach mfo maceration furstentum intrant 2023
+517. domaine weinbach muscat alsace aoc
+518. domaine weinbach muscat reserve 2018
+519. domaine weinbach muscat reserve 2022
+520. domaine weinbach muscat reserve 2022
+521. domaine weinbach mvo maceration vogelgarten o intrant alsace france 2021
+522. domaine weinbach pinot blanc
+523. domaine weinbach pinot blanc
+524. domaine weinbach pinot blanc 2023
+525. domaine weinbach pinot blanc alsace aoc
+526. domaine weinbach pinot blanc reserve
+527. domaine weinbach pinot blanc reserve
+528. domaine weinbach pinot blanc reserve 2022
+529. domaine weinbach pinot gris altenbourg
+530. domaine weinbach pinot gris altenbourg 2022
+531. domaine weinbach pinot gris altenbourg 2023
+532. domaine weinbach pinot gris clos des capucins
+533. domaine weinbach pinot gris clos des capucins
+534. domaine weinbach pinot gris clos des capucins
+535. domaine weinbach pinot gris clos des capucins 2022 white semidry 135 075
+536. domaine weinbach pinot gris clos des capucins alsace aoc
+537. domaine weinbach pinot gris clos des capucins alsace france 2019
+538. domaine weinbach pinot gris clos des capucins alsace france 2019
+539. domaine weinbach pinot gris clos des capucins alsacia francia 2019
+540. domaine weinbach pinot gris clos des capucins cuvee sainte catherine 2019
+541. domaine weinbach pinot gris cuvee sainte catherine
+542. domaine weinbach pinot gris cuvee sainte catherine
+543. domaine weinbach pinot gris cuvee ste catherine
+544. domaine weinbach pinot gris cuvee ste catherine 2019
+545. domaine weinbach pinot gris cuvee ste catherine 2020
+546. domaine weinbach pinot gris furstentum grand cru
+547. domaine weinbach pinot gris les caracoles
+548. domaine weinbach pinot gris les caracoles 2021 wei420621 2021
+549. domaine weinbach pinot noir altenbourg
+550. domaine weinbach pinot noir clos des capucins
+551. domaine weinbach reserve pinot blanc 2021
+552. domaine weinbach riesling
+553. domaine weinbach riesling
+554. domaine weinbach riesling 2021
+555. domaine weinbach riesling 2022
+556. domaine weinbach riesling 2023
+557. domaine weinbach riesling alsace grand cru schlossberg 2023
+558. domaine weinbach riesling alsacia bot
+559. domaine weinbach riesling altenbourg 2023
+560. domaine weinbach riesling clos des capucins cuvee theo 2020
+561. domaine weinbach riesling colette
+562. domaine weinbach riesling cuvee colette
+563. domaine weinbach riesling cuvee colette
+564. domaine weinbach riesling cuvee colette 2017
+565. domaine weinbach riesling cuvee colette 2018
+566. domaine weinbach riesling cuvee colette 2020
+567. domaine weinbach riesling cuvee colette 2021
+568. domaine weinbach riesling cuvee colette 2022
+569. domaine weinbach riesling cuvee laurence vin dalsace 2013
+570. domaine weinbach riesling cuvee sainte catherine schlossberg grand cru
+571. domaine weinbach riesling cuvee ste catherine
+572. domaine weinbach riesling cuvee ste catherine 2019
+573. domaine weinbach riesling cuvee theo
+574. domaine weinbach riesling cuvee theo
+575. domaine weinbach riesling cuvee theo 2021
+576. domaine weinbach riesling cuvee theo 2021
+577. domaine weinbach riesling cuvee theo alsace 2016
+578. domaine weinbach riesling cuvee theo alsace 2022
+579. domaine weinbach riesling grand cru schlossberg
+580. domaine weinbach riesling grand cru schlossberg
+581. domaine weinbach riesling grand cru schlossberg 2020
+582. domaine weinbach riesling grand cru schlossberg 2020
+583. domaine weinbach riesling grand cru schlossberg inedit
+584. domaine weinbach riesling reserve
+585. domaine weinbach riesling schlossberg
+586. domaine weinbach riesling schlossberg 2018
+587. domaine weinbach riesling schlossberg 2019
+588. domaine weinbach riesling schlossberg cuvee sainte catherine alsace grand cru
+589. domaine weinbach riesling schlossberg cuvee ste catherine 2016
+590. domaine weinbach riesling schlossberg grand cru cuvee ste catherine 2019
+591. domaine weinbach riesling schlossberg ste catherine grand cru
+592. domaine weinbach riesling theo
+593. domaine weinbach s pinot noir 2022
+594. domaine weinbach schlossberg gran cru riesling alsacia bot
+595. domaine weinbach schlossberg grand cru riesling
+596. domaine weinbach schlossberg grand cru riesling
+597. domaine weinbach schlossberg grand cru riesling 2022
+598. domaine weinbach schlossberg grandcru alsace riesling
+599. domaine weinbach schlossberg riesling grand cru
+600. domaine weinbach schlossberg sous la foret alsace grand cru france
+601. domaine weinbach sylvaner 2020 famille faller domaine weinbach
+602. domaine weinbach sylvaner 2023
+603. domaine weinbach sylvaner 2023
+604. domaine weinbach sylvaner alsace 2022
+605. domaine weinbach sylvaner alsace aoc
+606. domaine weinbach theo riesling
+607. domaine weinbach vin dalsace les vignes du precheur 2021
+608. domaine weinbach vin dalsace pinot blanc 2021
+609. domaine wengier bourgogne pinot noir aop bourgogne rouge 2022
+610. domaine wengier bourgogne pinot noir aop bourgogne rouge 2022
+611. domaine wengier bourgogne pinot noir aop bourgogne rouge 2022
+612. domaine wengier bourgogne pinot noir aop bourgogne tinto 2022
+613. domaine wengier burgunder pinot noir aop burgunder rot 2022
+614. domaine white tropez rose 2023
+615. domaine wicky chardonnay 2018
+616. domaine wicky jurassique jura orange
+617. domaine wicky macvin du jura
+618. domaine wicky petillant naturel
+619. domaine wicky rouge
+620. domaine wilfrid rousse les galuches chinon rouge 2021
+621. domaine wilfried cairanne aoc 2018
+622. domaine wilfried laffable cotes du rhone 2022
+623. domaine wilfried les paradis perd
+624. domaine wilfried les paradis perdus paradise lost 2020
+625. domaine wilfried les paradis perdus vdf 2020
+626. domaine wilfried nara vdf 2023
+627. domaine wilfried rasteau aoc 2020
+628. domaine wilfried vin de copains vdf 2022
+629. domaine william chase provence blanc 2018 provence
+630. domaine william chase provence rose 2018 provence
+631. domaine william fevre 1er cru 2021 journey 6 pack set france
+632. domaine william fevre 1er cru montee de tonnerre 2022 chablis
+633. domaine william fevre 1er cru montee de tonnerre 2022 chablis
+634. domaine william fevre 1er cru montee de tonnerre 2022 chablis
+635. domaine william fevre 2022 chablis
+636. domaine william fevre beauroy 2024 chablis 1er cru
+637. domaine william fevre beauroy 2024 chablis 1er cru
+638. domaine william fevre beauroy 2024 chablis 1er cru
+639. domaine william fevre beauroy 2024 chablis 1er cru
+640. domaine william fevre beauroy premier cru 2022
+641. domaine william fevre bougros 2024 chablis grand cru
+642. domaine william fevre bougros 2024 chablis grand cru
+643. domaine william fevre bougros 2024 chablis grand cru
+644. domaine william fevre bougros 2024 chablis grand cru
+645. domaine william fevre bougros chablis grand cru bourgogne 2017
+646. domaine william fevre bougros cote bougerots chablis grand cru 2005
+647. domaine william fevre bougros cote bouguerots 2024 chablis grand cru
+648. domaine william fevre bougros cote bouguerots 2024 chablis grand cru
+649. domaine william fevre bougros cote bouguerots 2024 chablis grand cru
+650. domaine william fevre bougros cote bouguerots 2024 chablis grand cru
+651. domaine william fevre bougros cote de bouguerots grand cru 2015
+652. domaine william fevre bougros cote de bouguerots grand cru 2021
+653. domaine william fevre bougros domaine grand cru 2020
+654. domaine william fevre chablis
+655. domaine william fevre chablis
+656. domaine william fevre chablis
+657. domaine william fevre chablis
+658. domaine william fevre chablis
+659. domaine william fevre chablis
+660. domaine william fevre chablis 1 er cru montee de tonnerre 2019
+661. domaine william fevre chablis 1er cru beauroy 2020
+662. domaine william fevre chablis 1er cru beauroy 2021
+663. domaine william fevre chablis 1er cru beauroy 2022
+664. domaine william fevre chablis 1er cru fourchaume
+665. domaine william fevre chablis 1er cru fourchaume 2020
+666. domaine william fevre chablis 1er cru montee de tonnerre
+667. domaine william fevre chablis 1er cru montee de tonnerre 2018
+668. domaine william fevre chablis 1er cru montee de tonnerre 2018
+669. domaine william fevre chablis 1er cru montee de tonnerre 2018
+670. domaine william fevre chablis 1er cru montee de tonnerre 2019
+671. domaine william fevre chablis 1er cru montee de tonnerre 2023
+672. domaine william fevre chablis 1er cru montee de tonnerre 2023
+673. domaine william fevre chablis 1er cru montee de tonnerre 2023
+674. domaine william fevre chablis 1er cru montmains 2020
+675. domaine william fevre chablis 1er cru montmains 2021
+676. domaine william fevre chablis 1er cru montmains 2021 rp 91 allen meadows 9193
+677. domaine william fevre chablis 1er cru vaillons
+678. domaine william fevre chablis 1er cru vaillons 2018
+679. domaine william fevre chablis 1er cru vaillons 2021
+680. domaine william fevre chablis 1er cru vaillons 2021 rp 92 allen meadows 9193
+681. domaine william fevre chablis 1er cru vaillons 2023
+682. domaine william fevre chablis 1er cru vaudesir domaine
+683. domaine william fevre chablis 1er cru vaulorent 2021
+684. domaine william fevre chablis 2015
+685. domaine william fevre chablis 2018
+686. domaine william fevre chablis 2018 vinous 88
+687. domaine william fevre chablis 2019
+688. domaine william fevre chablis 2019
+689. domaine william fevre chablis 2020
+690. domaine william fevre chablis 2022
+691. domaine william fevre chablis 2022
+692. domaine william fevre chablis 2022
+693. domaine william fevre chablis 2022
+694. domaine william fevre chablis 2022
+695. domaine william fevre chablis 2022
+696. domaine william fevre chablis 2022
+697. domaine william fevre chablis 2022
+698. domaine william fevre chablis 2023
+699. domaine william fevre chablis 2023
+700. domaine william fevre chablis 2023
+701. domaine william fevre chablis 2023 375mls
+702. domaine william fevre chablis ac
+703. domaine william fevre chablis ac
+704. domaine william fevre chablis beauroy premier cru 2021
+705. domaine william fevre chablis beauroy premier cru 2022
+706. domaine william fevre chablis bougros
+707. domaine william fevre chablis bougros cote bouguerots grand cru 2022
+708. domaine william fevre chablis bougros cote de bouguerots grand cru 2019 france
+709. domaine william fevre chablis clos
+710. domaine william fevre chablis fourchaume premier cru 2022
+711. domaine william fevre chablis grand cru 2021 les preuses
+712. domaine william fevre chablis grand cru bougros 2016
+713. domaine william fevre chablis grand cru bougros 2017
+714. domaine william fevre chablis grand cru bougros 2019
+715. domaine william fevre chablis grand cru bougros 2020
+716. domaine william fevre chablis grand cru bougros 2020
+717. domaine william fevre chablis grand cru bougros 2021
+718. domaine william fevre chablis grand cru bougros 2021
+719. domaine william fevre chablis grand cru bougros 2022
+720. domaine william fevre chablis grand cru bougros 2022
+721. domaine william fevre chablis grand cru bougros 2022
+722. domaine william fevre chablis grand cru bougros 2023
+723. domaine william fevre chablis grand cru bougros 2023
+724. domaine william fevre chablis grand cru bougros 2023
+725. domaine william fevre chablis grand cru bougros 2023 france
+726. domaine william fevre chablis grand cru bougros cote bouguerots
+727. domaine william fevre chablis grand cru bougros cote de bouguerots 2020 france
+728. domaine william fevre chablis grand cru bougros cote de bouguerots 2021 france
+729. domaine william fevre chablis grand cru bougros cote de bouguerots 2022
+730. domaine william fevre chablis grand cru le clos 2021 france
+731. domaine william fevre chablis grand cru les bougros
+732. domaine william fevre chablis grand cru les clos
+733. domaine william fevre chablis grand cru les clos 2007
+734. domaine william fevre chablis grand cru les clos 2018 france
+735. domaine william fevre chablis grand cru les clos 2019
+736. domaine william fevre chablis grand cru les clos 2020
+737. domaine william fevre chablis grand cru les clos 2020
+738. domaine william fevre chablis grand cru les clos 2021
+739. domaine william fevre chablis grand cru les clos 2022
+740. domaine william fevre chablis grand cru les clos 2022
+741. domaine william fevre chablis grand cru les clos 2022
+742. domaine william fevre chablis grand cru les clos 2023
+743. domaine william fevre chablis grand cru les clos 2023
+744. domaine william fevre chablis grand cru les clos 2023
+745. domaine william fevre chablis grand cru les preuses
+746. domaine william fevre chablis grand cru les preuses 2015
+747. domaine william fevre chablis grand cru les preuses 2016
+748. domaine william fevre chablis grand cru les preuses 2018
+749. domaine william fevre chablis grand cru les preuses 2020
+750. domaine william fevre chablis grand cru les preuses 2021
+751. domaine william fevre chablis grand cru les preuses 2021
+752. domaine william fevre chablis grand cru les preuses 2021 france
+753. domaine william fevre chablis grand cru les preuses 2022
+754. domaine william fevre chablis grand cru les preuses 2022
+755. domaine william fevre chablis grand cru les preuses 2022
+756. domaine william fevre chablis grand cru les preuses 2023
+757. domaine william fevre chablis grand cru les preuses 2023
+758. domaine william fevre chablis grand cru les preuses 2023
+759. domaine william fevre chablis grand cru vaillons 2021
+760. domaine william fevre chablis grand cru valmur
+761. domaine william fevre chablis grand cru valmur 2020
+762. domaine william fevre chablis grand cru valmur 2020
+763. domaine william fevre chablis grand cru valmur 2021
+764. domaine william fevre chablis grand cru valmur 2021
+765. domaine william fevre chablis grand cru valmur 2022
+766. domaine william fevre chablis grand cru valmur 2022
+767. domaine william fevre chablis grand cru valmur 2022
+768. domaine william fevre chablis grand cru vaudesir
+769. domaine william fevre chablis grand cru vaudesir
+770. domaine william fevre chablis grand cru vaudesir 2021
+771. domaine william fevre chablis grand cru vaudesir 2022
+772. domaine william fevre chablis grand cru vaudesir 2023
+773. domaine william fevre chablis le clos grand cru 2020 france
+774. domaine william fevre chablis les clos grand cru 2020
+775. domaine william fevre chablis les clos grand cru 2021
+776. domaine william fevre chablis les clos grand cru 2022
+777. domaine william fevre chablis les clos grand cru 2023
+778. domaine william fevre chablis les preuses grand cru 2019
+779. domaine william fevre chablis les preuses grand cru 2021
+780. domaine william fevre chablis les preuses grand cru 2021
+781. domaine william fevre chablis les preuses grand cru 2022
+782. domaine william fevre chablis magnum 2022
+783. domaine william fevre chablis montee de tonnere premier cru 2021
+784. domaine william fevre chablis montee de tonnere premier cru 2022
+785. domaine william fevre chablis montee de tonnerre 1er cru 2021
+786. domaine william fevre chablis montee tonnerre
+787. domaine william fevre chablis montmains
+788. domaine william fevre chablis montmains 1er cru 2023
+789. domaine william fevre chablis montmains premier cru 2019
+790. domaine william fevre chablis montmains premier cru 2022
+791. domaine william fevre chablis nondomaine 2018
+792. domaine william fevre chablis premier cru beauroy 2021
+793. domaine william fevre chablis premier cru beauroy 2023 france
+794. domaine william fevre chablis premier cru fourchaume
+795. domaine william fevre chablis premier cru fourchaume 2022
+796. domaine william fevre chablis premier cru fourchaume 2023 france
+797. domaine william fevre chablis premier cru les lys 2022
+798. domaine william fevre chablis premier cru montee de tonnerre 2022
+799. domaine william fevre chablis premier cru montee de tonnerre 2022
+800. domaine william fevre chablis premier cru montee de tonnerre 2023 france
+801. domaine william fevre chablis premier cru montmains 2022
+802. domaine william fevre chablis premier cru montmains 2023
+803. domaine william fevre chablis premier cru montmains 2023 france
+804. domaine william fevre chablis premier cru vaulorent 2022
+805. domaine william fevre chablis premier cru vaulorent 2023
+806. domaine william fevre chablis premier cru vaulorent 2023 france
+807. domaine william fevre chablis preuses
+808. domaine william fevre chablis sea edition 2020
+809. domaine william fevre chablis sea edition 2020
+810. domaine william fevre chablis sea edition 2020
+811. domaine william fevre chablis sea edition 2021
+812. domaine william fevre chablis vaillons
+813. domaine william fevre chablis vaillons premier cru 2021
+814. domaine william fevre chablis valmur
+815. domaine william fevre chablis valmur grand cru 2020
+816. domaine william fevre chablis valmur grand cru 2021
+817. domaine william fevre chablis valmur grand cru 2022
+818. domaine william fevre chablis vaudesir
+819. domaine william fevre chablis vaudesir grand cru 2022
+820. domaine william fevre chablis vaulorent premier cru 2022
+821. domaine william fevre chablis village 2020
+822. domaine william fevre chablis weiwein wein fruchtig trocken aoc frankreich
+823. domaine william fevre chablis weiwein wein fruchtig trocken aoc frankreich
+824. domaine william fevre chablis weiwein wein fruchtig trocken aoc frankreich
+825. domaine william fevre champs royaux chablis 2023
+826. domaine william fevre fourchaume premier cru nondomaine 2020
+827. domaine william fevre grand cru 2021 journey 6pk set france
+828. domaine william fevre grand cru les clos chablis 2018
+829. domaine william fevre grand cru les clos chablis 2022
+830. domaine william fevre grd cru les clos
+831. domaine william fevre les clos 2024 chablis grand cru
+832. domaine william fevre les clos 2024 chablis grand cru
+833. domaine william fevre les clos 2024 chablis grand cru
+834. domaine william fevre les clos 2024 chablis grand cru
+835. domaine william fevre les clos grand cru 2015
+836. domaine william fevre les clos grand cru 2020
+837. domaine william fevre les clos grand cru 2020
+838. domaine william fevre les clos grand cru 2021
+839. domaine william fevre les clos grand cru 2021
+840. domaine william fevre les lys premier cru 2022
+841. domaine william fevre les preuses 2024 chablis grand cru
+842. domaine william fevre les preuses 2024 chablis grand cru
+843. domaine william fevre les preuses 2024 chablis grand cru
+844. domaine william fevre les preuses 2024 chablis grand cru
+845. domaine william fevre les preuses grand cru 2019
+846. domaine william fevre les preuses grand cru 2021
+847. domaine william fevre les preuses grand cru 2021
+848. domaine william fevre mont de milieu premier cru 2018
+849. domaine william fevre montee de tonnerre 2024 chablis 1er cru
+850. domaine william fevre montee de tonnerre 2024 chablis 1er cru
+851. domaine william fevre montee de tonnerre 2024 chablis 1er cru
+852. domaine william fevre montee de tonnerre 2024 chablis 1er cru
+853. domaine william fevre montee de tonnerre premier cru 2021
+854. domaine william fevre montee tonnerre prem cru 2023
+855. domaine william fevre montmains 1er cru 2022
+856. domaine william fevre montmains 1er cru 2022
+857. domaine william fevre montmains 2023 chablis 1er cru
+858. domaine william fevre montmains 2023 chablis 1er cru
+859. domaine william fevre montmains 2023 chablis 1er cru
+860. domaine william fevre montmains 2024 chablis 1er cru
+861. domaine william fevre montmains 2024 chablis 1er cru
+862. domaine william fevre montmains 2024 chablis 1er cru
+863. domaine william fevre montmains 2024 chablis 1er cru
+864. domaine william fevre montmains chablis premier cru burgundy france 2021
+865. domaine william fevre montmains chablis premier cru burgundy france 2021
+866. domaine william fevre montmains premier cru 2020
+867. domaine william fevre montmains premier cru 2020
+868. domaine william fevre montmains premier cru 2021
+869. domaine william fevre montmains premier cru nondomaine 2020
+870. domaine william fevre petit chablis
+871. domaine william fevre petit chablis
+872. domaine william fevre petit chablis
+873. domaine william fevre petit chablis 2014 france
+874. domaine william fevre petit chablis 2015
+875. domaine william fevre petit chablis 2015
+876. domaine william fevre petit chablis 2016 france
+877. domaine william fevre petit chablis 2017 france
+878. domaine william fevre petit chablis 2018 france
+879. domaine william fevre petit chablis 2019 france
+880. domaine william fevre petit chablis 2020 france
+881. domaine william fevre petit chablis 2021
+882. domaine william fevre petit chablis 2022
+883. domaine william fevre petit chablis 2022
+884. domaine william fevre petit chablis 2023
+885. domaine william fevre petit chablis 2023
+886. domaine william fevre petit chablis 2023
+887. domaine william fevre petit chablis 2023
+888. domaine william fevre petit chablis 2024
+889. domaine william fevre petit chablis 2024
+890. domaine william fevre saintbris sauvignon blanc
+891. domaine william fevre saintbris sauvignon blanc 2021
+892. domaine william fevre saintbris screw cap 2020
+893. domaine william fevre vaillons 2024 chablis 1er cru
+894. domaine william fevre vaillons 2024 chablis 1er cru
+895. domaine william fevre vaillons 2024 chablis 1er cru
+896. domaine william fevre vaillons 2024 chablis 1er cru
+897. domaine william fevre vaillons premier cru 2020
+898. domaine william fevre vaillons premier cru 2020
+899. domaine william fevre vaillons premier cru 2021
+900. domaine william fevre vaillons premier cru 2022
+901. domaine william fevre valmur chablis grand cru bourgogne 2018
+902. domaine william fevre valmur grand cru 2020
+903. domaine william fevre vaudesir 2024 chablis grand cru
+904. domaine william fevre vaudesir 2024 chablis grand cru
+905. domaine william fevre vaudesir 2024 chablis grand cru
+906. domaine william fevre vaudesir 2024 chablis grand cru
+907. domaine william fevre vaudesir grand cru 2020
+908. domaine william fevre vaudesir grand cru nv
+909. domaine william fevre vaulorent 2024 chablis 1er cru
+910. domaine william fevre vaulorent 2024 chablis 1er cru
+911. domaine william fevre vaulorent 2024 chablis 1er cru
+912. domaine william fevre vaulorent 2024 chablis 1er cru
+913. domaine william fevre vaulorent premier cru 2021
+914. domaine william fevre vaulorent premier cru 2021
+915. domaine william fevre village chablis 2020
+916. domaine william kelley kelley moulin a vent 2022
+917. domaine willm blanc de blanc brut
+918. domaine wunsch et mann cremant dalsace brut tradition nv
+919. domaine xavier durand aloxe corton rouge le chaillots 2021
+920. domaine xavier durand aloxe corton rouge le chaillots 2021
+921. domaine xavier durand corton rognet grand cru 2019
+922. domaine xavier et agnes amirault cremant de loire les quarterons nv
+923. domaine xavier et agnes amirault stnicolasdebourgueil les quarterons 2019
+924. domaine xavier frissant aop touraine chenin des pierres 2023
+925. domaine xavier frissant aop touraineamboise cot des pierres 2023
+926. domaine xavier frissant igp val de loire les roses du clos 2024
+927. domaine xavier gerard collines rhodaniennes viognier 2018
+928. domaine xavier gerard condrieu arbuel 2023
+929. domaine xavier gerard condrieu la cote chatillon 2017
+930. domaine xavier gerard condrieu larbuel 2017
+931. domaine xavier gerard cote rotie la landonne 2015
+932. domaine xavier gerard cote rotie la landonne 2019
+933. domaine xavier gerard coterotie
+934. domaine xavier gerard coterotie 2013
+935. domaine xavier gerard coterotie 2016
+936. domaine xavier gerard coterotie 2017
+937. domaine xavier gerard coterotie 2021
+938. domaine xavier gerard coterotie le mollard
+939. domaine xavier gerard viognier igp collines rhodaniennes 2023
+940. domaine xavier monnot 2020 bourgogne rouge pinot noir
+941. domaine xavier monnot beaune 1er cru cent vignes 2021
+942. domaine xavier monnot beaune 1er cru les centvignes rouge 2021
+943. domaine xavier monnot beaune les toussaints rouge 2020
+944. domaine xavier monnot bourgogne blanc les grandes coutures 2022
+945. domaine xavier monnot bourgogne chardonnay les grand coutures 2023
+946. domaine xavier monnot bourgogne pinot noir
+947. domaine xavier monnot bourgogne pinot noir
+948. domaine xavier monnot bourgogne pinot noir 2023
+949. domaine xavier monnot corton charlemagne grand cru 2021
+950. domaine xavier monnot cortoncharlemagne grand cru 2021
+951. domaine xavier monnot maranges 1er cru clos de la fussiere 2021
+952. domaine xavier monnot maranges 1er cru clos de la fussiere monopole
+953. domaine xavier monnot maranges 1er cru clos de la fussiere monopole
+954. domaine xavier monnot meursault 1er cru les charmes 2021
+955. domaine xavier monnot meursault 1er cru les charmes 2022
+956. domaine xavier monnot meursault le limozin 2021
+957. domaine xavier monnot meursault le limozin 2022
+958. domaine xavier monnot meursault les chevalieres 2021 burgundy france
+959. domaine xavier monnot meursault les chevalieres 2022
+960. domaine xavier monnot meursault les chevaliers 2021
+961. domaine xavier monnot meursault les chevaliers 2022
+962. domaine xavier monnot monthelie blanc les duresses 2020
+963. domaine xavier monnot monthelie blanc les duresses 2022
+964. domaine xavier monnot pommard les vignots 2022 pommard france
+965. domaine xavier monnot puligny montrachet les folatieres 1er cru 2021
+966. domaine xavier monnot pulignymontrachet 1er cru les folatieres 2022
+967. domaine xavier monnot volnay 1er cru clos des chenes 2021
+968. domaine xavier monnot volnay 1er cru clos des chenes 2022
+969. domaine xavier monnot volnay clos chenes premier cru 2021
+970. domaine xavier monnot volnay clos des chenes 1er cru 2022 volnay france
+971. domaine xavier nicolas barbet moulin a vent
+972. domaine xavier vignon beaumesdevenise arcane letoile
+973. domaine xavier vignon chateauneufdupape
+974. domaine xavier vignon chateauneufdupape almutia blanc de noirs
+975. domaine xavier vignon chateauneufdupape cuvee anonyme
+976. domaine xavier vignon cotesdurhone arcane les amoureux
+977. domaine xavier vignon cotesdurhone sm
+978. domaine xavier vignon cotesdurhone vieilles vignes
+979. domaine xavier vignon vacqueyras
+980. domaine xavier vignon vin de france orange
+981. domaine y chave crozeshermitage bio
+982. domaine y clerget
+983. domaine y clerget bourgogne pinot noir red 2023
+984. domaine y clerget carelle sous la chapelle 1er cru volnay 2017
+985. domaine y clerget clos du verseuil volnay 1er cru 2022
+986. domaine y clerget clos vougeot grand cru 2021
+987. domaine y clerget les rugiens 1er cru pommard 2018
+988. domaine y clerget meursault premier cru les boucheres 2021
+989. domaine y clerget mitans 1er cru volnay 2017
+990. domaine y clerget pommard 1er cru les rugiens red 2019
+991. domaine y clerget pommard premier cru les rugiens 2021
+992. domaine y clerget volnay 1er cru carelle sous la chapelle red 2022
+993. domaine y clerget volnay 1er cru les santenots red 2022
+994. domaine y clerget volnay 2017
+995. domaine y clerget volnay 2021
+996. domaine y clerget volnay 2023
+997. domaine y clerget volnay burgundy 2022
+998. domaine y clerget volnay premier cru carelle sous la chapelle 2021
+999. domaine y clerget volnay premier cru clos du verseuil 2021
+1000. domaine y clerget volnay premier cru santenots 2021

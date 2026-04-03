@@ -1,0 +1,1071 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. "terre de schiste" muscadet sevre et maine sur lie aop bio 2023 domaine de la foliette
+2. "terre de silex" 2023 - vignobles berthier
+3. "terre de vertus" 1er cru brut nature 2015 larmandier-bernier
+4. "terre di faiano"- nero di troia igp organic - bio
+5. "terre di faiano"- primitivo salento igt organic - bio
+6. "terres de femmes" : castillon - crozes hermitage - sylvaner
+7. "testamatta 20 anni" rosso toscana igt 2019 normalflasche in ohk
+8. "thank you" a5 greeting card - 240 gsm premium paper
+9. "thank you" single bottle wine bag by true
+10. "thanks for sending the reserve to me in brisbane. packaged for the journey really well, and the hand numbered labels are strikingly sophisticated - much like the wine." -ian, brisbane australia
+11. "thanksgiving riches" gourmet gift basket
+12. "that summer feeling" led neonskilt
+13. "the beauj" carbonic sangiovese
+14. "the beauty of love" wine & truffle gift set
+15. "the boy" led neonskilt.
+16. "the cocktail codex: fundamentals - formulas - evolutions" by alex day, nick fauchald, & david kaplan
+17. "the dinner party" gift pack
+18. "the end" dessert wine
+19. "the environmentalist"
+20. "the fmc", chenin blanc, ken forrester wines
+21. "the great canadian moose" gift basket
+22. "the hermit" syrah 2018, 75cl
+23. "the knot" collection
+24. "the library" amarone della valpolicella classico 2012 - bertani
+25. "the med blend" - nv signor vino - italian field blend
+26. "the more the merrier" card
+27. "the ozzie"
+28. "the potential of alsatian wines" - 27th feb 2025
+29. "the power of nature" wheat grill bulgur, 500g
+30. "the real housered" red blend by: bravo
+31. "the real housewhite" sauvignon blanc by bravo
+32. "the trading post" bordeaux blend 2019
+33. "think about things" led neonskilt.
+34. "thinking of you" a5 greeting card - 240 gsm
+35. "this is not another lovely criolla" red wine 750ml
+36. "this is our happy place "led neonskilt.
+37. "this must be the place" led neonskilt.
+38. "three dreamers" europa rosso da uve appassite - farnese
+39. "three gardens" thereafter cab 750ml
+40. "through-pack" (12-pack)
+41. "through-pack" (6-pack)
+42. "tiara" led neonskilt - lagertømming!
+43. "tie the knot" leather tag earrings
+44. "tier for teens" teenager skincare gift set
+45. "tiger" led neonskilt.
+46. "timosha" sunflower halva, 200g
+47. "tipsy" scrubbly sponge
+48. "tired as a mother" stainless steel tumbler
+49. "tirsdagsbobler"
+50. "titolo" aglianico del vulture 2013 riserva magnum
+51. "titolo" aglianico del vulture docg 2018
+52. "titolo" aglianico del vulture magnum doc 2019
+53. "titolo" aglianico del vulture superiore 2017 magnum
+54. "titolo" aglianico del vulture superiore riserva 2017
+55. "titolo" pink edition rosato igp 2022
+56. "to the happy couple" card
+57. "toalett" led neonskilt. 14 farger
+58. "tognano" riserva fiano di avellino docg 2020 rocca del principe
+59. "too broke for champagne" - weinpaket
+60. "tor del colle" riserva brindisi neues etikett
+61. "torre della sirena" bianco d'italia - conti sertoli salis
+62. "torre" pinot grigio igp
+63. "torso" led neonskilt. warm white
+64. "tortoise" teleties
+65. "tqb" candied olives 400g jar
+66. "tqb" sicilian mackerel fillet in evo- 300g
+67. "tqb" sicilian tuna belly fillet "ventresca" in evo- 300g
+68. "tr’sc’là" senza solfiti
+69. "tra i monti" cinqueterre bianco doc
+70. "tradizione" lambrusco grasparossa di castelvetro doc amabile
+71. "tradizione" lambrusco grasparossa di castelvetro doc secco - bio
+72. "tralice" pallagrello nero igt 2019 il casolare divino
+73. "tramonti" bianco costa d'amalfi doc 2023 tenuta san francesco
+74. "tramonti" cinqueterre sciacchetrà doc
+75. "tramonti" rosso costa d'amalfi doc 2022 tenuta san francesco
+76. "traversa dei monti" chianti colli senesi docg 2019
+77. "trementi" chardonnay viognier igp terre siciliane
+78. "trementi" rosso del veneto igp appassimento
+79. "tremoço", farkasbab
+80. "trentapioli" asprinio d'aversa doc 2022 martusciello
+81. "tropisk blad" led neonskilt.
+82. "tropisk palme liten" led neonskilt -
+83. "tropisk sunset" med palmer - led neonskilt
+84. "trullo" olio extra vergine di oliva 0,25 l in ceramica
+85. "tullio i" prosecco doc millesimanto brut
+86. "tuma" primitivo puglia igt 2023
+87. "turkey" cocktail napkins
+88. "turnaround" red blend
+89. "tutti i giorni bianco" toscana igt 2021 antonio camillo
+90. "tutti i giorni rosso" toscana igt 2021 antonio camillo
+91. "tuvaoes" vermentino di sardegna doc 2021 cherchi
+92. "typa" italian moscato wodka
+93. "u bagascio giancu" vermouth bianco andrea bruzzone
+94. "u bagascio" vermouth rosso andrea bruzzone
+95. "u toccu" pinot nero igp siciliane
+96. "ultradition" champagne brut a' chavot laherte frères
+97. "ultradition" champagne extra brut laherte frères
+98. "un anno dopo" vermentino di sardegna doc 2022 quartomoro
+99. "un" cover-up
+100. "under the canopy: natural wonder of israel" acrylic print
+101. "underbart" led neonskilt.
+102. "unio" nero di troia e primitivo igp 2021 bio
+103. "unio" nero di troia e primitivo igp 2022 bio
+104. "univers" cabernet sauvignon & merlot & feteasca neagra, rosu sec 0.75l
+105. "univers" feteasca alba, alb sec 0.75l
+106. "univers" merlot, roșu demisec 0.75l
+107. "univers" rieling de rhin, alb demisec 0.75l
+108. "univers" rose, sec 0.75l
+109. "univers" sauvignon blanc, alb sec 0.75l
+110. "uprise" by tristan eaton (bottle)
+111. "ut bibendum" toscana rosso igt
+112. "uvappesa" ancarani
+113. "va!" rioja tempranillo doca 2023
+114. "vad döljer du för mig?" led neonskilt. velg ønsket farge.
+115. "vaillons" premier cru aoc chablis 2017 romain bessin
+116. "val dei molini" bardolino classico doc 2025 0,75 l
+117. "val dei molini" cabernet sauvignon garda doc 2022
+118. "val dei molini" chiaretto bardolino classico doc 2025
+119. "val dei molini" corvina garda doc 2022
+120. "val dei molini" custoza doc 2025
+121. "val dei molini" garganega garda doc 2025
+122. "val dei molini" lugana doc 2024
+123. "val dei molini" pinot grigio garda doc 2025
+124. "val dei molini" soave doc 2024
+125. "val dei molini" valpolicella doc 2023
+126. "valle d'oro" montepulciano d'abruzza dop
+127. "valle d'oro" pecorino terre di chieti
+128. "vallerana alta" ciliegiolo 2020 antonio camillo
+129. "vallerenza" piemonte chardonnay brut
+130. "valmaggiore" nebbiolo d'alba doc 2018 luciano sandrone
+131. "valpantena" recioto della valpolicella docg 2020 bertani
+132. "valpantena" valpolicella ripasso doc 2020 bertani
+133. "valpazza" nebbiolo doc colline novaresi 2019 rovellotti
+134. "valpolicella classico" 2021 ca' la bionda
+135. "vandari" falanghina dop 2019 antica masseria venditti
+136. "vanilla" marshmallow-350g
+137. "växeln, hallå hallå" led neonskilt.
+138. "vecchie uve" asolo prosecco superiore docg bele casel
+139. "vecchio samperi" - marco de bartoli
+140. "vecchio samperi" - marco de bartoli
+141. "vecchio samperi" - marco de bartoli
+142. "vegeta" seasoning, 250g
+143. "veles' pickled tomatoes, 700g
+144. "veles" pickled cucumbers, 700g
+145. "venezia" - hand-painted espresso cup memoritaly (2 cups)
+146. "ventifile" - bombino nero igp puglia rosato
+147. "vento d'estate" - la casearia carpenedo
+148. "verde" (groen) - orange - loco
+149. "verde" (groen) - orange - loco
+150. "verde" (groen) - orange - loco
+151. "verdicchio di matelica doc" 2022 collestefano
+152. "verginiano" pallagrello bianco igp 2021 il verro
+153. "vermentino" - vermentino di sardegna doc 2020
+154. "verrassende wijnen met bijpassende recepten" wine & dine box vier keer per jaar ontvang je heerlijke recepten, samen met zes flessen bijpassende wijnen van astrid & thérèse bekijk onze wine & dine box
+155. "vespa bianco" friuli colli orientali igt - bastianich
+156. "vesuvio" anfora - vesuvio rosso dop
+157. "veuve clesse reserve" champagne brut jean marc charpentier
+158. "veuve clesse" champagne rosè brut jean marc charpentier
+159. "vi generation" espresso lungo (16 capsules dolcegusto)
+160. "vi’ munn" bianco senza solfiti
+161. "vi’ munn" rosso senza solfiti
+162. "via dal coro" igt costa toscana - bio
+163. "via del campo" irpinia falanghina doc 2024 quintodecimo
+164. "victoria" vdlt castilla y león 2017
+165. "vielle vignes" champagne blanc de blancs 2018 francis boulard
+166. "vient e terra" roccamonfina igt piedirosso 2019 i cacciagalli
+167. "vient e voria" bianco igp 2021 antica masseria venditti
+168. "vient e voria" rosso igp 2019 antica masseria venditti
+169. "vigna barbacarlo" oltrepó pavese igt 2014 lino maga
+170. "vigna barbacarlo" oltrepó pavese igt 2019 lino maga
+171. "vigna barbacarlo" oltrepó pavese rosso 2002 lino maga
+172. "vigna cicogna" greco di tufo docg 2020 benito ferrara
+173. "vigna degli apostoli" cru sassella valtellina superiore docg
+174. "vigna del peste" valpolicella superiore doc 2017 terre di pietra
+175. "vigna del vulcano" lacryma christi del vesuvio doc 2013 villa dora
+176. "vigna del vulcano" lacryma christi del vesuvio doc 2016 villa dora
+177. "vigna del vulcano" lacryma christi del vesuvio doc 2017 villa dora
+178. "vigna del vulcano" lacryma christi del vesuvio doc 2018 villa dora
+179. "vigna del vulcano" lacryma christi del vesuvio doc 2021 villa dora
+180. "vigna della congregazione" riserva fiano di avellino docg 2022 villa diamante
+181. "vigna di milo" etna bianco superiore caselle doc 2022 i vigneri
+182. "vigna di pettineo" - cerasuolo di vittoria classico biologico
+183. "vigna di pettineo" - dop sicilia rosso nero d'avola biologico
+184. "vigna di pettineo" - dop sicilia rosso nero d'avola biologico magnum
+185. "vigna di pettineo" - dop vittoria rosso frappato biologico
+186. "vigna di pettineo" - grillo dop biologico
+187. "vigna grande cerzito" taurasi riserva docg 2019 quintodecimo
+188. "vigna kristplonerhof" schiava doc 2023 rottensteiner
+189. "vigna laure greco" greco di tufo docg
+190. "vigna lazzairasco" barolo docg 2017 guido porro
+191. "vigna premstallerhof" 2023 rottensteiner
+192. "vigna quintodecimo" taurasi riserva docg 2019 quintodecimo
+193. "vigna senza nome" moscato d'asti docg 2021 braida
+194. "vigna senza nome" moscato d'asti docg 2022
+195. "vigna senza nome" moscato d'asti docg 2022 (half bottle)
+196. "vigne in pianezzo" dogliani docg 2021 boschis francesco
+197. "vigneto cialdini" lambrusco grasparossa di castelvetro doc
+198. "vigor" marche passerina igt 2022
+199. "villa folini" blanc de blancs, friuli-venezia giulia, italy
+200. "villa gresti" san leonardo - 2007 - marchese carlo guerrieri gonzaga
+201. "villa maggio" - pinot grigio igp - bio
+202. "villa maggio" - pinot nero igp - bio
+203. "villa mottura" primitivo di manduria doc 2021 14,00%vol. - 1,50 l
+204. "villa mottura" primitivo di manduria doc 2022 14,00%vol. - 0,75 l
+205. "villa mottura" primitivo salento igt 2021 13,00% - 0,75 l
+206. "villa vistarenni" chianti classico docg 2021
+207. "villbrygg 3er" - weinpaket
+208. "vin santo pietraserena" vin santo del chianti doc
+209. "vin" led neonskilt
+210. "viña tondonia tinto reserva" doc 2011 lópez de heredia
+211. "vindemiatrix" tinto 2022
+212. "vino italiano" - the italian wine gift set
+213. "vino nobile di montepulciano docg" 2018 poderi sanguineto
+214. "vino" & vini gift set
+215. "vinos espanoles" – the spanish wine gift set
+216. "vintage" champagne 2013 louis roederer
+217. "viognier tu dors", sélection bibovino
+218. "viola" (paars) - rosso - loco
+219. "vipt" - piedirosso vesuvio rosso dop
+220. "viti a ricircolo di sfere" toscana bianco igt
+221. "vittorio" greco di tufo docg 2008 di meo
+222. "viù" langhe nebbiolo doc 2023 cascina carlòt
+223. "vivaio del cavaliere" toscana rosso igt 2020 castello la leccia
+224. "vivavì" calabria bianco igp
+225. "vivavì" calabria rosso igp
+226. "vn vinel.lo" white 2023
+227. "volcelest" blanc bordeaux
+228. "volnay" vieilles vignes 2020 domaine joseph voillot
+229. "volo rosso" igt veneto il filo' delle vigne
+230. "volo" rosso veneto igt 2022 il filò delle vigne
+231. "von unserm" riesling
+232. "voor een goed glas wijn moet je bij erkens zijn"
+233. "vorberg" riserva alto adige doc 2020 cantina terlan
+234. "vouvray" demi sec 2017 domaine de clos naudin
+235. "vouvray" methode traditionelle 2017 domaine de clos naudin
+236. "vouvray" sec blanc aoc 2020 domaine de clos naudin
+237. "vuffelivov" kunst af michael bundesen, 41,0%, 500ml
+238. "w" dedicato a walter 2019
+239. "walk through the ancient pathways of jerusalem" acrylic print
+240. "warm & cozy" personalised thermal flask bottle gift box set (islandwide delivery)
+241. "warm and happy"
+242. "washed denim" teleties
+243. "wc emoji" led neonskilt -
+244. "wc m pil" led neonskilt. 14 farger
+245. "we are very impressed with the quality and care of packaging, in particular the wool pouches for each wine. this gives us great confidence to order again the wines that we generally can’t get over here." -chris & susan
+246. "we don't judge" ~ white tee
+247. "we don't want any crap in our wine" af camilla gjerde
+248. "wehlener sonnenuhr" gg alte reben riesling 2018 dr.loosen
+249. "weißduftig" - alkoholfrei
+250. "weißer rubin" trollinger - weiß gekeltert - qba feinherb
+251. "welcome baby" with baby essentials & new parent treats - girl & boy options
+252. "welcome" a5 greeting card - 240 gsm premium paper
+253. "what i love about winestyr is that you really actually choose the producers carefully. that is the distinguishing factor between winestyr and everyone else. i'm really happy."
+254. "white-pink" marshmallow-350g
+255. ＂why not?＂ chardonnay 2021
+256. ＂why not?＂ pinot noir 2021
+257. "wine & relaxation" easter gift basket
+258. "wings" led neonskilt.
+259. "winkl" sauvignon blanc doc 2021 cantina terlan
+260. "winter@home" paket
+261. "wishing you a wonderful birthday" greeting card
+262. "wizard" assorted candies (blue), 200g
+263. "wizard" candies "assorted" (pink), 200g
+264. "wizard" candies "assorted" (purple), 200g
+265. "women winemakers" gift pack
+266. "xfetta" tagliatartufi - ambrogio sanelli/davide oldani
+267. "y" d'yquem bordeaux blanc 2021
+268. "y" d'yquem bordeaux blanc 2022
+269. "y" d'yquem, bordeaux blanc, 2023, 150cl
+270. "y" d'yquem, bordeaux blanc, 2023, 75cl
+271. "yaşam çiçeği" kimono
+272. "yaşam çiçeği"peştemal
+273. "yashkino", waffles "creamy", 300g
+274. "yes! we are open" led neonskilt
+275. "you're the hostess with the mostest" canvas wine tote bag
+276. "you are special" gift pack
+277. "you are the coolest" card
+278. "you deserve this" gift pack
+279. "you did it!" graduation greeting card
+280. "you do you" led neonskilt.
+281. "you don't say" chardonnay 2023
+282. "you’re special" valentine’ treats basket & flowers & teddy
+283. "your gift, your choice" selection box (for her/him/new mom/new dad/baby) - valentine's day flowers & gifts 2026
+284. "youth" 200g
+285. "ysance" vouvray brut aop bernard fouquet
+286. "yunona" pickled tomatoes, 700g
+287. "za spartak" wafers with cocoa, 216g
+288. "zafer" pickled ccucumbers 6-9cm, 680g
+289. "zagreo" roccamonfina igt 2019 i cacciagalli
+290. "zèfiro" valpolicella doc
+291. "zensa" - nero d'avola dop appassimento - bio
+292. "zensa" - nero di troia igp - bio
+293. "zensa" - primitivo puglia igp - bio
+294. "zero brut nature" champagne tarlant
+295. "zero" champagne rosé brut nature tarlant
+296. "zeronade" drink carbonated grape flavor, 1.0l
+297. "zharpì" prosecco doc treviso brut biologico e vegano
+298. "zhmenka" buckwheat groats, 1000g
+299. "zi’zò" passerina passito
+300. "zio nando" barbera d'alba doc - bio
+301. "zio nando" barbera d'alba doc - jeroboam legno 3l - bio
+302. "zio nando" barbera d'alba doc - magnum 1,5l - bio
+303. "zio nando" barbera d'alba doc - magnum legno 1,5l - bio
+304. "ziru" - isola dei nuraghi bianco igt 2018
+305. "znichka" 100g
+306. "zòjosu" - cannonau di sardegna doc - bio
+307. "zu" rosso emilia igt, torre fornello - (emilia romagna) - sin so2 añadidos
+308. "zurrìa" - isola dei nuraghi igt rosso
+309. "zwiebelmettwurst" onion minced pork spread - 1000g (chilled 0-4℃)
+310. "мартин" eggplant caviar, 360g
+311. # 4 pax castelli knight ranch russian river valley 2013
+312. # keine zugesetzten sulfite
+313. # ono cabernet franc
+314. # ono chenin &#8211; chardonnay
+315. # sans sulfites ajoutes 2019 &#8211; terres plurielles
+316. #2 pack glouglou débutant
+317. #20sassella docg &#8222;rededition&#8220; 75cl 2019 13% vol.
+318. #22 saperavi, solomnishvili, kakheti, georgia 2018 (13% vol)
+319. #260402 atelier dégustation &#8211; rhône 02.04.2026
+320. #260430 &#8211; atelier dégustation &#8211; languedoc-roussillon 30.04.2026
+321. #260528 &#8211; atelier dégustation &#8211; rhums 28.05.2026
+322. #260611 atelier dégustation vins de la méditerranée &#8211; 11.06.2026
+323. #260618 &#8211; atelier dégustation &#8211; la loire 18.06.2026
+324. #27 - 2021
+325. #3 ~ mixed wine 3pk
+326. #3 commando g la bruja de rozas 2014
+327. #3 elizabeth spencer cabernet sauvignon special cuvee napa valley 2014
+328. #3 raventos i balnc de nit 2016
+329. #34 - 2021
+330. #36 - 2021
+331. #4 – monovarietal selection
+332. #4 lapierre raisins gaulois 2018
+333. #4_degu-set: weiss
+334. #43-as hordó, cabernet sauvignon 2021
+335. #5 – rioja selection
+336. #5 ~ festive feast 6pk
+337. #5 bedrock wine co old vine zinfandel 2015
+338. #5 mateo correggia rorero 2016
+339. #5 tinto de rulo malbec bio bio 2017
+340. #5_degu-set: rot
+341. #5094-es hordó, merlot 2021
+342. #6 – cava selection
+343. #6 honig sauvignon blanc napa valley 2016
+344. #6 shafer td-9 napa valley 2015
+345. #7 – signature wines selection
+346. #7 bergstrom cumberland reserve pinot noir 2015
+347. #7 broc cellars vine starr zinfandel sonoma county 2016
+348. #7 gaspard sauvignon blanc loire valley 2018
+349. #7_degu-set: orange
+350. #8 – gran reserva selection
+351. #8 arnot-roberts chardonnay watson ranch napa 2015
+352. #8 linden leaf 43% 70 cl
+353. #8_degu-set: petnat
+354. #89-es hordó, carmenére 2021
+355. #9 – classic & modern selection
+356. #9 arnot-roberts syrah 2016
+357. #9 la banda del argilico verdejo 2018
+358. #9 lioco sativa carignan mendocino 2015
+359. #ammiraglia alie 2022 rose frescobaldi + 2 glasses
+360. #bbbwines
+361. #bewe somm session tasting trio
+362. #bio &#8211; vino biológico chanti x 750 ml.
+363. #bio &#8211; vino biológico primitivo salento igt x 750 ml.
+364. #bio &#8211; vino biológico valpolicella doc x 750 ml.
+365. #bmvinarstvi
+366. #bold test product
+367. #bold test product with variants
+368. #bold test product without variants
+369. #bonnet 2022 rose - a vis
+370. #chablis malandes 2022 1/2 - c12
+371. #champagneday μοιραζόμαστε τη χαρ
+372. #cristobal malbec 2022 -rose - c6
+373. #different 2023
+374. #dubiczbor
+375. #édes fehérbor
+376. #édes rozé
+377. #édes vörösbor
+378. #estoublon blanc 2020
+379. #estoublon roseblood 2022 magnum
+380. #familyownedwinery
+381. #félédes fehérbor
+382. #garagewine verdoncho
+383. #gen s by salena cabernet sauvignon
+384. #gen s by salena merlot
+385. #gen s by salena pinot noir
+386. #gen s by salena shiraz
+387. #greekwine
+388. #gsltat gemischter satz 1.0l 2024
+389. #gsr12133 - additional delivery fee
+390. #gvltat 2023 gruner veltliner
+391. #gvltat grüner veltliner 1.0l 2024
+392. #gvltat gruner veltliner 1l
+393. #hbd gift bag
+394. #hbd single-bottle wine bag by cakewalk
+395. #hbd wine bag
+396. #izrael70magyar
+397. #keepingupwiththegrenachians (grenache packs}
+398. #la vie en rose 2022 roubine mg c3
+399. #le dandy
+400. #líbifka 2024, polosladké
+401. #lou by peyrassol blanc
+402. #lou by peyrassol rosé wine
+403. #lou por peyrassol - aop côtes-de-provence - rosé - 2019
+404. #lou rose by peyrassol
+405. #mapofflavours18 / ποιους θα συναντήσετε στον χάρτη των γεύσεων;
+406. #marlboroughwine
+407. #matraiborvidek
+408. #meeme 2017
+409. #monsieur 2023
+410. #mouton cadet bio rose 2021 coffret 2 v. + 1 bt
+411. #mouton cadet bio rose mathilde 2022
+412. #my4810 cabin
+413. #my4810 cabin cassis
+414. #my4810 cabin compact trolley
+415. #my4810 cabin trolley
+416. #my4810 cabin trolley green
+417. #my4810 medium trolley blue
+418. #newzealandwine
+419. #nzwine
+420. #ono &#8211; chenin-chardonnay uit de loirevallei
+421. #ono cabernet franc 2020
+422. #ono chardonnay 2022
+423. #ono chardonnay 2022
+424. #ono chenin chardonnay
+425. #ono sauvignon
+426. #ono sauvignon 2022
+427. #oratoire st martin cairanne r/r les douyes 2019
+428. #ouidry!
+429. #picnic
+430. #pinot noir dom familial dopff - 2016 - c6
+431. #pomino bianco 2021 frescobaldi mag
+432. #rivetti - langhe pinot nero 2016
+433. #roltat zweigelt rosé &#8211; 1 liter
+434. #roséalltheway piscine glass
+435. #roubine rose 2021 dmg c6
+436. #roubine rose 2022 mg c6
+437. #silvanerallezusammen schato schütz
+438. #silvanerallezusammen schato schütz magnum
+439. #smagekasse: introduktion til det nye spanien
+440. #smagekasse: samkøbsfavoritter 2023
+441. #smartasting con il produttore ballabio
+442. #smartasting con il produttore dianella
+443. #smartasting con il produttore domenico tappero merlo
+444. #smartasting con il produttore marguerite guyot
+445. #smartasting con il produttore nicola di sipio
+446. #smartasting con il produttore pisoni
+447. #smartasting con il produttore san cristoforo
+448. #smartdinner &#8211; la cassœula e il sapore della tradizione
+449. #summermood #zebrafreeshop
+450. #száraz fehérbor
+451. #száraz rozé
+452. #tapasandwine
+453. #thewinerysa
+454. #vinophil rosé
+455. #vinophil spritzt
+456. #vinophil weiß
+457. #winelover
+458. #wineparis
+459. #wineparis2026
+460. #winesavvy #mccdeals #chardonnay #merlot #visitstellenbosch #winedown">open post by legranddomaine with id 18098122387601238
+461. #winestories
+462. #winetipyoung &#8211; piovono bollicine
+463. #winetrade
+464. #woprieska 2024 &#8211; case of 6
+465. $ 2650 2650.0 uyu $ 2252
+466. $0.50 recycle charge
+467. $1.000.000 - $2.000.0001
+468. $1.000.000 - $2.000.0006
+469. $1.000.000 - $2.000.0007
+470. $10 donation to frankie lemmon
+471. $100 bill led bottle presenter
+472. $100 cult wine six pack
+473. $100 gift basket
+474. $100 gift certificate
+475. $100 kiwi cult wine party pack (six pack)
+476. $100 lucky dip mixed case of 12 different bottles
+477. $100 lucky dip mixed case of 12 different bottles
+478. $100 off 12-pack
+479. $100 off 12-pack
+480. $100 pinot noir &#038; pinot grigio basket
+481. $100 red wine
+482. $100 red wine mixed case
+483. $100 something for everyone gift pack
+484. $100 summer six pack
+485. $100 white wine mixed case
+486. $12 carboniste
+487. $12.49 ea lindauer classic 750ml (excludes special reserve, prosecco & free)
+488. $12.99 ea $6.84 per 1kg ww fresh whole chicken 1.9kg (product of nz, excludes free range)
+489. $120 gift basket
+490. $120 shiraz mixed case
+491. $120 summer stunner mix pack
+492. $130 merlot (aussie) mixed case
+493. $145 aussie red wine mixed case
+494. $15 delivery fee
+495. $15 dessert surcharge
+496. $150 nz rose mixed case
+497. $150 red six pack
+498. $150 tailored lucky dip mixed case of 12 different bottles
+499. $150 tailored lucky dip mixed case of 12 different bottles
+500. $2 gift wrap
+501. $2 tuesday mixed bottles!
+502. $2 tuesday red bottles!
+503. $2 tuesday white bottles!
+504. $2.000.000 - $3.000.0001
+505. $2.000.000 - $3.000.0003
+506. $2.99 misc single item
+507. $20 flat rate ground shipping on orders of 6+ bottles.
+508. $200 gift basket
+509. $200 tailored lucky dip mixed case of 12 different bottles
+510. $200 tailored lucky dip mixed case of 12 different bottles
+511. $230 christmas cheers mixed case
+512. $237 bubbles mix pack
+513. $240 barossa shiraz mixed case
+514. $240 chardonnay mixed case (over $300 in value here)
+515. $25 donation to frankie lemmon
+516. $25 gift certificate
+517. $25 white wine
+518. $250 california chardonnay mixed case
+519. $265 champagne gift basket
+520. $3.000.000 - $5.000.0001
+521. $3.99 misc single item
+522. $34 krug btg anyone?
+523. $4.99 holiday wine 3-month subscription
+524. $4.99 misc single item
+525. $4.99 per 750 ml - the spring biggest box ever
+526. $4.99 sangria special 15-pack!
+527. $4.99 wines: the july 4th blowout 18-pack
+528. $4.99 wines: the july 4th blowout 18-pack v
+529. $40 (4/24/24) food and wine pairing class-cary
+530. $45 oregon vs burgundy educational class-cary
+531. $5 glass special
+532. $5 jacks abby
+533. $5.000.000 - más4
+534. $5.55 wines - 21,000 5-star reviews 18-pack!
+535. $5.55 wines - 21,000 5-star reviews 18-pack! v
+536. $5.99 each: add 3 premium chardonnays
+537. $5.99 grilling reds 2022
+538. $5.99 holiday wine 3-month subscription
+539. $5.99 labor day wines + $10 splash cash back ny
+540. $5.99 ultimate spring reds 15-pack
+541. $50 - $250 e-gift vouchers
+542. $50 donation to frankie lemmon
+543. $50 gift certificate
+544. $50 gift wine box
+545. $50 to keep incorrect shipment
+546. $50 wine deal
+547. $50.00 or more
+548. $55 (2/28/24) albert bichot burgundy wine dinner-cary
+549. $55 (4/20/24) 70's retro prom for grown ups-cary
+550. $6.99 santiago moscato 2022
+551. $6.99 ultimate vineyard sampler
+552. $6.99 ultimate vineyard sampler v
+553. $60 gift basket
+554. $60 nachos
+555. $600 cuna de piedra estate 2 unidades
+556. $7.04 wines: the july 4th premium wine blowout 15-pack
+557. $7.50 pk kāpiti 4 pack or minis 6 pack
+558. $7.77 - add 3 extra mixed bottles!
+559. $7.77 - add 3 extra red bottles!
+560. $7.77 - add 3 mixed bottles!
+561. $7.77 - add 3 red bottles!
+562. $7.77 - add 3 white bottles!
+563. $7.77 each - st. pat's top shelf trio
+564. $7.77 per bottle: add the lucky deals top shelf trio!
+565. $7.99 gold medal worthy reds 15-pack
+566. $7.99 holiday wine 3-month subscription
+567. $7.99 powerhouse reds ny
+568. $7.99 superstar reds 15-pack
+569. $70 gift basket
+570. $76.72 average savings per order
+571. $77 steak bundle - australia
+572. $8.99 kg loose seedless red or green grapes (product of australia)
+573. $8.99 splash cocktails 12-pack sampler
+574. $80 xmas box
+575. $95 (5/1/24)- amulet estate winery napa valley wine dinner-cary
+576. $95/$150 (4/10/24) chateau de la font du loup chateauneuf du pape wine dinner-cary
+577. $99 case deal: casa santos lima colossal reserva
+578. $99 case deal: casa santos lima colossal reserva
+579. $99 red wine case v.87
+580. $99 red/white wine case v.61
+581. $99 white wine case v.42
+582. % borklub tagság - 4 hó, 12 palack 70 000 ft 80 000 ft
+583. % borklub tagság - éves, 36 palack 180 000 ft 210 000 ft
+584. % csomag: gábor kedvencei, 12 palack ingyenes kiszállítással 13% kedvezménnyel 58 700 ft 67 500 ft
+585. % merlot igt vino fermo di colore rosso "scarico". sapore secco e leggermente ... € € scopri
+586. % refosco igt vino fermo di colore rosso pallido, dal sapore morbido con una ... € € scopri
+587. % super bianco vino fermo di colore giallo paglierino con riflessi dorati. sentori ... € € scopri
+588. % vino bianco da vitigni ... vino bianco del vicentino di alta qualità, delicato, secco, profumato ... € € scopri
+589. % vino rosso annata contiene solfiti. € € scopri
+590. % vino rosso da tavola vino rosso fermo del veneto. sapore secco e bilanciato. da abbinare ... € € scopri
+591. % vino rosso da uve barbera ... fornitore: selectvini, casa vinicola cortese, canelli (asti) ... € € scopri
+592. % vino rosso quasso fornitore: selectvini, casa vinicola cortese, canelli (asti) ... € € scopri
+593. %uz (750 cc)
+594. & extra brut, la closerie jérôme prévost, champagner
+595. & secco rosé 30l
+596. &#038; arlaud oka 2019 75cl
+597. &#038;roses, chardonnay barrique
+598. &#038;roses, spätburgunder
+599. &#038;roses, weissburgunder
+600. &#038;roses, weissburgunder barrique
+601. &#038;t cucumber tonic 0,2l
+602. &#038;t grapefruit tonic 0,2l
+603. &#038;t indian tonic 0,2l
+604. &#038;t sunkissed rhubarb tonic 0,2l
+605. &#038;wine בלנד לבן
+606. &#039;a batia igp calabria rosso di casa comerci
+607. &#171;autumn&#187;
+608. &#171;b&#187; rosat
+609. &#171;b&#187;seleccio blanc
+610. &#171;bardar&#187; 5 лет 0,5 l
+611. &#171;bardar&#187; 7 лет 0,5 l
+612. &#171;brightness&#187;
+613. &#171;brilliance&#187;
+614. &#171;cacocciuli arrustuti &#187; carciofi grigliati 280g
+615. &#171;calaraș&#187; 10 лет 0,5 l
+616. &#171;calaraș&#187; 3 года 0,5 l
+617. &#171;calaraș&#187; 5 лет 0,5 l
+618. &#171;calaraș&#187; 7 лет 0,5 l
+619. &#171;clan macgregor&#187; 1 l
+620. &#171;crazy wave&#187;
+621. &#171;cucuzzi arrustuti &#187; zucchini grigliati 280g
+622. &#171;cuvée nicolas françois billecart
+623. &#171;doina&#187; 0,5 l
+624. &#171;dom perignon&#187; 2010, gift box &#171;lady gaga&#187;
+625. &#171;kvint surprise&#187; 10 лет 0,5 l
+626. &#171;kvint&#187; 5* dream 0,5 l
+627. &#171;macarons&#187; 300g
+628. &#171;maestro&#187; 10 лет 0,5 l
+629. &#171;maestro&#187; 5 лет 0,5 l
+630. &#171;maestro&#187; 7 лет 0,5 l
+631. &#171;nistru&#187; 0,5 l
+632. &#171;pink joy&#187;
+633. &#171;pipi arrustuti &#187; peperoni grigliati 280g
+634. &#171;r&#187; de ruinart brut
+635. &#171;rainbow&#187;
+636. &#171;snow maiden&#187;
+637. &#171;snowflake&#187;
+638. &#171;surprise&#187;
+639. &#171;аttraction&#187;
+640. &#187; jai &#171;
+641. &#187; mulinciani arrustuti&#187; melanzane grigliate 280g
+642. &#8211; 60 years together diamond anniversary card
+643. &#8211; artistico vino bianco 12,5% 5 lt
+644. &#8211; batù barbaresco docg 2022
+645. &#8211; bella fiore piemonte doc chardonnay 2025 3 lt 12%
+646. &#8211; belvive spumante extra dry
+647. &#8211; borioso vino rosso 12,5% 5 lt
+648. &#8211; buon paggio piemonte doc grignolino 2025
+649. &#8211; cabanè langhe doc 2023
+650. &#8211; campo del palio moscato d&#8217;asti docg 2025
+651. &#8211; capitano del palio monferrato doc dolcetto 2025 magnum
+652. &#8211; capitano del palio monferrato dolcetto doc 2025
+653. &#8211; cheddar catalcrem en barra x 2 k
+654. &#8211; contrada maestra barbera d&#8217;asti docg 2024
+655. &#8211; corsiero biondo piemonte doc cortese frizzante 2025
+656. &#8211; cuartirolo al vacio el ombu x 400 gr
+657. &#8211; dafne bio piemonte doc barbera 2022 vino biologico
+658. &#8211; dianae barbera d&#8217; asti docg 2024 (senza solfiti aggiunti)
+659. &#8211; dodici vino rosso 12% 5 lt
+660. &#8211; domestico vino rosso 12,5% 5 lt
+661. &#8211; ferrero rocher bombones caja dorada x 8 unidades
+662. &#8211; garavagna barbera d&#8217;alba doc superiore 2021
+663. &#8211; gioia mia piemonte doc dolcetto 2025 3 lt 13%
+664. &#8211; gran ruè metodo classico
+665. &#8211; grazioso vino rosso 12% 5 lt
+666. &#8211; il sendallo piemonte chardonnay doc 2025
+667. &#8211; jubileumcuvée &#8211;
+668. &#8211; la dama astesana piemonte doc rosato 2025
+669. &#8211; la gavardina piemonte bonarda doc frizzante 2025
+670. &#8211; langhe doc nebbiolo 2022
+671. &#8211; malvasia rosè spumante
+672. &#8211; maridà barbera d&#8217;asti docg 2023
+673. &#8211; monte luzzo piemonte doc barbera 2024 3 lt 13,5%
+674. &#8211; moscato spumante
+675. &#8211; nettare vino rosso 13,5% 5 lt
+676. &#8211; paquete milanguesa schneck 2 unidades 240g
+677. &#8211; pasas de uva 500 gramos
+678. &#8211; pensé piemonte doc barbera 2023
+679. &#8211; prima mossa piemonte barbera doc frizzante 2024
+680. &#8211; prima mossa piemonte barbera doc frizzante 2024 magnum
+681. &#8211; priore barolo docg 2021
+682. &#8211; rosè vino rosato 12% 5 lt
+683. &#8211; santa lucrezia cisterna d&#8217;asti doc superiore 2021
+684. &#8211; sibanè piemonte doc 2023
+685. &#8211; tenuta laramè fippiane roero arneis docg metodo classico pas dosé 2021
+686. &#8211; terre del conte roero arneis docg 2025
+687. &#8211; terre del sindic langhe doc favorita 2025
+688. &#8211; tumlin roero docg loreto 2022
+689. &#8211; vie vecchie vino rosso 13,5% 5 lt
+690. &#8211; villarita spumante brut
+691. &#8216;-dem alma de la marciana blanco 2023
+692. &#8216;-dem alma de la marciana tinto 2022
+693. &#8216;-dem beaubois un amour de viognier 2024
+694. &#8216;-dem chateau beaubois expression rouge (0,375 liter) 2021
+695. &#8216;-dem cinso bistro cinsault 2024
+696. &#8216;-dem eymann flora und fauna rosé 2024
+697. &#8216;-dem lunaria coste di moro montepulciano d&#8217;abruzzo (0,375 liter) 2020
+698. &#8216;-dem un amour de syrah 2023
+699. &#8216; z bregov svježi sir polumasni 500g, vindija
+700. &#8216;+articulos de regalo de minbre
+701. &#8216;+donde compro arcones navideños
+702. &#8216;1953&#8217; sparkling albariño, terra de asorei
+703. &#8216;4 vicariati&#8217; cavit 2018
+704. &#8216;4&#8217; gewürztraminer &#8211; domaine barmès-buecher 2017 &#8211; bio
+705. &#8216;6+1&#8217; merlot 2021 (box of 6)
+706. &#8216;6+1&#8217; shiraz 2021 (box of 6)
+707. &#8216;9&#8217; magnum white dry wine 1.5 lt, 12,5% alc.
+708. &#8216;9&#8217; white dry wine 0,75lt, 12,5% alc.
+709. &#8216;a journey across the world&#8217; wine case
+710. &#8216;à l&#8217;ouest&#8217; &#8211; domaine de l&#8217;enclos 2022 &#8211; bio
+711. &#8216;a laranja mecanica&#8217; orange wine, fitapreta
+712. &#8216;a lisa&#8217; bodega noemia patagonia malbec
+713. &#8216;a muntagna 2021 cantine matrone
+714. &#8216;a muntagna bianco 2023 cantine matrone
+715. &#8216;a taste of the new world&#8217; wine case
+716. &#8216;a taste of the old world&#8217; wine case
+717. &#8216;a vita &#8211; cirò doc rosso classico superiore riserva 2018
+718. &#8216;a vita &#8211; il rosso 2022
+719. &#8216;a vita &#8211; leuko 2023
+720. &#8216;a vita &#8211; rosato 2023
+721. &#8216;a&#8217; albarino d.o.ribeira sacra
+722. &#8216;a&#8217;mare&#8217; vino spumante brut rosè millesimato &#8211; siddùra
+723. &#8216;adiosu&#8217; &#8211; isola dei nuraghi igt &#8211; cantina il grappolo d&#8217;oro
+724. &#8216;adras wodka&#8217; &#8211; pure sardinia
+725. &#8216;ala blanca&#8217; vermentino di sardegna, parpinello
+726. &#8216;albiar&#8217; vino tinto 5l bib
+727. &#8216;albiar&#8217; white wine 5l bib
+728. &#8216;alfeno&#8217; doc montecucco 2017 perazzeta
+729. &#8216;alikontisi&#8217; herbal blend, from ikaria, the famous longevity island, 20g
+730. &#8216;alter nos&#8217; monica di sardegna doc superiore &#8211; cantina trexenta
+731. &#8216;altrove&#8217; l1/16 walter de battè
+732. &#8216;altrove&#8217; l1/17-18 walter de battè
+733. &#8216;amargura&#8217; &#8211; liquore d&#8217;arancia, carruba e china &#8211; istintosardo
+734. &#8216;amor tempus&#8217; isola dei nuraghi igt &#8211; cantina mossa
+735. &#8216;anastasia brut&#8217; vino spumante &#8211; cantina di mogoro
+736. &#8216;andolo&#8217; cannonau di sardegna doc &#8211; funtana &#8216;e mari
+737. &#8216;anemoessa&#8217; herbal blend, from ikaria, the famous longevity island, 20gr
+738. &#8216;angheli&#8217; donnafugata 2018
+739. &#8216;angraris&#8217; &#8211; mandrolisai doc superiore &#8211; cantina fradiles
+740. &#8216;angraris&#8217; mandrolisai doc superiore &#8211; cantina fradiles vitivinicola
+741. &#8216;àntia oro&#8217; vendemmia tardiva colli del limbara igt &#8211; sorace vini
+742. &#8216;àntia&#8217; isola dei nuraghi igt &#8211; sorace vini
+743. &#8216;antiogu&#8217; &#8211; mandrolisai doc superiore &#8211; cantina fradiles
+744. &#8216;antiogu&#8217; mandrolisa doc superiore &#8211; cantina fradiles vitivinicola
+745. &#8216;apéro 3&#8217; francia hal rillette válogatás doboz
+746. &#8216;apéro des amis 7&#8217; hal konzerv válogatás ajándékcsomag
+747. &#8216;arbè&#8217; &#8211; liquore di mirto bianco da bacche &#8211; istintosardo
+748. &#8216;argeste&#8217; vermentino di gallura docg superiore &#8211; sabresenò
+749. &#8216;arghentu sulle bucce&#8217; &#8211; vermentino di sardegna doc &#8211; cantina alessandro bocca
+750. &#8216;arghentu&#8217; &#8211; vermentino di sardegna doc &#8211; cantina alessandro bocca
+751. &#8216;argia rosso&#8217; isola dei nuraghi igt &#8211; tenute lattias
+752. &#8216;arrujadu&#8217; &#8211; cannonau di sardegna doc riserva &#8211; cantina alessandro bocca
+753. &#8216;aru&#8217; monica e carignano &#8211; isola dei nuraghi igt &#8211; atzei
+754. &#8216;atheras&#8217; herbal blend, from ikaria, the famous longevity island, 20gr
+755. &#8216;atobiu&#8217; carignano del sulcis doc superiore &#8211; eural sulcis
+756. &#8216;attilio rosè&#8217; vino spumante brut &#8211; cantina contini
+757. &#8216;attilio&#8217; vino spumante brut &#8211; cantina contini
+758. &#8216;austros&#8217; tannat grand reserve 2015 pablo fallabrino
+759. &#8216;avrè arvesiniadu&#8217; 2022 isola dei nuraghi igt &#8211; azienda mulas
+760. &#8216;avrè arvesiniadu&#8217; 2023 isola dei nuraghi igt &#8211; azienda mulas
+761. &#8216;azzàra domos de pedra&#8217; &#8211; mandrolisai doc &#8211; cantina fradiles
+762. &#8216;azzàra&#8217; mandrolisai doc &#8211; cantina fradiles vitivinicola
+763. &#8216;baccamora&#8217; carignano del sulcis doc &#8211; locci&#8217;s domu
+764. &#8216;back to basics&#8217; wine appreciation course gift
+765. &#8216;baione&#8217; cannonau di sardegna doc &#8211; cantina trexenta
+766. &#8216;balente superiore&#8217; mandrolisai doc &#8211; cantina carboni
+767. &#8216;balente&#8217; isola dei nuraghi igt &#8211; cantina carboni
+768. &#8216;ballòi&#8217; colli del limbara igt biologico &#8211; tenute filigheddu
+769. &#8216;barallibus&#8217; cannonau classico &#8211; pub agricolo
+770. &#8216;barallibus&#8217; cannonau di sardegna doc riserva &#8211; pub agricolo
+771. &#8216;básca&#8217; cannonau di sardegna doc &#8211; pedra niedda tenute
+772. &#8216;batticoda&#8217; umbria bianco igt biologico 2024 &#8211; pomario
+773. &#8216;bbk&#8217; lis neris 2019
+774. &#8216;bell ringer&#8217; select vineyards gisborne albarino 2025 &#8211; 6 pack
+775. &#8216;bellesa&#8217; carignano del sulcis doc riserva &#8211; azienda agricola piede franco
+776. &#8216;bentesali&#8217; carignano del sulcis doc &#8211; vigne bentesali
+777. &#8216;bertin&#8217; 2020 la pesenata
+778. &#8216;bianco di nera&#8217; frizzante milazzo
+779. &#8216;bianco di orgosa&#8217; gramentino &#8211; cantina orgosa
+780. &#8216;bibi&#8217; rosato cannonau di sardegna doc &#8211; cantina canu
+781. &#8216;biologico 100 kent&#8217;annos&#8217; mandrolisai doc &#8211; cantina del mandrolisai
+782. &#8216;bisus&#8217; cannonau di sardegna doc &#8211; tenute donnolù
+783. &#8216;bitzosu&#8217; &#8211; vermentino di sardegna doc spumante millesimato &#8211; cantina alessandro bocca
+784. &#8216;blend 1937&#8217; isola dei nuraghi igt &#8211; sorace vini
+785. &#8216;bordeaux pairing&#8217; &#8211; château penin &#038; ‘cuvée majeure’ blanc château turcaud
+786. &#8216;bring your own barolo&#8217; dinner with the barolo boys &#8211; wednesday 19th november
+787. &#8216;bring your own barolo&#8217; dinner with the barolo boys &#8211; wednesday 19th november (pl)
+788. &#8216;brìu&#8217; vino spumante brut &#8211; metodo classico &#8211; tenute filigheddu
+789. &#8216;brothers reserve&#8217; springbank 21yo single cask
+790. &#8216;busch block&#8217; late harvest riesling 2016
+791. &#8216;c&#8217; vino bianco &#8211; francesco guccione
+792. &#8216;c&#8217;alma&#8217; orange wine &#8211; colline del vento
+793. &#8216;cagnulari riserva&#8217; alghero doc &#8211; cantina ledà
+794. &#8216;cagnulari&#8217; isola dei nuraghi igt &#8211; cantine pisoni
+795. &#8216;cagnulari&#8217; isola dei nuraghi igt &#8211; vini tramonti
+796. &#8216;caldosa superiore&#8217; vermentino di gallura docg biologico &#8211; tenute filigheddu
+797. &#8216;caldosa vendemmia tardiva&#8217; vermentino di gallura docg biologico &#8211; tenute filigheddu
+798. &#8216;caldosa vt affinato in legno&#8217; vermentino di gallura docg biologico &#8211; tenute filigheddu
+799. &#8216;call me a cab&#8217; tastig set (3x75cl)
+800. &#8216;calvados&#8217; (eau-de-vie van appels) &#8211; 4 jaar houtgerijpt &#8211; dassemus
+801. &#8216;campo alla casa&#8217; enrico santini
+802. &#8216;cañada la torre&#8217; malvasia, bodegas murviedro
+803. &#8216;cannonau di sardegna doc omphalos&#8217; &#8211; cantina del mandrolisai
+804. &#8216;cannonau&#8217; di sardegna doc &#8211; pub agricolo
+805. &#8216;cannonau&#8217; di sardegna doc &#8211; vini tramonti
+806. &#8216;cannonau&#8217; pub agricolo
+807. &#8216;cantigos&#8217; isola dei nuraghi igt &#8211; cantine pisoni
+808. &#8216;capo f&#8217; cannonau di sardegna doc &#8211; pure sardinia
+809. &#8216;cardile&#8217; vermentino di sardegna doc biologico &#8211; cantine antigori
+810. &#8216;carignano&#8217; isola dei nuraghi igt biologico &#8211; cantine antigori
+811. &#8216;carlaz&#8217; 2016 prima terra
+812. &#8216;case sparse&#8217; ogliastra igt &#8211; azienda agricola pusole
+813. &#8216;ceremonioso&#8217; macerato sulle bucce nuragus di cagliari doc &#8211; cantine fraponti
+814. &#8216;charisma&#8217; 1 lt evoo
+815. &#8216;charisma&#8217; 1+1 lt evoo bundle
+816. &#8216;charisma&#8217; 5 lt evoo
+817. &#8216;chelu &#8216;es&#8217; vermentino di sardegna doc &#8211; cantina giovanni camboni
+818. &#8216;cigala&#8217; alghero doc cagnulari &#8211; cantina ledà
+819. &#8216;cipriota&#8217; rosato cannonau di sardegna doc &#8211; cantina agreste
+820. &#8216;clarosu&#8217; vermentino di sardegna doc &#8211; william lasio
+821. &#8216;clarum&#8217; grenache
+822. &#8216;clos des crostes&#8217; château les crostes 2022
+823. &#8216;clos des lièvres&#8217; aop languedoc, mas gabriel
+824. &#8216;clos des papillons&#8217;, mas gabriel
+825. &#8216;cob cottage&#8217; chardonnay 2021
+826. &#8216;contissa&#8217; vermentino di sardegna doc &#8211; cantina trexenta
+827. &#8216;contreforts du delta&#8217; côtes du ventoux ac
+828. &#8216;coronedu&#8217; malvasia di bosa doc
+829. &#8216;costa sud&#8217; rosato carignano del sulcis doc &#8211; locci&#8217;s domu
+830. &#8216;coyam&#8217;, emiliana
+831. &#8216;crabì&#8217; carignano del sulcis doc &#8211; alessio atzeni
+832. &#8216;crabì&#8217; carignano del sulcis doc &#8211; azienda agricola alessio atzeni
+833. &#8216;cradle of wine&#8217; kisi-rkatsiteli 2019
+834. &#8216;craigleith&#8217; tamdhu 21yo single cask stellenbosch red wine finish
+835. &#8216;crema di mirto&#8217; &#8211; liquorificio pacini
+836. &#8216;cumpartia&#8217; carignano del sulcis doc &#8211; locci&#8217;s domu
+837. &#8216;cumpridu bianco&#8217; &#8211; vermentino isola dei nuraghi igt &#8211; cantina farina
+838. &#8216;cumpridu bianco&#8217; vermentino isola dei nuraghi igt &#8211; cantina farina
+839. &#8216;cumpridu rosso&#8217; &#8211; isola dei nuraghi igt
+840. &#8216;cumpridu rosso&#8217; isola dei nuraghi igt &#8211; cantina farina
+841. &#8216;cupanera&#8217; cannonau di sardegna doc 2022 biologico &#8211; giuliana puligheddu
+842. &#8216;cupanera&#8217; cannonau di sardegna doc 2023 biologico &#8211; giuliana puligheddu
+843. &#8216;cupanera&#8217; cannonau di sardegna doc riserva 2020 biologico &#8211; giuliana puligheddu
+844. &#8216;cupanera&#8217; cannonau di sardegna doc riserva 2022 biologico &#8211; giuliana puligheddu
+845. &#8216;curate your own&#8217; box
+846. &#8216;cuvee …?&#8217;, domaine des hauts chassis, saint-joseph
+847. &#8216;cuvée edalise&#8217;, côtes de provence rosé, maison boutinot
+848. &#8216;cuvée opera&#8217; ac, grande maison
+849. &#8216;daily red&#8217; shiraz 2024 750ml
+850. &#8216;dea cara&#8217; isola dei nuraghi igt &#8211; carasole
+851. &#8216;dècchitu&#8217; vermentino di gallura docg biologico &#8211; tenute filigheddu
+852. &#8216;deispanta&#8217; vermentino di gallura docg superiore &#8211; cantina canu
+853. &#8216;diamond fields&#8217; pinot noir, davenport
+854. &#8216;dinneriu&#8217; &#8211; tenute lattias
+855. &#8216;disizu&#8217; nebbiolo colli del limbara igt &#8211; tenute muscazega
+856. &#8216;domo&#8217; mandrolsai doc &#8211; famiglia demelas
+857. &#8216;domos de pedra&#8217; mandrolisai doc rosato &#8211; cantina fradiles vitivinicola
+858. &#8216;durusia&#8217; isola dei nuraghi igt &#8211; cantina fradiles vitivinicola
+859. &#8216;e magliole bianco 2022 cantine matrone
+860. &#8216;e magliole igp campania 2022 &#8211; cantine matrone
+861. &#8216;e tagliatelle 500g
+862. &#8216;earthscape&#8217; franc, pyren vineyard
+863. &#8216;earthscape&#8217; sparkling shiraz, pyren vineyard
+864. &#8216;entu &#8211; colline del vento
+865. &#8216;èrema&#8217; cannonau di sardegna doc &#8211; siddùra
+866. &#8216;esposto 133°se&#8217; &#8211; nieddera rosato isola dei nuraghi igt &#8211; tenute sinis
+867. &#8216;esposto 221°so&#8217; &#8211; vermentino di sardegna doc &#8211; tenute sinis
+868. &#8216;esquisse&#8217;, domaine des hauts chassis, crozes-hermitage
+869. &#8216;estatatura&#8217; sangiovese toscana bio podere di ghiaccioforte
+870. &#8216;estrù&#8217; carignano isola dei nuraghi igt &#8211; siddùra
+871. &#8216;evaluna&#8217; sansonina 2018
+872. &#8216;fardaloru&#8217; carignano isola dei nuraghi igt &#8211; funtana &#8216;e mari
+873. &#8216;ferraro&#8217; (montepulciano barrique) igt molise 2012 l&#8217;arco antico
+874. &#8216;ferru&#8217; &#8211; cannonau di sardegna doc &#8211; cantina alessandro bocca
+875. &#8216;filìa&#8217; campania rosso igt 2023 &#8211; petra marzia
+876. &#8216;filigrana&#8217; vermentino di sardegna doc &#8211; vini mode
+877. &#8216;filu &#8216;e ferru&#8217; acquavite sarda &#8211; liquorificio pacini
+878. &#8216;filu ‘e ferru &#038; mirto&#8217; &#8211; liquorificio pacini
+879. &#8216;filu ferru&#8217; &#8211; liquorificio pacini
+880. &#8216;finca el serrano&#8217; monastrell, bodegas murviedro
+881. &#8216;finidda in cumpanzia&#8217; vino rosso &#8211; cantina cuneddu
+882. &#8216;fitz&#8217; sparkling wine
+883. &#8216;flip your fate&#8217; christmas trivia or challenge card game
+884. &#8216;fondatore&#8217; spumante brut metodo classico &#8211; cantina trexenta
+885. &#8216;forest blanc&#8217; &#8211; sauvignon blanc semillon
+886. &#8216;fosso vecchio&#8217; ravenna rosso igt i calanchi
+887. &#8216;fradiles&#8217; &#8211; mandrolisai doc &#8211; cantina fradiles
+888. &#8216;fradiles&#8217; mandrolisai doc &#8211; cantina fradiles vitivinicola
+889. &#8216;fraigu&#8217; macerato da vitigni tradizionali &#8211; cantina agreste
+890. &#8216;frakà&#8217; nebbiolo isola dei nuraghi igt &#8211; cantina giuseppe livesi
+891. &#8216;fraponti&#8217; isola dei nuraghi igt barbera sarda &#8211; cantine fraponti
+892. &#8216;french pairing&#8217; &#8211; sancerre blanc &#038; chateau maquin st georges st emilion
+893. &#8216;fris wit&#8217; wijnpakket (8&nbsp;flessen)
+894. &#8216;frore&#8217; isola dei nuraghi igt &#8211; famiglia demelas
+895. &#8216;funtanafrisca&#8217; isola dei nuraghi igt- cantina fradiles vitivinicola
+896. &#8216;galante&#8217; isola dei nuraghi igt dolce &#8211; cantina carboni
+897. &#8216;gastè&#8217; cannonau di sardegna doc &#8211; cantina meana terre del mandrolisai
+898. &#8216;genìa 2020&#8217; mandrolisai doc &#8211; cantina meana terre del mandrolisai
+899. &#8216;genìa&#8217; mandrolisai doc &#8211; cantina meana terre del mandrolisai
+900. &#8216;genna manna&#8217; cannonau di sardegna doc &#8211; cantina gennamanna
+901. &#8216;ghirada elisi&#8217; cannonau di sardegna doc &#8211; francesco cadinu
+902. &#8216;ghirada elisi&#8217; igt barbagia rosso &#8211; cantina siotto
+903. &#8216;ghirada fittiloghe&#8217; cannonau di sardegna doc &#8211; francesco cadinu
+904. &#8216;ghirada loreto&#8217; cannonau di sardegna doc &#8211; francesco cadinu
+905. &#8216;giancu&#8217; vermentino di sardegna doc &#8211; u tabarka
+906. &#8216;giogu&#8217; cannonau di sardegna doc &#8211; famiglia demelas
+907. &#8216;giovanni camboni&#8217; vermentino di sardegna doc &#8211; cantina giovanni camboni
+908. &#8216;giuàle&#8217; mandrolsai doc &#8211; famiglia demelas
+909. &#8216;gocce d&#8217;uva&#8217; spumante &#8211; cantina trexenta
+910. &#8216;gold 100 kent&#8217;annos&#8217; mandrolisai doc &#8211; cantina del mandrolisai
+911. &#8216;golden triangle&#8217; chardonnay
+912. &#8216;grafenegg&#8217; gruner veltliner organic 2023, bio-weingut kemetner
+913. &#8216;granadu&#8217; cannonau di sardegna doc &#8211; tenute smeralda
+914. &#8216;harmoge&#8217; 2013 prima terra
+915. &#8216;harmoge&#8217; 2015 prima terra
+916. &#8216;harmoge&#8217; 2016 prima terra
+917. &#8216;hawk hill&#8217; pinot noir 2023
+918. &#8216;helena flavia julia&#8217; vermentino di sardegna doc &#8211; cantine fraponti
+919. &#8216;heritage&#8217; dry red
+920. &#8216;hilaris&#8217; vermentino di sardegna doc &#8211; terre di ossidiana
+921. &#8216;horsmonden&#8217; dry white, davenport
+922. &#8216;hospes&#8217; nepente di oliena riserva cannonau di sardegna doc &#8211; iolei winery
+923. &#8216;i muri&#8217; primitivo 2024, vigneti del salento, puglia, italy
+924. &#8216;i wish i was a ninja&#8217;, testalonga
+925. &#8216;iddocca&#8217; cannonau di sardegna doc rosato &#8211; cantina gennamanna
+926. &#8216;iloghe&#8217; isola dei nuraghi igt &#8211; cantine spanu
+927. &#8216;intentu&#8217; syrah &#8211; colli del limbara igp &#8211; cantina castiglia
+928. &#8216;inu
+929. &#8216;inunou&#8217; vermentino isola dei nuraghi igt &#8211; biologico &#8211; tenute filigheddu
+930. &#8216;invidia gallurese&#8217; vermentino di gallura docg &#8211; consorzio san michele
+931. &#8216;iolei&#8217; cannonau di sardegna doc &#8211; iolei winery
+932. &#8216;istentu&#8217; isola dei nuraghi igt &#8211; cantina fradiles
+933. &#8216;istentu&#8217; isola dei nuraghi igt &#8211; cantina fradiles vitivinicola
+934. &#8216;italian pairing&#8217; &#8211; chardonnay ‘i sistri’ &#038; vino nobile di montepulciano la ciarliana
+935. &#8216;izzos&#8217; autoctono di mamoiada &#8211; cantina su mendularju
+936. &#8216;janas&#8217; carignano del sulcis doc &#8211; eural sulcis
+937. &#8216;juntos&#8217; rosato nepente di oliena cannonau di sardegna doc &#8211; iolei winery
+938. &#8216;karamare&#8217; ogliastra igt &#8211; azienda agricola pusole
+939. &#8216;karasi&#8217; areni noir, zorah 75cl
+940. &#8216;kentu&#8217; isola dei nuraghi igt &#8211; cantina gennamanna
+941. &#8216;kredenc&#8217; retro kávés bögre szett 2db
+942. &#8216;kusidura&#8217; isola dei nuraghi igt &#8211; silvio carta
+943. &#8216;l bianco 2022 tiberi
+944. &#8216;l cantine barolo doc 1973
+945. &#8216;l rosso 2020 tiberi
+946. &#8216;la maldicion&#8217; tinto
+947. &#8216;la rose no. 7&#8217; cremant de limoux, domaine j. laurens
+948. &#8216;la segreta rosso&#8217; planeta 2019
+949. &#8216;la tartufaia&#8217; barolo. giulia negri
+950. &#8216;la touriste&#8217; viognier vdp d&#8217;oc
+951. &#8216;laccheddos&#8217; vermentino isola dei nuraghi igt &#8211; cantine pisoni
+952. &#8216;lampu e&#8217; fogu&#8217; liquore di ginepro sardo &#8211; liquorificio animas
+953. &#8216;le grapiot&#8217;, chardonnay ‘sans sulfites’, domaine désiré petit
+954. &#8216;le mont&#8217; hautes-côtes de nuits
+955. &#8216;le petit&#8217; sauvignon blanc vin de france 2022
+956. &#8216;lenza di munti&#8217; 720m s.l.m nerello mascalese sicilia igt
+957. &#8216;leone d&#8217;almerita&#8217; tenuta regaleali 2019 &#8211; tasca d&#8217;almerita
+958. &#8216;les cerisiers&#8217; côtes du rhône rosé
+959. &#8216;les clos des morinières&#8217; muscadet sèvre et maine sur lie 2022
+960. &#8216;les délices 7&#8217; hal konzerv válogatás ajándékcsomag
+961. &#8216;les émiettés 6&#8217; tengeri hal filé válogatás doboz 6x80g
+962. &#8216;les monsnières&#8217; côtes de beaune
+963. &#8216;les natures&#8217; pinot blanc organic 2022, jean baptiste adam
+964. &#8216;les trois terrasses&#8217; magnum, mas gabriel
+965. &#8216;les trois terrasses&#8217;, mas gabriel
+966. &#8216;les vignes des amis&#8217;, mas gabriel
+967. &#8216;les vignes du bourg&#8217;. muscadet sevre et maine sur lie, julien braud
+968. &#8216;lètia affinato in legno&#8217; vermentino di gallura docg biologico &#8211; edizione limitata &#8211; tenute filigheddu
+969. &#8216;licurgo&#8217; montecucco sangiovese riserva docg 2013 perazzeta
+970. &#8216;liju&#8217; nepente di oliena cannonau &#8211; senza solfiti aggiunti &#8211; iolei winery
+971. &#8216;lillò&#8217; &#8211; cannonau di sardegna doc passito &#8211; agricola soi
+972. &#8216;limbaresu&#8217; colli del limbara igt &#8211; affinato in granito &#8211; la granitica
+973. &#8216;limbaresu&#8217; colli del limbara igt &#8211; la granitica
+974. &#8216;limeworks&#8217; select vineyards hawke&#8217;s bay chardonnay 2023
+975. &#8216;limeworks&#8217; select vineyards hawkes bay chardonnay 2023 &#8211; 6 pack
+976. &#8216;linnaris&#8217; isola dei nuraghi igt &#8211; vini lotta
+977. &#8216;liqu&#8217; liquore di liquirizia &#8211; silvio carta
+978. &#8216;liquore di corbezzolo caru&#8217; &#8211; orgosolo liquori
+979. &#8216;liquore di elicriso caru&#8217; &#8211; orgosolo liquori
+980. &#8216;liquore di finocchietto selvatico sardo caru&#8217; &#8211; orgosolo liquori
+981. &#8216;liquore di limone sardo di orgosolo caru&#8217; &#8211; orgosolo liquori
+982. &#8216;liquore di liquirizia&#8217; &#8211; liquorificio is cogas
+983. &#8216;liquore di liquirizia&#8217; &#8211; liquorificio pacini
+984. &#8216;liquore di mirto bianco da bacche caru&#8217; &#8211; orgosolo liquori
+985. &#8216;liquore di mirto bianco da foglie caru&#8217; &#8211; orgosolo liquori
+986. &#8216;liquore di mirto caru&#8217; &#8211; orgosolo liquori
+987. &#8216;liquore di mirto&#8217; di sardegna &#8211; liquorificio is cogas
+988. &#8216;liquore di zafferano sardo di orgosolo caru&#8217; &#8211; orgosolo liquori
+989. &#8216;liquore villacidro bianco&#8217; 50 cl &#8211; liquorificio murgia
+990. &#8216;liquore villacidro giallo&#8217; 50 cl &#8211; liquorificio murgia
+991. &#8216;liquore villacidro giallo&#8217; 70 cl &#8211; liquorificio murgia
+992. &#8216;liquore villacidro&#8217; &#8211; pacini
+993. &#8216;liscia renè&#8217; cannonau di sardegna doc rosato &#8211; pure sardinia
+994. &#8216;live slow ride fast&#8217; wijnkist (6&nbsp;flessen)
+995. &#8216;lizeri&#8217; rosato isola dei nuraghi igt &#8211; paleos vini
+996. &#8216;loop sky&#8217; bögre szett fa alátéttel 2db
+997. &#8216;loop sun&#8217; bögre szett fa alátéttel 2db
+998. &#8216;luce&#8217; luce della vite 2017 &#8211; frescobaldi
+999. &#8216;lumassina di bosco&#8217; 2018 terrazze singhie
+1000. &#8216;lun&#8217; &#8211; isola dei nuraghi igt &#8211; agricola soi

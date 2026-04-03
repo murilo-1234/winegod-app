@@ -1,0 +1,1072 @@
+Classifique e extraia dados dos itens abaixo. Sao produtos de lojas de vinho — podem ser vinhos, destilados, cervejas, acessorios, agua, etc.
+
+Exemplos do nosso banco (para referencia de formato):
+  produtor: "chateau levangile"  vinho: "pomerol"
+  produtor: "campo viejo"  vinho: "reserva rioja"
+  produtor: "penfolds"  vinho: "grange shiraz"
+  produtor: "pizzato"  vinho: "fausto brut branco"
+  produtor: "inniskillin"  vinho: "riesling icewine"
+  produtor: "chateau montrose"  vinho: "montrose"
+  produtor: "quinta do noval"  vinho: "noval"
+  produtor: "gaja"  vinho: "gaia & rey chardonnay"
+  produtor: "michele chiarlo"  vinho: "nivole moscato d'asti"
+  produtor: "felton road"  vinho: "block 3 pinot noir"
+
+TODOS os itens. Uma linha por item. Sem markdown. Sem explicacoes.
+
+Formato:
+1. X
+2. S
+3. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura
+4. W|Produtor|Vinho|Pais|Cor|Uva|Regiao|SubRegiao|Safra|ABV|Classificacao|Corpo|Harmonizacao|Docura|=3
+
+Campos:
+- Produtor = vinicola/bodega/domaine/chateau, minusculo, sem acento. O produtor e quem FAZ o vinho, nao o nome do vinho.
+  Ex: gaja (nao "gaia & rey"), michele chiarlo (nao "nivole"), felton road (nao "block 3"), castello di ama (nao "ama"), banfi (nao "fonte alla selva")
+- Vinho = nome do vinho SEM o produtor, minusculo, sem acento.
+  NUNCA deixe ?? se o nome e derivavel do input.
+  Se produtor e vinho sao o mesmo nome, repita sem prefixo:
+    "chateau montrose" → produtor: chateau montrose, vinho: montrose
+    "quinta do noval" → produtor: quinta do noval, vinho: noval
+    "dom perignon" → produtor: dom perignon, vinho: dom perignon
+  Se o input so tem produtor+uva:
+    "larentis malbec" → produtor: larentis, vinho: malbec
+  Se o input tem produtor+linha+uva:
+    "norton barrel select malbec" → produtor: norton, vinho: barrel select malbec
+- Pais = 2 letras (fr, it, ar, us, au, br, ca, es, cl, pt, de, za, nz, at, hu, gr, hr, gb, jp, etc). ?? se nao sabe
+- Cor: r=tinto w=branco p=rose s=espumante f=fortificado d=sobremesa
+- Uva = uva(s) principal(is). Ex: malbec, cabernet sauvignon, chardonnay. Para blends listar as 2-3 principais: merlot, cabernet franc. ?? se nao sabe
+- Regiao = regiao vinicola. Ex: bordeaux, mendoza, okanagan valley, serra gaucha. ?? se nao sabe
+- SubRegiao = sub-regiao especifica. Ex: pauillac, saint-estephe, lujan de cuyo, golden mile bench. ?? se nao sabe
+- Safra = ano (ex: 2019, 2020). NV se sem safra. ?? se nao sabe
+- ABV = teor alcoolico estimado em %. Estimar pelo estilo se nao souber o valor exato (champagne ~12, bordeaux ~13.5, amarone ~15, porto ~20, riesling alemao ~10). ?? so se nao tem como estimar
+- Classificacao = DOC, DOCG, AOC, DO, DOCa, DOQ, DOP, IGT, IGP, AVA, VDP, Grand Cru, 1er Grand Cru Classe, 2eme Grand Cru Classe, 3eme Grand Cru Classe, Cru Bourgeois, Grand Cru Classe, Reserva, Gran Reserva, Icewine, etc. ?? se nao tem
+- Corpo = leve, medio, encorpado. ?? se nao sabe
+- Harmonizacao = 1-3 pratos (ex: carne vermelha, queijo, frutos do mar). ?? se nao sabe
+- Docura = seco, demi-sec, doce, brut, extra brut, brut nature. ?? se nao sabe
+- X = NAO e vinho (cerveja, seltzer, cooler, sidra, agua, acessorio, caixa, gift basket, UI de site, desconto, roupa, comida)
+- S = destilado (whisky, gin, rum, vodka, tequila, grappa, cachaca, brandy, calvados, pisco, soju, baijiu, shochu)
+- W = vinho. Inclui: espumante, champagne, cava, prosecco, cremant, pet-nat, fortificado (sherry, porto, madeira, marsala, manzanilla, jerez fino, oloroso, amontillado), sobremesa, icewine, sake, yakju, huangjiu
+- NAO invente dados. Se nao sabe, use ??.
+
+FORTIFICADOS — ATENCAO:
+Sherry, porto, madeira, marsala, manzanilla, fino, oloroso, amontillado, palo cortado = W (cor f)
+Exemplos:
+  "manzanilla en rama" → W|??|manzanilla en rama|es|f|palomino|andalucia|sanlucar de barrameda|...
+  "porto tawny 10 years" → W|??|tawny 10 years|pt|f|??|douro|...|doce
+  "marsala rubino" → W|pellegrino|rubino marsala|it|f|??|sicily|...|doce
+NAO classificar fortificados como S. Calvados, brandy, grappa = S.
+
+DUPLICATAS — IMPORTANTE:
+=M significa que o item e o MESMO vinho do item M (duplicata).
+Marque =M mesmo se o nome estiver escrito diferente.
+Exemplos de duplicata:
+  "2016 chateau montrose" e "chateau montrose 2016" → mesmo vinho, marcar =M
+  "larentis malbec preco" e "larentis malbec" → mesmo vinho, "preco" e lixo do site
+  "peller cabernet sauvignon" e "peller estates cabernet sauvignon" → mesmo produtor e vinho
+Exemplos que NAO sao duplicata:
+  "larentis malbec" e "larentis merlot" → uvas diferentes = vinhos diferentes
+  "chateau montrose 2016" e "chateau montrose 2014" → safras diferentes = vinhos diferentes
+ATENCAO: mesmo produtor com uvas diferentes NAO e duplicata.
+
+1. 2022 chateau dissan 3eme cru classe margaux wine of the year case
+2. 2022 chateau dissan margaux
+3. 2022 chateau dissan margaux
+4. 2022 chateau dissan margaux prearrival
+5. 2022 chateau doisy daene 2eme cru classe barsac
+6. 2022 chateau doisy daene 2eme cru classe barsac
+7. 2022 chateau doisy daene 2eme cru classe barsac future arrival
+8. 2022 chateau doisy daene 2eme cru classe barsac future arrival
+9. 2022 chateau doisydaene barsac grand cru classe grand vin de sauternes
+10. 2022 chateau doisyvedrines 2eme cru classe barsac
+11. 2022 chateau doisyvedrines 2eme cru classe barsac future arrival
+12. 2022 chateau du colombier bordeaux rouge
+13. 2022 chateau du colombier bordeaux rouge
+14. 2022 chateau du domaine de leglise pomerol future arrival
+15. 2022 chateau du domaine de leglise pomerol future arrival
+16. 2022 chateau du domaine de leglise pomerol future arrival
+17. 2022 chateau du glana saintjulien future arrival
+18. 2022 chateau du glana saintjulien future arrival
+19. 2022 chateau du glana saintjulien future arrival
+20. 2022 chateau du moulinavent moulinavent kupi online
+21. 2022 chateau du moulinavent moulinavent la rochelle kupi online
+22. 2022 chateau du retout hautmedoc
+23. 2022 chateau du retout hautmedoc d92ws92js91v91
+24. 2022 chateau du tertre 5e cru classe margaux
+25. 2022 chateau du tertre 5eme cru classe margaux
+26. 2022 chateau du tertre 5eme cru classe margaux
+27. 2022 chateau du tertre 5eme cru classe margaux
+28. 2022 chateau du tertre 5eme cru classe margaux
+29. 2022 chateau du tertre 5eme cru classe margaux future arrival
+30. 2022 chateau du tertre 5eme cru classe margaux future arrival
+31. 2022 chateau du tertre 5eme cru classe margaux future arrival
+32. 2022 chateau du tertre margaux 5eme grand classe
+33. 2022 chateau du tertre margaux js94we94d92v92ws91jd90wa90
+34. 2022 chateau ducru beaucaillou
+35. 2022 chateau ducru beaucaillou
+36. 2022 chateau ducru beaucaillou saintjulien
+37. 2022 chateau ducru beaucaillou saintjulien 2eme cru classe
+38. 2022 chateau ducrubeaucaillou
+39. 2022 chateau ducrubeaucaillou grand cru classe st julien
+40. 2022 chateau ducrubeaucaillou saintjulien 2eme grand cru classe
+41. 2022 chateau ducrubeaucaillou tinto
+42. 2022 chateau duhart milon
+43. 2022 chateau duhart milon pauillac
+44. 2022 chateau duhartmilon 4eme cru classe pauillac
+45. 2022 chateau duhartmilon 4eme cru classe pauillac
+46. 2022 chateau duhartmilon 4eme cru classe pauillac
+47. 2022 chateau duhartmilon 4eme cru classe pauillac
+48. 2022 chateau duhartmilon 4eme cru classe pauillac
+49. 2022 chateau duhartmilon 4eme cru classe pauillac
+50. 2022 chateau duhartmilon 4eme cru classe pauillac future arrival
+51. 2022 chateau duhartmilon 4eme cru classe pauillac future arrival
+52. 2022 chateau duhartmilon 4eme cru classe pauillac future arrival
+53. 2022 chateau duhartmilon 4eme cru classe pauillac future arrival
+54. 2022 chateau duhartmilonrothschild
+55. 2022 chateau durfort vivens
+56. 2022 chateau durfort vivens
+57. 2022 chateau durfort vivens blanc de noirs
+58. 2022 chateau durfort vivens margaux 2eme grand cru classe
+59. 2022 chateau durfortvivens 2eme cru classe margaux
+60. 2022 chateau durfortvivens 2eme cru classe margaux
+61. 2022 chateau durfortvivens 2eme cru classe margaux
+62. 2022 chateau durfortvivens 2eme cru classe margaux
+63. 2022 chateau durfortvivens 2eme cru classe margaux
+64. 2022 chateau durfortvivens 2eme cru classe margaux
+65. 2022 chateau durfortvivens 2eme cru classe margaux
+66. 2022 chateau durfortvivens 2eme cru classe margaux future arrival
+67. 2022 chateau durfortvivens 2eme cru classe margaux future arrival
+68. 2022 chateau durfortvivens 2eme cru classe margaux future arrival
+69. 2022 chateau durfortvivens blanc de noir vdf future arrival
+70. 2022 chateau dutruch grand poujeaux moulis en medoc future arrival
+71. 2022 chateau dutruch grand poujeaux moulis en medoc future arrival
+72. 2022 chateau dutruch grand poujeaux moulis en medoc future arrival
+73. 2022 chateau dyquem owc1
+74. 2022 chateau dyquem premier cru superieur sauternes
+75. 2022 chateau dyquem premier cru superieur sauternes
+76. 2022 chateau dyquem premier cru superieur sauternes
+77. 2022 chateau dyquem premier cru superieur sauternes
+78. 2022 chateau dyquem premier cru superieur sauternes
+79. 2022 chateau dyquem premier cru superieur sauternes
+80. 2022 chateau dyquem premier cru superieur sauternes
+81. 2022 chateau dyquem premier cru superieur sauternes
+82. 2022 chateau dyquem premier cru superieur sauternes
+83. 2022 chateau dyquem premier cru superieur sauternes
+84. 2022 chateau dyquem premier cru superieur sauternes
+85. 2022 chateau dyquem premier cru superieur sauternes 12
+86. 2022 chateau dyquem premier cru superieur sauternes 6
+87. 2022 chateau dyquem premier cru superieur sauternes future arrival
+88. 2022 chateau dyquem sauternes
+89. 2022 chateau dyquem sauternes
+90. 2022 chateau dyquem sauternes 1er grand cru classe superieur demie
+91. 2022 chateau dyquem sauternes 1er grand cru classe superieur standard bottle
+92. 2022 chateau dyquem sauternes france
+93. 2022 chateau dyquem sauternes magnum
+94. 2022 chateau dyquem y bordeaux
+95. 2022 chateau dyquem y bordeaux future arrival
+96. 2022 chateau dyquem y ygrec bordeaux blanc
+97. 2022 chateau dyquem ygrec
+98. 2022 chateau enclos tourmaline pomerol
+99. 2022 chateau enclos tourmaline pomerol future arrival
+100. 2022 chateau faizeau montagnesaintemilion future arrival
+101. 2022 chateau faugeres grand cru classe saintemilion grand cru
+102. 2022 chateau faugeres grand cru classe saintemilion grand cru
+103. 2022 chateau faugeres grand cru classe saintemilion grand cru
+104. 2022 chateau faugeres grand cru classe saintemilion grand cru future arrival
+105. 2022 chateau faugeres grand cru classe saintemilion grand cru future arrival
+106. 2022 chateau ferran rouge pessacleognan future arrival
+107. 2022 chateau ferrande rouge graves future arrival
+108. 2022 chateau ferriere 3eme cru classe margaux
+109. 2022 chateau ferriere 3eme cru classe margaux
+110. 2022 chateau ferriere 3eme cru classe margaux future arrival
+111. 2022 chateau feytit clinet pomerol prearrival
+112. 2022 chateau feytit clinet pomerol prearrival
+113. 2022 chateau feytitclinet pomerol
+114. 2022 chateau feytitclinet pomerol
+115. 2022 chateau feytitclinet pomerol
+116. 2022 chateau feytitclinet pomerol
+117. 2022 chateau feytitclinet pomerol future arrival
+118. 2022 chateau feytitclinet pomerol future arrival
+119. 2022 chateau feytitclinet pomerol future arrival
+120. 2022 chateau figeac
+121. 2022 chateau figeac premier grand cru classe
+122. 2022 chateau figeac premier grand cru classe a saintemilion grand cru
+123. 2022 chateau figeac premier grand cru classe a saintemilion grand cru
+124. 2022 chateau figeac premier grand cru classe a saintemilion grand cru future arrival
+125. 2022 chateau figeac premier grand cru classe a saintemilion grand cru future arrival
+126. 2022 chateau figeac premier grand cru classe b saintemilion grand cru
+127. 2022 chateau figeac premier grand cru classe b saintemilion grand cru
+128. 2022 chateau figeac premier grand cru classe b saintemilion grand cru
+129. 2022 chateau figeac saintemilion 1er grand cru classe
+130. 2022 chateau figeac tinto
+131. 2022 chateau fombrauge grand cru classe saintemilion grand cru
+132. 2022 chateau fombrauge grand cru classe saintemilion grand cru
+133. 2022 chateau fombrauge grand cru classe saintemilion grand cru future arrival
+134. 2022 chateau fombrauge grand cru classe saintemilion grand cru future arrival
+135. 2022 chateau fombrauge saint emilion grand cru
+136. 2022 chateau fombrauge saintemilion grand cru france
+137. 2022 chateau fonbadet pauillac future arrival
+138. 2022 chateau fonbadet pauillac future arrival
+139. 2022 chateau fonbadet pauillac future arrival
+140. 2022 chateau fonplegade grand cru classe saintemilion grand cru
+141. 2022 chateau fonplegade grand cru classe saintemilion grand cru future arrival
+142. 2022 chateau fonplegade grand cru classe saintemilion grand cru future arrival
+143. 2022 chateau fonreaud le cygne bordeaux future arrival
+144. 2022 chateau fonreaud listracmedoc future arrival
+145. 2022 chateau fonreaud listracmedoc future arrival
+146. 2022 chateau fonroque grand cru classe saintemilion grand cru future arrival
+147. 2022 chateau fonroque saintemilion grand cru classe
+148. 2022 chateau fontenil fronsac future arrival
+149. 2022 chateau fontenil fronsac future arrival
+150. 2022 chateau fortia chateauneufdupape cuvee du baron
+151. 2022 chateau freybernat bordeaux blanc
+152. 2022 chateau freybernat bordeaux blanc
+153. 2022 chateau fuisse pouillyfuisse les brules future arrival
+154. 2022 chateau fuisse pouillyfuisse premier cru le clos future arrival
+155. 2022 chateau gazin
+156. 2022 chateau gazin pomerol
+157. 2022 chateau gazin pomerol
+158. 2022 chateau gazin pomerol
+159. 2022 chateau gazin pomerol
+160. 2022 chateau gazin pomerol
+161. 2022 chateau gazin pomerol
+162. 2022 chateau gazin pomerol
+163. 2022 chateau gazin pomerol future arrival
+164. 2022 chateau gazin pomerol future arrival
+165. 2022 chateau gazin pomerol future arrival
+166. 2022 chateau giscours
+167. 2022 chateau giscours
+168. 2022 chateau giscours 3eme cru classe margaux
+169. 2022 chateau giscours 3eme cru classe margaux
+170. 2022 chateau giscours 3eme cru classe margaux
+171. 2022 chateau giscours 3eme cru classe margaux
+172. 2022 chateau giscours 3eme cru classe margaux
+173. 2022 chateau giscours 3eme cru classe margaux
+174. 2022 chateau giscours 3eme cru classe margaux
+175. 2022 chateau giscours 3eme cru classe margaux
+176. 2022 chateau giscours 3eme cru classe margaux future arrival
+177. 2022 chateau giscours 3eme cru classe margaux future arrival
+178. 2022 chateau giscours gr cru margaux
+179. 2022 chateau giscours margaux
+180. 2022 chateau giscours margaux
+181. 2022 chateau giscours margaux
+182. 2022 chateau giscours margaux
+183. 2022 chateau giscours margaux
+184. 2022 chateau giscours margaux
+185. 2022 chateau giscours margaux prearrival
+186. 2022 chateau gloria saintjulien
+187. 2022 chateau gloria saintjulien
+188. 2022 chateau gloria saintjulien
+189. 2022 chateau gloria saintjulien
+190. 2022 chateau gloria saintjulien
+191. 2022 chateau gloria saintjulien future arrival
+192. 2022 chateau gloria saintjulien future arrival
+193. 2022 chateau gloria saintjulien js96v9496jd94d93wa93ws93
+194. 2022 chateau godeau saintemilion grand cru future arrival
+195. 2022 chateau godeau saintemilion grand cru future arrival
+196. 2022 chateau godeau saintemilion grand cru future arrival
+197. 2022 chateau grand barrail lamarzelle figeac saintemilion grand cru future arrival
+198. 2022 chateau grand barrail lamarzelle figeac saintemilion grand cru future arrival
+199. 2022 chateau grand corbin grand cru classe saintemilion grand cru
+200. 2022 chateau grand corbin grand cru classe saintemilion grand cru future arrival
+201. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru
+202. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru
+203. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru future arrival
+204. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru future arrival
+205. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru future arrival
+206. 2022 chateau grand corbindespagne grand cru classe saintemilion grand cru future arrival
+207. 2022 chateau grand mayne grand cru classe saintemilion grand cru
+208. 2022 chateau grand mayne grand cru classe saintemilion grand cru
+209. 2022 chateau grand mayne grand cru classe saintemilion grand cru future arrival
+210. 2022 chateau grand mayne grand cru classe saintemilion grand cru future arrival
+211. 2022 chateau grand mayne saintemilion grand cru
+212. 2022 chateau grand mayne saintemilion grand cru
+213. 2022 chateau grand pas bordeaux rouge
+214. 2022 chateau grand pas bordeaux rouge
+215. 2022 chateau grand puy lacoste pauillac
+216. 2022 chateau grand village bordeaux superieur
+217. 2022 chateau grand village bordeaux superieur rouge
+218. 2022 chateau grand village rouge bordeaux france
+219. 2022 chateau grand village rouge bordeaux superieur rouge ch lafleur
+220. 2022 chateau grand village rouge bordeaux superieur rouge ch lafleur
+221. 2022 chateau grand village rouge bordeaux superieur rouge ch lafleur magnum
+222. 2022 chateau grandpuy ducasse 5eme cru classe pauillac
+223. 2022 chateau grandpuy ducasse 5eme cru classe pauillac
+224. 2022 chateau grandpuy ducasse 5eme cru classe pauillac
+225. 2022 chateau grandpuy ducasse 5eme cru classe pauillac future arrival
+226. 2022 chateau grandpuy ducasse 5eme cru classe pauillac future arrival
+227. 2022 chateau grandpuy ducasse 5eme cru classe pauillac future arrival
+228. 2022 chateau grandpuy ducasse 5eme cru classe pauillac future arrival
+229. 2022 chateau grandpuy ducasse pauillac js96jd95d94ws94
+230. 2022 chateau grandpuylacoste
+231. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+232. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+233. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+234. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+235. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+236. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+237. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+238. 2022 chateau grandpuylacoste 5eme cru classe pauillac
+239. 2022 chateau grandpuylacoste 5eme cru classe pauillac future arrival
+240. 2022 chateau grandpuylacoste 5eme cru classe pauillac future arrival
+241. 2022 chateau grandpuylacoste 5eme cru classe pauillac future arrival
+242. 2022 chateau grandpuylacoste 5eme cru classe pauillac future arrival
+243. 2022 chateau grandpuylacoste pauillac france
+244. 2022 chateau grandpuylacoste pauillac grand cru classe
+245. 2022 chateau grillet chateaugrillet
+246. 2022 chateau gruaud larose 2eme cru classe saintjulien
+247. 2022 chateau gruaud larose 2eme cru classe saintjulien
+248. 2022 chateau gruaud larose 2eme cru classe saintjulien
+249. 2022 chateau gruaud larose 2eme cru classe saintjulien future arrival
+250. 2022 chateau gruaud larose 2eme cru classe saintjulien future arrival
+251. 2022 chateau gruaud larose 2eme cru classe saintjulien future arrival
+252. 2022 chateau gruaud larose 2eme cru classe saintjulien future arrival
+253. 2022 chateau gruaud larose saintjulien 2eme grand cru classe
+254. 2022 chateau gruaud larose saintjulien prearrival
+255. 2022 chateau gruaud larose tinto
+256. 2022 chateau gruaudlarose saintjulien france
+257. 2022 chateau guillot clauzel pomerol
+258. 2022 chateau guillot clauzel pomerol future arrival
+259. 2022 chateau guillot clauzel pomerol future arrival
+260. 2022 chateau guiraud premier cru classe sauternes
+261. 2022 chateau guiraud premier cru classe sauternes future arrival
+262. 2022 chateau guiraud sauternes
+263. 2022 chateau haut bailly hb pessac leognan
+264. 2022 chateau haut bailly pessacleognan prearrival
+265. 2022 chateau haut brion blanc
+266. 2022 chateau haut gravet saintemilion future arrival
+267. 2022 chateau hautbages liberal 5eme cru classe pauillac
+268. 2022 chateau hautbages liberal 5eme cru classe pauillac
+269. 2022 chateau hautbages liberal 5eme cru classe pauillac
+270. 2022 chateau hautbages liberal 5eme cru classe pauillac
+271. 2022 chateau hautbages liberal 5eme cru classe pauillac
+272. 2022 chateau hautbages liberal 5eme cru classe pauillac
+273. 2022 chateau hautbages liberal 5eme cru classe pauillac
+274. 2022 chateau hautbages liberal 5eme cru classe pauillac
+275. 2022 chateau hautbages liberal 5eme cru classe pauillac
+276. 2022 chateau hautbages liberal 5eme cru classe pauillac
+277. 2022 chateau hautbages liberal 5eme cru classe pauillac
+278. 2022 chateau hautbages liberal 5eme cru classe pauillac
+279. 2022 chateau hautbages liberal 5eme cru classe pauillac future arrival
+280. 2022 chateau hautbages liberal 5eme cru classe pauillac future arrival
+281. 2022 chateau hautbages liberal 5eme cru classe pauillac future arrival
+282. 2022 chateau hautbages liberal pauillac 5eme grand cru classe
+283. 2022 chateau hautbages monpelou pauillac future arrival
+284. 2022 chateau hautbailly cru classe pessacleognan
+285. 2022 chateau hautbailly cru classe pessacleognan
+286. 2022 chateau hautbailly cru classe pessacleognan
+287. 2022 chateau hautbailly cru classe pessacleognan
+288. 2022 chateau hautbailly cru classe pessacleognan
+289. 2022 chateau hautbailly cru classe pessacleognan
+290. 2022 chateau hautbailly cru classe pessacleognan
+291. 2022 chateau hautbailly cru classe pessacleognan
+292. 2022 chateau hautbailly cru classe pessacleognan future arrival
+293. 2022 chateau hautbailly cru classe pessacleognan future arrival
+294. 2022 chateau hautbailly pessacleognan france
+295. 2022 chateau hautbailly pessacleognan grand cru classe de graves
+296. 2022 chateau hautbailly tinto
+297. 2022 chateau hautbatailley 5eme cru classe pauillac
+298. 2022 chateau hautbatailley 5eme cru classe pauillac future arrival
+299. 2022 chateau hautbatailley 5eme cru classe pauillac future arrival
+300. 2022 chateau hautbatailley 5eme cru classe pauillac future arrival
+301. 2022 chateau hautbergey rouge pessacleognan future arrival
+302. 2022 chateau hautbergey rouge pessacleognan future arrival
+303. 2022 chateau hautbrion blanc pessacleognan
+304. 2022 chateau hautbrion pessacleognan
+305. 2022 chateau hautbrion pessacleognan 1er grand cru classe de graves
+306. 2022 chateau hautbrion premier cru classe pessacleognan
+307. 2022 chateau hautbrion premier cru classe pessacleognan
+308. 2022 chateau hautbrion premier cru classe pessacleognan
+309. 2022 chateau hautbrion premier cru classe pessacleognan
+310. 2022 chateau hautbrion premier cru classe pessacleognan
+311. 2022 chateau hautbrion premier cru classe pessacleognan
+312. 2022 chateau hautbrion premier cru classe pessacleognan
+313. 2022 chateau hautbrion premier cru classe pessacleognan future arrival
+314. 2022 chateau hautbrion premier cru classe pessacleognan future arrival
+315. 2022 chateau hautbrion premier cru classe pessacleognan future arrival
+316. 2022 chateau hautbrion rouge
+317. 2022 chateau hautbrion tinto
+318. 2022 chateau hautbrisson saintemilion grand cru future arrival
+319. 2022 chateau hautchaigneau lalande de pomerol future arrival
+320. 2022 chateau hautchaigneau lalande de pomerol future arrival
+321. 2022 chateau hautchaigneau lalande de pomerol future arrival
+322. 2022 chateau hautmaco cotes de bourg future arrival
+323. 2022 chateau hautmaco cuvee jean bernard cotes de bourg future arrival
+324. 2022 chateau hautmarbuzet saintestephe
+325. 2022 chateau hautmarbuzet saintestephe
+326. 2022 chateau hautmarbuzet saintestephe
+327. 2022 chateau hautmarbuzet saintestephe cru bourgeois
+328. 2022 chateau hautmarbuzet saintestephe future arrival
+329. 2022 chateau hautmarbuzet saintestephe future arrival
+330. 2022 chateau hautmarbuzet saintestephe future arrival
+331. 2022 chateau hautmarbuzet saintestephe prearrival
+332. 2022 chateau hosanna
+333. 2022 chateau hosanna
+334. 2022 chateau hosanna pomerol
+335. 2022 chateau hosanna pomerol
+336. 2022 chateau hosanna pomerol
+337. 2022 chateau hosanna pomerol future arrival
+338. 2022 chateau jansenant cotes de bourg bordeaux rouge
+339. 2022 chateau jansenant cotes de bourg bordeaux rouge
+340. 2022 chateau joanin becot castilloncotes de bordeaux future arrival
+341. 2022 chateau julien hautmedoc
+342. 2022 chateau julien hautmedoc
+343. 2022 chateau julien hautmedoc future arrival
+344. 2022 chateau julien hautmedoc future arrival
+345. 2022 chateau kirwan 3eme cru classe margaux
+346. 2022 chateau kirwan 3eme cru classe margaux
+347. 2022 chateau kirwan 3eme cru classe margaux
+348. 2022 chateau kirwan 3eme cru classe margaux
+349. 2022 chateau kirwan 3eme cru classe margaux future arrival
+350. 2022 chateau kirwan margaux 3eme grand cru classe
+351. 2022 chateau kirwan margaux prearrival
+352. 2022 chateau kirwan margaux we95js9495jd9395d94v9294
+353. 2022 chateau la cabanne pomerol future arrival
+354. 2022 chateau la cabanne pomerol future arrival
+355. 2022 chateau la cabanne pomerol future arrival
+356. 2022 chateau la clotte grand cru classe saintemilion grand cru future arrival
+357. 2022 chateau la clotte grand cru classe saintemilion grand cru future arrival
+358. 2022 chateau la confession saintemilion grand cru future arrival
+359. 2022 chateau la connivence pomerol future arrival
+360. 2022 chateau la conseillante pomerol
+361. 2022 chateau la conseillante pomerol
+362. 2022 chateau la conseillante pomerol
+363. 2022 chateau la conseillante pomerol
+364. 2022 chateau la conseillante pomerol
+365. 2022 chateau la conseillante pomerol
+366. 2022 chateau la conseillante pomerol
+367. 2022 chateau la conseillante pomerol
+368. 2022 chateau la conseillante pomerol
+369. 2022 chateau la conseillante pomerol france
+370. 2022 chateau la conseillante pomerol future arrival
+371. 2022 chateau la conseillante pomerol future arrival
+372. 2022 chateau la conseillante pomerol future arrival
+373. 2022 chateau la conseillante tinto
+374. 2022 chateau la couspaude grand cru classe saintemilion grand cru
+375. 2022 chateau la couspaude grand cru classe saintemilion grand cru future arrival
+376. 2022 chateau la croix de gay pomerol
+377. 2022 chateau la croix de gay pomerol
+378. 2022 chateau la croix de gay pomerol
+379. 2022 chateau la croix de gay pomerol future arrival
+380. 2022 chateau la croix de gay pomerol future arrival
+381. 2022 chateau la croix de gay pomerol future arrival
+382. 2022 chateau la croix de stgeorges saintgeorgessaintemilion future arrival
+383. 2022 chateau la croix du casse pomerol future arrival
+384. 2022 chateau la croix du casse pomerol future arrival
+385. 2022 chateau la croix st georges pomerol future arrival
+386. 2022 chateau la dominique grand cru classe saintemilion grand cru
+387. 2022 chateau la dominique grand cru classe saintemilion grand cru
+388. 2022 chateau la dominique grand cru classe saintemilion grand cru
+389. 2022 chateau la dominique grand cru classe saintemilion grand cru
+390. 2022 chateau la dominique grand cru classe saintemilion grand cru future arrival
+391. 2022 chateau la dominique grand cru classe saintemilion grand cru future arrival
+392. 2022 chateau la dominique grand cru classe saintemilion grand cru future arrival
+393. 2022 chateau la dominique saintemilion grand cru jd97ws93
+394. 2022 chateau la dominique saintemilion prearrival
+395. 2022 chateau la fleur de gay pomerol
+396. 2022 chateau la fleur de gay pomerol
+397. 2022 chateau la fleur de gay pomerol
+398. 2022 chateau la fleur de gay pomerol
+399. 2022 chateau la fleur de gay pomerol future arrival
+400. 2022 chateau la fleur de gay pomerol future arrival
+401. 2022 chateau la fleur de gay pomerol future arrival
+402. 2022 chateau la fleur de gay pomerol future arrival
+403. 2022 chateau la fleur petrus pomerol
+404. 2022 chateau la fleur peyrabon pauillac future arrival
+405. 2022 chateau la fleur saintemilion grand cru
+406. 2022 chateau la fleur saintemilion grand cru future arrival
+407. 2022 chateau la fleurpetrus pomerol
+408. 2022 chateau la fleurpetrus pomerol
+409. 2022 chateau la fleurpetrus pomerol
+410. 2022 chateau la fleurpetrus pomerol
+411. 2022 chateau la fleurpetrus pomerol
+412. 2022 chateau la fleurpetrus pomerol
+413. 2022 chateau la fleurpetrus pomerol future arrival
+414. 2022 chateau la fleurpetrus pomerol future arrival
+415. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru
+416. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru
+417. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru
+418. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru
+419. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru
+420. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+421. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+422. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+423. 2022 chateau la gaffeliere premier grand cru classe b saintemilion grand cru future arrival
+424. 2022 chateau la gaffeliere saint emilion grand cru classe
+425. 2022 chateau la gaffeliere saintemilion grand cru
+426. 2022 chateau la gaffeliere saintemilion prearrival
+427. 2022 chateau la garde blanc pessacleognan future arrival
+428. 2022 chateau la garde rouge pessacleognan future arrival
+429. 2022 chateau la garde rouge pessacleognan future arrival
+430. 2022 chateau la garde rouge pessacleognan future arrival
+431. 2022 chateau la grave a pomerol
+432. 2022 chateau la grave aoc pomerol
+433. 2022 chateau la grave pomerol
+434. 2022 chateau la grave pomerol future arrival
+435. 2022 chateau la grave pomerol future arrival
+436. 2022 chateau la grave trigant de boisset grand vin de pomerol
+437. 2022 chateau la gurgue margaux future arrival
+438. 2022 chateau la haye saintestephe future arrival
+439. 2022 chateau la haye saintestephe future arrival
+440. 2022 chateau la haye saintestephe future arrival
+441. 2022 chateau la lagune 3eme cru classe hautmedoc
+442. 2022 chateau la lagune 3eme cru classe hautmedoc
+443. 2022 chateau la lagune 3eme cru classe hautmedoc future arrival
+444. 2022 chateau la lagune 3eme cru classe hautmedoc future arrival
+445. 2022 chateau la lagune hautmedoc
+446. 2022 chateau la lagune hautmedoc 3eme grand cru classe
+447. 2022 chateau la lagune hautmedoc js9596jd94d94wa93
+448. 2022 chateau la louviere rouge pessacleognan future arrival
+449. 2022 chateau la louviere rouge pessacleognan grand vin de bordeaux
+450. 2022 chateau la marzelle grand cru classe saintemilion grand cru
+451. 2022 chateau la marzelle grand cru classe saintemilion grand cru
+452. 2022 chateau la marzelle grand cru classe saintemilion grand cru future arrival
+453. 2022 chateau la marzelle grand cru classe saintemilion grand cru future arrival
+454. 2022 chateau la marzelle grand cru classe saintemilion grand cru future arrival
+455. 2022 chateau la mission hautbrion blanc pessacleognan
+456. 2022 chateau la mission hautbrion blanc pessacleognan
+457. 2022 chateau la mission hautbrion blanc pessacleognan
+458. 2022 chateau la mission hautbrion blanc pessacleognan future arrival
+459. 2022 chateau la mission hautbrion blanc pessacleognan grand cru classe de graves
+460. 2022 chateau la mission hautbrion branco
+461. 2022 chateau la mission hautbrion cru classe pessacleognan
+462. 2022 chateau la mission hautbrion cru classe pessacleognan
+463. 2022 chateau la mission hautbrion cru classe pessacleognan
+464. 2022 chateau la mission hautbrion cru classe pessacleognan
+465. 2022 chateau la mission hautbrion cru classe pessacleognan
+466. 2022 chateau la mission hautbrion cru classe pessacleognan
+467. 2022 chateau la mission hautbrion cru classe pessacleognan
+468. 2022 chateau la mission hautbrion cru classe pessacleognan future arrival
+469. 2022 chateau la mission hautbrion cru classe pessacleognan future arrival
+470. 2022 chateau la mission hautbrion cru classe pessacleognan future arrival
+471. 2022 chateau la mission hautbrion cru classe pessacleognan future arrival
+472. 2022 chateau la mission hautbrion pessacleognan france
+473. 2022 chateau la mission hautbrion rouge pessacleognan grand cru classe de graves
+474. 2022 chateau la mission hautbrion tinto
+475. 2022 chateau la mission lalande de pomerol future arrival
+476. 2022 chateau la mission lalande de pomerol future arrival
+477. 2022 chateau la missionhautbrion
+478. 2022 chateau la nerthe beauvenir blanc chateauneufdupape
+479. 2022 chateau la nerthe beauvenir blanc chateauneufdupape
+480. 2022 chateau la nerthe beauvenir blanc chateauneufdupape
+481. 2022 chateau la nerthe beauvenir blanc chateauneufdupape future arrival
+482. 2022 chateau la nerthe chateauneufdupape
+483. 2022 chateau la nerthe chateauneufdupape cadettes
+484. 2022 chateau la pointe pomerol future arrival
+485. 2022 chateau la pointe pomerol future arrival
+486. 2022 chateau la pointe pomerol future arrival
+487. 2022 chateau la prade francscotes de bordeaux future arrival
+488. 2022 chateau la serre grand cru classe saintemilion grand cru future arrival
+489. 2022 chateau la serre grand cru classe saintemilion grand cru future arrival
+490. 2022 chateau la serre saintemilion grand cru classe
+491. 2022 chateau la vieille cure fronsac
+492. 2022 chateau la vieille cure fronsac future arrival
+493. 2022 chateau la violette pomerol
+494. 2022 chateau la violette pomerol
+495. 2022 chateau la violette pomerol future arrival
+496. 2022 chateau la violette tinto
+497. 2022 chateau labegorce margaux
+498. 2022 chateau labegorce margaux
+499. 2022 chateau labegorce margaux future arrival
+500. 2022 chateau labegorce margaux future arrival
+501. 2022 chateau labegorce margaux future arrival
+502. 2022 chateau labegorce margaux prearrival
+503. 2022 chateau lafauriepeyraguey bordeaux grand vin sec
+504. 2022 chateau lafauriepeyraguey bordeaux grand vin sec future arrival
+505. 2022 chateau lafauriepeyraguey premier cru classe sauternes
+506. 2022 chateau lafauriepeyraguey premier cru classe sauternes
+507. 2022 chateau lafauriepeyraguey premier cru classe sauternes
+508. 2022 chateau laffitte carcasset saintestephe future arrival
+509. 2022 chateau lafite rothschild
+510. 2022 chateau lafite rothschild
+511. 2022 chateau lafite rothschild pauillac prearrival
+512. 2022 chateau lafite rothschild pauillac premier grand cru classe
+513. 2022 chateau lafite rothschild pauillac tinto
+514. 2022 chateau lafite rothschild premier cru classe pauillac
+515. 2022 chateau lafite rothschild premier cru classe pauillac
+516. 2022 chateau lafite rothschild premier cru classe pauillac
+517. 2022 chateau lafite rothschild premier cru classe pauillac
+518. 2022 chateau lafite rothschild premier cru classe pauillac
+519. 2022 chateau lafite rothschild premier cru classe pauillac
+520. 2022 chateau lafite rothschild premier cru classe pauillac
+521. 2022 chateau lafite rothschild premier cru classe pauillac future arrival
+522. 2022 chateau lafite rothschild premier cru classe pauillac future arrival
+523. 2022 chateau lafite rothschild tinto
+524. 2022 chateau lafiterothschild
+525. 2022 chateau lafleur aoc pomerol magnum
+526. 2022 chateau lafleur pomerol
+527. 2022 chateau lafleur pomerol
+528. 2022 chateau lafleur pomerol
+529. 2022 chateau lafleur pomerol
+530. 2022 chateau lafleur pomerol
+531. 2022 chateau lafleur pomerol
+532. 2022 chateau lafleur pomerol
+533. 2022 chateau lafleur pomerol
+534. 2022 chateau lafleur pomerol
+535. 2022 chateau lafleur pomerol
+536. 2022 chateau lafleur pomerol
+537. 2022 chateau lafleur pomerol france
+538. 2022 chateau lafleur pomerol france magum
+539. 2022 chateau lafleur pomerol future arrival
+540. 2022 chateau lafleurgazin pomerol
+541. 2022 chateau lafleurgazin pomerol
+542. 2022 chateau lafleurgazin pomerol
+543. 2022 chateau lafleurgazin pomerol future arrival
+544. 2022 chateau lafleurgazin pomerol future arrival
+545. 2022 chateau lafleurgazin pomerol future arrival
+546. 2022 chateau lafon rochet saint estephe prearrival
+547. 2022 chateau lafonrochet 4eme cru classe saintestephe
+548. 2022 chateau lafonrochet 4eme cru classe saintestephe
+549. 2022 chateau lafonrochet 4eme cru classe saintestephe
+550. 2022 chateau lafonrochet 4eme cru classe saintestephe
+551. 2022 chateau lafonrochet 4eme cru classe saintestephe
+552. 2022 chateau lafonrochet 4eme cru classe saintestephe future arrival
+553. 2022 chateau lafonrochet 4eme cru classe saintestephe future arrival
+554. 2022 chateau lafonrochet 4eme cru classe saintestephe future arrival
+555. 2022 chateau lagrange 3eme cru classe saintjulien
+556. 2022 chateau lagrange 3eme cru classe saintjulien
+557. 2022 chateau lagrange 3eme cru classe saintjulien
+558. 2022 chateau lagrange 3eme cru classe saintjulien future arrival
+559. 2022 chateau lagrange 3eme cru classe saintjulien future arrival
+560. 2022 chateau lagrange 3eme cru classe saintjulien future arrival
+561. 2022 chateau lagrange 3eme cru classe saintjulien future arrival
+562. 2022 chateau lagrange pomerol
+563. 2022 chateau lagrange pomerol
+564. 2022 chateau lagrange pomerol
+565. 2022 chateau lagrange pomerol ets jeanpierre moueix proprietaire
+566. 2022 chateau lagrange pomerol future arrival
+567. 2022 chateau lagrange pomerol future arrival
+568. 2022 chateau lagrange saintjulien grand cru classe
+569. 2022 chateau lamothecissac hautmedoc cru bourgeois famille fabre vignerons
+570. 2022 chateau lanessan hautmedoc
+571. 2022 chateau lanessan hautmedoc future arrival
+572. 2022 chateau lanessan hautmedoc future arrival
+573. 2022 chateau langoa barton
+574. 2022 chateau langoa barton
+575. 2022 chateau langoa barton 3eme cru classe saintjulien
+576. 2022 chateau langoa barton 3eme cru classe saintjulien
+577. 2022 chateau langoa barton 3eme cru classe saintjulien
+578. 2022 chateau langoa barton 3eme cru classe saintjulien
+579. 2022 chateau langoa barton 3eme cru classe saintjulien future arrival
+580. 2022 chateau langoa barton 3eme cru classe saintjulien future arrival
+581. 2022 chateau langoa barton saintjulien
+582. 2022 chateau langoa barton st julien
+583. 2022 chateau langoabarton saint julien 3eme cru classe
+584. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru
+585. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru
+586. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru
+587. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru
+588. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru
+589. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru future arrival
+590. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru future arrival
+591. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru future arrival
+592. 2022 chateau larcis ducasse premier grand cru classe b saintemilion grand cru future arrival
+593. 2022 chateau larcis ducasse saint emilion grand cru
+594. 2022 chateau larcis ducasse saintemilion
+595. 2022 chateau larcis ducasse saintemilion 1er grand cru classe b
+596. 2022 chateau larcis ducasse saintemilion grand cru classe
+597. 2022 chateau larcis ducasse saintemilion grand cru france
+598. 2022 chateau larcis ducasse saintemilion prearrival
+599. 2022 chateau larmande grand cru classe saintemilion grand cru future arrival
+600. 2022 chateau larmande grand cru classe saintemilion grand cru future arrival
+601. 2022 chateau larmande grand cru classe saintemilion grand cru future arrival
+602. 2022 chateau laroque grand cru classe saintemilion grand cru
+603. 2022 chateau laroque grand cru classe saintemilion grand cru
+604. 2022 chateau laroque grand cru classe saintemilion grand cru
+605. 2022 chateau laroque grand cru classe saintemilion grand cru
+606. 2022 chateau laroque grand cru classe saintemilion grand cru
+607. 2022 chateau laroque grand cru classe saintemilion grand cru
+608. 2022 chateau laroque grand cru classe saintemilion grand cru
+609. 2022 chateau laroque grand cru classe saintemilion grand cru
+610. 2022 chateau laroque grand cru classe saintemilion grand cru future arrival
+611. 2022 chateau laroque grand cru classe saintemilion grand cru future arrival
+612. 2022 chateau laroque st emilion grand cru d97jd97wa95v95js94
+613. 2022 chateau laroze grand cru classe saintemilion grand cru
+614. 2022 chateau laroze grand cru classe saintemilion grand cru
+615. 2022 chateau laroze grand cru classe saintemilion grand cru
+616. 2022 chateau laroze grand cru classe saintemilion grand cru future arrival
+617. 2022 chateau laroze grand cru classe saintemilion grand cru future arrival
+618. 2022 chateau laroze grand cru classe saintemilion grand cru future arrival
+619. 2022 chateau larrivet hautbrion blanc pessacleognan
+620. 2022 chateau larrivet hautbrion blanc pessacleognan future arrival
+621. 2022 chateau larrivet hautbrion blanc pessacleognan js95d94jd94wa92v92
+622. 2022 chateau larrivet hautbrion pessacleognan prearrival
+623. 2022 chateau larrivet hautbrion rouge
+624. 2022 chateau larrivet hautbrion rouge pessacleognan
+625. 2022 chateau larrivet hautbrion rouge pessacleognan
+626. 2022 chateau larrivet hautbrion rouge pessacleognan future arrival
+627. 2022 chateau larrivet hautbrion rouge pessacleognan future arrival
+628. 2022 chateau larrivet hautbrion rouge pessacleognan future arrival
+629. 2022 chateau lascombes 2eme cru classe margaux
+630. 2022 chateau lascombes 2eme cru classe margaux
+631. 2022 chateau lascombes 2eme cru classe margaux
+632. 2022 chateau lascombes 2eme cru classe margaux
+633. 2022 chateau lascombes 2eme cru classe margaux future arrival
+634. 2022 chateau lascombes 2eme cru classe margaux future arrival
+635. 2022 chateau lascombes margaux chevalier de lascombes bordeaux france
+636. 2022 chateau lassegue les cadrans de lassegue saintemilion grand cru france
+637. 2022 chateau latour a pomerol
+638. 2022 chateau latour a pomerol grand vin de bordeaux
+639. 2022 chateau latour a pomerol pomerol
+640. 2022 chateau latour a pomerol pomerol
+641. 2022 chateau latour a pomerol pomerol
+642. 2022 chateau latour a pomerol pomerol
+643. 2022 chateau latourmartillac blanc cru classe pessacleognan
+644. 2022 chateau latourmartillac blanc cru classe pessacleognan
+645. 2022 chateau latourmartillac cru classe pessacleognan
+646. 2022 chateau latourmartillac rouge cru classe pessacleognan
+647. 2022 chateau latourmartillac rouge cru classe pessacleognan
+648. 2022 chateau latourmartillac rouge cru classe pessacleognan
+649. 2022 chateau latourmartillac rouge cru classe pessacleognan
+650. 2022 chateau le bon pasteur pomerol
+651. 2022 chateau le bon pasteur pomerol
+652. 2022 chateau le bon pasteur pomerol future arrival
+653. 2022 chateau le bon pasteur pomerol future arrival
+654. 2022 chateau le boscq saintestephe
+655. 2022 chateau le boscq saintestephe future arrival
+656. 2022 chateau le bouis la clape
+657. 2022 chateau le chemin pomerol future arrival
+658. 2022 chateau le crock saintestephe future arrival
+659. 2022 chateau le crock saintestephe future arrival
+660. 2022 chateau le gay pomerol
+661. 2022 chateau le gay pomerol
+662. 2022 chateau le gay pomerol
+663. 2022 chateau le gay pomerol
+664. 2022 chateau le gay pomerol
+665. 2022 chateau le gay pomerol
+666. 2022 chateau le gay pomerol future arrival
+667. 2022 chateau le gay pomerol future arrival
+668. 2022 chateau le gay tinto
+669. 2022 chateau le prieure
+670. 2022 chateau le prieure grand cru classe saintemilion grand cru future arrival
+671. 2022 chateau le prieure grand cru classe saintemilion grand cru future arrival
+672. 2022 chateau le prieure grand cru classe saintemilion grand cru future arrival
+673. 2022 chateau le puy emilien
+674. 2022 chateau le puy emilien
+675. 2022 chateau le puy emilien
+676. 2022 chateau le puy emilien
+677. 2022 chateau le puy emilien
+678. 2022 chateau le puy emilien francs cotes de bordeaux
+679. 2022 chateau le puy emilien future arrival
+680. 2022 chateau le puy mariececile blanc francs cotes de bordeaux france
+681. 2022 chateau le thil pessacleognan future arrival
+682. 2022 chateau legliseclinet
+683. 2022 chateau legliseclinet pomerol
+684. 2022 chateau legliseclinet pomerol
+685. 2022 chateau legliseclinet pomerol
+686. 2022 chateau legliseclinet pomerol
+687. 2022 chateau legliseclinet pomerol
+688. 2022 chateau legliseclinet pomerol
+689. 2022 chateau legliseclinet pomerol
+690. 2022 chateau legliseclinet pomerol
+691. 2022 chateau legliseclinet pomerol future arrival
+692. 2022 chateau legliseclinet pomerol future arrival
+693. 2022 chateau leoville barton
+694. 2022 chateau leoville barton
+695. 2022 chateau leoville barton
+696. 2022 chateau leoville barton 2eme cru classe saintjulien
+697. 2022 chateau leoville barton 2eme cru classe saintjulien
+698. 2022 chateau leoville barton 2eme cru classe saintjulien
+699. 2022 chateau leoville barton 2eme cru classe saintjulien
+700. 2022 chateau leoville barton 2eme cru classe saintjulien
+701. 2022 chateau leoville barton 2eme cru classe saintjulien
+702. 2022 chateau leoville barton 2eme cru classe saintjulien
+703. 2022 chateau leoville barton 2eme cru classe saintjulien
+704. 2022 chateau leoville barton 2eme cru classe saintjulien
+705. 2022 chateau leoville barton 2eme cru classe saintjulien future arrival
+706. 2022 chateau leoville barton 2eme cru classe saintjulien future arrival
+707. 2022 chateau leoville barton saintjulien grand cru classe
+708. 2022 chateau leoville las cases
+709. 2022 chateau leoville las cases
+710. 2022 chateau leoville las cases
+711. 2022 chateau leoville las cases
+712. 2022 chateau leoville las cases 2eme cru classe saintjulien
+713. 2022 chateau leoville las cases 2eme cru classe saintjulien
+714. 2022 chateau leoville las cases 2eme cru classe saintjulien
+715. 2022 chateau leoville las cases 2eme cru classe saintjulien
+716. 2022 chateau leoville las cases 2eme cru classe saintjulien
+717. 2022 chateau leoville las cases 2eme cru classe saintjulien
+718. 2022 chateau leoville las cases 2eme cru classe saintjulien
+719. 2022 chateau leoville las cases 2eme cru classe saintjulien future arrival
+720. 2022 chateau leoville las cases 2eme cru classe saintjulien future arrival
+721. 2022 chateau leoville las cases saintjulien prearrival
+722. 2022 chateau leoville las cases tinto
+723. 2022 chateau leoville lascases saintjulien 2eme grand cru classe
+724. 2022 chateau leoville poyferre 2eme cru classe saintjulien
+725. 2022 chateau leoville poyferre 2eme cru classe saintjulien
+726. 2022 chateau leoville poyferre 2eme cru classe saintjulien
+727. 2022 chateau leoville poyferre 2eme cru classe saintjulien
+728. 2022 chateau leoville poyferre 2eme cru classe saintjulien
+729. 2022 chateau leoville poyferre 2eme cru classe saintjulien future arrival
+730. 2022 chateau leoville poyferre 2eme cru classe saintjulien future arrival
+731. 2022 chateau leoville poyferre 2eme cru classe saintjulien future arrival
+732. 2022 chateau leoville poyferre saint julien bordeaux
+733. 2022 chateau leoville poyferre saintjulien
+734. 2022 chateau leoville poyferre saintjulien grand cru classe
+735. 2022 chateau leoville poyferre tinto
+736. 2022 chateau leovillebarton
+737. 2022 chateau leovillebarton owc1
+738. 2022 chateau leovillebarton saint julien 2eme cru classe
+739. 2022 chateau leovillelas cases grand vin de leoville saintjulien france
+740. 2022 chateau leovillepoyferre
+741. 2022 chateau leovillepoyferre saintjulien prearrival
+742. 2022 chateau les carmes hautbrion
+743. 2022 chateau les carmes hautbrion
+744. 2022 chateau les carmes hautbrion
+745. 2022 chateau les carmes hautbrion
+746. 2022 chateau les carmes hautbrion pessacleognan
+747. 2022 chateau les carmes hautbrion pessacleognan
+748. 2022 chateau les carmes hautbrion pessacleognan
+749. 2022 chateau les carmes hautbrion pessacleognan
+750. 2022 chateau les carmes hautbrion pessacleognan
+751. 2022 chateau les carmes hautbrion pessacleognan
+752. 2022 chateau les carmes hautbrion pessacleognan
+753. 2022 chateau les carmes hautbrion pessacleognan
+754. 2022 chateau les carmes hautbrion pessacleognan
+755. 2022 chateau les carmes hautbrion pessacleognan
+756. 2022 chateau les carmes hautbrion pessacleognan
+757. 2022 chateau les carmes hautbrion pessacleognan
+758. 2022 chateau les carmes hautbrion pessacleognan
+759. 2022 chateau les carmes hautbrion pessacleognan
+760. 2022 chateau les carmes hautbrion pessacleognan future arrival
+761. 2022 chateau les carmes hautbrion pessacleognan future arrival
+762. 2022 chateau les carmes hautbrion pessacleognan prearrival
+763. 2022 chateau les charmesgodard blanc francscotes de bordeaux
+764. 2022 chateau les cruzelles lalande de pomerol
+765. 2022 chateau les cruzelles lalande de pomerol
+766. 2022 chateau les cruzelles lalande de pomerol future arrival
+767. 2022 chateau les cruzelles lalande de pomerol future arrival
+768. 2022 chateau les cruzelles lalandedepomerol
+769. 2022 chateau les grands chenes medoc future arrival
+770. 2022 chateau les gravieres saintemilion future arrival
+771. 2022 chateau les gravieres saintemilion future arrival
+772. 2022 chateau les roches blanches saintemilion grand cru future arrival
+773. 2022 chateau les trois croix fronsac future arrival
+774. 2022 chateau les trois croix fronsac future arrival
+775. 2022 chateau lescadre grande reserve blayecotes de bordeaux future arrival
+776. 2022 chateau lespaultmartillac blanc pessacleognan future arrival
+777. 2022 chateau lespaultmartillac rouge pessacleognan future arrival
+778. 2022 chateau lestignac
+779. 2022 chateau levangile pomerol
+780. 2022 chateau levangile pomerol
+781. 2022 chateau levangile pomerol
+782. 2022 chateau levangile pomerol
+783. 2022 chateau levangile pomerol
+784. 2022 chateau levangile pomerol
+785. 2022 chateau levangile pomerol future arrival
+786. 2022 chateau levangile pomerol future arrival
+787. 2022 chateau lilian ladouys saintestephe cru bourgeois exceptionnel
+788. 2022 chateau lilian ladouys saintestephe future arrival
+789. 2022 chateau longs sillon bordeaux superieur rouge
+790. 2022 chateau loudenne medoc future arrival
+791. 2022 chateau lynch bages
+792. 2022 chateau lynch bages 5eme cru classe pauillac
+793. 2022 chateau lynch bages 5eme cru classe pauillac
+794. 2022 chateau lynch bages 5eme cru classe pauillac
+795. 2022 chateau lynch bages 5eme cru classe pauillac
+796. 2022 chateau lynch bages grand cru classe pauillac 5eme cru classe
+797. 2022 chateau lynch bages grand vin
+798. 2022 chateau lynch bages pauillac
+799. 2022 chateau lynch bages pauillac 5eme grand cru classe
+800. 2022 chateau lynch bages pauillac grand cru classe
+801. 2022 chateau lynchbages
+802. 2022 chateau lynchbages 5eme cru classe pauillac
+803. 2022 chateau lynchbages 5eme cru classe pauillac
+804. 2022 chateau lynchbages 5eme cru classe pauillac
+805. 2022 chateau lynchbages 5eme cru classe pauillac
+806. 2022 chateau lynchbages 5eme cru classe pauillac
+807. 2022 chateau lynchbages 5eme cru classe pauillac
+808. 2022 chateau lynchbages 5eme cru classe pauillac future arrival
+809. 2022 chateau lynchbages 5eme cru classe pauillac future arrival
+810. 2022 chateau lynchbages 5eme cru classe pauillac future arrival
+811. 2022 chateau lynchbages 5eme cru classe pauillac future arrival
+812. 2022 chateau lynchbages tinto
+813. 2022 chateau lynchmoussas 5eme cru classe pauillac
+814. 2022 chateau lynchmoussas 5eme cru classe pauillac
+815. 2022 chateau lynchmoussas 5eme cru classe pauillac
+816. 2022 chateau lynchmoussas 5eme cru classe pauillac future arrival
+817. 2022 chateau lynchmoussas 5eme cru classe pauillac future arrival
+818. 2022 chateau lynchmoussas pauillac 5eme grand cru classe
+819. 2022 chateau lynchmoussas pauillac prearrival
+820. 2022 chateau malagar rouge premieres cotes de bordeaux future arrival
+821. 2022 chateau malartic lagraviere cru classe pessacleognan
+822. 2022 chateau malartic lagraviere pessacleognan grand cru classe blanc
+823. 2022 chateau malartic lagraviere pessacleognan grand cru classe blanc future arrival
+824. 2022 chateau malartic lagraviere pessacleognan grand cru classe rouge future arrival
+825. 2022 chateau malartic lagraviere pessacleognan grand cru classe rouge future arrival
+826. 2022 chateau malartic lagraviere pessacleognan grand cru classe rouge future arrival
+827. 2022 chateau malarticlagravieres rouge pessacleognan grand cru classe
+828. 2022 chateau malescot st exupery 3eme cru classe margaux
+829. 2022 chateau malescot st exupery 3eme cru classe margaux
+830. 2022 chateau malescot st exupery 3eme cru classe margaux
+831. 2022 chateau malescot st exupery 3eme cru classe margaux
+832. 2022 chateau malescot st exupery 3eme cru classe margaux
+833. 2022 chateau malescot st exupery 3eme cru classe margaux
+834. 2022 chateau malescot st exupery 3eme cru classe margaux future arrival
+835. 2022 chateau malescot st exupery 3eme cru classe margaux future arrival
+836. 2022 chateau malescot st exupery 3eme cru classe margaux future arrival
+837. 2022 chateau mancedre blanc pessacleognan future arrival
+838. 2022 chateau mangot saintemilion grand cru future arrival
+839. 2022 chateau mangot saintemilion grand cru future arrival
+840. 2022 chateau mangot saintemilion grand cru future arrival
+841. 2022 chateau margaux
+842. 2022 chateau margaux
+843. 2022 chateau margaux margaux 1er grand cru classe
+844. 2022 chateau margaux margaux prearrival
+845. 2022 chateau margaux pavillon blanc second vin bordeaux
+846. 2022 chateau margaux pavillon blanc second vin bordeaux
+847. 2022 chateau margaux pavillon blanc second vin bordeaux
+848. 2022 chateau margaux pavillon blanc second vin bordeaux future arrival
+849. 2022 chateau margaux premier cru classe margaux
+850. 2022 chateau margaux premier cru classe margaux
+851. 2022 chateau margaux premier cru classe margaux future arrival
+852. 2022 chateau margaux tinto
+853. 2022 chateau marjosse anthologie cuvee chardonneret vdf future arrival
+854. 2022 chateau marjosse bordeaux france
+855. 2022 chateau marjosse bordeaux rouge
+856. 2022 chateau marquis dalesme 3eme cru classe margaux
+857. 2022 chateau marquis de terme 4eme cru classe margaux
+858. 2022 chateau marquis de terme 4eme cru classe margaux
+859. 2022 chateau marquis de terme 4eme cru classe margaux future arrival
+860. 2022 chateau marquis de terme margaux 4eme grand cru classe
+861. 2022 chateau marsau francscotes de bordeaux
+862. 2022 chateau marsau francscotes de bordeaux future arrival
+863. 2022 chateau marsau francscotes de bordeaux future arrival
+864. 2022 chateau maucaillou moulis en medoc future arrival
+865. 2022 chateau maucaillou moulis en medoc future arrival
+866. 2022 chateau maucaillou moulis en medoc future arrival
+867. 2022 chateau mauvesin barton moulis en medoc famille barton vignerons
+868. 2022 chateau mauvesin barton moulis en medoc future arrival
+869. 2022 chateau mauvesin barton moulisenmedoc
+870. 2022 chateau mauvesin barton moulisenmedoc prearrival
+871. 2022 chateau mazeyres pomerol future arrival
+872. 2022 chateau mazeyres pomerol future arrival
+873. 2022 chateau mazeyres pomerol future arrival
+874. 2022 chateau meyney saint estephe
+875. 2022 chateau meyney saintestephe
+876. 2022 chateau meyney saintestephe
+877. 2022 chateau meyney saintestephe
+878. 2022 chateau meyney saintestephe
+879. 2022 chateau meyney saintestephe future arrival
+880. 2022 chateau meyney saintestephe future arrival
+881. 2022 chateau meyney saintestephe future arrival
+882. 2022 chateau miraval rose
+883. 2022 chateau monbousquet grand cru classe saintemilion grand cru
+884. 2022 chateau monbousquet saintemilion
+885. 2022 chateau monbrison margaux future arrival
+886. 2022 chateau moncets lalande de pomerol future arrival
+887. 2022 chateau montelena chardonnay napa valley
+888. 2022 chateau montelena chardonnay napa valley
+889. 2022 chateau montelena chardonnay napa valley california usa
+890. 2022 chateau montelena chardonnay napa valley usa
+891. 2022 chateau montlabert saintemilion future arrival
+892. 2022 chateau montlandrie castilloncotes de bordeaux
+893. 2022 chateau montlandrie castilloncotes de bordeaux
+894. 2022 chateau montlandrie castilloncotes de bordeaux future arrival
+895. 2022 chateau montlisse saintemilion grand cru future arrival
+896. 2022 chateau montrose
+897. 2022 chateau montrose 2eme cru classe saintestephe
+898. 2022 chateau montrose 2eme cru classe saintestephe
+899. 2022 chateau montrose 2eme cru classe saintestephe
+900. 2022 chateau montrose 2eme cru classe saintestephe
+901. 2022 chateau montrose 2eme cru classe saintestephe
+902. 2022 chateau montrose 2eme cru classe saintestephe
+903. 2022 chateau montrose 2eme cru classe saintestephe future arrival
+904. 2022 chateau montrose 2eme cru classe saintestephe future arrival
+905. 2022 chateau montrose 2eme cru classe saintestephe future arrival
+906. 2022 chateau montrose la dame de montrose saintestephe
+907. 2022 chateau montrose la dame de montrose saintestephe jeroboam 3 liter
+908. 2022 chateau montrose saintestephe bordeaux france
+909. 2022 chateau montrose saintestephe grand cru classe
+910. 2022 chateau montrose saintestephe grand cru classe
+911. 2022 chateau montviel pomerol future arrival
+912. 2022 chateau moulin de la rose saintjulien future arrival
+913. 2022 chateau moulin hautlaroque fronsac future arrival
+914. 2022 chateau moulin riche saintjulien future arrival
+915. 2022 chateau moulin saintgeorges saintemilion grand cru future arrival
+916. 2022 chateau mouton rothschild
+917. 2022 chateau mouton rothschild 1er grand cru classe
+918. 2022 chateau mouton rothschild pauillac prearrival
+919. 2022 chateau mouton rothschild premier cru classe pauillac
+920. 2022 chateau mouton rothschild premier cru classe pauillac
+921. 2022 chateau mouton rothschild premier cru classe pauillac
+922. 2022 chateau mouton rothschild premier cru classe pauillac
+923. 2022 chateau mouton rothschild premier cru classe pauillac
+924. 2022 chateau mouton rothschild premier cru classe pauillac
+925. 2022 chateau mouton rothschild premier cru classe pauillac
+926. 2022 chateau mouton rothschild premier cru classe pauillac
+927. 2022 chateau mouton rothschild premier cru classe pauillac future arrival
+928. 2022 chateau moutonrothschild
+929. 2022 chateau moutonrothschild pauillac 1er grand cru classe
+930. 2022 chateau musar musar jeune blanc bekaa valley lebanon
+931. 2022 chateau musar musar jeune red bekaa valley lebanon
+932. 2022 chateau nenin pomerol
+933. 2022 chateau nenin pomerol
+934. 2022 chateau nenin pomerol
+935. 2022 chateau nenin pomerol future arrival
+936. 2022 chateau nenin pomerol future arrival
+937. 2022 chateau nenin pomerol future arrival
+938. 2022 chateau olivier blanc cru classe pessacleognan
+939. 2022 chateau olivier blanc cru classe pessacleognan future arrival
+940. 2022 chateau olivier rouge cru classe pessacleognan future arrival
+941. 2022 chateau olivier rouge cru classe pessacleognan future arrival
+942. 2022 chateau olivier rouge cru classe pessacleognan future arrival
+943. 2022 chateau ormes de pez saintestephe
+944. 2022 chateau ormes de pez saintestephe
+945. 2022 chateau ormes de pez saintestephe
+946. 2022 chateau ormes de pez saintestephe future arrival
+947. 2022 chateau ormes de pez saintestephe future arrival
+948. 2022 chateau ormes de pez saintestephe future arrival
+949. 2022 chateau ormes de pez saintestephe prearrival
+950. 2022 chateau ormes de pez saintestephe prearrival
+951. 2022 chateau palmer 3eme cru classe margaux
+952. 2022 chateau palmer 3eme cru classe margaux
+953. 2022 chateau palmer 3eme cru classe margaux
+954. 2022 chateau palmer 3eme cru classe margaux
+955. 2022 chateau palmer 3eme cru classe margaux 6x
+956. 2022 chateau palmer 3eme cru classe margaux future arrival
+957. 2022 chateau palmer 3eme cru classe margaux future arrival
+958. 2022 chateau palmer 3eme cru gcc 1855
+959. 2022 chateau palmer alter ego de palmer
+960. 2022 chateau palmer margaux
+961. 2022 chateau palmer margaux 3eme grand cru classe
+962. 2022 chateau palmer margaux grand cru classe
+963. 2022 chateau palmer tinto
+964. 2022 chateau pape clement
+965. 2022 chateau pape clement blanc
+966. 2022 chateau pape clement blanc grands crus classes de graves
+967. 2022 chateau pape clement blanc pessacleognan
+968. 2022 chateau pape clement blanc pessacleognan
+969. 2022 chateau pape clement cru classe pessacleognan
+970. 2022 chateau pape clement cru classe pessacleognan
+971. 2022 chateau pape clement cru classe pessacleognan
+972. 2022 chateau pape clement cru classe pessacleognan
+973. 2022 chateau pape clement cru classe pessacleognan future arrival
+974. 2022 chateau pape clement cru classe pessacleognan future arrival
+975. 2022 chateau pape clement cru classe pessacleognan future arrival
+976. 2022 chateau pape clement cru classe pessacleognan future arrival
+977. 2022 chateau pape clement pessacleognan
+978. 2022 chateau pape clement pessacleognan france
+979. 2022 chateau pape clement rouge grand cru classe de graves
+980. 2022 chateau pape clement rouge pessacleognan grand cru classe des graves
+981. 2022 chateau papeclement rouge
+982. 2022 chateau pavie macquin 1er cru grand classe
+983. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+984. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+985. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+986. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+987. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+988. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+989. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+990. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru
+991. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru future arrival
+992. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru future arrival
+993. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru future arrival
+994. 2022 chateau pavie macquin premier grand cru classe b saintemilion grand cru future arrival
+995. 2022 chateau pavie macquin saintemilion grand cru
+996. 2022 chateau pavie macquin saintemilion prearrival
+997. 2022 chateau pavie premier grand cru classe a saintemilion grand cru
+998. 2022 chateau pavie premier grand cru classe a saintemilion grand cru
+999. 2022 chateau pavie premier grand cru classe a saintemilion grand cru
+1000. 2022 chateau pavie premier grand cru classe a saintemilion grand cru
+23:31
