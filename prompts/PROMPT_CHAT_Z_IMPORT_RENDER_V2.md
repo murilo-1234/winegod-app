@@ -397,9 +397,15 @@ def fase1(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, l
 2. `ON CONFLICT (hash_dedup) DO NOTHING` — se rodar 2x, nao duplica vinhos que tem hash
 3. Vinhos sem hash_dedup: o check_exists evita a maioria. Duplicatas residuais sao aceitaveis e podem ser limpas depois
 
-### INSERT em batch com RETURNING id
+### Abordagem: INSERT individual com RETURNING id + batch wine_sources
+
+A Fase 2 usa INSERT individual pra wines (com RETURNING id) e acumula wine_sources em mini-batches.
+INSERT individual garante 100% de mapeamento wine_id → fontes, sem logica complexa de lookup.
+Estimativa: ~200-500K vinhos novos reais × ~100ms latencia = **~5.5-14h**.
 
 ```python
+WS_MINI_BATCH = 100  # acumular wine_sources e inserir a cada 100
+
 def fase2(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, render_by_prod, limite=None, dry_run=False):
     print("\n" + "=" * 60)
     print("FASE 2 — Vinhos Novos com Anti-Duplicata")
@@ -420,6 +426,35 @@ def fase2(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, r
     sources_criados = 0
     pulados = 0
     duplicatas_hash = 0
+    ws_buffer = []  # buffer pra batch insert de wine_sources
+
+    def flush_ws_buffer():
+        """Insere wine_sources acumulados no buffer."""
+        nonlocal sources_criados, ws_buffer
+        if not ws_buffer or dry_run:
+            ws_buffer = []
+            return
+        execute_values(render_cur, """
+            INSERT INTO wine_sources (wine_id, store_id, url, preco, moeda, disponivel, descoberto_em, atualizado_em)
+            VALUES %s
+            ON CONFLICT (wine_id, store_id, url) WHERE url IS NOT NULL DO NOTHING
+        """, ws_buffer)
+        sources_criados += render_cur.rowcount
+        ws_buffer = []
+
+    def add_wine_sources(wine_id, fontes, preco_min, moeda, ts):
+        """Adiciona fontes de um vinho ao buffer. Flush automatico a cada WS_MINI_BATCH."""
+        for fonte in fontes:
+            url = fonte.get('url') or fonte.get('link')
+            if not url:
+                continue
+            dominio = get_domain(url)
+            store_id = domain_to_store.get(dominio) if dominio else None
+            if not store_id:
+                continue
+            ws_buffer.append((wine_id, store_id, url, preco_min, moeda, True, ts, ts))
+        if len(ws_buffer) >= WS_MINI_BATCH:
+            flush_ws_buffer()
 
     while True:
         if limite and processados >= limite:
@@ -448,11 +483,6 @@ def fase2(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, r
         last_id = rows[-1][0]
         ts = agora_utc()
 
-        # Separar em: existentes no Render (so wine_source) vs novos (criar wine + wine_source)
-        wines_to_insert = []       # lista de tuplas pra INSERT wines
-        sources_for_existing = []  # lista de tuplas pra wine_sources de vinhos ja existentes
-        fontes_por_wine = []       # fontes pendentes pra wines novos (indexado igual a wines_to_insert)
-
         for row in rows:
             (y_id, prod_banco, vinho_banco, pais, cor, safra, uva,
              regiao, subregiao, abv, harmonizacao, clean_id,
@@ -466,20 +496,12 @@ def fase2(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, r
             # 1. Verificar se ja existe no Render (match exato produtor + overlap nome)
             existing_wine_id = check_exists_in_render(prod_banco, vinho_banco, render_by_prod) if prod_banco else None
 
-            if existing_wine_id:
+            if existing_wine_id is not None:
                 # Vinho ja existe → so criar wine_sources
                 encontrados_render += 1
-                for fonte in fontes:
-                    url = fonte.get('url') or fonte.get('link')
-                    if not url:
-                        continue
-                    dominio = get_domain(url)
-                    store_id = domain_to_store.get(dominio) if dominio else None
-                    if not store_id:
-                        continue
-                    sources_for_existing.append((existing_wine_id, store_id, url, preco_min, moeda, True, ts, ts))
+                add_wine_sources(existing_wine_id, fontes, preco_min, moeda, ts)
             else:
-                # Vinho novo → preparar INSERT
+                # Vinho novo → INSERT individual com RETURNING id
                 if not nome_limpo:
                     pulados += 1
                     continue
@@ -491,149 +513,68 @@ def fase2(local_cur, render_cur, render_conn, vivino_to_wine, domain_to_store, r
                     except:
                         pass
 
-                wines_to_insert.append((
-                    nome_limpo, nome_normalizado, produtor_extraido, prod_banco,
-                    safra, cor, pais, regiao, subregiao,
-                    uva_to_jsonb(uva), abv_float, harmonizacao, url_imagem,
-                    preco_min, preco_max, moeda, total_fontes, hash_dedup, ean_gtin,
-                    ts, ts
-                ))
-                fontes_por_wine.append(fontes)
+                if dry_run:
+                    continue
 
-        if dry_run:
-            progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render)
-            continue
+                # SAVEPOINT isola erros individuais sem desfazer inserts anteriores do batch.
+                # Sem SAVEPOINT, 1 erro faz rollback de TODOS os inserts que funcionaram.
+                render_cur.execute("SAVEPOINT wine_insert")
+                try:
+                    render_cur.execute("""
+                        INSERT INTO wines (nome, nome_normalizado, produtor, produtor_normalizado,
+                            safra, tipo, pais, regiao, sub_regiao,
+                            uvas, teor_alcoolico, harmonizacao, imagem_url,
+                            preco_min, preco_max, moeda, total_fontes, hash_dedup, ean_gtin,
+                            descoberto_em, atualizado_em)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (hash_dedup) WHERE hash_dedup IS NOT NULL AND hash_dedup != '' DO NOTHING
+                        RETURNING id
+                    """, (nome_limpo, nome_normalizado, produtor_extraido, prod_banco,
+                          safra, cor, pais, regiao, subregiao,
+                          uva_to_jsonb(uva), abv_float, harmonizacao, url_imagem,
+                          preco_min, preco_max, moeda, total_fontes, hash_dedup, ean_gtin,
+                          ts, ts))
 
-        # INSERT wine_sources pra vinhos que ja existiam
-        if sources_for_existing:
-            execute_values(render_cur, """
-                INSERT INTO wine_sources (wine_id, store_id, url, preco, moeda, disponivel, descoberto_em, atualizado_em)
-                VALUES %s
-                ON CONFLICT (wine_id, store_id, url) WHERE url IS NOT NULL DO NOTHING
-            """, sources_for_existing)
-            sources_criados += render_cur.rowcount
+                    result = render_cur.fetchone()
+                    if result:
+                        new_wine_id = result[0]
+                        criados += 1
+                        # Criar wine_sources imediatamente (wine_id garantido)
+                        add_wine_sources(new_wine_id, fontes, preco_min, moeda, ts)
+                    else:
+                        # ON CONFLICT — vinho ja existia por hash_dedup
+                        duplicatas_hash += 1
 
-        # INSERT wines novos em batch com RETURNING id
-        if wines_to_insert:
-            # execute_values com RETURNING devolve os IDs criados
-            # ON CONFLICT (hash_dedup) DO NOTHING pra idempotencia
-            inserted = execute_values(render_cur, """
-                INSERT INTO wines (nome, nome_normalizado, produtor, produtor_normalizado,
-                    safra, tipo, pais, regiao, sub_regiao,
-                    uvas, teor_alcoolico, harmonizacao, imagem_url,
-                    preco_min, preco_max, moeda, total_fontes, hash_dedup, ean_gtin,
-                    descoberto_em, atualizado_em)
-                VALUES %s
-                ON CONFLICT (hash_dedup) WHERE hash_dedup IS NOT NULL AND hash_dedup != '' DO NOTHING
-                RETURNING id
-            """, wines_to_insert, fetch=True)
+                    render_cur.execute("RELEASE SAVEPOINT wine_insert")
 
-            # inserted = lista de (id,) dos vinhos realmente criados
-            # Pode ser menor que wines_to_insert se houve ON CONFLICT
-            new_ids = [r[0] for r in inserted] if inserted else []
-            criados += len(new_ids)
-            duplicatas_hash += len(wines_to_insert) - len(new_ids)
+                except Exception as e:
+                    print(f"\n  ERRO insert wine clean_id={clean_id}: {e}")
+                    render_cur.execute("ROLLBACK TO SAVEPOINT wine_insert")
+                    continue
 
-            # Criar wine_sources pros vinhos novos que foram realmente inseridos
-            # ATENCAO: como ON CONFLICT pode pular alguns, precisamos mapear qual wine_to_insert
-            # foi realmente criado. Usamos hash_dedup pra identificar.
-            # Estrategia: mapear hash_dedup → new_id, depois iterar wines_to_insert
-            if new_ids:
-                # Buscar hash_dedup dos IDs recem criados
-                render_cur.execute("""
-                    SELECT id, hash_dedup FROM wines WHERE id = ANY(%s)
-                """, (new_ids,))
-                hash_to_new_id = {}
-                id_set = set()
-                for wid, hd in render_cur.fetchall():
-                    if hd:
-                        hash_to_new_id[hd] = wid
-                    id_set.add(wid)
+                # Atualizar render_by_prod com wine_id REAL (nao placeholder)
+                # Se usasse -1 e o mesmo produtor+vinho aparecesse de novo,
+                # add_wine_sources(-1, ...) causaria FK violation.
+                if prod_banco and result:
+                    if prod_banco not in render_by_prod:
+                        render_by_prod[prod_banco] = []
+                    render_by_prod[prod_banco].append((new_wine_id, nome_normalizado or ""))
 
-                ws_batch = []
-                for i, wine_tuple in enumerate(wines_to_insert):
-                    hash_dedup_val = wine_tuple[17]  # posicao do hash_dedup na tupla
-                    wine_id = hash_to_new_id.get(hash_dedup_val) if hash_dedup_val else None
-
-                    # Se nao tem hash, tentar pelo nome+produtor (buscar o ID que acabou de ser criado)
-                    # Pra simplificar: se nao achou por hash, pular wine_sources deste vinho
-                    # Os wine_sources serao criados se o script rodar novamente
-                    if not wine_id:
-                        # Fallback: buscar por nome_normalizado + produtor_normalizado
-                        nome_norm = wine_tuple[1]
-                        prod_norm = wine_tuple[3]
-                        if nome_norm and prod_norm:
-                            render_cur.execute("""
-                                SELECT id FROM wines
-                                WHERE nome_normalizado = %s AND produtor_normalizado = %s
-                                AND id = ANY(%s)
-                                LIMIT 1
-                            """, (nome_norm, prod_norm, new_ids))
-                            r = render_cur.fetchone()
-                            if r:
-                                wine_id = r[0]
-
-                    if not wine_id:
-                        continue
-
-                    fontes = fontes_por_wine[i]
-                    for fonte in fontes:
-                        url = fonte.get('url') or fonte.get('link')
-                        if not url:
-                            continue
-                        dominio = get_domain(url)
-                        store_id = domain_to_store.get(dominio) if dominio else None
-                        if not store_id:
-                            continue
-                        ws_batch.append((wine_id, store_id, url, wine_tuple[14], wine_tuple[15], True, ts, ts))
-                        # wine_tuple[14] = preco_min, [15] = moeda... CUIDADO com indices
-
-                # CORRECAO: os indices da tupla wines_to_insert sao:
-                # 0=nome, 1=nome_norm, 2=produtor, 3=prod_norm, 4=safra, 5=tipo, 6=pais,
-                # 7=regiao, 8=sub_regiao, 9=uvas, 10=abv, 11=harmonizacao, 12=imagem,
-                # 13=preco_min, 14=preco_max, 15=moeda, 16=total_fontes, 17=hash_dedup, 18=ean_gtin
-                # Entao preco_min = [13], moeda = [15]
-
-                if ws_batch:
-                    execute_values(render_cur, """
-                        INSERT INTO wine_sources (wine_id, store_id, url, preco, moeda, disponivel, descoberto_em, atualizado_em)
-                        VALUES %s
-                        ON CONFLICT (wine_id, store_id, url) WHERE url IS NOT NULL DO NOTHING
-                    """, ws_batch)
-                    sources_criados += render_cur.rowcount
-
-        # COMMIT a cada batch — se crashar, so perde o batch atual
-        render_conn.commit()
-
-        # Atualizar render_by_prod com os novos vinhos (pra nao criar duplicatas no proximo batch)
-        for i, wine_tuple in enumerate(wines_to_insert):
-            prod = wine_tuple[3]  # produtor_normalizado
-            nome = wine_tuple[1]  # nome_normalizado
-            if prod:
-                if prod not in render_by_prod:
-                    render_by_prod[prod] = []
-                render_by_prod[prod].append((0, nome or ""))  # wine_id=0 placeholder
+        # Flush wine_sources restantes + COMMIT a cada batch
+        flush_ws_buffer()
+        if not dry_run:
+            render_conn.commit()
 
         progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render, dup_hash=duplicatas_hash)
+
+    # Flush final
+    flush_ws_buffer()
+    if not dry_run:
+        render_conn.commit()
 
     print(f"\n\nFase 2 concluida: {processados:,} processados | {criados:,} criados | {encontrados_render:,} ja existiam | {duplicatas_hash:,} dup hash | {sources_criados:,} sources | {pulados:,} pulados")
     return criados
 ```
-
-**NOTA sobre mapeamento wine_id → wine_sources na Fase 2:**
-
-O trecho acima usa uma estrategia de 2 passos:
-1. INSERT batch de wines com RETURNING id
-2. Mapear IDs de volta via hash_dedup (cobertura ~28%) + fallback por nome+produtor
-
-Se preferir uma abordagem mais simples e robusta:
-- Inserir wines UM POR UM com `INSERT ... RETURNING id` dentro do loop
-- Pra cada wine_id retornado, inserir wine_sources imediatamente
-- Depois de acumular ~100 wine_sources, fazer batch INSERT
-
-Essa abordagem e mais lenta (INSERT individual vs batch) mas garante 100% de mapeamento wine_id → fontes. A latencia de ~100ms por INSERT fica aceitavel se forem ~200K vinhos novos reais (~5.5h).
-
-**RECOMENDACAO: usar a abordagem simples (INSERT individual) se a performance for aceitavel. Se precisar de velocidade, usar a abordagem batch com mapeamento via hash.**
 
 ---
 
@@ -662,6 +603,7 @@ def fase3(local_cur, render_cur, render_conn, vivino_to_wine, limite=None, dry_r
     if limite:
         total = min(total, limite)
     print(f"Total a processar: {total:,}")
+    print(f"Estimativa: ~10-15 minutos (batch UPDATE via CTE, {total // BATCH_SIZE} batches)")
 
     inicio = time.time()
     last_id = 0
@@ -695,6 +637,10 @@ def fase3(local_cur, render_cur, render_conn, vivino_to_wine, limite=None, dry_r
 
         last_id = rows[-1][0]
 
+        # Preparar batch de updates
+        batch_updates = []
+        ts = agora_utc()
+
         for row in rows:
             (y_id, vivino_id, cor, pais, regiao, subregiao,
              uva, abv, harmonizacao, url_imagem) = row
@@ -714,29 +660,37 @@ def fase3(local_cur, render_cur, render_conn, vivino_to_wine, limite=None, dry_r
 
             uvas_jsonb = uva_to_jsonb(uva)
 
-            if dry_run:
-                continue
+            batch_updates.append((wine_id, cor, pais, regiao, subregiao, uvas_jsonb, abv_float, harmonizacao, url_imagem))
 
-            # COALESCE: so preenche NULL. NUNCA sobrescreve.
-            render_cur.execute("""
-                UPDATE wines SET
-                    tipo = COALESCE(wines.tipo, %s),
-                    pais = COALESCE(wines.pais, %s),
-                    regiao = COALESCE(wines.regiao, %s),
-                    sub_regiao = COALESCE(wines.sub_regiao, %s),
-                    uvas = COALESCE(wines.uvas, %s::jsonb),
-                    teor_alcoolico = COALESCE(wines.teor_alcoolico, %s),
-                    harmonizacao = COALESCE(wines.harmonizacao, %s),
-                    imagem_url = COALESCE(wines.imagem_url, %s),
-                    atualizado_em = %s
-                WHERE id = %s
-                AND (tipo IS NULL OR pais IS NULL OR regiao IS NULL OR uvas IS NULL
-                     OR teor_alcoolico IS NULL OR harmonizacao IS NULL OR imagem_url IS NULL)
-            """, (cor, pais, regiao, subregiao, uvas_jsonb, abv_float,
-                  harmonizacao, url_imagem, agora_utc(), wine_id))
+        if dry_run or not batch_updates:
+            progresso(3, processados, total, inicio, atualizados=atualizados, sem_vivino=sem_vivino)
+            continue
 
-            if render_cur.rowcount > 0:
-                atualizados += 1
+        # BATCH UPDATE via mogrify + FROM VALUES
+        # 1 round-trip de rede por batch de 1000, em vez de 1000 round-trips individuais.
+        # Reduz de ~17h (UPDATE individual) pra ~10-15 minutos.
+        # COALESCE: so preenche campos NULL. NUNCA sobrescreve dados existentes.
+        values_str = ",".join(
+            render_cur.mogrify("(%s,%s,%s,%s,%s,%s,%s,%s,%s)", v).decode()
+            for v in batch_updates
+        )
+        render_cur.execute(f"""
+            UPDATE wines w SET
+                tipo = COALESCE(w.tipo, v.tipo),
+                pais = COALESCE(w.pais, v.pais),
+                regiao = COALESCE(w.regiao, v.regiao),
+                sub_regiao = COALESCE(w.sub_regiao, v.sub_regiao),
+                uvas = COALESCE(w.uvas, v.uvas::jsonb),
+                teor_alcoolico = COALESCE(w.teor_alcoolico, v.abv::numeric),
+                harmonizacao = COALESCE(w.harmonizacao, v.harmonizacao),
+                imagem_url = COALESCE(w.imagem_url, v.imagem_url),
+                atualizado_em = {render_cur.mogrify("%s", (ts,)).decode()}
+            FROM (VALUES {values_str}) AS v(wine_id, tipo, pais, regiao, sub_regiao, uvas, abv, harmonizacao, imagem_url)
+            WHERE w.id = v.wine_id::integer
+            AND (w.tipo IS NULL OR w.pais IS NULL OR w.regiao IS NULL OR w.uvas IS NULL
+                 OR w.teor_alcoolico IS NULL OR w.harmonizacao IS NULL OR w.imagem_url IS NULL)
+        """)
+        atualizados += render_cur.rowcount
 
         # COMMIT a cada batch
         render_conn.commit()
@@ -747,7 +701,7 @@ def fase3(local_cur, render_cur, render_conn, vivino_to_wine, limite=None, dry_r
     return atualizados
 ```
 
-**NOTA: Fase 3 faz UPDATEs individuais (nao batch) porque cada registro pode ter combinacao diferente de campos NULL. Isso e aceitavel porque UPDATE individual e rapido (~1ms no Render) e o volume e menor que na Fase 1/2.**
+**NOTA: Fase 3 usa batch UPDATE via `mogrify` + `FROM VALUES`. 1 round-trip de rede por batch de 1000, em vez de 1000 round-trips individuais. Reduz de ~17h pra ~10-15 minutos.**
 
 ---
 
@@ -803,6 +757,17 @@ CREATE TABLE wine_sources (
 -- wines_clean: id (=clean_id), nome_limpo, nome_normalizado, produtor_extraido,
 --   preco_min, preco_max, moeda, url_imagem, fontes (JSON text), total_fontes, hash_dedup, ean_gtin
 ```
+
+## ESTIMATIVA DE TEMPO
+
+| Fase | Volume | Metodo | Tempo estimado |
+|---|---|---|---|
+| --check | - | queries | ~30 segundos |
+| Fase 1 | ~1M items | batch INSERT wine_sources | **30min - 1h** |
+| Fase 2 | ~762K items (~200-500K novos reais) | INSERT individual + mini-batch sources | **5 - 14h** |
+| Fase 3 | ~613K items | batch UPDATE via CTE | **10 - 15 minutos** |
+
+Fase 2 e a mais lenta porque cada vinho novo precisa de INSERT individual com RETURNING id (latencia de rede ~100ms por INSERT). Isso e necessario pra garantir o mapeamento correto wine_id → wine_sources.
 
 ## ESPECIFICACOES TECNICAS
 
