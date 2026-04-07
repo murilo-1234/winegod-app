@@ -22,6 +22,7 @@ def create_tables():
                     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     session_id VARCHAR(255),
                     ip_address VARCHAR(45),
+                    cost INTEGER DEFAULT 1,
                     created_at TIMESTAMP DEFAULT NOW()
                 );
 
@@ -29,6 +30,27 @@ def create_tables():
                     ON message_log (user_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_message_log_session
                     ON message_log (session_id, created_at);
+            """)
+            conn.commit()
+    finally:
+        release_connection(conn)
+
+
+def ensure_cost_column():
+    """Adiciona coluna cost ao message_log se nao existir (retrocompativel)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'message_log' AND column_name = 'cost'
+                    ) THEN
+                        ALTER TABLE message_log ADD COLUMN cost INTEGER DEFAULT 1;
+                    END IF;
+                END $$;
             """)
             conn.commit()
     finally:
@@ -91,27 +113,27 @@ def get_user_by_id(user_id):
         release_connection(conn)
 
 
-def log_message(user_id, session_id, ip_address):
-    """Registra uma mensagem no log."""
+def log_message(user_id, session_id, ip_address, cost=1):
+    """Registra uma mensagem no log com custo variavel."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO message_log (user_id, session_id, ip_address)
-                VALUES (%s, %s, %s)
-            """, (user_id, session_id, ip_address))
+                INSERT INTO message_log (user_id, session_id, ip_address, cost)
+                VALUES (%s, %s, %s, %s)
+            """, (user_id, session_id, ip_address, cost))
             conn.commit()
     finally:
         release_connection(conn)
 
 
 def count_messages_today(user_id):
-    """Conta mensagens do usuario hoje (UTC)."""
+    """Conta creditos usados pelo usuario hoje (UTC), somando cost."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT COUNT(*) FROM message_log
+                SELECT COALESCE(SUM(COALESCE(cost, 1)), 0) FROM message_log
                 WHERE user_id = %s
                   AND created_at >= CURRENT_DATE
             """, (user_id,))
@@ -121,12 +143,12 @@ def count_messages_today(user_id):
 
 
 def count_messages_session(session_id):
-    """Conta mensagens de uma sessao (guest)."""
+    """Conta creditos de uma sessao (guest), somando cost."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT COUNT(*) FROM message_log
+                SELECT COALESCE(SUM(COALESCE(cost, 1)), 0) FROM message_log
                 WHERE session_id = %s
                   AND created_at >= CURRENT_DATE
             """, (session_id,))

@@ -126,8 +126,10 @@ TOOLS = [
     {
         "name": "process_image",
         "description": (
-            "Processa imagem de rotulo de vinho ou cardapio usando OCR. "
-            "Use quando o usuario enviar uma foto de rotulo, cardapio ou garrafa."
+            "Processa imagem de vinho usando OCR/IA visual. "
+            "Detecta automaticamente 4 tipos: rotulo (label), screenshot de app/site, "
+            "prateleira com multiplas garrafas (shelf), ou imagem sem vinho (not_wine). "
+            "Use quando o usuario enviar foto de rotulo, garrafa, prateleira, print de tela ou cardapio."
         ),
         "input_schema": {
             "type": "object",

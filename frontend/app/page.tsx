@@ -8,6 +8,7 @@ import { LoginButton } from "@/components/auth/LoginButton";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { CreditsBanner } from "@/components/auth/CreditsBanner";
 import { sendMessageStream } from "@/lib/api";
+import type { MediaPayload } from "@/lib/api";
 import { getUser, logout as doLogout, isLoggedIn as checkLoggedIn } from "@/lib/auth";
 import type { UserData } from "@/lib/auth";
 import type { Message } from "@/lib/types";
@@ -42,8 +43,8 @@ export default function Home() {
   }, []);
 
   const handleSend = useCallback(
-    async (text: string, image?: string) => {
-      if ((!text.trim() && !image) || isTyping) return;
+    async (text: string, media?: MediaPayload) => {
+      if ((!text.trim() && !media) || isTyping) return;
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -101,10 +102,10 @@ export default function Home() {
             setIsTyping(false);
           },
         },
-        image
+        media
       );
     },
-    [isTyping]
+    [isTyping, user]
   );
 
   return (

@@ -13,6 +13,35 @@ GUEST_LIMIT = 9999
 USER_LIMIT = 9999
 
 
+def _derive_cost(data):
+    """Deriva o custo de credito baseado no tipo de media no payload.
+
+    Regras:
+    - 1 foto = custo 1
+    - 2 a 5 fotos = custo 3
+    - screenshot = custo 1 (detectado no backend, nao afeta custo aqui)
+    - shelf = custo 1 (detectado no backend, nao afeta custo aqui)
+    - video = custo 3
+    - pdf = custo 3
+    - texto/voz = custo 1
+    """
+    if data.get("video"):
+        return 3
+    if data.get("pdf"):
+        return 3
+    # Multiple images
+    images = data.get("images")
+    if images and isinstance(images, list):
+        if len(images) >= 2:
+            return 3
+        return 1
+    # Single image (backward compat)
+    if data.get("image"):
+        return 1
+    # Texto, voz = 1
+    return 1
+
+
 def check_credits(req):
     """
     Verifica se o usuario/guest tem creditos disponíveis.
@@ -86,7 +115,8 @@ def require_credits(f):
             data = request.get_json(silent=True) or {}
             session_id = data.get("session_id", "")
             ip = request.remote_addr or ""
-            log_message(user_id, session_id, ip)
+            cost = _derive_cost(data)
+            log_message(user_id, session_id, ip, cost=cost)
 
         return response
 

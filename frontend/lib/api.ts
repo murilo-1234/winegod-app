@@ -15,20 +15,30 @@ export interface StreamCallbacks {
   onError: (error: string) => void;
 }
 
+export interface MediaPayload {
+  type: "image" | "video" | "pdf";
+  base64: string;
+  images?: string[];
+}
+
 export async function sendMessageStream(
   message: string,
   callbacks: StreamCallbacks,
-  image?: string
+  media?: MediaPayload
 ): Promise<void> {
   const { onChunk, onDone, onError } = callbacks;
 
   try {
-    const body: Record<string, string> = {
+    const body: Record<string, unknown> = {
       message,
       session_id: getSessionId(),
     };
-    if (image) {
-      body.image = image;
+    if (media) {
+      if (media.type === "image" && media.images && media.images.length > 0) {
+        body.images = media.images;
+      } else {
+        body[media.type] = media.base64;
+      }
     }
 
     const response = await fetch(`${API_URL}/api/chat/stream`, {
