@@ -9,6 +9,15 @@ import tempfile
 
 import google.generativeai as genai
 
+# Garantir ffmpeg no PATH via imageio-ffmpeg (pacote Python com binario embutido)
+try:
+    import imageio_ffmpeg
+    _ffmpeg_dir = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+    if _ffmpeg_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+except ImportError:
+    pass
+
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 GEMINI_MODEL = "gemini-2.0-flash"
