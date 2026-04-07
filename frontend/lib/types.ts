@@ -5,6 +5,7 @@ export interface Message {
   timestamp: Date;
   wines?: WineEmbed[];
   quickButtons?: string[];
+  imagePreviews?: string[];
 }
 
 export interface WineData {

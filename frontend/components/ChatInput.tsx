@@ -17,6 +17,7 @@ interface MediaPayload {
   type: MediaType;
   base64: string;
   images?: string[];
+  previews?: string[];
 }
 
 interface ChatInputProps {
@@ -83,6 +84,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         type: "image" as MediaType,
         base64: images[0].base64,
         images: images.map((img) => img.base64),
+        previews: images.map((img) => img.preview),
       };
     } else if (attachment) {
       mediaPayload = { type: attachment.type, base64: attachment.base64 };

@@ -19,6 +19,7 @@ export interface MediaPayload {
   type: "image" | "video" | "pdf";
   base64: string;
   images?: string[];
+  previews?: string[];
 }
 
 export async function sendMessageStream(

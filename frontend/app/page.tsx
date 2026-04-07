@@ -51,6 +51,7 @@ export default function Home() {
         role: "user",
         content: text.trim() || "O que voce pode me dizer sobre este vinho?",
         timestamp: new Date(),
+        imagePreviews: media?.previews,
       };
 
       const bacoId = crypto.randomUUID();

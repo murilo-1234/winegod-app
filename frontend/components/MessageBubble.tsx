@@ -111,9 +111,23 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
             }
           >
             {isUser ? (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {message.content}
-              </p>
+              <div>
+                {message.imagePreviews && message.imagePreviews.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap mb-2">
+                    {message.imagePreviews.map((src, i) => (
+                      <img
+                        key={i}
+                        src={src}
+                        alt={`Foto ${i + 1}`}
+                        className="h-20 w-20 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              </div>
             ) : (
               <div className="flex flex-col gap-3">
                 {segments.map((seg, i) => {
