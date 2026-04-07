@@ -35,6 +35,8 @@ def create_tables():
     finally:
         release_connection(conn)
 
+    ensure_cost_column()
+
 
 def ensure_cost_column():
     """Adiciona coluna cost ao message_log se nao existir (retrocompativel)."""
