@@ -9,6 +9,8 @@ import tempfile
 
 import google.generativeai as genai
 
+
+
 # Garantir ffmpeg no PATH via imageio-ffmpeg (pacote Python com binario embutido)
 try:
     import imageio_ffmpeg
@@ -175,19 +177,42 @@ def _resize_frame_bytes(frame_path, max_side=1024):
 
 # --- Public functions ---
 
+def _detect_mime_type(image_bytes):
+    """Detecta mime type real da imagem pelos magic bytes."""
+    if image_bytes[:3] == b'\xff\xd8\xff':
+        return "image/jpeg"
+    if image_bytes[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    if image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP':
+        return "image/webp"
+    if image_bytes[4:12] == b'ftypheic' or image_bytes[4:12] == b'ftypmif1':
+        return "image/heic"
+    if image_bytes[:4] == b'GIF8':
+        return "image/gif"
+    # Fallback — Gemini aceita jpeg na maioria dos casos
+    return "image/jpeg"
+
+
 def process_image(base64_image):
     """Envia imagem para Gemini Flash. Detecta label, screenshot, shelf ou not_wine."""
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
         image_bytes = base64.b64decode(base64_image)
 
+        mime_type = _detect_mime_type(image_bytes)
+        print(f"[process_image] bytes={len(image_bytes)}, mime={mime_type}", flush=True)
+
         response = model.generate_content([
             IMAGE_UNIFIED_PROMPT,
-            {"mime_type": "image/jpeg", "data": image_bytes}
+            {"mime_type": mime_type, "data": image_bytes}
         ])
 
-        result = _parse_gemini_json(response.text)
+        raw_text = response.text
+        print(f"[process_image] gemini_raw={raw_text[:500]}", flush=True)
+
+        result = _parse_gemini_json(raw_text)
         image_type = result.get("type", "not_wine")
+        print(f"[process_image] parsed_type={image_type}, result={json.dumps(result, ensure_ascii=False)[:300]}", flush=True)
 
         if image_type == "label":
             return _handle_label(result)
@@ -197,12 +222,14 @@ def process_image(base64_image):
             return _handle_shelf(result)
         else:
             desc = result.get("description", "conteudo nao relacionado a vinho")
+            print(f"[process_image] not_wine: {desc}", flush=True)
             return {
                 "message": f"Nao consegui identificar um vinho nessa imagem ({desc}). Tente outra foto!",
                 "status": "not_wine",
                 "image_type": "not_wine",
             }
     except Exception as e:
+        print(f"[process_image] EXCEPTION: {type(e).__name__}: {e}", flush=True)
         return {
             "message": f"Erro ao processar imagem: {str(e)}. Descreva o vinho que voce viu!",
             "status": "error",
