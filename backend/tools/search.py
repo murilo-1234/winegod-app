@@ -1,5 +1,6 @@
 """Tools de busca: search_wine, get_similar_wines."""
 
+import time
 import psycopg2
 
 from db.connection import get_connection, release_connection
@@ -67,29 +68,20 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
 
         # Camada 1: match exato em nome_normalizado
         if not results:
-            results = _search_exact(conn, q_norm, limit, extra_where, extra_params)
-            if results:
-                layer_used = "exact"
+            results, layer_used = _try_layer("exact", lambda: _search_exact(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
 
         # Camada 2: prefixo em nome_normalizado
         if not results:
-            results = _search_prefix(conn, q_norm, limit, extra_where, extra_params)
-            if results:
-                layer_used = "prefix"
+            results, layer_used = _try_layer("prefix", lambda: _search_prefix(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
 
         # Camada 3: match exato/prefixo em produtor_normalizado
-        # Usa p_norm se explicitamente fornecido, senao tenta q_norm como produtor
         if not results:
             search_producer = p_norm or q_norm
-            results = _search_producer(conn, search_producer, limit, extra_where, extra_params)
-            if results:
-                layer_used = "producer"
+            results, layer_used = _try_layer("producer", lambda: _search_producer(conn, search_producer, limit, extra_where, extra_params), conn, layer_used)
 
         # Camada 4: fuzzy com pg_trgm — apenas se allow_fuzzy=True
         if not results and allow_fuzzy:
-            results = _search_fuzzy(conn, q_norm, limit, extra_where, extra_params)
-            if results:
-                layer_used = "fuzzy"
+            results, layer_used = _try_layer("fuzzy", lambda: _search_fuzzy(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
 
         # Complemento por tokens: se camadas 1-3 retornaram resultados
         # mas nenhum tem sinal canonico (rating, nota, score, vivino_id),
@@ -116,6 +108,23 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         return result
     finally:
         release_connection(conn)
+
+
+def _try_layer(name, fn, conn, current_layer):
+    """Executa uma camada de busca com protecao contra timeout e DB morto.
+    Faz rollback apos falha para nao deixar transacao em estado quebrado."""
+    try:
+        results = fn()
+        if results:
+            return results, name
+        return [], current_layer
+    except Exception as e:
+        print(f"[search] layer={name} FAIL {type(e).__name__}: {e}", flush=True)
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return [], current_layer
 
 
 def _build_filters(pais, regiao, tipo, safra, p_norm=None):
@@ -205,13 +214,6 @@ def _search_producer(conn, p_norm, limit, extra_where, extra_params):
 
 def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):
     """Camada 4: busca fuzzy com pg_trgm. Fallback para LIKE contains se trgm falhar."""
-    # Timeout de 5s para fuzzy — protege contra queries pesadas que matam a conexão
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SET LOCAL statement_timeout = '5000'")
-    except Exception:
-        pass
-
     sql = f"""
         SELECT {_WINE_COLUMNS},
                similarity(nome_normalizado, %s) as sim
@@ -253,9 +255,10 @@ def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):
         return []
 
 
-def _execute_search(conn, sql, params):
-    """Executa query de busca e retorna lista de dicts."""
+def _execute_search(conn, sql, params, timeout_ms=5000):
+    """Executa query de busca com timeout e retorna lista de dicts."""
     with conn.cursor() as cur:
+        cur.execute(f"SET LOCAL statement_timeout = '{timeout_ms}'")
         cur.execute(sql, params)
         if cur.description is None:
             return []
