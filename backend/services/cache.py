@@ -15,6 +15,10 @@ TTL_DETAILS = 3600         # 1 hora
 TTL_PRICES = 600           # 10 min
 TTL_RECOMMENDATIONS = 300  # 5 min
 
+# Incrementar para invalidar todo cache após hotfix de busca/dados.
+# Chaves antigas expiram naturalmente pelo TTL.
+CACHE_VERSION = 2
+
 _redis_client = None
 
 
@@ -40,7 +44,7 @@ def cache_key(prefix, **kwargs):
     """Gera chave de cache deterministica a partir dos parametros."""
     raw = json.dumps(kwargs, sort_keys=True, default=str)
     h = hashlib.md5(raw.encode()).hexdigest()[:12]
-    return f"wg:{prefix}:{h}"
+    return f"wg:v{CACHE_VERSION}:{prefix}:{h}"
 
 
 def cache_get(key):

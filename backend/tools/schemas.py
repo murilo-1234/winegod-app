@@ -4,20 +4,41 @@ TOOLS = [
     {
         "name": "search_wine",
         "description": (
-            "Busca vinhos por nome, produtor ou regiao usando busca fuzzy. "
-            "Use quando o usuario mencionar um vinho especifico, produtor, ou quiser encontrar vinhos por nome."
+            "Busca vinhos por nome ou produtor com busca inteligente em camadas (exato, prefixo, produtor, fuzzy). "
+            "Use quando o usuario mencionar um vinho especifico, produtor, ou quiser encontrar vinhos por nome. "
+            "Filtros opcionais de pais, regiao, tipo e safra refinam os resultados."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Nome do vinho, produtor, ou regiao para buscar",
+                    "description": "Nome do vinho ou produtor para buscar",
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Maximo de resultados (default 5)",
-                    "default": 5,
+                    "description": "Maximo de resultados (default 10)",
+                    "default": 10,
+                },
+                "produtor": {
+                    "type": "string",
+                    "description": "Nome do produtor/vinicola (filtro adicional, opcional)",
+                },
+                "pais": {
+                    "type": "string",
+                    "description": "Pais de origem (ex: Argentina, France, Chile)",
+                },
+                "regiao": {
+                    "type": "string",
+                    "description": "Regiao vinicola (ex: Mendoza, Bordeaux)",
+                },
+                "tipo": {
+                    "type": "string",
+                    "description": "Tipo do vinho: Red, White, Sparkling, Rose",
+                },
+                "safra": {
+                    "type": "integer",
+                    "description": "Ano da safra (ex: 2020)",
                 },
             },
             "required": ["query"],
@@ -395,3 +416,14 @@ TOOLS = [
         },
     },
 ]
+
+# Tools reduzidas para modo foto — sem process_image/video/pdf (ja processados pelo backend)
+# e sem tools pesadas irrelevantes para responder sobre foto
+TOOLS_PHOTO_MODE = [t for t in TOOLS if t["name"] in (
+    "search_wine",
+    "get_wine_details",
+    "get_prices",
+    "compare_wines",
+    "get_similar_wines",
+    "get_recommendations",
+)]

@@ -1,60 +1,239 @@
 """Tools de busca: search_wine, get_similar_wines."""
 
+import psycopg2
+
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_SEARCH
+from services.display import enrich_wines
+from tools.normalize import normalizar
+
+# Colunas retornadas em todas as buscas
+_WINE_COLUMNS = """
+    id, nome, produtor, safra, tipo, pais_nome, regiao,
+    vivino_rating, preco_min, preco_max, moeda,
+    winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
+"""
+
+# ORDER padrao: prioriza vinhos com dados canonicos, depois reviews.
+# Soma de sinais canonicos (0-4): cada campo nao-nulo soma 1 ponto.
+# Isso garante que entre vinhos igualmente relevantes, o registro
+# canonico Vivino (com rating, score etc) aparece acima da versao
+# de loja sem nota.
+_CANONICAL_RANK = """(
+    CASE WHEN vivino_rating IS NOT NULL THEN 1 ELSE 0 END
+  + CASE WHEN nota_wcf IS NOT NULL THEN 1 ELSE 0 END
+  + CASE WHEN winegod_score IS NOT NULL THEN 1 ELSE 0 END
+  + CASE WHEN vivino_id IS NOT NULL THEN 1 ELSE 0 END
+)"""
+_ORDER_CLAUSE = f"ORDER BY {_CANONICAL_RANK} DESC, vivino_reviews DESC NULLS LAST, vivino_rating DESC NULLS LAST"
 
 
-def search_wine(query, limit=5):
-    """Busca vinhos por nome usando pg_trgm (fuzzy match)."""
-    key = cache_key("search", query=query.lower(), limit=limit)
+def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None):
+    """Busca vinhos em camadas: exato -> prefixo -> produtor -> fuzzy.
+
+    Parametros opcionais permitem filtros estruturados vindos do OCR ou do Claude.
+    """
+    key = cache_key(
+        "search_v2",
+        query=query.lower().strip(),
+        limit=limit,
+        produtor=produtor,
+        pais=pais,
+        regiao=regiao,
+        tipo=tipo,
+        safra=safra,
+    )
     cached = cache_get(key)
     if cached:
         return cached
 
+    # Normalizar query com a mesma logica do ingest
+    q_norm = normalizar(query)
+    if not q_norm:
+        return {"wines": [], "total": 0, "search_layer": "empty_query"}
+
+    # Normalizar produtor se fornecido
+    p_norm = normalizar(produtor) if produtor else None
+
     conn = get_connection()
     try:
-        with conn.cursor() as cur:
-            # Tenta busca fuzzy com pg_trgm primeiro
-            sql = """
-                SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                       vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, winegod_score_type, nota_wcf,
-                       similarity(nome_normalizado, %s) as sim
-                FROM wines
-                WHERE nome_normalizado %% %s
-                ORDER BY sim DESC, vivino_reviews DESC NULLS LAST
-                LIMIT %s
-            """
-            try:
-                cur.execute(sql, (query.lower(), query.lower(), limit))
-            except Exception:
-                # Fallback: se pg_trgm nao estiver habilitado, usa ILIKE
-                conn.rollback()
-                sql = """
-                    SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                           vivino_rating, preco_min, preco_max, moeda,
-                           winegod_score, winegod_score_type, nota_wcf
-                    FROM wines
-                    WHERE nome_normalizado ILIKE %s
-                    ORDER BY vivino_reviews DESC NULLS LAST
-                    LIMIT %s
-                """
-                cur.execute(sql, (f"%{query}%", limit))
+        results = []
+        layer_used = "none"
 
-            columns = [desc[0] for desc in cur.description]
-            results = [dict(zip(columns, row)) for row in cur.fetchall()]
+        # Montar filtros opcionais (aplicados em TODAS as camadas)
+        extra_where, extra_params = _build_filters(pais, regiao, tipo, safra, p_norm)
 
-            # Converter Decimal para float para JSON
-            for r in results:
-                for k, v in r.items():
-                    if hasattr(v, 'as_integer_ratio'):
-                        r[k] = float(v)
+        # Camada 1: match exato em nome_normalizado
+        if not results:
+            results = _search_exact(conn, q_norm, limit, extra_where, extra_params)
+            if results:
+                layer_used = "exact"
 
-            result = {"wines": results, "total": len(results)}
-            cache_set(key, result, TTL_SEARCH)
-            return result
+        # Camada 2: prefixo em nome_normalizado
+        if not results:
+            results = _search_prefix(conn, q_norm, limit, extra_where, extra_params)
+            if results:
+                layer_used = "prefix"
+
+        # Camada 3: match exato/prefixo em produtor_normalizado
+        # Usa p_norm se explicitamente fornecido, senao tenta q_norm como produtor
+        if not results:
+            search_producer = p_norm or q_norm
+            results = _search_producer(conn, search_producer, limit, extra_where, extra_params)
+            if results:
+                layer_used = "producer"
+
+        # Camada 4: fuzzy com pg_trgm (complemento, nao primeira linha)
+        if not results:
+            results = _search_fuzzy(conn, q_norm, limit, extra_where, extra_params)
+            if results:
+                layer_used = "fuzzy"
+
+        # Converter Decimal para float
+        for r in results:
+            for k, v in r.items():
+                if hasattr(v, 'as_integer_ratio'):
+                    r[k] = float(v)
+
+        enrich_wines(results)
+
+        result = {"wines": results, "total": len(results), "search_layer": layer_used}
+        cache_set(key, result, TTL_SEARCH)
+        return result
     finally:
         release_connection(conn)
+
+
+def _build_filters(pais, regiao, tipo, safra, p_norm=None):
+    """Constroi WHERE clauses e params para filtros opcionais.
+
+    Quando p_norm e fornecido, restringe por produtor_normalizado
+    em TODAS as camadas (exato, prefixo, fuzzy), nao apenas na camada 3.
+    """
+    clauses = []
+    params = []
+
+    if p_norm:
+        clauses.append("produtor_normalizado LIKE %s")
+        params.append(f"{p_norm}%")
+    if pais:
+        clauses.append("pais_nome ILIKE %s")
+        params.append(f"%{pais}%")
+    if regiao:
+        clauses.append("regiao ILIKE %s")
+        params.append(f"%{regiao}%")
+    if tipo:
+        clauses.append("tipo ILIKE %s")
+        params.append(f"%{tipo}%")
+    if safra:
+        # wines.safra e VARCHAR(4) no banco — comparar como string
+        clauses.append("safra = %s")
+        params.append(str(int(safra)))
+
+    where = ""
+    if clauses:
+        where = " AND " + " AND ".join(clauses)
+    return where, params
+
+
+def _search_exact(conn, q_norm, limit, extra_where, extra_params):
+    """Camada 1: nome_normalizado = query (match exato)."""
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE nome_normalizado = %s {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    params = [q_norm] + extra_params + [limit]
+    return _execute_search(conn, sql, params)
+
+
+def _search_prefix(conn, q_norm, limit, extra_where, extra_params):
+    """Camada 2: nome_normalizado LIKE 'query%' (prefixo)."""
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE nome_normalizado LIKE %s {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    params = [f"{q_norm}%"] + extra_params + [limit]
+    return _execute_search(conn, sql, params)
+
+
+def _search_producer(conn, p_norm, limit, extra_where, extra_params):
+    """Camada 3: match em produtor_normalizado (exato + prefixo)."""
+    # Primeiro tenta exato no produtor
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE produtor_normalizado = %s {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    params = [p_norm] + extra_params + [limit]
+    results = _execute_search(conn, sql, params)
+    if results:
+        return results
+
+    # Depois prefixo no produtor
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE produtor_normalizado LIKE %s {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    params = [f"{p_norm}%"] + extra_params + [limit]
+    return _execute_search(conn, sql, params)
+
+
+def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):
+    """Camada 4: busca fuzzy com pg_trgm. Fallback para LIKE contains se trgm falhar."""
+    # Tenta pg_trgm
+    sql = f"""
+        SELECT {_WINE_COLUMNS},
+               similarity(nome_normalizado, %s) as sim
+        FROM wines
+        WHERE nome_normalizado %% %s {extra_where}
+        ORDER BY sim DESC, {_CANONICAL_RANK} DESC, vivino_reviews DESC NULLS LAST
+        LIMIT %s
+    """
+    params = [q_norm, q_norm] + extra_params + [limit]
+    try:
+        results = _execute_search(conn, sql, params)
+        if results:
+            for r in results:
+                r.pop('sim', None)
+            return results
+    except psycopg2.ProgrammingError:
+        # pg_trgm nao habilitado ou operador %% indisponivel
+        conn.rollback()
+    except psycopg2.OperationalError:
+        # Timeout ou conexao perdida durante query fuzzy
+        conn.rollback()
+
+    # Fallback: LIKE contains (ultimo recurso)
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE nome_normalizado LIKE %s {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    params = [f"%{q_norm}%"] + extra_params + [limit]
+    return _execute_search(conn, sql, params)
+
+
+def _execute_search(conn, sql, params):
+    """Executa query de busca e retorna lista de dicts."""
+    with conn.cursor() as cur:
+        cur.execute(sql, params)
+        if cur.description is None:
+            return []
+        columns = [desc[0] for desc in cur.description]
+        return [dict(zip(columns, row)) for row in cur.fetchall()]
 
 
 def get_similar_wines(wine_id, limit=5):
@@ -67,7 +246,6 @@ def get_similar_wines(wine_id, limit=5):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            # Pegar vinho base
             cur.execute(
                 "SELECT tipo, pais_nome, regiao, preco_min FROM wines WHERE id = %s",
                 (wine_id,),
@@ -99,7 +277,7 @@ def get_similar_wines(wine_id, limit=5):
             sql = f"""
                 SELECT id, nome, produtor, pais_nome, regiao, tipo,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, nota_wcf
+                       winegod_score, nota_wcf, nota_wcf_sample_size
                 FROM wines
                 WHERE {where}
                 ORDER BY vivino_rating DESC NULLS LAST
@@ -114,7 +292,6 @@ def get_similar_wines(wine_id, limit=5):
                     if hasattr(v, 'as_integer_ratio'):
                         r[k] = float(v)
 
-            # Se poucos resultados com regiao, buscar sem regiao
             if len(results) < limit and regiao:
                 remaining = limit - len(results)
                 found_ids = [r["id"] for r in results] + [wine_id]
@@ -134,7 +311,7 @@ def get_similar_wines(wine_id, limit=5):
                 sql2 = f"""
                     SELECT id, nome, produtor, pais_nome, regiao, tipo,
                            vivino_rating, preco_min, preco_max, moeda,
-                           winegod_score, nota_wcf
+                           winegod_score, nota_wcf, nota_wcf_sample_size
                     FROM wines
                     WHERE {where2}
                     ORDER BY vivino_rating DESC NULLS LAST
@@ -148,6 +325,8 @@ def get_similar_wines(wine_id, limit=5):
                         if hasattr(v, 'as_integer_ratio'):
                             r[k] = float(v)
                 results.extend(extra)
+
+            enrich_wines(results)
 
             result = {"wines": results, "total": len(results)}
             cache_set(key, result, TTL_SEARCH)

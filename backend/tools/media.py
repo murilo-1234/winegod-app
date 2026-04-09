@@ -7,8 +7,8 @@ import shutil
 import subprocess
 import tempfile
 
-import google.generativeai as genai
-
+from google import genai
+from google.genai import types
 
 
 # Garantir ffmpeg no PATH via imageio-ffmpeg (pacote Python com binario embutido)
@@ -20,39 +20,99 @@ try:
 except ImportError:
     pass
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# --- Lazy Gemini client ---
+
+_gemini_client = None
 
 GEMINI_MODEL = "gemini-2.5-flash"
 
+
+def _get_gemini_client():
+    """Retorna cliente Gemini, criado sob demanda."""
+    global _gemini_client
+    if _gemini_client is None:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY nao configurada")
+        _gemini_client = genai.Client(api_key=api_key)
+    return _gemini_client
+
+
+def _gemini_generate(contents):
+    """Chama Gemini generate_content com o modelo padrao."""
+    client = _get_gemini_client()
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=contents,
+    )
+    return response.text
+
+
 # --- Prompts ---
 
-IMAGE_UNIFIED_PROMPT = """Analyze this image and determine what it contains. Classify as ONE of:
-- "label": a wine bottle label or close-up of a single wine bottle
-- "screenshot": a screenshot or screen capture showing wine info (app, website, list)
-- "shelf": a photo of a wine shelf, display, or multiple bottles together
-- "not_wine": the image does not contain wine-related content
+IMAGE_UNIFIED_PROMPT = """You are a wine-image analyst. Classify this image as ONE of:
 
-Return ONLY a JSON object. The "type" field is always required.
+## Classification rules
+
+"label" — One wine or SKU DOMINATES the scene visually. The label/bottle occupies most of the frame.
+  - Use "label" even if there are 2-5 copies of the SAME wine side by side (e.g. supermarket facing).
+  - Use "label" if one wine is clearly the main subject and background bottles are blurry or secondary.
+  - Do NOT require a single isolated bottle. Visual dominance is the criterion, not bottle count.
+
+"screenshot" — A screen capture or digital interface showing wine information (app, website, price list, search results).
+
+"shelf" — A photo showing MULTIPLE DIFFERENT wines together on a shelf, display, rack, or table where no single wine dominates the frame.
+
+"not_wine" — The image does not contain wine-related content.
+
+## Output schemas (return ONLY valid JSON, no extra text)
 
 If type is "label":
-{"type": "label", "name": "full wine name", "producer": "winery or null", "vintage": "year or null", "region": "region or null", "grape": "grape or null"}
+{"type": "label", "name": "full wine name", "producer": "winery or null", "vintage": "year or null", "region": "region or null", "grape": "grape variety or null", "price": "price with currency or null"}
 
 If type is "screenshot":
 {"type": "screenshot", "wines": [{"name": "wine name", "price": "price or null", "rating": "rating or null", "source": "app/site name or null"}]}
 
 If type is "shelf":
 {"type": "shelf", "wines": [{"name": "wine name", "price": "price or null"}], "total_visible": 0}
-(total_visible = estimated total bottles visible, even if you can't read all labels)
 
 If type is "not_wine":
 {"type": "not_wine", "description": "brief description of what the image shows"}
 
-Rules:
-- For label: extract as much detail as possible from the label
-- For screenshot: list ALL wines visible with prices/ratings when shown
-- For shelf: list wines whose labels you can read; estimate total_visible count
-- Always use null for fields you cannot determine
-- Return ONLY valid JSON, no extra text"""
+## Price rules (CRITICAL for Brazilian supermarket labels)
+Brazilian shelf price tags often show multiple values:
+  - "PRECO R$T 1 L R$146.60" = price per liter — IGNORE this
+  - "R$ 189,99" (larger, usually at bottom) = unit price of the bottle — USE THIS
+  - Always extract the UNIT PRICE of the bottle (typically 750ml), never the per-liter price
+  - If multiple price values are visible for the same wine, pick the one labeled as the bottle/unit price
+  - If unsure which price is the unit price, return null rather than guessing
+  - Preserve the original currency symbol (R$, $, €, etc.)
+
+## Name cleanup rules
+  - Use the FULL wine name as printed on the label, not abbreviated
+  - Fix obvious OCR artifacts: if a letter is clearly wrong based on context, correct it
+    (e.g. "PONTGRAS" on a Chilean wine shelf is almost certainly "MONTGRAS")
+  - Include winery + wine line + variety when visible (e.g. "MontGras Aura Reserva Cabernet Sauvignon")
+  - Do NOT invent or guess parts of the name you cannot read — use what is legible
+  - Separate winery (producer) from wine name when both are clearly distinct on the label
+
+## Grape variety rules
+  - Only report grape varieties you can CLEARLY read on the label
+  - If partially obscured or ambiguous, return null rather than guessing
+  - Common confusions to avoid: Petit Verdot vs Petit Sirah, Grenache vs Garnacha (same grape, both acceptable), Syrah vs Shiraz (same grape, both acceptable)
+  - If you see only 2-3 letters of a grape name, return null
+
+## Shelf-specific rules
+  - "wines" list: include only wines whose names you can confidently read
+  - Deduplicate: if the same wine appears multiple times on the shelf, list it only ONCE
+  - "total_visible": estimate the number of DISTINCT wine labels/SKUs visible (not total physical bottles). 10 copies of the same wine = 1 SKU. Be conservative — when uncertain, estimate lower.
+  - For each wine in the list, extract price if a price tag is clearly associated with it
+
+## General rules
+  - Always use null for fields you truly cannot determine
+  - Return ONLY valid parseable JSON — no markdown, no commentary, no extra text
+  - Do not wrap JSON in code fences"""
 
 VIDEO_FRAME_PROMPT = """Analyze this image frame from a video. Look for wine labels, wine bottles,
 wine lists, or any text related to wine. Extract ALL wines you can identify:
@@ -121,7 +181,6 @@ def _deduplicate_wines(all_wines):
         if name not in seen:
             seen[name] = wine
         else:
-            # Merge: fill nulls from later occurrences
             existing = seen[name]
             for key in wine:
                 if wine[key] and not existing.get(key):
@@ -189,25 +248,22 @@ def _detect_mime_type(image_bytes):
         return "image/heic"
     if image_bytes[:4] == b'GIF8':
         return "image/gif"
-    # Fallback — Gemini aceita jpeg na maioria dos casos
     return "image/jpeg"
 
 
 def process_image(base64_image):
     """Envia imagem para Gemini Flash. Detecta label, screenshot, shelf ou not_wine."""
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
         image_bytes = base64.b64decode(base64_image)
 
         mime_type = _detect_mime_type(image_bytes)
         print(f"[process_image] bytes={len(image_bytes)}, mime={mime_type}", flush=True)
 
-        response = model.generate_content([
+        raw_text = _gemini_generate([
             IMAGE_UNIFIED_PROMPT,
-            {"mime_type": mime_type, "data": image_bytes}
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
         ])
 
-        raw_text = response.text
         print(f"[process_image] gemini_raw={raw_text[:500]}", flush=True)
 
         result = _parse_gemini_json(raw_text)
@@ -248,12 +304,16 @@ def _handle_label(result):
         parts.append(result["region"])
     search_text = " ".join(p for p in parts if p)
 
+    desc_parts = [f"Rotulo identificado: {search_text}"]
+    if result.get("price"):
+        desc_parts.append(f"Preco na foto: {result['price']}")
+
     return {
         "status": "success",
         "image_type": "label",
         "ocr_result": result,
         "search_text": search_text,
-        "description": f"Rotulo identificado: {search_text}",
+        "description": " | ".join(desc_parts),
     }
 
 
@@ -298,7 +358,7 @@ def _handle_shelf(result):
             "image_type": "shelf",
             "wines": [],
             "total_visible": total,
-            "description": f"Prateleira com ~{total} garrafas, nenhuma legivel.",
+            "description": "Prateleira fotografada, nenhum rotulo legivel.",
         }
 
     descriptions = []
@@ -313,7 +373,7 @@ def _handle_shelf(result):
         "image_type": "shelf",
         "wines": wines,
         "total_visible": total,
-        "description": f"Prateleira com ~{total} garrafas, {len(wines)} identificadas: " + "; ".join(descriptions),
+        "description": f"Prateleira com {len(wines)} vinho(s) identificado(s): " + "; ".join(descriptions),
     }
 
 
@@ -386,7 +446,6 @@ def process_images_batch(images):
 
 def process_video(base64_video):
     """Processa video: extrai frames com ffmpeg, envia cada frame ao Gemini, consolida vinhos."""
-    # Check ffmpeg availability
     if not shutil.which("ffmpeg"):
         return {
             "message": (
@@ -400,7 +459,6 @@ def process_video(base64_video):
     tmpdir = None
     video_path = None
     try:
-        # Decode and validate size (50 MB max)
         video_bytes = base64.b64decode(base64_video)
         if len(video_bytes) > 50 * 1024 * 1024:
             return {
@@ -408,13 +466,11 @@ def process_video(base64_video):
                 "status": "error_too_large",
             }
 
-        # Save to temp file
         tmpdir = tempfile.mkdtemp(prefix="winegod_video_")
         video_path = os.path.join(tmpdir, "input_video")
         with open(video_path, "wb") as f:
             f.write(video_bytes)
 
-        # Validate duration (max 30s)
         try:
             probe_result = subprocess.run(
                 [
@@ -432,10 +488,8 @@ def process_video(base64_video):
                     "status": "error_too_long",
                 }
         except (ValueError, subprocess.TimeoutExpired):
-            # If we can't determine duration, proceed anyway (best effort)
             duration = 30
 
-        # Extract 1 frame per second (max 30)
         frames_dir = os.path.join(tmpdir, "frames")
         os.makedirs(frames_dir, exist_ok=True)
 
@@ -449,7 +503,6 @@ def process_video(base64_video):
             capture_output=True, timeout=60,
         )
 
-        # Collect frame files
         frame_files = sorted([
             os.path.join(frames_dir, f)
             for f in os.listdir(frames_dir)
@@ -462,25 +515,21 @@ def process_video(base64_video):
                 "status": "error_no_frames",
             }
 
-        # Send each frame to Gemini
-        model = genai.GenerativeModel(GEMINI_MODEL)
         all_wines = []
 
         for frame_path in frame_files:
             try:
                 frame_bytes = _resize_frame_bytes(frame_path, max_side=1024)
-                response = model.generate_content([
+                raw_text = _gemini_generate([
                     VIDEO_FRAME_PROMPT,
-                    {"mime_type": "image/jpeg", "data": frame_bytes}
+                    types.Part.from_bytes(data=frame_bytes, mime_type="image/jpeg"),
                 ])
-                result = _parse_gemini_json(response.text)
+                result = _parse_gemini_json(raw_text)
                 wines = result.get("wines", [])
                 all_wines.extend(wines)
             except Exception:
-                # Skip frames that fail
                 continue
 
-        # Deduplicate
         unique_wines = _deduplicate_wines(all_wines)
 
         if not unique_wines:
@@ -518,7 +567,6 @@ def process_pdf(base64_pdf):
     try:
         import pdfplumber
 
-        # Decode and validate size (20 MB max)
         pdf_bytes = base64.b64decode(base64_pdf)
         if len(pdf_bytes) > 20 * 1024 * 1024:
             return {
@@ -526,13 +574,11 @@ def process_pdf(base64_pdf):
                 "status": "error_too_large",
             }
 
-        # Save to temp file
         tmpdir = tempfile.mkdtemp(prefix="winegod_pdf_")
         pdf_path = os.path.join(tmpdir, "input.pdf")
         with open(pdf_path, "wb") as f:
             f.write(pdf_bytes)
 
-        # Extract text with pdfplumber (max 20 pages)
         text_pages = []
         with pdfplumber.open(pdf_path) as pdf:
             page_count = min(len(pdf.pages), 20)
@@ -542,22 +588,17 @@ def process_pdf(base64_pdf):
 
         full_text = "\n\n".join(text_pages).strip()
 
-        model = genai.GenerativeModel(GEMINI_MODEL)
         all_wines = []
 
-        # If text is sufficient (more than 100 chars), use text-based analysis
         if len(full_text) > 100:
             try:
-                # Truncate to avoid token limits (roughly 30k chars)
                 truncated = full_text[:30000]
-                response = model.generate_content(PDF_TEXT_PROMPT + truncated)
-                result = _parse_gemini_json(response.text)
+                raw_text = _gemini_generate(PDF_TEXT_PROMPT + truncated)
+                result = _parse_gemini_json(raw_text)
                 all_wines.extend(result.get("wines", []))
             except Exception:
-                # If text analysis fails, fall through to image OCR
                 all_wines = []
 
-        # If text was poor or text analysis found nothing, try image OCR
         if not all_wines:
             try:
                 import pypdfium2 as pdfium
@@ -570,11 +611,9 @@ def process_pdf(base64_pdf):
                 for i in range(ocr_page_count):
                     try:
                         page = doc[i]
-                        # Render at 150 DPI for good OCR quality
                         bitmap = page.render(scale=150 / 72)
                         pil_image = bitmap.to_pil()
 
-                        # Resize if needed
                         w, h = pil_image.size
                         max_side = 1024
                         if w > max_side or h > max_side:
@@ -590,21 +629,19 @@ def process_pdf(base64_pdf):
                         pil_image.save(buf, format="JPEG", quality=85)
                         img_bytes = buf.getvalue()
 
-                        response = model.generate_content([
+                        raw_text = _gemini_generate([
                             PDF_IMAGE_PROMPT,
-                            {"mime_type": "image/jpeg", "data": img_bytes}
+                            types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
                         ])
-                        result = _parse_gemini_json(response.text)
+                        result = _parse_gemini_json(raw_text)
                         all_wines.extend(result.get("wines", []))
                     except Exception:
                         continue
 
                 doc.close()
             except ImportError:
-                # pypdfium2 not available — only text-based analysis was possible
                 pass
 
-        # Deduplicate
         unique_wines = _deduplicate_wines(all_wines)
 
         if not unique_wines:

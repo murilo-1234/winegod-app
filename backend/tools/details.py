@@ -2,6 +2,7 @@
 
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_DETAILS
+from services.display import enrich_wine
 
 
 def get_wine_details(wine_id):
@@ -28,6 +29,7 @@ def get_wine_details(wine_id):
                 elif hasattr(v, 'isoformat'):
                     result[k] = v.isoformat()
 
+            enrich_wine(result)
             cache_set(key, result, TTL_DETAILS)
             return result
     finally:

@@ -2,6 +2,7 @@
 
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_RECOMMENDATIONS
+from services.display import enrich_wines
 
 
 def compare_wines(wine_ids):
@@ -15,7 +16,7 @@ def compare_wines(wine_ids):
             sql = """
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao, uvas,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, winegod_score_type, nota_wcf
+                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
                 FROM wines
                 WHERE id = ANY(%s)
             """
@@ -31,6 +32,7 @@ def compare_wines(wine_ids):
             if not results:
                 return {"error": "Nenhum dos vinhos foi encontrado."}
 
+            enrich_wines(results)
             return {"wines": results, "total": len(results)}
     finally:
         release_connection(conn)
@@ -76,7 +78,7 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
             sql = f"""
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, winegod_score_type, nota_wcf
+                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
                 FROM wines
                 {where}
                 ORDER BY winegod_score DESC NULLS LAST,
@@ -92,6 +94,7 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
                     if hasattr(v, 'as_integer_ratio'):
                         r[k] = float(v)
 
+            enrich_wines(results)
             result = {"wines": results, "total": len(results)}
             cache_set(key, result, TTL_RECOMMENDATIONS)
             return result

@@ -2,32 +2,21 @@ from db.connection import get_connection, release_connection
 
 
 def search_wines(query, limit=5):
-    """Busca vinhos por nome (LIKE simples por enquanto, pg_trgm depois)"""
+    """Busca vinhos por nome — delega para tools/search.search_wine."""
+    from tools.search import search_wine
+    result = search_wine(query, limit=limit)
+    return result.get("wines", [])
+
+
+def get_wines_count_estimate():
+    """Retorna estimativa de vinhos via pg_class (sem seq scan)."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            sql = """
-                SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda
-                FROM wines
-                WHERE nome_normalizado ILIKE %s
-                ORDER BY vivino_reviews DESC NULLS LAST
-                LIMIT %s
-            """
-            cur.execute(sql, (f"%{query}%", limit))
-            columns = [desc[0] for desc in cur.description]
-            results = [dict(zip(columns, row)) for row in cur.fetchall()]
-            return results
-    finally:
-        release_connection(conn)
-
-
-def get_wines_count():
-    """Retorna total de vinhos no banco"""
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM wines")
-            return cur.fetchone()[0]
+            cur.execute(
+                "SELECT reltuples::bigint FROM pg_class WHERE relname = 'wines'"
+            )
+            row = cur.fetchone()
+            return row[0] if row and row[0] > 0 else 0
     finally:
         release_connection(conn)

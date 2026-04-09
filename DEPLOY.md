@@ -19,7 +19,7 @@ Backend no Render + Frontend na Vercel.
    - **Runtime**: Python 3
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn app:app --config gunicorn.conf.py`
-   - **Plan**: Free (ou Starter $7/mes pra nao dormir)
+   - **Plan**: Starter ($7/mes)
 5. Na aba **Environment**, adicionar:
    - `ANTHROPIC_API_KEY` = (valor da chave Claude)
    - `DATABASE_URL` = (URL **interna** do banco Render — sem `.oregon-postgres.render.com`)
@@ -28,13 +28,28 @@ Backend no Render + Frontend na Vercel.
 6. Clicar **"Create Web Service"**
 7. Aguardar deploy (2-5 minutos)
 
+### Configurar Health Check no Render
+
+**IMPORTANTE**: No dashboard do Render, ir em Settings do servico `winegod-app`:
+1. Em **Health Check Path**, trocar para: `/healthz`
+2. Salvar.
+
+Isso garante que o Render use uma rota barata (sem DB) para verificar se o servico esta vivo.
+
+Rotas disponiveis:
+- `GET /healthz` — liveness (sem DB, rapido)
+- `GET /ready` — readiness (SELECT 1, verifica DB)
+- `GET /health` — status geral (compatibilidade, usa estimativa barata)
+
 ### Verificar
 
 ```
+curl https://winegod-app.onrender.com/healthz
+curl https://winegod-app.onrender.com/ready
 curl https://winegod-app.onrender.com/health
 ```
 
-Deve retornar JSON com `"status": "ok"`.
+`/healthz` deve retornar `{"status": "ok"}` instantaneamente.
 
 ### IMPORTANTE sobre DATABASE_URL
 
@@ -113,7 +128,7 @@ A Vercel faz redeploy automatico quando voce faz push para `main`. Se precisar f
 ### Backend nao responde
 - Verificar logs no Render (aba "Logs")
 - Verificar se as ENVs estao corretas
-- No plano Free, o servico "dorme" apos 15min sem uso — primeira request demora ~30s
+- Testar `/healthz` (sem DB) e `/ready` (com DB) para isolar o problema
 
 ### Frontend mostra erro de conexao
 - Verificar se `NEXT_PUBLIC_API_URL` aponta pro backend correto
