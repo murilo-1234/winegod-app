@@ -341,6 +341,30 @@ Campo `fontes JSONB` existe, inicializado como `["vivino"]`. O backend (tools, r
 
 ---
 
+### Descoberta: escopo real de wine_aliases (2026-04-09)
+
+O mapeamento `clean_id -> wines.id Render` revelou que **98.8% dos matched >= 0.7
+NAO tem wines.id proprio no Render**. Esses vinhos de loja entraram como wine_sources
+(links para o canonico), nao como entradas wines separadas.
+
+Consequencia: wine_aliases NAO e operacao em massa sobre 648k matched. O escopo real e:
+- ~25% dos wines no Render (~627K) NAO tem vivino_id = foram materializados de loja
+- Desses, os que sombreiam um canonico existente sao candidatos reais de alias
+- O match NAO pode ser por hash_dedup (hashes sao diferentes entre loja e canonico)
+- O match deve ser por similaridade de nome (tokens LIKE), igual ao complemento de busca
+
+Validacao dos 5 casos criticos:
+- Chaski: LOJA id=1796520 => CANONICO id=94874 rating=4.1 (score 0.435 - ALIAS)
+- Finca: LOJA id=1803853 => CANONICO id=40743 rating=3.4 (score 0.460 - ALIAS)
+- Dom Perignon: NENHUM canonico no banco (lacuna de dados)
+- Luigi Bosca De Sangre: NENHUM canonico no banco (lacuna de dados)
+- Perez Cruz Piedra Seca: nao testado (ausente do banco)
+
+Proximo passo: rodar find_alias_candidates.py --sample sobre wines sem vivino_id
+para medir volume real de duplicatas. Depende do UPDATE de scores terminar.
+
+---
+
 ## FASE 2 -- Status: RUNBOOK PREPARADO
 
 Arquivo: `C:\winegod-app\reports\RUNBOOK_FASE2_REBUILD.md`
