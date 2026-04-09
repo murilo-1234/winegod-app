@@ -111,15 +111,19 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
 
 
 def _try_layer(name, fn, conn, current_layer):
-    """Executa uma camada de busca com protecao contra timeout e DB morto.
-    Faz rollback apos falha para nao deixar transacao em estado quebrado."""
+    """Executa uma camada de busca com logging de tempo e protecao contra DB morto."""
+    t0 = time.time()
+    print(f"[search] layer={name} START", flush=True)
     try:
         results = fn()
+        ms = round((time.time() - t0) * 1000)
+        print(f"[search] layer={name} DONE {ms}ms found={len(results)}", flush=True)
         if results:
             return results, name
         return [], current_layer
     except Exception as e:
-        print(f"[search] layer={name} FAIL {type(e).__name__}: {e}", flush=True)
+        ms = round((time.time() - t0) * 1000)
+        print(f"[search] layer={name} FAIL {ms}ms {type(e).__name__}: {e}", flush=True)
         try:
             conn.rollback()
         except Exception:
