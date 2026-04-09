@@ -83,17 +83,25 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         if not results and allow_fuzzy:
             results, layer_used = _try_layer("fuzzy", lambda: _search_fuzzy(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
 
-        # Complemento por tokens: se camadas 1-3 retornaram resultados
-        # mas nenhum tem sinal canonico (rating, nota, score, vivino_id),
-        # buscar por LIKE com tokens individuais para encontrar canonicos
-        # com nome em ordem diferente (ex: "Chaski Petit Verdot" vs
-        # "Petit Verdot Chaski"). LIKE por tokens e rapido (~2s) vs
-        # fuzzy pg_trgm que estoura timeout no plano Basic-256mb.
-        if results and layer_used != "fuzzy" and not _has_canonical(results):
+        # Complemento/fallback por tokens LIKE: busca por palavras individuais
+        # para encontrar canonicos com nome em ordem diferente.
+        # Roda em 2 cenarios:
+        #   1. Resultados existem mas nenhum tem sinal canonico
+        #   2. Nenhum resultado em nenhuma camada (fallback final)
+        # Rollback preventivo: camadas anteriores podem ter deixado
+        # a transacao quebrada (ex: QueryCanceled no fuzzy LIKE fallback).
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        if not results or not _has_canonical(results):
             token_results = _search_tokens(conn, q_norm, limit, extra_where, extra_params)
             if token_results:
-                results = _merge_results(results, token_results, limit)
-                layer_used = f"{layer_used}+tokens"
+                if results:
+                    results = _merge_results(results, token_results, limit)
+                else:
+                    results = token_results
+                layer_used = f"{layer_used}+tokens" if layer_used != "none" else "tokens"
 
         # Converter Decimal para float
         for r in results:
