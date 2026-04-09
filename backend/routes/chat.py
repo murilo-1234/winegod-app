@@ -230,7 +230,15 @@ def chat():
     photo_mode = False
 
     if has_media:
-        message, photo_mode = _process_media(data, message, trace)
+        try:
+            message, photo_mode = _process_media(data, message, trace)
+        except Exception as e:
+            print(f"[chat] _process_media failed: {type(e).__name__}: {e}", flush=True)
+            trace.log()
+            message = (
+                f"[O usuario enviou uma foto mas ocorreu um erro ao processar: {e}. "
+                f"Peca desculpas e ofereca alternativa (descrever o vinho).]\n\n{message}"
+            )
 
     session = _get_session(session_id)
     history = session["messages"][-MAX_HISTORY:]
@@ -290,7 +298,14 @@ def chat_stream():
                 status_msg = "Analisando sua foto..."
             yield f"data: {json.dumps({'type': 'status', 'content': status_msg})}\n\n"
 
-            msg, photo_mode = _process_media(data, message, trace)
+            try:
+                msg, photo_mode = _process_media(data, message, trace)
+            except Exception as e:
+                print(f"[chat_stream] _process_media failed: {type(e).__name__}: {e}", flush=True)
+                msg = (
+                    f"[O usuario enviou uma foto mas ocorreu um erro ao processar: {e}. "
+                    f"Peca desculpas e ofereca alternativa (descrever o vinho).]\n\n{message}"
+                )
 
             yield f"data: {json.dumps({'type': 'status', 'content': 'Buscando informacoes...'})}\n\n"
 

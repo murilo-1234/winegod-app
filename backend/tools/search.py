@@ -207,23 +207,30 @@ def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):
             for r in results:
                 r.pop('sim', None)
             return results
-    except psycopg2.ProgrammingError:
-        # pg_trgm nao habilitado ou operador %% indisponivel
-        conn.rollback()
-    except psycopg2.OperationalError:
-        # Timeout ou conexao perdida durante query fuzzy
-        conn.rollback()
+    except (psycopg2.ProgrammingError, psycopg2.OperationalError, psycopg2.InterfaceError):
+        # ProgrammingError: pg_trgm nao habilitado
+        # OperationalError: timeout ou conexao SSL cortada
+        # InterfaceError: conexao ja fechada
+        try:
+            conn.rollback()
+        except Exception:
+            pass
 
     # Fallback: LIKE contains (ultimo recurso)
-    sql = f"""
-        SELECT {_WINE_COLUMNS}
-        FROM wines
-        WHERE nome_normalizado LIKE %s {extra_where}
-        {_ORDER_CLAUSE}
-        LIMIT %s
-    """
-    params = [f"%{q_norm}%"] + extra_params + [limit]
-    return _execute_search(conn, sql, params)
+    # Se a conexao morreu no fuzzy, esse fallback tambem vai falhar —
+    # retorna vazio em vez de propagar o erro
+    try:
+        sql = f"""
+            SELECT {_WINE_COLUMNS}
+            FROM wines
+            WHERE nome_normalizado LIKE %s {extra_where}
+            {_ORDER_CLAUSE}
+            LIMIT %s
+        """
+        params = [f"%{q_norm}%"] + extra_params + [limit]
+        return _execute_search(conn, sql, params)
+    except (psycopg2.OperationalError, psycopg2.InterfaceError):
+        return []
 
 
 def _execute_search(conn, sql, params):

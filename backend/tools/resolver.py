@@ -5,6 +5,16 @@ from tools.search import search_wine
 from tools.normalize import normalizar
 from services.display import resolve_display
 
+# Paises que o OCR pode devolver no campo "region" por engano
+_KNOWN_COUNTRIES = {
+    "argentina", "france", "italy", "spain", "chile", "portugal",
+    "australia", "germany", "south africa", "new zealand", "united states",
+    "usa", "brasil", "brazil", "uruguay", "greece", "austria", "hungary",
+    "romania", "georgia", "lebanon", "israel", "canada", "mexico",
+    "peru", "bolivia", "china", "japan", "india", "turkey", "croatia",
+    "slovenia", "switzerland", "england", "uk",
+}
+
 
 def resolve_wines_from_ocr(ocr_result):
     """Dado resultado do OCR, tenta resolver vinhos no banco.
@@ -49,7 +59,11 @@ def _resolve_label(ocr_result):
     if producer:
         kwargs["produtor"] = producer
     if region:
-        kwargs["regiao"] = region
+        # OCR frequentemente devolve pais no campo region (ex: "Argentina")
+        if region.strip().lower() in _KNOWN_COUNTRIES:
+            kwargs["pais"] = region
+        else:
+            kwargs["regiao"] = region
     if vintage:
         try:
             kwargs["safra"] = int(vintage)
