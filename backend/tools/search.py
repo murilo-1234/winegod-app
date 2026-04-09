@@ -28,13 +28,14 @@ _CANONICAL_RANK = """(
 _ORDER_CLAUSE = f"ORDER BY {_CANONICAL_RANK} DESC, vivino_reviews DESC NULLS LAST, vivino_rating DESC NULLS LAST"
 
 
-def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None):
+def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None, allow_fuzzy=True):
     """Busca vinhos em camadas: exato -> prefixo -> produtor -> fuzzy.
 
     Parametros opcionais permitem filtros estruturados vindos do OCR ou do Claude.
+    allow_fuzzy=False pula a camada fuzzy (pg_trgm) — usar no pre-resolve para evitar queries pesadas.
     """
     key = cache_key(
-        "search_v2",
+        "search_v3",
         query=query.lower().strip(),
         limit=limit,
         produtor=produtor,
@@ -42,6 +43,7 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         regiao=regiao,
         tipo=tipo,
         safra=safra,
+        allow_fuzzy=allow_fuzzy,
     )
     cached = cache_get(key)
     if cached:
@@ -83,11 +85,23 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
             if results:
                 layer_used = "producer"
 
-        # Camada 4: fuzzy com pg_trgm (complemento, nao primeira linha)
-        if not results:
+        # Camada 4: fuzzy com pg_trgm — apenas se allow_fuzzy=True
+        if not results and allow_fuzzy:
             results = _search_fuzzy(conn, q_norm, limit, extra_where, extra_params)
             if results:
                 layer_used = "fuzzy"
+
+        # Complemento por tokens: se camadas 1-3 retornaram resultados
+        # mas nenhum tem sinal canonico (rating, nota, score, vivino_id),
+        # buscar por LIKE com tokens individuais para encontrar canonicos
+        # com nome em ordem diferente (ex: "Chaski Petit Verdot" vs
+        # "Petit Verdot Chaski"). LIKE por tokens e rapido (~2s) vs
+        # fuzzy pg_trgm que estoura timeout no plano Basic-256mb.
+        if results and layer_used != "fuzzy" and not _has_canonical(results):
+            token_results = _search_tokens(conn, q_norm, limit, extra_where, extra_params)
+            if token_results:
+                results = _merge_results(results, token_results, limit)
+                layer_used = f"{layer_used}+tokens"
 
         # Converter Decimal para float
         for r in results:
@@ -191,7 +205,13 @@ def _search_producer(conn, p_norm, limit, extra_where, extra_params):
 
 def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):
     """Camada 4: busca fuzzy com pg_trgm. Fallback para LIKE contains se trgm falhar."""
-    # Tenta pg_trgm
+    # Timeout de 5s para fuzzy — protege contra queries pesadas que matam a conexão
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET LOCAL statement_timeout = '5000'")
+    except Exception:
+        pass
+
     sql = f"""
         SELECT {_WINE_COLUMNS},
                similarity(nome_normalizado, %s) as sim
@@ -241,6 +261,90 @@ def _execute_search(conn, sql, params):
             return []
         columns = [desc[0] for desc in cur.description]
         return [dict(zip(columns, row)) for row in cur.fetchall()]
+
+
+def _has_canonical(results):
+    """Retorna True se pelo menos 1 resultado tem sinal canonico."""
+    for r in results:
+        if (r.get('vivino_rating') is not None
+                or r.get('nota_wcf') is not None
+                or r.get('winegod_score') is not None
+                or r.get('vivino_id') is not None):
+            return True
+    return False
+
+
+def _search_tokens(conn, q_norm, limit, extra_where, extra_params):
+    """Busca por tokens LIKE para encontrar canonicos com nome em ordem diferente.
+
+    Estrategia:
+    1. Tenta AND de todos os tokens significativos (len >= 3)
+    2. Se nao encontrar canonico, tenta removendo 1 token por vez
+    Cada query e rapida (~2s) porque LIKE com tokens filtra bem.
+    """
+    tokens = [t for t in q_norm.split() if len(t) >= 3]
+    if len(tokens) < 2:
+        return []
+
+    # Tentativa 1: todos os tokens
+    results = _tokens_query(conn, tokens, limit, extra_where, extra_params)
+    if _has_canonical(results):
+        return results
+
+    # Tentativa 2: remover 1 token por vez (priorizar subsets maiores)
+    if len(tokens) >= 3:
+        for skip_idx in range(len(tokens)):
+            subset = [t for i, t in enumerate(tokens) if i != skip_idx]
+            results = _tokens_query(conn, subset, limit, extra_where, extra_params)
+            if _has_canonical(results):
+                return results
+
+    return results
+
+
+def _tokens_query(conn, tokens, limit, extra_where, extra_params):
+    """Executa query LIKE AND com lista de tokens. Timeout de 5s para proteger
+    contra combinacoes de tokens comuns (ex: 'perez' + 'cruz')."""
+    clauses = " AND ".join(f"nome_normalizado LIKE %s" for _ in tokens)
+    params = [f"%{t}%" for t in tokens] + extra_params + [limit]
+    sql = f"""
+        SELECT {_WINE_COLUMNS}
+        FROM wines
+        WHERE {clauses} {extra_where}
+        {_ORDER_CLAUSE}
+        LIMIT %s
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET LOCAL statement_timeout = '5s'")
+            cur.execute(sql, params)
+            if cur.description is None:
+                return []
+            columns = [desc[0] for desc in cur.description]
+            return [dict(zip(columns, row)) for row in cur.fetchall()]
+    except (psycopg2.ProgrammingError, psycopg2.OperationalError, psycopg2.InterfaceError):
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return []
+
+
+def _merge_results(primary, secondary, limit):
+    """Mescla resultados sem duplicar IDs. Canonicos do secondary sobem ao topo."""
+    seen_ids = {r['id'] for r in primary}
+    canonical_new = []
+    other_new = []
+    for r in secondary:
+        if r['id'] in seen_ids:
+            continue
+        seen_ids.add(r['id'])
+        if _has_canonical([r]):
+            canonical_new.append(r)
+        else:
+            other_new.append(r)
+    merged = canonical_new + primary + other_new
+    return merged[:limit]
 
 
 def get_similar_wines(wine_id, limit=5):

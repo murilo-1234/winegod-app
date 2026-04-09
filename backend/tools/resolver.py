@@ -44,7 +44,11 @@ def resolve_wines_from_ocr(ocr_result):
 
 
 def _resolve_label(ocr_result):
-    """Resolve um unico vinho de rotulo."""
+    """Resolve um unico vinho de rotulo.
+
+    Estrategia fast-only: tentativas progressivas SEM fuzzy.
+    Safra nunca e filtro duro — apenas hint para desempate posterior.
+    """
     ocr = ocr_result.get("ocr_result", {})
     name = ocr.get("name", "")
     producer = ocr.get("producer")
@@ -54,42 +58,48 @@ def _resolve_label(ocr_result):
     if not name:
         return [], []
 
-    # Buscar com filtros estruturados quando disponiveis
-    kwargs = {}
-    if producer:
-        kwargs["produtor"] = producer
+    # Classificar region como pais ou regiao
+    pais_kw = None
+    regiao_kw = None
     if region:
-        # OCR frequentemente devolve pais no campo region (ex: "Argentina")
         if region.strip().lower() in _KNOWN_COUNTRIES:
-            kwargs["pais"] = region
+            pais_kw = region
         else:
-            kwargs["regiao"] = region
-    if vintage:
-        try:
-            kwargs["safra"] = int(vintage)
-        except (ValueError, TypeError):
-            pass
+            regiao_kw = region
 
-    result = search_wine(name, limit=5, **kwargs)
-    wines = result.get("wines", [])
+    # Todas as tentativas usam allow_fuzzy=False — nunca pg_trgm no pre-resolve
+    attempts = []
 
-    if wines:
-        return wines, []
-
-    # Fallback: buscar so pelo nome sem filtros
-    if kwargs:
-        result = search_wine(name, limit=5)
-        wines = result.get("wines", [])
-        if wines:
-            return wines, []
-
-    # Fallback: buscar pelo produtor
+    # Tentativa 1: name + producer + pais (sem safra, sem regiao se era pais)
+    kw1 = {}
     if producer:
-        result = search_wine(producer, limit=5)
+        kw1["produtor"] = producer
+    if pais_kw:
+        kw1["pais"] = pais_kw
+    if kw1:
+        attempts.append(("name+producer+pais", name, kw1))
+
+    # Tentativa 2: name + pais (sem producer)
+    if pais_kw:
+        attempts.append(("name+pais", name, {"pais": pais_kw}))
+
+    # Tentativa 3: name sozinho (sem filtros)
+    attempts.append(("name_only", name, {}))
+
+    # Tentativa 4: producer sozinho (sem filtros)
+    if producer:
+        attempts.append(("producer_only", producer, {}))
+
+    for attempt_name, query, kwargs in attempts:
+        result = search_wine(query, limit=5, allow_fuzzy=False, **kwargs)
         wines = result.get("wines", [])
+        layer = result.get("search_layer", "?")
+        print(f"[resolver] attempt={attempt_name} query={query!r} kwargs={kwargs} layer={layer} found={len(wines)}", flush=True)
+
         if wines:
             return wines, []
 
+    print(f"[resolver] label unresolved: {name!r}", flush=True)
     return [], [name]
 
 
@@ -108,7 +118,7 @@ def _resolve_multi(ocr_result):
         if not name:
             continue
 
-        result = search_wine(name, limit=3)
+        result = search_wine(name, limit=3, allow_fuzzy=False)
         matches = result.get("wines", [])
 
         if matches:
