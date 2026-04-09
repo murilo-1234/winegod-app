@@ -91,13 +91,17 @@ def _resolve_label(ocr_result):
         attempts.append(("producer_only", producer, {}))
 
     for attempt_name, query, kwargs in attempts:
-        result = search_wine(query, limit=5, allow_fuzzy=False, **kwargs)
-        wines = result.get("wines", [])
-        layer = result.get("search_layer", "?")
-        print(f"[resolver] attempt={attempt_name} query={query!r} kwargs={kwargs} layer={layer} found={len(wines)}", flush=True)
+        print(f"[resolver] attempt={attempt_name} START query={query!r} kwargs={kwargs}", flush=True)
+        try:
+            result = search_wine(query, limit=5, allow_fuzzy=False, **kwargs)
+            wines = result.get("wines", [])
+            layer = result.get("search_layer", "?")
+            print(f"[resolver] attempt={attempt_name} DONE layer={layer} found={len(wines)}", flush=True)
 
-        if wines:
-            return wines, []
+            if wines:
+                return wines, []
+        except Exception as e:
+            print(f"[resolver] attempt={attempt_name} FAIL {type(e).__name__}: {e}", flush=True)
 
     print(f"[resolver] label unresolved: {name!r}", flush=True)
     return [], [name]
@@ -163,9 +167,13 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result):
                 f"| Preco: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                 f"| ID: {w.get('id', '?')}]"
             )
-            if len(resolved_wines) > 1:
+            wine_name = w.get('nome', '?')
+            if len(resolved_wines) == 1:
+                parts.append(f"[IMPORTANTE: comece sua resposta dizendo explicitamente o nome do vinho identificado na foto: {wine_name}.]")
+            else:
                 others = [f"{r.get('nome', '?')} (ID:{r.get('id', '?')})" for r in resolved_wines[1:4]]
                 parts.append(f"[Outros candidatos: {', '.join(others)}]")
+                parts.append(f"[IMPORTANTE: comece dizendo que o candidato mais provavel e {wine_name}, sem afirmar certeza absoluta.]")
             parts.append("[Responda sobre este vinho. Use get_wine_details ou get_prices se precisar de mais dados.]")
         else:
             parts.append("[Vinho NAO encontrado no banco. Responda com o que sabe e avise que nao temos dados completos.]")
