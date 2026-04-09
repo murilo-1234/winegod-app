@@ -8,6 +8,10 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, jsonify, render_template_string
 import psycopg2
+
+# Pre-filtro de nao-vinhos (scripts/ esta no mesmo diretorio)
+sys.path.insert(0, os.path.dirname(__file__))
+from wine_filter import is_wine, classify_product
 from psycopg2.pool import ThreadedConnectionPool
 import google.generativeai as genai
 
@@ -17,6 +21,8 @@ MODEL = "gemini-2.5-flash"
 BATCH_SIZE = 20
 WORKERS = 50
 THRESHOLD = 0.30
+PRE_FILTER_NONWINE = True   # Ativar pre-filtro de nao-vinhos antes do LLM
+PRE_FILTER_DRY_RUN = True   # True = logar mas NAO auto-rejeitar (auditoria)
 DB_HOST = "localhost"
 DB_PORT = 5432
 DB_NAME = "winegod_db"
@@ -326,7 +332,30 @@ def run_pipeline():
             for r in rows:
                 if r[0] in done_ids:
                     continue
-                batch_items.append({"clean_id": r[0], "loja_nome": r[1] or ""})
+                nome = r[1] or ""
+
+                # Pre-filtro de nao-vinhos: detecta itens obvios sem gastar LLM
+                if PRE_FILTER_NONWINE and nome:
+                    result_type, matched_keyword = classify_product(nome)
+                    if result_type == 'not_wine':
+                        if PRE_FILTER_DRY_RUN:
+                            # Dry-run: logar mas nao rejeitar
+                            print(f"[PRE-FILTER DRY] id={r[0]} bloqueado por '{matched_keyword}': {nome[:80]}")
+                        else:
+                            # Producao: marcar direto como not_wine sem gastar LLM
+                            pf_conn = db_pool.getconn()
+                            pf_cur = pf_conn.cursor()
+                            pf_cur.execute("""INSERT INTO y2_results (clean_id, loja_nome, classificacao, status)
+                                              VALUES (%s, %s, 'X', 'not_wine') ON CONFLICT DO NOTHING""",
+                                           (r[0], nome))
+                            pf_conn.commit()
+                            db_pool.putconn(pf_conn)
+                            with worker_lock:
+                                state["not_wine"] += 1
+                                state["processed"] += 1
+                            continue
+
+                batch_items.append({"clean_id": r[0], "loja_nome": nome})
                 if len(batch_items) >= BATCH_SIZE:
                     batch_queue.put((batch_num, batch_num * BATCH_SIZE, batch_items))
                     batch_items = []

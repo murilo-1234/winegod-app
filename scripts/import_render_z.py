@@ -21,6 +21,10 @@ import json, time, sys, argparse, os, hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 
+# Guardrails de owner (scripts/ esta no mesmo diretorio)
+sys.path.insert(0, os.path.dirname(__file__))
+from guardrails_owner import is_producer_valid, has_type_conflict
+
 # ============================================================
 # CONEXOES
 # ============================================================
@@ -362,6 +366,8 @@ def fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
     sem_vivino = 0
     sem_fontes = 0
     sem_loja = 0
+    rejeitado_owner = 0
+    rejeitado_tipo = 0
 
     while True:
         if limite and processados >= limite:
@@ -370,8 +376,9 @@ def fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
         batch_limit = min(BATCH_SIZE, (limite - processados) if limite else BATCH_SIZE)
 
         # CURSOR-BASED: WHERE id > last_id ORDER BY id
+        # Traz prod_banco, vivino_produtor, cor para validacao de guardrails
         local_cur.execute("""
-            SELECT id, vivino_id, clean_id
+            SELECT id, vivino_id, clean_id, prod_banco, vivino_produtor, cor
             FROM y2_results
             WHERE status = 'matched' AND match_score >= 0.5
             AND id > %s
@@ -388,8 +395,23 @@ def fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
         ts = agora_utc()
 
         for row in rows:
-            y_id, vivino_id, clean_id = row
+            y_id, vivino_id, clean_id, prod_banco, vivino_produtor, cor = row
             processados += 1
+
+            # Guardrail: rejeitar produtor invalido (vazio, curto, generico)
+            prod_ok, prod_reason = is_producer_valid(prod_banco)
+            if not prod_ok:
+                rejeitado_owner += 1
+                continue
+
+            # Guardrail: rejeitar conflito de tipo tinto/branco
+            # cor do y2_results usa T=tinto, B=branco; vivino usa tipo completo
+            # Verificar se cor da loja conflita com o produtor Vivino matcheado
+            if cor and vivino_produtor:
+                cor_loja = "tinto" if cor == "T" else ("branco" if cor == "B" else None)
+                if cor_loja and has_type_conflict(cor_loja, vivino_produtor):
+                    rejeitado_tipo += 1
+                    continue
 
             # vivino_id = wines.id do Render
             wine_id = vivino_id if vivino_id in valid_wine_ids else None
@@ -428,7 +450,9 @@ def fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
 
         progresso(1, processados, total, inicio, sources=sources_criados, sem_vivino=sem_vivino, sem_fontes=sem_fontes)
 
-    print(f"\n\nFase 1 concluida: {processados:,} processados | {sources_criados:,} sources criados | {sem_vivino:,} sem vivino_id | {sem_fontes:,} sem fontes | {sem_loja:,} sem loja")
+    print(f"\n\nFase 1 concluida: {processados:,} processados | {sources_criados:,} sources criados")
+    print(f"  sem vivino_id: {sem_vivino:,} | sem fontes: {sem_fontes:,} | sem loja: {sem_loja:,}")
+    print(f"  rejeitado owner: {rejeitado_owner:,} | rejeitado tipo: {rejeitado_tipo:,}")
     return sources_criados
 
 # ============================================================
