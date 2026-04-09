@@ -72,10 +72,10 @@ If type is "label":
 {"type": "label", "name": "full wine name", "producer": "winery or null", "vintage": "year or null", "region": "region or null", "grape": "grape variety or null", "price": "price with currency or null"}
 
 If type is "screenshot":
-{"type": "screenshot", "wines": [{"name": "wine name", "price": "price or null", "rating": "rating or null", "source": "app/site name or null"}]}
+{"type": "screenshot", "wines": [{"name": "wine name", "producer": "winery or null", "price": "price or null", "rating": "rating or null", "source": "app/site name or null"}]}
 
 If type is "shelf":
-{"type": "shelf", "wines": [{"name": "wine name", "price": "price or null"}], "total_visible": 0}
+{"type": "shelf", "wines": [{"name": "wine name", "producer": "winery or null", "price": "price or null"}], "total_visible": 0}
 
 If type is "not_wine":
 {"type": "not_wine", "description": "brief description of what the image shows"}
@@ -102,6 +102,11 @@ Brazilian shelf price tags often show multiple values:
   - If partially obscured or ambiguous, return null rather than guessing
   - Common confusions to avoid: Petit Verdot vs Petit Sirah, Grenache vs Garnacha (same grape, both acceptable), Syrah vs Shiraz (same grape, both acceptable)
   - If you see only 2-3 letters of a grape name, return null
+
+## Shelf and screenshot producer rules
+  - For each wine, extract "producer" (winery) separately when clearly visible
+  - Keep the FULL wine name in "name" including winery prefix if that is how it reads (e.g. name: "MontGras Reserva Cabernet", producer: "MontGras")
+  - Use null for producer if not legible — do NOT guess or infer from the wine name
 
 ## Shelf-specific rules
   - "wines" list: include only wines whose names you can confidently read

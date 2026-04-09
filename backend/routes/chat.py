@@ -117,13 +117,16 @@ def _process_single_image(base64_image, message, trace):
     context = format_resolved_context(
         resolved["resolved_wines"], resolved["unresolved"],
         image_type, ocr,
+        resolved_items=resolved.get("resolved_items"),
+        unresolved_items=resolved.get("unresolved_items"),
     )
 
-    # Preservar preco da foto no contexto
-    ocr_data = ocr.get("ocr_result", {})
-    price = ocr_data.get("price") if isinstance(ocr_data, dict) else None
-    if price:
-        context += f"\n[Preco visivel na foto: {price}]"
+    # Preservar preco da foto no contexto (apenas label — shelf/screenshot ja tratam por item)
+    if image_type == "label":
+        ocr_data = ocr.get("ocr_result", {})
+        price = ocr_data.get("price") if isinstance(ocr_data, dict) else None
+        if price:
+            context += f"\n[Preco visivel na foto: {price}]"
 
     return f"{context}\n\n{message}", True
 
