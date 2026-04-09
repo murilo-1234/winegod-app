@@ -365,6 +365,51 @@ para medir volume real de duplicatas. Depende do UPDATE de scores terminar.
 
 ---
 
+### Piloto de aliases (2026-04-09)
+
+10 aliases manualmente aprovados e justificados:
+- `reports/approved_aliases_pilot.csv` — lista aprovada
+- `reports/apply_alias_pilot.sql` — INSERT com lock_timeout
+- `reports/rollback_alias_pilot.sql` — DELETE exato para reverter
+
+Nao executado. Depende de:
+1. Lock do UPDATE de scores liberar
+2. Tabela wine_aliases criada no Render
+3. Aprovacao explicita para rodar o piloto
+
+### Quem consome wine_aliases e em que ordem
+
+wine_aliases SOZINHA nao muda comportamento do app. Precisa de integracao
+explicita em pelo menos 1 consumidor. Ordem recomendada:
+
+**1. search.py (PRIMEIRO)**
+- Maior impacto imediato no usuario final
+- Quando search retorna wine de loja que tem alias aprovado,
+  resolver para canonico e apresentar rating/score do canonico
+- Implementacao: LEFT JOIN wine_aliases na query de busca,
+  COALESCE campos canonicos sobre os da loja
+- Risco baixo: alias so e usado se review_status = 'approved'
+- Beneficio direto: Chaski e Finca voltam a mostrar nota mesmo
+  quando exact/prefix encontra a versao loja primeiro
+
+**2. details.py (SEGUNDO)**
+- Quando usuario pede detalhes de wine de loja com alias aprovado,
+  enriquecer com dados do canonico (rating, tipo, regiao, uvas)
+- Complementa o search: depois que o usuario clica no resultado,
+  ve os dados completos
+
+**3. Rebuild Fase 2 (TERCEIRO)**
+- Usar aliases como mapa de dedup no banco sombra
+- So apos volume significativo de aliases aprovados
+- Nao depende de integracao no app
+
+Justificativa da ordem: search.py e o unico ponto que o usuario
+SEMPRE passa. Se a busca retornar o canonico com nota,
+o details automaticamente mostra os dados certos. O rebuild
+e operacao offline que pode esperar.
+
+---
+
 ## FASE 2 -- Status: RUNBOOK PREPARADO
 
 Arquivo: `C:\winegod-app\reports\RUNBOOK_FASE2_REBUILD.md`
