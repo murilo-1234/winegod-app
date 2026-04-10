@@ -9,10 +9,9 @@ import sys
 import psycopg2
 from psycopg2.extras import execute_values
 
-RENDER_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+RENDER_URL = os.environ.get("DATABASE_URL")
+if not RENDER_URL:
+    sys.exit("ERROR: DATABASE_URL environment variable is required.")
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "wcf_results.csv")
 BATCH_SIZE = 1000
@@ -67,7 +66,7 @@ def update_render(rows):
         values = []
         for nota_wcf, total_reviews, vinho_id in batch:
             values.append(
-                (nota_wcf, confianca(total_reviews), score_type(total_reviews), vinho_id)
+                (nota_wcf, confianca(total_reviews), score_type(total_reviews), total_reviews, vinho_id)
             )
 
         # Use a temp table approach for efficient batch update
@@ -76,6 +75,7 @@ def update_render(rows):
                 nota_wcf NUMERIC(3,2),
                 confianca_nota NUMERIC(3,2),
                 winegod_score_type VARCHAR,
+                nota_wcf_sample_size INTEGER,
                 vivino_id INTEGER
             ) ON COMMIT DELETE ROWS;
         """)
@@ -83,7 +83,7 @@ def update_render(rows):
 
         execute_values(
             cur,
-            "INSERT INTO _wcf_batch (nota_wcf, confianca_nota, winegod_score_type, vivino_id) VALUES %s",
+            "INSERT INTO _wcf_batch (nota_wcf, confianca_nota, winegod_score_type, nota_wcf_sample_size, vivino_id) VALUES %s",
             values,
         )
 
@@ -91,7 +91,8 @@ def update_render(rows):
             UPDATE wines w
             SET nota_wcf = b.nota_wcf,
                 confianca_nota = b.confianca_nota,
-                winegod_score_type = b.winegod_score_type
+                winegod_score_type = b.winegod_score_type,
+                nota_wcf_sample_size = b.nota_wcf_sample_size
             FROM _wcf_batch b
             WHERE w.vivino_id = b.vivino_id;
         """)

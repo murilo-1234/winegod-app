@@ -9,9 +9,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface ShareWine {
   nome: string;
-  nota_wcf: number;
-  vivino_rating: number;
   pais_nome: string;
+  display_note: number | null;
 }
 
 interface ShareData {
@@ -142,8 +141,8 @@ export default async function OGImage({
                 </span>
                 <span style={{ fontSize: "16px", color: "#888888" }}>
                   {wine.pais_nome}
-                  {(wine.nota_wcf || wine.vivino_rating) &&
-                    ` — ${(wine.nota_wcf || wine.vivino_rating).toFixed(1)}/5`}
+                  {wine.display_note != null &&
+                    ` — ${wine.display_note.toFixed(1)}/5`}
                 </span>
               </div>
             </div>
