@@ -167,7 +167,7 @@ R1: NUNCA scraping Vivino | R2: NUNCA ManyChat | R3: NUNCA nota sem aviso | R4: 
 
 **Nota importante:** a cronologia abaixo continua util como historico de execucao, mas o estado real do Render hoje deve ser lido junto com o **addendum W→Z**. O problema atual nao e mais "fazer import"; e "corrigir cobertura e pureza de `wine_sources` sem repetir os erros do import anterior".
 
-**Atualizacao P5 (09/04/2026):** a Fase 0 de dedup/matching foi concluida, aprovada e deployada. Ela resolveu o sintoma principal da busca e conteve nova contaminacao, mas NAO executou a deduplicacao estrutural completa do banco. Ler antes de reabrir qualquer frente de dedup: [`../reports/RESUMO_FASE0_DEDUP_2026-04-09.md`](../reports/RESUMO_FASE0_DEDUP_2026-04-09.md).
+**Atualizacao P5 (09-10/04/2026):** Fases 0 e 1 de dedup/matching concluidas. Fase 0 corrigiu busca, cache, UX e import. Fase 1 criou `wine_aliases` (43 aliases ativos em producao, consumidos por search.py e details.py). 4/4 casos criticos resolvidos: Dom Perignon (4.6), Luigi Bosca De Sangre (4.1), Casillero del Diablo (3.5), Perez Cruz (3.8). Busca por produtor+nome reclassificada como melhoria futura. Frente encerrada. Ler: [`../reports/RESUMO_FASE0_DEDUP_2026-04-09.md`](../reports/RESUMO_FASE0_DEDUP_2026-04-09.md) e [`../reports/RELATORIO_SESSAO_DEDUP_2026-04-08.md`](../reports/RELATORIO_SESSAO_DEDUP_2026-04-08.md).
 
 ### HISTORICO COMPLETO DE CHATS (A-S)
 
@@ -220,8 +220,8 @@ Adiantado — rodou em paralelo com Batch 3 porque dependencias (I e K) ja estav
   - `scripts/calc_wcf.py` persiste `nota_wcf_sample_size`
   - `backend/services/display.py` resolve `display_note`, `display_note_type`, `display_note_source`, `display_score`, `display_score_available`
   - `scripts/calc_score.py` usa formula nova `peer_country_note_v1`
-  - `backend/tools/search.py`, `backend/db/models_share.py`, `frontend/app/c/[id]/page.tsx`, `frontend/app/c/[id]/opengraph-image.tsx` foram ajustados para consumir a camada canonica
-  - `backend/prompts/baco_system.py` foi ajustado para usar `display_note`/`display_score`
+  - `backend/db/models_share.py`, `frontend/app/c/[id]/page.tsx` e `frontend/app/c/[id]/opengraph-image.tsx` passaram a consumir a camada canonica
+  - `backend/prompts/baco_system.py` usa `display_note`/`display_score`
 - Formula nova de custo-beneficio:
   - `score = clamp(nota_base_score + micro_ajustes + 0.35 * ln(preco_referencia_usd / preco_min_usd), 0, 5)`
   - `nota_base_score` segue a mesma regra da nota canonica
@@ -232,6 +232,40 @@ Adiantado — rodou em paralelo com Batch 3 porque dependencias (I e K) ja estav
   - staging `tmp_scores` com ~1.727M linhas foi gerada no banco
   - o passo lento e o `UPDATE wines ... FROM tmp_scores` no Render, que pode demorar bastante por I/O
   - antes de assumir que terminou, qualquer novo chat deve verificar no banco se o backfill realmente concluiu
+
+**ADDENDUM FINAL P7/P8 (10/04/2026) — LER ANTES DE REABRIR QUALQUER CHAT DE SCORE**
+- O rollout de score/notas foi CONCLUIDO e esta em producao.
+- Estado final validado no banco Render:
+  - `1.718.463` scores legados/falsos foram limpos
+  - `10.983` vinhos com preco valido ficaram com `winegod_score` real
+  - `0` vinhos ficaram com score sem preco
+  - saturacao em `5.00` caiu de `24.718` para `40`
+- Automacao incremental de score tambem foi ativada:
+  - migrations `005` a `009` ja aplicadas no banco
+  - trigger `trg_score_recalc` ativo em `wines`
+  - fila `score_recalc_queue` com `attempts`, `last_error` e dedup pendente
+  - cron jobs Render criados e validados:
+    - `score-recalc-queue` -> `python scripts/cron_score_recalc.py` -> `*/15 * * * *`
+    - `score-recalc-sweep` -> `python scripts/cron_score_recalc.py --sweep` -> `0 4 * * *`
+- AVISO OPERACIONAL (10/04/2026):
+  - a automacao de score esta pronta e ativa, mas deve ser monitorada nos primeiros dias
+  - checar periodicamente logs dos cron jobs e a tabela `score_recalc_queue`
+  - sinais de saude:
+    - cron executa sem traceback
+    - itens pendentes caem ou ficam zerados
+    - `dead_lettered` / `attempts >= 5` permanecem baixos
+    - `last_error` nao cresce de forma recorrente
+  - se um novo chat reabrir essa frente, o objetivo inicial NAO e reimplementar nada; e apenas validar saude operacional
+- Deploys concluidos no merge `b85be19`:
+  - backend Render live
+  - frontend Vercel / `chat.winegod.ai` live
+- Regra de ouro daqui para frente:
+  - NAO reabrir P7/P8 como se o rollout ainda estivesse pendente
+  - novas frentes de score so devem tratar:
+    1. aumento de cobertura de preco
+    2. aumento de cobertura de reviews WCF
+    3. tuning futuro da formula com nova evidencia empirica
+    4. monitoramento/correcao da fila/cron incremental
 
 #### INTEGRACOES CTO — CONCLUIDO ✅
 - **Integração app.py** ✅ (commit `219ee07`): blueprints auth_bp, credits_bp, sharing_bp registrados.
@@ -1119,10 +1153,18 @@ Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_
 ## O QUE O FUNDADOR TERA NO FINAL
 
 Ja funcionando:
-- Backend live: winegod-app.onrender.com (Free tier, auto-deploy on push)
-- Frontend live: winegod-app.vercel.app (auto-deploy on push)
+- Backend live: winegod-app.onrender.com (Render, deployado)
+- Frontend live: winegod-app.vercel.app (Vercel, deployado)
 - Baco responde com personalidade, busca 1.72M vinhos, 15 tools
-- WCF + WineGod Score calculados para 1.72M vinhos
+- WCF calculado para 1.72M vinhos; score v2 em producao apenas para vinhos com preco valido
+- UPDATE 10/04/2026:
+  - frontend live tambem em `chat.winegod.ai`
+  - score v2 em producao: nota canonica em runtime + custo-beneficio apenas com preco valido
+  - estado atual do score no banco:
+    - `10.983` vinhos com `winegod_score` real
+    - `0` vinhos com score sem preco
+  - trigger de enqueue ativo no banco
+  - cron `queue` e `sweep` ativos no Render
 - Cards visuais (WineCard, WineComparison, QuickButtons)
 - OCR de rotulos via Gemini Flash
 - Auth Google OAuth + creditos (5 guest / 15 user) — falta criar credentials
@@ -1178,6 +1220,7 @@ O fundador consegue abrir 10+ abas do Claude Code simultaneamente. Isso multipli
 - Trabalho sequencial por natureza (etapa B depende do resultado de A)
 - Volume pequeno (<100K registros, <15min estimado)
 - Operacao que modifica a mesma tabela (conflito de escrita)
+- Familia de **Cobertura de Midia** quando os prompts compartilham `chat.py`, `media.py`, `resolver.py`, `search.py`, `baco.py` e `baco_system.py`. Nesse caso, usar 1 chat executor por fase e, no maximo, chats auxiliares so para diagnostico/revisao sem editar codigo.
 
 ---
 
@@ -1919,6 +1962,21 @@ Implementados 9 tipos de entrada no chat (antes so tinha texto + 1 foto):
 
 **Bloqueia:** nada
 
+**Addendum de governanca (09/04/2026):**
+- O Bloco 4 acima deve ser lido como **historico de implementacao**, nao como cobertura funcional total validada.
+- A frente de **Infra** posterior estabilizou o request path real do caso principal de **foto unica de rotulo**.
+- O que ja ficou comprovadamente bom em producao:
+  - health checks corretos
+  - Gemini SDK migrado
+  - busca em camadas
+  - pre-resolve no backend antes do Claude
+  - fallback seguro no streaming
+  - foto valida de rotulo respondendo
+  - foto sem vinho respondendo
+  - resposta abrindo com o nome do vinho identificado
+- Porem, `shelf`, `screenshot`, `multiplas fotos`, `PDF`, `foto de cardapio/lista` e `video` ainda NAO devem ser assumidos como "100% cobertos" so porque o Bloco 4 historico existe.
+- Por isso foi aberta uma **nova familia de handoffs de Cobertura de Midia**, descrita abaixo, para tratar esses formatos como fases separadas e com validacao real.
+
 ### Bloco 5 — agent_content.py (1 aba)
 **Status:** BLOQUEADO — depende do avatar (Bloco 2) e das redes sociais (Bloco 1)
 
@@ -2066,6 +2124,60 @@ O fundador testou o chat com 24 fotos reais de vinhos em prateleiras de supermer
 - Dados completos salvos em: `C:\winegod-app\test_ocr_resultados.json` e `C:\winegod-app\test_fotos_resultados.json`
 - Fotos de teste em: `C:\winegod\fotos-vinhos-testes\` (24 JPEG + 5 MP4)
 
+### ATUALIZACAO OPERACIONAL - PRATELEIRA / MATCHING (10/04/2026)
+
+**Leitura correta do estado atual:** a frente de prateleira melhorou muito e NAO deve mais ser tratada como "prompt ruim" ou "so falta dado". Houve correcoes reais de codigo no path OCR -> resolver -> search -> chat. O sistema continua beta assistido, mas esta bem mais seguro do que no inicio.
+
+**O que foi fechado e aprovado nesta frente:**
+- `C:\winegod-app\backend\tools\resolver.py` ganhou gates fortes de linha/familia e gate canonico de variedade/estilo, reduzindo os falsos positivos mais graves.
+- `C:\winegod-app\backend\tools\media.py` passou a devolver shelf estruturado com `name`, `producer`, `line`, `variety`, `classification`, `style` e `price`.
+- O resolver em shelf ficou em camadas e mais honesto: melhor deixar `unresolved` do que confirmar vinho errado.
+- O path de candidate generation foi endurecido em `C:\winegod-app\backend\tools\resolver.py` + `C:\winegod-app\backend\tools\search.py`, incluindo token search, initials collapse e fluxo especial para nomes com initials.
+- `Cuatro Vientos Tinto` agora fica `unresolved` com seguranca; nao pode mais confirmar vinho errado do mesmo produtor nem de outro produtor.
+- `D. Eugenio` passou a resolver no banco real com ganho relevante de latencia: algo na faixa de ~18.7s caiu para ~3.1s cold e ~1.8s warm no fluxo aprovado.
+- O contexto batch em `C:\winegod-app\backend\routes\chat.py` foi corrigido para preservar preco OCR por item; o batch deixou de perder a ancora visual de preco.
+- Suite principal de regressao reportada nesta frente: `88/88`.
+
+**Regressoes historicas que continuam bloqueadas e NAO podem ser reabertas:**
+- `MontGras Aura` -> `Day One`
+- `MontGras Aura` -> `De.Vine`
+- `Casa Silva Family Wines` -> `Los Lingues`
+- `Toro Centenario Chardonnay` -> `Rose`
+
+**O que NAO deve ser reaberto por engano:**
+- NAO fazer rollback do matching atual
+- NAO trocar OCR agora
+- NAO mexer no prompt do Baco como "solucao principal" desta frente
+- NAO afrouxar gates para subir recall
+- NAO tratar o problema atual como "agora e so dados"
+
+**Leitura de produto correta hoje para prateleira:**
+- o sprint de hardening/matching da prateleira foi fechado o suficiente para sair dele por agora
+- a formalizacao de estados explicitos tambem ja entrou nesta frente:
+  - `visual_only`
+  - `confirmed_no_note`
+  - `confirmed_with_note`
+- isso significa que shelf NAO esta esquecida nem "pendente do zero"; houve entrega real no path OCR -> resolver -> chat
+- a epica de prateleira como um todo AINDA nao acabou, mas o proximo passo principal deixa de ser shelf matching e passa a ser cobertura dos formatos restantes de midia
+
+**Prompts criados e usados nesta etapa:**
+- `C:\winegod-app\prompts\PROMPT_GESTORA_TECNICA_ESPELHO_2026-04-10.md`
+- `C:\winegod-app\prompts\PROMPT_EXECUTOR_ESTADOS_EXPLICITOS_2026-04-10.md`
+
+**Como o proximo CTO deve agir:**
+- tratar `resolver.py` e `search.py` como arquivos quentes; nao abrir outra aba mexendo neles sem necessidade real
+- se precisar dividir trabalho, separar bem `matching/performance` de `contexto/produto`
+- NAO reabrir shelf por impulso so porque a epica ainda nao acabou
+- usar shelf como base estabilizada para a fila de cobertura de midia
+- antes de reabrir qualquer tese sobre shelf, considerar esta ordem:
+  1. cobertura de midia com prioridade explicita em `PDF`
+  2. depois `foto de cardapio/lista`
+  3. depois `video`
+  4. depois aliases / enrichment
+  5. depois novo ciclo de performance se algum caso real ainda continuar caro
+
+**Resumo executivo:** o servico ainda NAO esta pronto para "confiar cegamente" em shelf com nota em escala, mas tambem ja NAO esta no estado inicial da auditoria. Hoje ele esta mais seguro, mais honesto, com bugs graves fechados, com estados explicitos formalizados e com uma fila tecnica clara para o proximo ciclo de cobertura de midia.
+
 ### Os 13 problemas identificados
 
 #### CRITICOS (impedem uso do produto):
@@ -2129,7 +2241,11 @@ Cada frente tem um prompt de handoff detalhado com todo o contexto, dados, arqui
 #### Frente 2 — Scores / Notas (P7 -> P8)
 **Prompt de estudo historico:** `C:\winegod-app\prompts\HANDOFF_P7_SCORES.md`
 **Prompt executor final:** `C:\winegod-app\prompts\HANDOFF_P8_SCORE_PAIS_NOTA.md`
-**Escopo atual:** implementar a regra final de nota canonica + score v2 (`peer_country_note_v1`) e validar o backfill no banco.
+**Escopo atual:** rollout CONCLUIDO. Nao reabrir P7/P8 como se estivesse pendente. Novas frentes aqui so se forem:
+1. aumento de cobertura de preco
+2. aumento de cobertura de reviews WCF
+3. tuning futuro da formula com nova evidencia empirica
+4. monitoramento/correcao da automacao incremental
 **Repo principal:** `winegod-app` (calc_wcf.py, calc_score.py, backend/services/display.py, Baco, share page, OG)
 
 #### Frente 3 — Prompts (P1, P2, P3, P4, P11, P12, P13)
@@ -2141,6 +2257,57 @@ Cada frente tem um prompt de handoff detalhado com todo o contexto, dados, arqui
 **Prompt:** `C:\winegod-app\prompts\HANDOFF_INFRA.md`
 **Escopo:** Fix busca (pg_trgm), performance, keep-alive Render, migracao Gemini SDK.
 **Arquivos:** `C:\winegod-app\backend\tools\search.py` + `C:\winegod-app\backend\routes\chat.py` + `C:\winegod-app\backend\tools\media.py`
+
+#### Frente 5 â€” Cobertura de Midia (pos-Infra)
+**Prompt-mãe:** `C:\winegod-app\prompts\HANDOFF_MEDIA_MASTER.md`
+
+**O que e esta etapa:** uma nova frente operacional para expandir a cobertura multimidia do produto a partir da base que ja ficou estavel na Infra. Esta frente NAO reabre do zero P6/P8/P9/P10; ela reaproveita o fluxo principal ja estabilizado e trata os formatos restantes de midia como fases menores, verificaveis e validadas no request path real.
+
+**Por que esta etapa existe:** o historico do Bloco 4 mostrou que "codigo existe" nao significa "fluxo esta realmente validado". O projeto so melhorou de verdade quando os problemas foram quebrados em etapas menores, com logs reais, hotfixes curtos e validacao em producao.
+
+**Leitura correta do estado desta frente em 10/04/2026:**
+- `shelf` e `screenshot` ja tiveram trabalho real de hardening e NAO devem mais ser tratados como "esquecidos" ou "nao feitos"
+- a parte de prateleira ja recebeu OCR estruturado, matching endurecido, batch com ancora de preco e estados explicitos
+- isso NAO significa que a cobertura de midia esta concluida
+- significa que a prioridade agora deve sair de "prateleira do zero" e entrar em formatos restantes que ainda estao menos maduros no request path real
+
+**Fila de prioridade obrigatoria desta frente:**
+1. `C:\winegod-app\prompts\HANDOFF_MEDIA_P3_PDF_CARDAPIO.md`
+2. `C:\winegod-app\prompts\HANDOFF_MEDIA_P3B_FOTO_CARDAPIO.md`
+3. `C:\winegod-app\prompts\HANDOFF_MEDIA_P4_VIDEO.md`
+4. `C:\winegod-app\prompts\HANDOFF_MEDIA_P5_TEXT_UPLOAD.md` (opcional, so se ainda fizer sentido)
+
+**Regra para o CTO:** nao deixar `PDF`, `foto de cardapio/lista` e `video` parecerem "ja resolvidos" so porque existe codigo no repo. A prioridade operacional desta frente passa a ser validar e endurecer esses formatos a partir da base que shelf/screenshot ja abriu.
+
+**Base estavel que esta etapa deve reaproveitar:**
+- `/healthz` e `/ready` corretos
+- `google.genai` em producao
+- `search_wine` endurecido
+- pre-resolve antes do Claude no fluxo principal de foto
+- tracing/logs basicos
+- foto valida de rotulo funcionando
+- foto sem vinho funcionando
+- resposta do rotulo abrindo com o nome do vinho identificado
+
+**Handoffs desta familia (ordem historica e fila atual):**
+1. `C:\winegod-app\prompts\HANDOFF_MEDIA_P1_SHELF_SCREENSHOT.md` - base ja trabalhada
+2. `C:\winegod-app\prompts\HANDOFF_MEDIA_P2_MULTI_IMAGE.md` - base ja trabalhada
+3. `C:\winegod-app\prompts\HANDOFF_MEDIA_P3_PDF_CARDAPIO.md` - PROXIMA PRIORIDADE DE DOCUMENTO
+4. `C:\winegod-app\prompts\HANDOFF_MEDIA_P3B_FOTO_CARDAPIO.md` - PROXIMA PRIORIDADE DE IMAGEM
+5. `C:\winegod-app\prompts\HANDOFF_MEDIA_P4_VIDEO.md` - prioridade logo depois de PDF e foto de cardapio/lista
+6. `C:\winegod-app\prompts\HANDOFF_MEDIA_P5_TEXT_UPLOAD.md` (opcional, so se ainda fizer sentido)
+
+**Como proceder nesta etapa:**
+- executar o prompt-mãe primeiro
+- atacar **uma fase por vez**
+- nao declarar uma fase como entregue sem request path real validado
+- so passar para a fase seguinte depois da atual estar aprovada
+
+**Regra critica desta frente:**
+- NAO rodar todos os handoffs de midia em paralelo implementando codigo
+- eles compartilham os mesmos arquivos centrais do backend
+- portanto, a implementacao deve ser **sequencial por fase**
+- no maximo, usar chats auxiliares em paralelo so para diagnostico/revisao sem editar codigo
 
 ### Como executar
 

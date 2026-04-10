@@ -1,13 +1,15 @@
 # Relatorio de Sessao -- Correcao Dedup/Matching
 
-Data: 2026-04-08 (atualizado 2026-04-09 pos prova operacional v2)
+Data: 2026-04-08 (encerrado 2026-04-10)
 
 ## Resumo
 
-Prova operacional executada contra o banco Render (2.5M wines).
-Regressao da busca (v1) foi corrigida com complemento por tokens.
-Fase 0: **APROVADA.** Busca, cache e UX aprovados. Deploy autorizado.
-Fase 1 parcialmente preparada. Fase 2 com runbook.
+Fases 0 e 1 concluidas e em producao.
+- Fase 0: busca, cache, UX e import corrigidos. Deployados e validados.
+- Fase 1: 43 wine_aliases ativos. 4/4 casos criticos resolvidos.
+  search.py e details.py consomem aliases em producao.
+- Fase 2 (rebuild): runbook pronto, nao executado. Backlog.
+- Busca por produtor+nome: melhoria futura, nao bloqueio.
 
 ---
 
