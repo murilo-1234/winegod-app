@@ -25,10 +25,18 @@ def resolve_display(wine):
     vivino_rating = wine.get("vivino_rating")
     sample_size = wine.get("nota_wcf_sample_size")
     winegod_score = wine.get("winegod_score")
+    preco_min = wine.get("preco_min")
 
     display = _resolve_note(nota_wcf, vivino_rating, sample_size)
-    display["display_score"] = round(float(winegod_score), 2) if winegod_score else None
-    display["display_score_available"] = display["display_score"] is not None
+
+    # Score requires BOTH a computed score AND a valid price
+    has_price = preco_min is not None and float(preco_min) > 0
+    if winegod_score is not None and has_price:
+        display["display_score"] = round(float(winegod_score), 2)
+        display["display_score_available"] = True
+    else:
+        display["display_score"] = None
+        display["display_score_available"] = False
 
     return display
 

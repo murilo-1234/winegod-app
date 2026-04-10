@@ -19,6 +19,10 @@ interface ShareWine {
   preco_min: number | null;
   preco_max: number | null;
   moeda: string;
+  display_note: number | null;
+  display_note_type: "verified" | "estimated" | null;
+  display_score: number | null;
+  display_score_available: boolean;
 }
 
 interface ShareData {
@@ -39,9 +43,9 @@ function toWineData(w: ShareWine): WineData {
     pais: w.pais_nome || "",
     regiao: w.regiao || "",
     uvas: [],
-    nota: w.nota_wcf || w.vivino_rating || 0,
-    nota_tipo: w.nota_wcf ? "verified" : "estimated",
-    score: w.winegod_score || 0,
+    nota: w.display_note ?? 0,
+    nota_tipo: w.display_note_type === "verified" ? "verified" : "estimated",
+    score: w.display_score ?? 0,
     termos: [],
     preco_min: w.preco_min,
     preco_max: w.preco_max,
