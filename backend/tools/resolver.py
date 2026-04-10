@@ -445,10 +445,10 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                 parts.append("[Responda sobre os vinhos listados acima com os dados ja fornecidos (nota, score, preco). NAO chame get_wine_details nem get_prices — os dados essenciais ja estao aqui.]")
             else:
                 parts.append(
-                    "[Nenhum vinho encontrado no banco. "
-                    "Liste apenas os nomes e precos lidos na imagem, sem descrever perfil sensorial, qualidade, tradicao, estilo ou reputacao. "
-                    "Diga que ainda nao tem informacoes sobre esses vinhos e ofereca investigar. "
-                    "Resposta curta e factual.]"
+                    "[Nenhum destes vinhos foi confirmado na base ainda. "
+                    "Apresente com confianca os nomes e precos claramente lidos na imagem — sao dados visuais seguros. "
+                    "NAO invente nota, score, perfil sensorial, qualidade ou reputacao. "
+                    "Diga que ainda nao tem esses vinhos no acervo e ofereca buscar mais informacoes.]"
                 )
 
         else:
