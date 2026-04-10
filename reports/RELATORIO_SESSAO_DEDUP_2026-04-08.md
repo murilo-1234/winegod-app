@@ -360,8 +360,24 @@ Validacao dos 5 casos criticos:
 - Luigi Bosca De Sangre: NENHUM canonico no banco (lacuna de dados)
 - Perez Cruz Piedra Seca: nao testado (ausente do banco)
 
-Proximo passo: rodar find_alias_candidates.py --sample sobre wines sem vivino_id
-para medir volume real de duplicatas. Depende do UPDATE de scores terminar.
+### Auditoria de lacunas de dados (2026-04-10)
+
+Descoberta: os 4 canonicos "faltantes" EXISTEM no Render.
+O problema e que o nome canonico difere do nome buscado:
+
+| Busca | Canonico no Render (nome) | Produtor | wines.id | Rating |
+|-------|---------------------------|----------|----------|--------|
+| Dom Perignon | Brut Champagne | Dom Perignon | 21557 | 4.60 |
+| Luigi Bosca De Sangre Malbec | De Sangre Malbec | Luigi Bosca | 14106 | 4.10 |
+| Casillero del Diablo CS | Cabernet Sauvignon (Reserva) | Casillero del Diablo | 41495 | 3.50 |
+| Perez Cruz CS | Cabernet Sauvignon Reserva | Perez Cruz | 38768 | 3.80 |
+
+Causa: o Vivino grava o TIPO do vinho no campo nome e o PRODUTOR separado.
+A busca do app procura por nome_normalizado, que nao inclui produtor.
+O complemento por tokens LIKE tambem busca so em nome_normalizado.
+
+Solucao: ou criar aliases (loja → canonico) ou expandir a busca para
+tambem procurar em produtor_normalizado combinado com nome_normalizado.
 
 ---
 

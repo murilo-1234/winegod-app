@@ -80,6 +80,30 @@ def resolve_aliases(conn, results):
         if not r.get('produtor') and canon.get('canonical_produtor'):
             r['produtor'] = canon['canonical_produtor']
 
+    # Dedup: se o canonico real ja aparece nos resultados E um alias
+    # tambem aponta para ele, o alias e redundante. Tambem remove
+    # aliases duplicados que apontam para o mesmo canonical_id.
+    seen_canonical = set()
+    to_remove = []
+    # Primeira passada: marcar IDs canonicos que aparecem diretamente
+    for r in results:
+        if r.get('resolved_via') != 'alias':
+            vid = r.get('vivino_id')
+            if vid:
+                seen_canonical.add(r['id'])
+    # Segunda passada: marcar aliases redundantes
+    for i, r in enumerate(results):
+        if r.get('resolved_via') != 'alias':
+            continue
+        cid = r.get('canonical_id')
+        if cid in seen_canonical:
+            to_remove.append(i)
+        else:
+            seen_canonical.add(cid)
+    # Remover de tras pra frente
+    for i in reversed(to_remove):
+        results.pop(i)
+
 
 def resolve_alias_single(conn, result):
     """Resolve alias para um unico resultado (dict). Wrapper de resolve_aliases."""
