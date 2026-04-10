@@ -1,0 +1,21 @@
+-- ROLLBACK LOTE 2 — remove exatamente os 21 aliases do lote 2
+-- Para executar: psql $DATABASE_URL -f reports/rollback_alias_lote2.sql
+
+BEGIN;
+DELETE FROM wine_aliases
+WHERE source_wine_id IN (
+    1817467, 1822903, 2275023, 2013260, 1804556, 1843291, 1992433,
+    1992431, 2016225, 2019666, 2275013, 1992456, 1848357, 2102010,
+    1741179, 1748299, 1753189, 1862243, 2271802, 1820106, 1851793
+)
+AND source_type = 'manual'
+AND review_status = 'approved';
+COMMIT;
+
+-- Verificar: deve retornar 0
+SELECT COUNT(*) FROM wine_aliases
+WHERE source_wine_id IN (
+    1817467, 1822903, 2275023, 2013260, 1804556, 1843291, 1992433,
+    1992431, 2016225, 2019666, 2275013, 1992456, 1848357, 2102010,
+    1741179, 1748299, 1753189, 1862243, 2271802, 1820106, 1851793
+);

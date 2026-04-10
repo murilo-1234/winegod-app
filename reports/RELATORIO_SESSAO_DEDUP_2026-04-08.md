@@ -372,25 +372,38 @@ para medir volume real de duplicatas. Depende do UPDATE de scores terminar.
 - `reports/apply_alias_pilot.sql` — INSERT com lock_timeout
 - `reports/rollback_alias_pilot.sql` — DELETE exato para reverter
 
-Nao executado. Depende de:
-1. Lock do UPDATE de scores liberar
-2. Tabela wine_aliases criada no Render
-3. Aprovacao explicita para rodar o piloto
+Executado em 2026-04-10:
+- Lock do UPDATE liberou apos ~6h
+- Tabela wine_aliases criada no Render (schema completo, 9 colunas, 3 indices)
+- Piloto de 10 aliases inserido com aprovacao explicita
+- 10 de 10 inseridos (ON CONFLICT DO NOTHING, zero conflitos)
+- Todos com source_type='manual', review_status='approved'
+- rollback_alias_pilot.sql validado: bateria em exatamente 10 registros
 
 ### Quem consome wine_aliases e em que ordem
 
 wine_aliases SOZINHA nao muda comportamento do app. Precisa de integracao
 explicita em pelo menos 1 consumidor. Ordem recomendada:
 
-**1. search.py (PRIMEIRO)**
-- Maior impacto imediato no usuario final
-- Quando search retorna wine de loja que tem alias aprovado,
-  resolver para canonico e apresentar rating/score do canonico
-- Implementacao: LEFT JOIN wine_aliases na query de busca,
-  COALESCE campos canonicos sobre os da loja
-- Risco baixo: alias so e usado se review_status = 'approved'
-- Beneficio direto: Chaski e Finca voltam a mostrar nota mesmo
-  quando exact/prefix encontra a versao loja primeiro
+**wine_aliases ATIVO EM PRODUCAO via search/details (2026-04-10)**
+- Deploy runtime: commit bcba6ea0 (aliases.py + search.py + details.py)
+- Lote 1 (piloto): 10 aliases. Validado 10/10.
+- Lote 2: 21 aliases adicionais. Validado 31/31 details, 30/31 search (1 MISS por duplicata de nome, nao por falha).
+- Controles sem alias: 5/5 preservados, nenhuma regressao.
+- Total ativo: 31 aliases aprovados em producao.
+- Vinhos de alto impacto cobertos: Almaviva (4.4), Clos Apalta (4.6), Purple Angel (4.4),
+  Montes Alpha (todas uvas), Santa Rita 120 (CS/Merlot/SB), Chaski, Finca Las Moras.
+
+**1. search.py (PRIMEIRO) — IMPLEMENTADO E VALIDADO (2026-04-10)**
+- Funcao _resolve_aliases() adicionada ao search.py
+- Pos-query: busca aliases aprovados para os IDs retornados,
+  enriquece com COALESCE de vivino_rating, nota_wcf, winegod_score,
+  vivino_reviews, vivino_id, produtor
+- Mantém nome da source (o que o usuario buscou)
+- Adiciona canonical_id e resolved_via='alias' no resultado
+- Validado com os 10 aliases do piloto: 10 de 10 resolvidos
+- Chaski: #2 mostra rating=4.1 via alias (antes: sem nota)
+- Finca: #4 e #5 mostram rating=3.4 via alias (antes: sem nota)
 
 **2. details.py (SEGUNDO)**
 - Quando usuario pede detalhes de wine de loja com alias aprovado,
