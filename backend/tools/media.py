@@ -75,7 +75,7 @@ If type is "screenshot":
 {"type": "screenshot", "wines": [{"name": "wine name", "producer": "winery or null", "price": "price or null", "rating": "rating or null", "source": "app/site name or null"}]}
 
 If type is "shelf":
-{"type": "shelf", "wines": [{"name": "wine name", "producer": "winery or null", "price": "price or null"}], "total_visible": 0}
+{"type": "shelf", "wines": [{"name": "full wine name as read", "producer": "winery or null", "line": "wine line/range or null", "variety": "grape variety or null", "classification": "Reserva/Gran Reserva/etc or null", "style": "red/white/rosé/sparkling or null", "price": "price or null"}], "total_visible": 0}
 
 If type is "not_wine":
 {"type": "not_wine", "description": "brief description of what the image shows"}
@@ -113,6 +113,14 @@ Brazilian shelf price tags often show multiple values:
   - Deduplicate: if the same wine appears multiple times on the shelf, list it only ONCE
   - "total_visible": estimate the number of DISTINCT wine labels/SKUs visible (not total physical bottles). 10 copies of the same wine = 1 SKU. Be conservative — when uncertain, estimate lower.
   - For each wine in the list, extract price if a price tag is clearly associated with it
+
+## Shelf structured fields (for each wine)
+  - "name": keep the FULL wine name as printed (winery + line + variety + classification). This is the primary field — always fill it.
+  - "line": the wine LINE or RANGE within the producer. Examples: "Aura" in "MontGras Aura Reserva Carmenere", "Family Wines" in "Casa Silva Family Wines Cabernet Sauvignon", "Day One" in "MontGras Day One Carmenere". Use null if not identifiable or if the wine has no distinct line name.
+  - "variety": grape variety when clearly readable (e.g. "Carmenere", "Cabernet Sauvignon", "Merlot", "Chardonnay"). Use null if not visible.
+  - "classification": quality tier when visible (e.g. "Reserva", "Gran Reserva", "Crianza"). Use null if not visible.
+  - "style": overall wine style — use exactly one of: "red", "white", "rosé", "sparkling". Use null if not determinable from the label.
+  - Do NOT guess or infer structured fields from context — only extract what you can clearly read.
 
 ## General rules
   - Always use null for fields you truly cannot determine

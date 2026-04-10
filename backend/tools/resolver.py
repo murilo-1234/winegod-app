@@ -119,8 +119,9 @@ def _resolve_label(ocr_result):
     return [], [name]
 
 
-_MAX_MULTI_ITEMS = 8      # screenshot (itens mais limpos)
-_MAX_SHELF_ITEMS = 3      # shelf (resolver poucos e bons)
+_MAX_MULTI_ITEMS = 8       # screenshot (itens mais limpos)
+_MAX_SHELF_TIER_A = 3      # shelf: confirmacao forte (fast-only)
+_MAX_SHELF_TIER_B = 2      # shelf: confirmacao moderada (fast + fallback)
 _MIN_MATCH_SCORE = 0.4
 _MAX_FALLBACK_PAIRS = 1
 
@@ -163,6 +164,30 @@ _CLASSIFICATION_TOKENS = frozenset({
     'classico', 'classic', 'superior', 'especial',
 })
 
+# Variedades/estilos canonicos — frases completas, ordenadas por tamanho
+# desc para greedy matching. Compostos primeiro ("cabernet sauvignon"
+# antes de "cabernet") para nao quebrar frases em partes.
+_CANONICAL_VARIETIES = sorted([
+    # Uvas compostas
+    'cabernet sauvignon', 'cabernet franc', 'sauvignon blanc',
+    'pinot noir', 'pinot grigio', 'pinot gris', 'pinot blanc',
+    'pinot meunier', 'chenin blanc', 'petit verdot', 'petit sirah',
+    'blanc de blancs', 'blanc de noirs',
+    # Estilos compostos
+    'extra brut', 'brut nature', 'brut rose', 'demi sec',
+    # Uvas simples
+    'merlot', 'malbec', 'syrah', 'shiraz', 'chardonnay',
+    'tempranillo', 'garnacha', 'grenache', 'carmenere',
+    'bonarda', 'tannat', 'torrontes', 'viognier', 'riesling',
+    'sangiovese', 'nebbiolo', 'barbera', 'primitivo', 'zinfandel',
+    'mourvedre', 'verdejo', 'albarino', 'moscato',
+    'montepulciano', 'chianti', 'gewurztraminer',
+    # Estilos simples
+    'rose', 'rosado', 'tinto', 'blanco', 'branco', 'red', 'white',
+    'brut', 'nature', 'seco', 'dulce', 'sweet', 'dry',
+    'espumante', 'sparkling',
+], key=len, reverse=True)
+
 
 def _extract_distinctive(name_norm):
     """Tokens distintivos: sem genericos, sem anos, len >= 3."""
@@ -186,6 +211,21 @@ def _extract_line_tokens(ocr_norm, prod_name):
             and t not in _CLASSIFICATION_TOKENS
             and t not in prod_tokens
             and not (len(t) == 4 and t.isdigit())]
+
+
+def _extract_canonical_varieties(name_norm):
+    """Extrai variedades/estilos canonicos de um nome normalizado.
+
+    Greedy: frases mais longas primeiro. Tokens consumidos nao sao
+    reutilizados, evitando que 'cabernet sauvignon' vire 'cabernet' + 'sauvignon'.
+    """
+    found = []
+    remaining = name_norm
+    for variety in _CANONICAL_VARIETIES:
+        if variety in remaining:
+            found.append(variety)
+            remaining = remaining.replace(variety, ' ', 1)
+    return found
 
 
 def _score_match(ocr_name, candidate):
@@ -214,6 +254,19 @@ def _score_match(ocr_name, candidate):
         cand_words = set(cand_name.split())
         if not all(t in cand_words for t in line_tokens):
             return 0.0
+
+    # GATE V — VARIEDADE/ESTILO (comparacao por frase canonica):
+    # Extrai variedades como frases completas ("cabernet sauvignon", nao
+    # "cabernet" + "sauvignon"). Se OCR tem variedade canonica, a frase
+    # inteira deve aparecer no nome do candidato.
+    # Ex: "Sauvignon Blanc" nao casa com "Cabernet Sauvignon" — mesmo
+    # compartilhando "sauvignon", as frases canonicas sao diferentes.
+    ocr_varieties = _extract_canonical_varieties(ocr_norm)
+    if ocr_varieties:
+        if not any(v in cand_name for v in ocr_varieties):
+            cand_varieties = _extract_canonical_varieties(cand_name)
+            if cand_varieties:
+                return 0.0
 
     distinctive = _extract_distinctive(ocr_norm)
 
@@ -319,9 +372,11 @@ def _fallback_resolve(name, seen_ids):
 def _resolve_multi(ocr_result):
     """Resolve multiplos vinhos de screenshot/shelf.
 
-    Shelf: resolve amostra pequena (3 itens fortes), fast-only, sem fallback.
-    Screenshot: mais permissivo (8 itens), com fallback.
-    Itens alem do cap vao direto para unresolved (vistos mas nao verificados).
+    Shelf: resolve em 2 camadas com mesmos gates de qualidade.
+      Tier A (3 itens): fast-only (exact/prefix/producer).
+      Tier B (2 itens): fast + fallback (token pairs).
+      Tier C (resto): visual only, sem resolucao.
+    Screenshot: mais permissivo (8 itens), fast + fallback.
     """
     wines_list = ocr_result.get("wines", [])
     if not wines_list:
@@ -329,10 +384,6 @@ def _resolve_multi(ocr_result):
 
     image_type = ocr_result.get("image_type", "screenshot")
     is_shelf = image_type == "shelf"
-
-    # Cap e estrategia por tipo
-    max_items = _MAX_SHELF_ITEMS if is_shelf else _MAX_MULTI_ITEMS
-    use_fallback = not is_shelf  # shelf: fast-only, screenshot: fast + fallback
 
     # 1. Filtrar itens sem nome
     valid = [w for w in wines_list if (w.get("name") or "").strip()]
@@ -352,30 +403,37 @@ def _resolve_multi(ocr_result):
         -len((w.get("name") or "").split()),
     ))
 
-    # 4. Cap: resolver apenas os mais fortes, resto vai para unresolved
-    selected = deduped[:max_items]
-    skipped = deduped[max_items:]
+    # 4. Dividir em tiers (shelf) ou cap unico (screenshot)
+    if is_shelf:
+        tier_a = deduped[:_MAX_SHELF_TIER_A]
+        tier_b = deduped[_MAX_SHELF_TIER_A:_MAX_SHELF_TIER_A + _MAX_SHELF_TIER_B]
+        skipped = deduped[_MAX_SHELF_TIER_A + _MAX_SHELF_TIER_B:]
+    else:
+        tier_a = deduped[:_MAX_MULTI_ITEMS]
+        tier_b = []
+        skipped = deduped[_MAX_MULTI_ITEMS:]
+
+    total_selected = len(tier_a) + len(tier_b)
 
     print(
         f"[resolver] multi: type={image_type} ocr={len(wines_list)} valid={len(valid)} "
-        f"deduped={len(deduped)} selected={len(selected)} skipped={len(skipped)}",
+        f"deduped={len(deduped)} selected={total_selected} skipped={len(skipped)}",
         flush=True,
     )
 
-    # 5. Resolver cada item selecionado
+    # 5. Resolver cada tier
     resolved_items = []
     unresolved_items = []
     seen_ids = set()
 
-    for w in selected:
+    # Tier A: fast-only (shelf) ou fast+fallback (screenshot)
+    use_fallback_a = not is_shelf
+    for w in tier_a:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
 
-        # Fase 1: Fast (exact/prefix/producer, sem token LIKE)
         matched = _fast_resolve(name, producer, seen_ids)
-
-        # Fase 2: Fallback (apenas screenshot — shelf pula)
-        if not matched and use_fallback:
+        if not matched and use_fallback_a:
             matched = _fallback_resolve(name, seen_ids)
 
         if matched:
@@ -384,7 +442,22 @@ def _resolve_multi(ocr_result):
         else:
             unresolved_items.append({"ocr": w})
 
-    # 6. Itens alem do cap: unresolved direto (vistos, nao verificados)
+    # Tier B: fast + fallback (shelf only — amplia cobertura com mesmos gates)
+    for w in tier_b:
+        name = (w.get("name") or "").strip()
+        producer = (w.get("producer") or "").strip() or None
+
+        matched = _fast_resolve(name, producer, seen_ids)
+        if not matched:
+            matched = _fallback_resolve(name, seen_ids)
+
+        if matched:
+            seen_ids.add(matched['id'])
+            resolved_items.append({"ocr": w, "wine": matched})
+        else:
+            unresolved_items.append({"ocr": w})
+
+    # Tier C: visual only — unresolved direto
     for w in skipped:
         unresolved_items.append({"ocr": w})
 
