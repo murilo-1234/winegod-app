@@ -440,14 +440,30 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                         ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
                     parts.append(f"  {i}. {' | '.join(ocr_parts)}")
 
-            # Instrucao final condicional
-            if resolved_items:
-                parts.append("[Responda sobre os vinhos listados acima com os dados ja fornecidos (nota, score, preco). NAO chame get_wine_details nem get_prices — os dados essenciais ja estao aqui.]")
+            # Instrucao final com niveis de certeza
+            if resolved_items and _unresolved:
+                # Caso misto: alguns confirmados, alguns apenas visuais
+                parts.append(
+                    "[REGRAS DE CERTEZA: "
+                    "Itens marcados 'Banco:' estao CONFIRMADOS — use nota, score e preco da base com confianca. "
+                    "Itens em 'Nao encontrado(s)' sao APENAS LEITURA VISUAL — cite nome e preco visivel, mas NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
+                    "Para ranking ou recomendacao, compare APENAS os confirmados. "
+                    "Dos nao confirmados, diga que ainda nao tem no acervo.]"
+                )
+            elif resolved_items:
+                # Todos confirmados
+                parts.append(
+                    "[Todos os vinhos foram confirmados na base. "
+                    "Responda com os dados ja fornecidos (nota, score, preco). "
+                    "NAO chame get_wine_details nem get_prices — os dados essenciais ja estao aqui.]"
+                )
             else:
+                # Nenhum confirmado
                 parts.append(
                     "[Nenhum destes vinhos foi confirmado na base ainda. "
                     "Apresente com confianca os nomes e precos claramente lidos na imagem — sao dados visuais seguros. "
                     "NAO invente nota, score, perfil sensorial, qualidade ou reputacao. "
+                    "NAO faca ranking ou custo-beneficio sem dados da base. "
                     "Diga que ainda nao tem esses vinhos no acervo e ofereca buscar mais informacoes.]"
                 )
 
