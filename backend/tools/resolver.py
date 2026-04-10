@@ -143,6 +143,27 @@ _GENERIC_WINE_TOKENS = frozenset({
 })
 
 
+# Uvas: nao identificam linha/familia dentro do mesmo produtor
+_GRAPE_TOKENS = frozenset({
+    'cabernet', 'sauvignon', 'merlot', 'malbec', 'syrah', 'shiraz',
+    'chardonnay', 'pinot', 'noir', 'grigio', 'gris',
+    'tempranillo', 'garnacha', 'grenache',
+    'carmenere', 'bonarda', 'tannat',
+    'torrontes', 'viognier', 'riesling',
+    'sangiovese', 'nebbiolo', 'barbera', 'primitivo', 'zinfandel',
+    'mourvedre', 'verdejo', 'albarino', 'moscato',
+    'blanc', 'rouge',
+})
+
+# Classificacoes: nao identificam linha especifica (mas discriminam dentro da linha)
+_CLASSIFICATION_TOKENS = frozenset({
+    'reserva', 'reserve', 'riserva',
+    'gran', 'grand', 'grande',
+    'crianza', 'roble', 'joven',
+    'classico', 'classic', 'superior', 'especial',
+})
+
+
 def _extract_distinctive(name_norm):
     """Tokens distintivos: sem genericos, sem anos, len >= 3."""
     return [t for t in name_norm.split()
@@ -151,11 +172,29 @@ def _extract_distinctive(name_norm):
             and not (len(t) == 4 and t.isdigit())]
 
 
+def _extract_line_tokens(ocr_norm, prod_name):
+    """Tokens de LINHA/FAMILIA: o que sobra apos remover produtor, uvas, classificacoes.
+
+    Esses tokens identificam QUAL vinho dentro do mesmo produtor.
+    Ex: 'Aura' em 'MontGras Aura Reserva Carmenere'.
+    """
+    prod_tokens = set(prod_name.split()) if prod_name else set()
+    return [t for t in ocr_norm.split()
+            if len(t) >= 3
+            and t not in _GENERIC_WINE_TOKENS
+            and t not in _GRAPE_TOKENS
+            and t not in _CLASSIFICATION_TOKENS
+            and t not in prod_tokens
+            and not (len(t) == 4 and t.isdigit())]
+
+
 def _score_match(ocr_name, candidate):
     """Score de qualidade do match OCR vs candidato do banco.
 
-    Gate: token distintivo mais longo deve estar em nome+produtor (substring).
-    Primary: fracao de tokens distintivos no NOME DO VINHO (nao produtor).
+    Gate 0 (OBRIGATORIO): tokens de linha/familia do OCR devem TODOS
+    estar presentes no nome do candidato (match por palavra inteira).
+    Gate 1: token distintivo mais longo deve estar em nome+produtor.
+    Primary: fracao de tokens distintivos no NOME (nao produtor).
     Matches apenas no produtor recebem 30% de peso.
     Tiebreaker: overlap de todos os tokens OCR com o nome do vinho.
     """
@@ -163,6 +202,18 @@ def _score_match(ocr_name, candidate):
     cand_name = normalizar(candidate.get('nome', ''))
     prod_name = normalizar(candidate.get('produtor', ''))
     cand_full = cand_name + ' ' + prod_name
+
+    # GATE 0 — LINHA/FAMILIA (obrigatorio, antes de tudo):
+    # Se o OCR leu tokens de linha/familia, o candidato DEVE conter
+    # TODOS eles no nome do vinho (match por PALAVRA, nao substring).
+    # Produtor igual + uva igual NAO basta.
+    # Ex: "MontGras Aura" nao casa com "MontGras Day One".
+    # Ex: "Casa Silva Family Wines" nao casa com "Los Lingues Single Block".
+    line_tokens = _extract_line_tokens(ocr_norm, prod_name)
+    if line_tokens:
+        cand_words = set(cand_name.split())
+        if not all(t in cand_words for t in line_tokens):
+            return 0.0
 
     distinctive = _extract_distinctive(ocr_norm)
 
@@ -172,7 +223,7 @@ def _score_match(ocr_name, candidate):
     # Ordenar por tamanho desc (mais longo = mais distintivo)
     distinctive.sort(key=len, reverse=True)
 
-    # Gate: top token deve estar em nome OU produtor
+    # Gate 1: top token deve estar em nome OU produtor
     if distinctive[0] not in cand_full:
         return 0.0
 
