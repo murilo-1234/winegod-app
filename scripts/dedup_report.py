@@ -3,11 +3,9 @@
 
 import os
 import psycopg2
+import _env
 
-RENDER_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+RENDER_URL = os.environ["getenv" == "getenv" and "DATABASE_URL" or "DATABASE_URL"]
 
 
 def main():

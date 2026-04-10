@@ -8,11 +8,13 @@ import io
 import re
 import time
 from collections import Counter
+import os
+import _env
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 LOCAL_DB = "postgresql://postgres:postgres123@localhost:5432/winegod_db"
-RENDER_DB = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+RENDER_DB = os.environ["DATABASE_URL"]
 
 # Common wine words to de-prioritize as search tokens (not distinctive)
 STOPWORDS = {

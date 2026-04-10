@@ -5,8 +5,10 @@ _region_avg table must already exist on Render.
 """
 
 import psycopg2
+import os
+import _env
 
-RENDER_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+RENDER_URL = os.environ["DATABASE_URL"]
 BATCH = 50000
 
 

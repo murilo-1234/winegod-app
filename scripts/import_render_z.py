@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 import json, time, sys, argparse, os, hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+import os
+import _env
 
 # Guardrails de owner (scripts/ esta no mesmo diretorio)
 sys.path.insert(0, os.path.dirname(__file__))
@@ -32,7 +34,7 @@ from guardrails_owner import is_producer_valid, has_type_conflict
 LOCAL_DB = dict(host="localhost", port=5432, dbname="winegod_db", user="postgres", password="postgres123")
 
 # CRITICO: ?sslmode=require e OBRIGATORIO. Render recusa conexao sem SSL.
-RENDER_DB = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod?sslmode=require"
+RENDER_DB = os.environ["DATABASE_URL"]
 
 BATCH_SIZE = 1000
 

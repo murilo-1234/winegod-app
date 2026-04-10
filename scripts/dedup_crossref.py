@@ -22,13 +22,11 @@ from urllib.parse import urlparse
 
 import psycopg2
 import psycopg2.extras
+import _env
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-RENDER_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+RENDER_URL = os.environ["getenv" == "getenv" and "DATABASE_URL" or "DATABASE_URL"]
 LOCAL_URL = os.getenv(
     "WINEGOD_LOCAL_URL",
     "postgresql://postgres:postgres123@localhost:5432/winegod_db",

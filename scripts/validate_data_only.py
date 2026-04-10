@@ -8,10 +8,12 @@ Saida: scripts/data_validation.json
 import re
 import json
 import psycopg2
+import os
+import _env
 
 RESULTS_FILE = "scripts/baco_test_results_246.md"
 OUTPUT_FILE = "scripts/data_validation.json"
-DATABASE_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 def parse_results(filepath):

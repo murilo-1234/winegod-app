@@ -7,12 +7,9 @@ Mostra distribuicao, top vinhos, medias por pais, etc.
 
 import os
 import psycopg2
+import _env
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96"
-    "@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 def main():

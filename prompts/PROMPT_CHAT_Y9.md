@@ -24,7 +24,7 @@ Estimativa: ~196,153 vinhos.
 LOCAL_URL=postgresql://postgres:postgres123@localhost:5432/winegod_db
 
 # Banco RENDER (wines Vivino — leitura)
-RENDER_URL=postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod
+RENDER_URL=<DATABASE_URL_FROM_ENV>
 ```
 
 ## O QUE FAZER

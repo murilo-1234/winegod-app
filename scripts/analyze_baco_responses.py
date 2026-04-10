@@ -21,6 +21,7 @@ import time
 import json
 import anthropic
 import psycopg2
+import _env
 
 # ---------------------------------------------------------------------------
 # CONFIG
@@ -31,7 +32,7 @@ BATCH_SIZE = 3  # perguntas por batch na analise Claude
 
 # Credenciais (do backend/.env)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-DATABASE_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 MODEL = "claude-haiku-4-5-20251001"

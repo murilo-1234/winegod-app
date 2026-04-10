@@ -3,8 +3,10 @@ calc_wcf_batched.py — Update wines from _wcf_bulk (already on Render) in 50K b
 """
 
 import psycopg2
+import os
+import _env
 
-RENDER_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+RENDER_URL = os.environ["DATABASE_URL"]
 BATCH = 50000
 
 

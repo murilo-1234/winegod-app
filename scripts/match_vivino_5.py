@@ -9,10 +9,11 @@ import os
 import psycopg2
 import pandas as pd
 import numpy as np
+import _env
 
 # === CONFIG ===
 LOCAL_URL = "postgresql://postgres:postgres123@localhost:5432/winegod_db"
-RENDER_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+RENDER_URL = os.environ["DATABASE_URL"]
 
 ID_MIN = 784613
 ID_MAX = 980765

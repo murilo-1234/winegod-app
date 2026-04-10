@@ -10,6 +10,7 @@ import re
 import time
 import sys
 import io
+import _env
 
 # Fix encoding para Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -17,7 +18,7 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='repla
 
 # --- Credenciais ---
 LOCAL_URL = "postgresql://postgres:postgres123@localhost:5432/winegod_db"
-RENDER_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod"
+RENDER_URL = os.environ["DATABASE_URL"]
 
 # --- Faixa deste grupo ---
 ID_MIN = 392307

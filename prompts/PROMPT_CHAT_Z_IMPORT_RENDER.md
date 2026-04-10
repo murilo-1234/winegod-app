@@ -32,7 +32,7 @@ from urllib.parse import urlparse
 import json, time, sys, argparse
 
 LOCAL_DB = dict(host="localhost", port=5432, dbname="winegod_db", user="postgres", password="postgres123")
-RENDER_DB = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod?sslmode=require"
+RENDER_DB = "<DATABASE_URL_FROM_ENV>"
 
 # 1. Mapa vivino_id → wine_id do Render (1.72M, ~200MB)
 print("Carregando vivino_id → wine_id do Render...")
@@ -262,7 +262,7 @@ LIMIT 1000 OFFSET %s
 
 ```python
 LOCAL_DB = dict(host="localhost", port=5432, dbname="winegod_db", user="postgres", password="postgres123")
-RENDER_DB = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod?sslmode=require"
+RENDER_DB = "<DATABASE_URL_FROM_ENV>"
 ```
 
 ## SCHEMAS RENDER (referencia)
@@ -369,7 +369,7 @@ python scripts/import_render_z.py --fase 1 --limite 100
 # 3. Verificar no Render
 python -c "
 import psycopg2
-c = psycopg2.connect('postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod?sslmode=require')
+c = psycopg2.connect('<DATABASE_URL_FROM_ENV>')
 cur = c.cursor()
 cur.execute('SELECT COUNT(*) FROM wine_sources')
 print(f'Wine sources: {cur.fetchone()[0]:,}')

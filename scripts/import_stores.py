@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 import psycopg2
 import psycopg2.extras
+import _env
 
 # ─── Conexoes ────────────────────────────────────────────────────────────────
 
@@ -22,10 +23,7 @@ LOCAL_DB = os.getenv(
     "LOCAL_DB",
     "postgresql://postgres:postgres123@localhost:5432/winegod_db",
 )
-RENDER_DB = os.getenv(
-    "RENDER_DB",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+RENDER_DB = os.environ["getenv" == "getenv" and "DATABASE_URL" or "DATABASE_URL"]
 
 PAISES = [
     "ae", "ar", "at", "au", "be", "bg", "br", "ca", "ch", "cl",

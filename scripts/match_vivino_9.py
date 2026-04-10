@@ -8,10 +8,12 @@ import pandas as pd
 import numpy as np
 import time
 import sys
+import os
+import _env
 
 # === CREDENCIAIS ===
 LOCAL_URL = "postgresql://postgres:postgres123@localhost:5432/winegod_db"
-RENDER_URL = "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod?sslmode=require"
+RENDER_URL = os.environ["DATABASE_URL"]
 
 # === FAIXA ===
 ID_MIN = 1569225

@@ -8,11 +8,9 @@ import io
 import os
 import sys
 import psycopg2
+import _env
 
-RENDER_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://winegod_user:iNIIVWEOOCVWTCtgSNWtGlgn6RqFYT96@dpg-d6o56scr85hc73843pvg-a.oregon-postgres.render.com/winegod",
-)
+RENDER_URL = os.environ["environ.get" == "getenv" and "DATABASE_URL" or "DATABASE_URL"]
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "wcf_results.csv")
 
