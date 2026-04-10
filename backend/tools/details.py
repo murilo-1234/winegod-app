@@ -3,6 +3,7 @@
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_DETAILS
 from services.display import enrich_wine
+from tools.aliases import resolve_alias_single
 
 
 def get_wine_details(wine_id):
@@ -21,6 +22,10 @@ def get_wine_details(wine_id):
                 return {"error": "Vinho nao encontrado"}
             columns = [desc[0] for desc in cur.description]
             result = dict(zip(columns, row))
+
+            # Resolver alias: se este wine tem alias aprovado,
+            # enriquecer com dados canonicos
+            resolve_alias_single(conn, result)
 
             # Converter Decimal/tipos especiais para JSON-safe
             for k, v in result.items():

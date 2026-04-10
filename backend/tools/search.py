@@ -7,6 +7,7 @@ from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_SEARCH
 from services.display import enrich_wines
 from tools.normalize import normalizar
+from tools.aliases import resolve_aliases
 
 # Colunas retornadas em todas as buscas
 _WINE_COLUMNS = """
@@ -103,6 +104,11 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
                     else:
                         results = token_results
                     layer_used = f"{layer_used}+tokens" if layer_used != "none" else "tokens"
+
+        # Resolver aliases: se um resultado de loja tem alias aprovado,
+        # enriquecer com dados canonicos (rating, score, reviews).
+        if results:
+            resolve_aliases(conn, results)
 
         # Converter Decimal para float
         for r in results:
@@ -318,9 +324,8 @@ def _search_tokens(conn, q_norm, limit, extra_where, extra_params):
     return results
 
 
-def _tokens_query(conn, tokens, limit, extra_where, extra_params):
-    """Executa query LIKE AND com lista de tokens. Timeout de 5s para proteger
-    contra combinacoes de tokens comuns (ex: 'perez' + 'cruz')."""
+def _tokens_query(conn, tokens, limit, extra_where, extra_params, timeout_ms=5000):
+    """Executa query LIKE AND com lista de tokens."""
     clauses = " AND ".join(f"nome_normalizado LIKE %s" for _ in tokens)
     params = [f"%{t}%" for t in tokens] + extra_params + [limit]
     sql = f"""
@@ -332,7 +337,7 @@ def _tokens_query(conn, tokens, limit, extra_where, extra_params):
     """
     try:
         with conn.cursor() as cur:
-            cur.execute("SET LOCAL statement_timeout = '5s'")
+            cur.execute(f"SET LOCAL statement_timeout = '{timeout_ms}'")
             cur.execute(sql, params)
             if cur.description is None:
                 return []
@@ -361,6 +366,59 @@ def _merge_results(primary, secondary, limit):
             other_new.append(r)
     merged = canonical_new + primary + other_new
     return merged[:limit]
+
+
+def search_wine_tokens(tokens, limit=10, timeout_ms=3000, produtor=None):
+    """Busca direta por tokens LIKE AND, bypassa exact/prefix/producer.
+
+    Path rapido para pre-resolve quando o nome normalizado diverge
+    (e.g. 'deugenio' no DB vs 'd eugenio' do OCR).
+    Vai direto ao token LIKE, sem gastar tempo em camadas que vao falhar.
+    produtor: quando fornecido, filtra por produtor (impede cross-producer).
+    """
+    tokens = [t for t in tokens if len(t) >= 3]
+    if len(tokens) < 2:
+        return {"wines": [], "total": 0, "search_layer": "tokens_direct"}
+
+    p_norm = normalizar(produtor) if produtor else None
+    key = cache_key("search_tokens_v2", tokens="|".join(sorted(tokens)), limit=limit, produtor=p_norm or "")
+    cached = cache_get(key)
+    if cached:
+        return cached
+
+    # Filtro de produtor
+    extra_where = ""
+    extra_params = []
+    if p_norm:
+        extra_where = " AND produtor_normalizado LIKE %s"
+        extra_params = [f"{p_norm}%"]
+
+    t0 = time.time()
+    print(f"[search] tokens_direct START tokens={tokens} prod={p_norm}", flush=True)
+
+    conn = get_connection()
+    try:
+        results = _tokens_query(conn, tokens, limit, extra_where, extra_params, timeout_ms)
+
+        for r in results:
+            for k, v in r.items():
+                if hasattr(v, 'as_integer_ratio'):
+                    r[k] = float(v)
+
+        enrich_wines(results)
+
+        ms = round((time.time() - t0) * 1000)
+        print(f"[search] tokens_direct DONE {ms}ms found={len(results)}", flush=True)
+
+        result = {"wines": results, "total": len(results), "search_layer": "tokens_direct"}
+        cache_set(key, result, TTL_SEARCH)
+        return result
+    except Exception as e:
+        ms = round((time.time() - t0) * 1000)
+        print(f"[search] tokens_direct FAIL {ms}ms {type(e).__name__}: {e}", flush=True)
+        return {"wines": [], "total": 0, "search_layer": "tokens_direct"}
+    finally:
+        release_connection(conn)
 
 
 def get_similar_wines(wine_id, limit=5):
