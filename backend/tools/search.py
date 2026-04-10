@@ -29,14 +29,15 @@ _CANONICAL_RANK = """(
 _ORDER_CLAUSE = f"ORDER BY {_CANONICAL_RANK} DESC, vivino_reviews DESC NULLS LAST, vivino_rating DESC NULLS LAST"
 
 
-def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None, allow_fuzzy=True):
+def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None, allow_fuzzy=True, skip_tokens=False):
     """Busca vinhos em camadas: exato -> prefixo -> produtor -> fuzzy.
 
     Parametros opcionais permitem filtros estruturados vindos do OCR ou do Claude.
     allow_fuzzy=False pula a camada fuzzy (pg_trgm) — usar no pre-resolve para evitar queries pesadas.
+    skip_tokens=True pula o complemento por tokens LIKE — usar no multi-flow para velocidade.
     """
     key = cache_key(
-        "search_v3",
+        "search_v4",
         query=query.lower().strip(),
         limit=limit,
         produtor=produtor,
@@ -45,6 +46,7 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         tipo=tipo,
         safra=safra,
         allow_fuzzy=allow_fuzzy,
+        skip_tokens=skip_tokens,
     )
     cached = cache_get(key)
     if cached:
@@ -85,23 +87,20 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
 
         # Complemento/fallback por tokens LIKE: busca por palavras individuais
         # para encontrar canonicos com nome em ordem diferente.
-        # Roda em 2 cenarios:
-        #   1. Resultados existem mas nenhum tem sinal canonico
-        #   2. Nenhum resultado em nenhuma camada (fallback final)
-        # Rollback preventivo: camadas anteriores podem ter deixado
-        # a transacao quebrada (ex: QueryCanceled no fuzzy LIKE fallback).
-        try:
-            conn.rollback()
-        except Exception:
-            pass
-        if not results or not _has_canonical(results):
-            token_results = _search_tokens(conn, q_norm, limit, extra_where, extra_params)
-            if token_results:
-                if results:
-                    results = _merge_results(results, token_results, limit)
-                else:
-                    results = token_results
-                layer_used = f"{layer_used}+tokens" if layer_used != "none" else "tokens"
+        # skip_tokens=True pula esta secao (multi-flow usa validacao propria).
+        if not skip_tokens:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            if not results or not _has_canonical(results):
+                token_results = _search_tokens(conn, q_norm, limit, extra_where, extra_params)
+                if token_results:
+                    if results:
+                        results = _merge_results(results, token_results, limit)
+                    else:
+                        results = token_results
+                    layer_used = f"{layer_used}+tokens" if layer_used != "none" else "tokens"
 
         # Converter Decimal para float
         for r in results:

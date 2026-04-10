@@ -120,14 +120,155 @@ def _resolve_label(ocr_result):
 
 
 _MAX_MULTI_ITEMS = 10
+_MIN_MATCH_SCORE = 0.3
+_MAX_FALLBACK_PAIRS = 3
+
+# Tokens genericos que nao distinguem um vinho especifico
+_GENERIC_WINE_TOKENS = frozenset({
+    # Tipos
+    'tinto', 'blanco', 'branco', 'rosado', 'rose', 'red', 'white',
+    'sparkling', 'espumante', 'dulce', 'seco', 'dry', 'sweet',
+    # Classificacoes
+    'reserva', 'gran', 'grand', 'crianza', 'roble', 'joven',
+    'superior', 'especial', 'classico', 'classic', 'premium',
+    'seleccion', 'selection', 'limited', 'edition', 'single', 'vineyard',
+    # Palavras genericas de vinho
+    'vino', 'wine', 'vin', 'vinho', 'cuvee', 'blend', 'estate',
+    'bodega', 'bodegas', 'chateau', 'domaine', 'tenuta', 'quinta',
+    # Preposicoes comuns (len >= 3)
+    'the', 'and', 'von', 'van', 'zum', 'sur', 'les', 'des', 'del',
+    'los', 'las',
+})
+
+
+def _extract_distinctive(name_norm):
+    """Tokens distintivos: sem genericos, sem anos, len >= 3."""
+    return [t for t in name_norm.split()
+            if len(t) >= 3
+            and t not in _GENERIC_WINE_TOKENS
+            and not (len(t) == 4 and t.isdigit())]
+
+
+def _score_match(ocr_name, candidate):
+    """Score 0.0-1.0+ de qualidade do match OCR vs candidato do banco.
+
+    Hard gate: token distintivo mais longo deve estar presente (substring).
+    Primary: fracao de tokens distintivos presentes.
+    Tiebreaker: overlap de tokens OCR com nome do vinho (nao produtor).
+    """
+    ocr_norm = normalizar(ocr_name)
+    cand_name = normalizar(candidate.get('nome', ''))
+    prod_name = normalizar(candidate.get('produtor', ''))
+    cand_full = cand_name + ' ' + prod_name
+
+    distinctive = _extract_distinctive(ocr_norm)
+
+    if not distinctive:
+        return 1.0  # Tudo generico — aceitar qualquer resultado
+
+    # Ordenar por tamanho desc (mais longo = mais distintivo)
+    distinctive.sort(key=len, reverse=True)
+
+    # Gate: token mais distintivo deve estar no candidato (substring)
+    if distinctive[0] not in cand_full:
+        return 0.0
+
+    # Primary: fracao presente (substring match para lidar com "eugenio" in "deugenio")
+    matched = sum(1 for t in distinctive if t in cand_full)
+    primary = matched / len(distinctive)
+
+    # Tiebreaker: tokens OCR significativos vs nome do vinho especificamente
+    ocr_tokens = [t for t in ocr_norm.split() if len(t) >= 3]
+    name_hits = sum(1 for t in ocr_tokens if t in cand_name) if ocr_tokens else 0
+    tiebreak = (name_hits / len(ocr_tokens)) * 0.1 if ocr_tokens else 0
+
+    return primary + tiebreak
+
+
+def _pick_best(ocr_name, candidates, seen_ids):
+    """Melhor candidato acima de MIN_MATCH_SCORE, ignorando seen_ids."""
+    best = None
+    best_score = _MIN_MATCH_SCORE
+
+    for c in candidates:
+        wid = c.get('id')
+        if not wid or wid in seen_ids:
+            continue
+        s = _score_match(ocr_name, c)
+        if s > best_score:
+            best = c
+            best_score = s
+
+    return best
+
+
+def _fast_resolve(name, producer, seen_ids):
+    """Fase 1: exact/prefix/producer, sem token LIKE (rapido)."""
+    attempts = []
+    if producer:
+        attempts.append(("fast+prod", name, {"produtor": producer}))
+    attempts.append(("fast", name, {}))
+
+    for label, query, kwargs in attempts:
+        try:
+            result = search_wine(query, limit=5, allow_fuzzy=False, skip_tokens=True, **kwargs)
+            best = _pick_best(name, result.get("wines", []), seen_ids)
+            if best:
+                print(f"[resolver] multi_item phase=1 label={label} matched={best.get('id')}", flush=True)
+                return best
+        except Exception:
+            continue
+    return None
+
+
+def _fallback_resolve(name, seen_ids):
+    """Fase 2: pares de top_token + outro token (queries pequenas e rapidas).
+
+    Roda so quando Fase 1 falhou. Usa token search mas com queries de 2 tokens
+    em vez do nome completo — mais rapido e mais preciso.
+    """
+    name_norm = normalizar(name)
+    distinctive = _extract_distinctive(name_norm)
+    if not distinctive:
+        return None
+
+    distinctive.sort(key=len, reverse=True)
+    top = distinctive[0]
+
+    sig_tokens = [t for t in name_norm.split()
+                  if len(t) >= 3 and not (len(t) == 4 and t.isdigit())]
+
+    tried = set()
+    for other in sig_tokens:
+        if other == top:
+            continue
+        pair = tuple(sorted([top, other]))
+        if pair in tried:
+            continue
+        tried.add(pair)
+
+        query = f"{top} {other}"
+        try:
+            result = search_wine(query, limit=5, allow_fuzzy=False)
+            best = _pick_best(name, result.get("wines", []), seen_ids)
+            if best:
+                print(f"[resolver] multi_item phase=2 pair={pair} matched={best.get('id')}", flush=True)
+                return best
+        except Exception:
+            continue
+
+        if len(tried) >= _MAX_FALLBACK_PAIRS:
+            break
+
+    return None
 
 
 def _resolve_multi(ocr_result):
     """Resolve multiplos vinhos de screenshot/shelf.
 
     Retorna (resolved_items, unresolved_items) preservando vinculo OCR -> banco.
-    resolved_items: [{"ocr": <item_ocr_original>, "wine": <wine_dict>}, ...]
-    unresolved_items: [{"ocr": <item_ocr_original>}, ...]
+    Usa 2 fases: fast (sem token LIKE) + fallback (pares de tokens distintivos).
+    Valida qualidade do match para evitar falsos positivos.
     """
     wines_list = ocr_result.get("wines", [])
     if not wines_list:
@@ -146,7 +287,6 @@ def _resolve_multi(ocr_result):
             deduped.append(w)
 
     # 3. Priorizar: com preco > nome mais completo > ordem original
-    # sort estavel — itens com mesma prioridade mantem ordem do OCR
     deduped.sort(key=lambda w: (
         0 if w.get("price") else 1,
         -len((w.get("name") or "").split()),
@@ -161,7 +301,7 @@ def _resolve_multi(ocr_result):
         flush=True,
     )
 
-    # 5. Resolver cada item contra o banco
+    # 5. Resolver cada item (2 fases + validacao)
     resolved_items = []
     unresolved_items = []
     seen_ids = set()
@@ -170,30 +310,15 @@ def _resolve_multi(ocr_result):
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
 
-        # Tentativas progressivas (producer so se existir no OCR)
-        attempts = []
-        if producer:
-            attempts.append(("name+producer", name, {"produtor": producer}))
-        attempts.append(("name_only", name, {}))
-        if producer:
-            attempts.append(("producer_only", producer, {}))
+        # Fase 1: Fast (exact/prefix/producer, sem token LIKE)
+        matched = _fast_resolve(name, producer, seen_ids)
 
-        matched = None
-        for attempt_name, query, kwargs in attempts:
-            try:
-                result = search_wine(query, limit=3, allow_fuzzy=False, **kwargs)
-                for m in result.get("wines", []):
-                    wid = m.get("id")
-                    if wid and wid not in seen_ids:
-                        seen_ids.add(wid)
-                        matched = m
-                        break
-                if matched:
-                    break
-            except Exception:
-                continue
+        # Fase 2: Fallback com pares de tokens distintivos
+        if not matched:
+            matched = _fallback_resolve(name, seen_ids)
 
         if matched:
+            seen_ids.add(matched['id'])
             resolved_items.append({"ocr": w, "wine": matched})
         else:
             unresolved_items.append({"ocr": w})
