@@ -120,18 +120,19 @@ def _resolve_label(ocr_result):
 
 
 _MAX_MULTI_ITEMS = 10
-_MIN_MATCH_SCORE = 0.3
-_MAX_FALLBACK_PAIRS = 2
+_MIN_MATCH_SCORE = 0.4
+_MAX_FALLBACK_PAIRS = 1
 
-# Tokens genericos que nao distinguem um vinho especifico
+# Tokens genericos que nao distinguem um vinho especifico.
+# NAO inclui classificacoes (reserva, crianza, classico, etc.) porque essas
+# discriminam vinhos dentro do mesmo produtor.
 _GENERIC_WINE_TOKENS = frozenset({
     # Tipos
     'tinto', 'blanco', 'branco', 'rosado', 'rose', 'red', 'white',
     'sparkling', 'espumante', 'dulce', 'seco', 'dry', 'sweet',
-    # Classificacoes
-    'reserva', 'gran', 'grand', 'crianza', 'roble', 'joven',
-    'superior', 'especial', 'classico', 'classic', 'premium',
-    'seleccion', 'selection', 'limited', 'edition', 'single', 'vineyard',
+    # Marketing (nao discriminam entre vinhos)
+    'premium', 'seleccion', 'selection', 'limited', 'edition',
+    'single', 'vineyard',
     # Palavras genericas de vinho
     'vino', 'wine', 'vin', 'vinho', 'cuvee', 'blend', 'estate',
     'bodega', 'bodegas', 'chateau', 'domaine', 'tenuta', 'quinta',
@@ -150,11 +151,12 @@ def _extract_distinctive(name_norm):
 
 
 def _score_match(ocr_name, candidate):
-    """Score 0.0-1.0+ de qualidade do match OCR vs candidato do banco.
+    """Score de qualidade do match OCR vs candidato do banco.
 
-    Hard gate: token distintivo mais longo deve estar presente (substring).
-    Primary: fracao de tokens distintivos presentes.
-    Tiebreaker: overlap de tokens OCR com nome do vinho (nao produtor).
+    Gate: token distintivo mais longo deve estar em nome+produtor (substring).
+    Primary: fracao de tokens distintivos no NOME DO VINHO (nao produtor).
+    Matches apenas no produtor recebem 30% de peso.
+    Tiebreaker: overlap de todos os tokens OCR com o nome do vinho.
     """
     ocr_norm = normalizar(ocr_name)
     cand_name = normalizar(candidate.get('nome', ''))
@@ -169,15 +171,20 @@ def _score_match(ocr_name, candidate):
     # Ordenar por tamanho desc (mais longo = mais distintivo)
     distinctive.sort(key=len, reverse=True)
 
-    # Gate: token mais distintivo deve estar no candidato (substring)
+    # Gate: top token deve estar em nome OU produtor
     if distinctive[0] not in cand_full:
         return 0.0
 
-    # Primary: fracao presente (substring match para lidar com "eugenio" in "deugenio")
-    matched = sum(1 for t in distinctive if t in cand_full)
-    primary = matched / len(distinctive)
+    # Contar matches no nome vs no produtor separadamente
+    name_matched = sum(1 for t in distinctive if t in cand_name)
+    full_matched = sum(1 for t in distinctive if t in cand_full)
+    producer_only = full_matched - name_matched
 
-    # Tiebreaker: tokens OCR significativos vs nome do vinho especificamente
+    # Peso: nome = 100%, produtor-only = 30%
+    weighted = name_matched + producer_only * 0.3
+    primary = weighted / len(distinctive)
+
+    # Tiebreaker: todos os tokens OCR significativos vs nome do vinho
     ocr_tokens = [t for t in ocr_norm.split() if len(t) >= 3]
     name_hits = sum(1 for t in ocr_tokens if t in cand_name) if ocr_tokens else 0
     tiebreak = (name_hits / len(ocr_tokens)) * 0.1 if ocr_tokens else 0
@@ -203,29 +210,23 @@ def _pick_best(ocr_name, candidates, seen_ids):
 
 
 def _fast_resolve(name, producer, seen_ids):
-    """Fase 1: exact/prefix/producer, sem token LIKE, timeout curto (1.5s)."""
-    attempts = []
-    if producer:
-        attempts.append(("fast+prod", name, {"produtor": producer}))
-    attempts.append(("fast", name, {}))
-
-    for label, query, kwargs in attempts:
-        try:
-            result = search_wine(query, limit=5, allow_fuzzy=False, skip_tokens=True, timeout_ms=1500, **kwargs)
-            best = _pick_best(name, result.get("wines", []), seen_ids)
-            if best:
-                print(f"[resolver] multi_item phase=1 label={label} matched={best.get('id')}", flush=True)
-                return best
-        except Exception:
-            continue
+    """Fase 1: single attempt, exact/prefix/producer, sem tokens, 1s timeout."""
+    kwargs = {"produtor": producer} if producer else {}
+    try:
+        result = search_wine(name, limit=5, allow_fuzzy=False, skip_tokens=True, timeout_ms=1000, **kwargs)
+        best = _pick_best(name, result.get("wines", []), seen_ids)
+        if best:
+            print(f"[resolver] multi_item phase=1 matched={best.get('id')}", flush=True)
+            return best
+    except Exception:
+        pass
     return None
 
 
 def _fallback_resolve(name, seen_ids):
-    """Fase 2: pares de top_token + outro token, timeout 2s por query.
+    """Fase 2: 1 par de tokens distintivos, timeout 1.5s.
 
-    Roda so quando Fase 1 falhou. Usa token search mas com queries de 2 tokens
-    em vez do nome completo — mais rapido e mais preciso.
+    Roda so quando Fase 1 falhou. Query curta (2 tokens) para token search rapido.
     """
     name_norm = normalizar(name)
     distinctive = _extract_distinctive(name_norm)
@@ -249,7 +250,7 @@ def _fallback_resolve(name, seen_ids):
 
         query = f"{top} {other}"
         try:
-            result = search_wine(query, limit=5, allow_fuzzy=False, timeout_ms=2000)
+            result = search_wine(query, limit=5, allow_fuzzy=False, timeout_ms=1500)
             best = _pick_best(name, result.get("wines", []), seen_ids)
             if best:
                 print(f"[resolver] multi_item phase=2 pair={pair} matched={best.get('id')}", flush=True)
@@ -428,7 +429,7 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
 
             # Instrucao final condicional
             if resolved_items:
-                parts.append("[Responda sobre os vinhos listados acima. Use get_wine_details ou get_prices para dados extras.]")
+                parts.append("[Responda sobre os vinhos listados acima com os dados ja fornecidos (nota, score, preco). NAO chame get_wine_details nem get_prices — os dados essenciais ja estao aqui.]")
             else:
                 parts.append("[Nenhum vinho encontrado no banco. Responda com base apenas nos nomes e precos identificados na imagem. Nao invente dados.]")
 

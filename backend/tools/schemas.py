@@ -419,10 +419,9 @@ TOOLS = [
 
 # Tools reduzidas para modo foto — sem process_image/video/pdf (ja processados pelo backend)
 # e sem tools pesadas irrelevantes para responder sobre foto
+# Photo mode: sem get_wine_details/get_prices (dados ja no contexto pre-resolvido)
 TOOLS_PHOTO_MODE = [t for t in TOOLS if t["name"] in (
     "search_wine",
-    "get_wine_details",
-    "get_prices",
     "compare_wines",
     "get_similar_wines",
     "get_recommendations",
