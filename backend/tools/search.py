@@ -29,15 +29,16 @@ _CANONICAL_RANK = """(
 _ORDER_CLAUSE = f"ORDER BY {_CANONICAL_RANK} DESC, vivino_reviews DESC NULLS LAST, vivino_rating DESC NULLS LAST"
 
 
-def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None, allow_fuzzy=True, skip_tokens=False):
+def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=None, safra=None, allow_fuzzy=True, skip_tokens=False, timeout_ms=5000):
     """Busca vinhos em camadas: exato -> prefixo -> produtor -> fuzzy.
 
     Parametros opcionais permitem filtros estruturados vindos do OCR ou do Claude.
     allow_fuzzy=False pula a camada fuzzy (pg_trgm) — usar no pre-resolve para evitar queries pesadas.
     skip_tokens=True pula o complemento por tokens LIKE — usar no multi-flow para velocidade.
+    timeout_ms: timeout por query em ms (default 5000). Multi-flow usa 1500 para evitar cascata de timeouts.
     """
     key = cache_key(
-        "search_v4",
+        "search_v5",
         query=query.lower().strip(),
         limit=limit,
         produtor=produtor,
@@ -47,6 +48,7 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         safra=safra,
         allow_fuzzy=allow_fuzzy,
         skip_tokens=skip_tokens,
+        timeout_ms=timeout_ms,
     )
     cached = cache_get(key)
     if cached:
@@ -70,16 +72,16 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
 
         # Camada 1: match exato em nome_normalizado
         if not results:
-            results, layer_used = _try_layer("exact", lambda: _search_exact(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
+            results, layer_used = _try_layer("exact", lambda: _search_exact(conn, q_norm, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
 
         # Camada 2: prefixo em nome_normalizado
         if not results:
-            results, layer_used = _try_layer("prefix", lambda: _search_prefix(conn, q_norm, limit, extra_where, extra_params), conn, layer_used)
+            results, layer_used = _try_layer("prefix", lambda: _search_prefix(conn, q_norm, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
 
         # Camada 3: match exato/prefixo em produtor_normalizado
         if not results:
             search_producer = p_norm or q_norm
-            results, layer_used = _try_layer("producer", lambda: _search_producer(conn, search_producer, limit, extra_where, extra_params), conn, layer_used)
+            results, layer_used = _try_layer("producer", lambda: _search_producer(conn, search_producer, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
 
         # Camada 4: fuzzy com pg_trgm — apenas se allow_fuzzy=True
         if not results and allow_fuzzy:
@@ -170,7 +172,7 @@ def _build_filters(pais, regiao, tipo, safra, p_norm=None):
     return where, params
 
 
-def _search_exact(conn, q_norm, limit, extra_where, extra_params):
+def _search_exact(conn, q_norm, limit, extra_where, extra_params, timeout_ms=5000):
     """Camada 1: nome_normalizado = query (match exato)."""
     sql = f"""
         SELECT {_WINE_COLUMNS}
@@ -180,10 +182,10 @@ def _search_exact(conn, q_norm, limit, extra_where, extra_params):
         LIMIT %s
     """
     params = [q_norm] + extra_params + [limit]
-    return _execute_search(conn, sql, params)
+    return _execute_search(conn, sql, params, timeout_ms)
 
 
-def _search_prefix(conn, q_norm, limit, extra_where, extra_params):
+def _search_prefix(conn, q_norm, limit, extra_where, extra_params, timeout_ms=5000):
     """Camada 2: nome_normalizado LIKE 'query%' (prefixo)."""
     sql = f"""
         SELECT {_WINE_COLUMNS}
@@ -193,10 +195,10 @@ def _search_prefix(conn, q_norm, limit, extra_where, extra_params):
         LIMIT %s
     """
     params = [f"{q_norm}%"] + extra_params + [limit]
-    return _execute_search(conn, sql, params)
+    return _execute_search(conn, sql, params, timeout_ms)
 
 
-def _search_producer(conn, p_norm, limit, extra_where, extra_params):
+def _search_producer(conn, p_norm, limit, extra_where, extra_params, timeout_ms=5000):
     """Camada 3: match em produtor_normalizado (exato + prefixo)."""
     # Primeiro tenta exato no produtor
     sql = f"""
@@ -207,7 +209,7 @@ def _search_producer(conn, p_norm, limit, extra_where, extra_params):
         LIMIT %s
     """
     params = [p_norm] + extra_params + [limit]
-    results = _execute_search(conn, sql, params)
+    results = _execute_search(conn, sql, params, timeout_ms)
     if results:
         return results
 
@@ -220,7 +222,7 @@ def _search_producer(conn, p_norm, limit, extra_where, extra_params):
         LIMIT %s
     """
     params = [f"{p_norm}%"] + extra_params + [limit]
-    return _execute_search(conn, sql, params)
+    return _execute_search(conn, sql, params, timeout_ms)
 
 
 def _search_fuzzy(conn, q_norm, limit, extra_where, extra_params):

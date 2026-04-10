@@ -5,7 +5,7 @@ from tools.schemas import TOOLS, TOOLS_PHOTO_MODE
 from tools.executor import execute_tool
 
 MODEL = "claude-haiku-4-5-20251001"
-MAX_TOKENS = 1024
+MAX_TOKENS = 2048
 TEMPERATURE = 0.7
 MAX_TOOL_ROUNDS = 5
 
@@ -107,7 +107,7 @@ def stream_baco_response(message, session_id, history=None, photo_mode=False, tr
                 })
         messages.append({"role": "user", "content": tool_results})
 
-    # Fase 2: Streaming
+    # Fase 2: Streaming (sem tools — forca resposta completa sem tool_use interrompido)
     if trace:
         trace.add_claude_round()
     with client.messages.stream(
@@ -116,7 +116,6 @@ def stream_baco_response(message, session_id, history=None, photo_mode=False, tr
         temperature=TEMPERATURE,
         system=BACO_SYSTEM_PROMPT,
         messages=messages,
-        tools=tools,
     ) as stream:
         for text in stream.text_stream:
             yield text

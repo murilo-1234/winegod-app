@@ -121,7 +121,7 @@ def _resolve_label(ocr_result):
 
 _MAX_MULTI_ITEMS = 10
 _MIN_MATCH_SCORE = 0.3
-_MAX_FALLBACK_PAIRS = 3
+_MAX_FALLBACK_PAIRS = 2
 
 # Tokens genericos que nao distinguem um vinho especifico
 _GENERIC_WINE_TOKENS = frozenset({
@@ -203,7 +203,7 @@ def _pick_best(ocr_name, candidates, seen_ids):
 
 
 def _fast_resolve(name, producer, seen_ids):
-    """Fase 1: exact/prefix/producer, sem token LIKE (rapido)."""
+    """Fase 1: exact/prefix/producer, sem token LIKE, timeout curto (1.5s)."""
     attempts = []
     if producer:
         attempts.append(("fast+prod", name, {"produtor": producer}))
@@ -211,7 +211,7 @@ def _fast_resolve(name, producer, seen_ids):
 
     for label, query, kwargs in attempts:
         try:
-            result = search_wine(query, limit=5, allow_fuzzy=False, skip_tokens=True, **kwargs)
+            result = search_wine(query, limit=5, allow_fuzzy=False, skip_tokens=True, timeout_ms=1500, **kwargs)
             best = _pick_best(name, result.get("wines", []), seen_ids)
             if best:
                 print(f"[resolver] multi_item phase=1 label={label} matched={best.get('id')}", flush=True)
@@ -222,7 +222,7 @@ def _fast_resolve(name, producer, seen_ids):
 
 
 def _fallback_resolve(name, seen_ids):
-    """Fase 2: pares de top_token + outro token (queries pequenas e rapidas).
+    """Fase 2: pares de top_token + outro token, timeout 2s por query.
 
     Roda so quando Fase 1 falhou. Usa token search mas com queries de 2 tokens
     em vez do nome completo — mais rapido e mais preciso.
@@ -249,7 +249,7 @@ def _fallback_resolve(name, seen_ids):
 
         query = f"{top} {other}"
         try:
-            result = search_wine(query, limit=5, allow_fuzzy=False)
+            result = search_wine(query, limit=5, allow_fuzzy=False, timeout_ms=2000)
             best = _pick_best(name, result.get("wines", []), seen_ids)
             if best:
                 print(f"[resolver] multi_item phase=2 pair={pair} matched={best.get('id')}", flush=True)
