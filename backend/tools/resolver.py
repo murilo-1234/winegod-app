@@ -119,7 +119,8 @@ def _resolve_label(ocr_result):
     return [], [name]
 
 
-_MAX_MULTI_ITEMS = 10
+_MAX_MULTI_ITEMS = 8      # screenshot (itens mais limpos)
+_MAX_SHELF_ITEMS = 3      # shelf (resolver poucos e bons)
 _MIN_MATCH_SCORE = 0.4
 _MAX_FALLBACK_PAIRS = 1
 
@@ -267,13 +268,20 @@ def _fallback_resolve(name, seen_ids):
 def _resolve_multi(ocr_result):
     """Resolve multiplos vinhos de screenshot/shelf.
 
-    Retorna (resolved_items, unresolved_items) preservando vinculo OCR -> banco.
-    Usa 2 fases: fast (sem token LIKE) + fallback (pares de tokens distintivos).
-    Valida qualidade do match para evitar falsos positivos.
+    Shelf: resolve amostra pequena (3 itens fortes), fast-only, sem fallback.
+    Screenshot: mais permissivo (8 itens), com fallback.
+    Itens alem do cap vao direto para unresolved (vistos mas nao verificados).
     """
     wines_list = ocr_result.get("wines", [])
     if not wines_list:
         return [], []
+
+    image_type = ocr_result.get("image_type", "screenshot")
+    is_shelf = image_type == "shelf"
+
+    # Cap e estrategia por tipo
+    max_items = _MAX_SHELF_ITEMS if is_shelf else _MAX_MULTI_ITEMS
+    use_fallback = not is_shelf  # shelf: fast-only, screenshot: fast + fallback
 
     # 1. Filtrar itens sem nome
     valid = [w for w in wines_list if (w.get("name") or "").strip()]
@@ -293,16 +301,17 @@ def _resolve_multi(ocr_result):
         -len((w.get("name") or "").split()),
     ))
 
-    # 4. Cap apos priorizacao
-    selected = deduped[:_MAX_MULTI_ITEMS]
+    # 4. Cap: resolver apenas os mais fortes, resto vai para unresolved
+    selected = deduped[:max_items]
+    skipped = deduped[max_items:]
 
     print(
-        f"[resolver] multi: ocr={len(wines_list)} valid={len(valid)} "
-        f"deduped={len(deduped)} selected={len(selected)}",
+        f"[resolver] multi: type={image_type} ocr={len(wines_list)} valid={len(valid)} "
+        f"deduped={len(deduped)} selected={len(selected)} skipped={len(skipped)}",
         flush=True,
     )
 
-    # 5. Resolver cada item (2 fases + validacao)
+    # 5. Resolver cada item selecionado
     resolved_items = []
     unresolved_items = []
     seen_ids = set()
@@ -314,8 +323,8 @@ def _resolve_multi(ocr_result):
         # Fase 1: Fast (exact/prefix/producer, sem token LIKE)
         matched = _fast_resolve(name, producer, seen_ids)
 
-        # Fase 2: Fallback com pares de tokens distintivos
-        if not matched:
+        # Fase 2: Fallback (apenas screenshot — shelf pula)
+        if not matched and use_fallback:
             matched = _fallback_resolve(name, seen_ids)
 
         if matched:
@@ -323,6 +332,10 @@ def _resolve_multi(ocr_result):
             resolved_items.append({"ocr": w, "wine": matched})
         else:
             unresolved_items.append({"ocr": w})
+
+    # 6. Itens alem do cap: unresolved direto (vistos, nao verificados)
+    for w in skipped:
+        unresolved_items.append({"ocr": w})
 
     print(
         f"[resolver] multi: resolved={len(resolved_items)} "
