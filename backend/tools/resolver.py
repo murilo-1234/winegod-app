@@ -123,7 +123,7 @@ _MAX_MULTI_ITEMS = 8       # screenshot (itens mais limpos)
 _MAX_SHELF_TIER_A = 3      # shelf: confirmacao forte (fast-only)
 _MAX_SHELF_TIER_B = 2      # shelf: confirmacao moderada (fast + fallback)
 _MIN_MATCH_SCORE = 0.4
-_MAX_FALLBACK_PAIRS = 1
+_MAX_FALLBACK_PAIRS = 2
 
 # Tokens genericos que nao distinguem um vinho especifico.
 # NAO inclui classificacoes (reserva, crianza, classico, etc.) porque essas
@@ -228,6 +228,54 @@ def _extract_canonical_varieties(name_norm):
     return found
 
 
+def _collapse_initials(name_norm):
+    """Collapse single-letter words into next word.
+
+    'd eugenio' → 'deugenio', 'j p chenet' → 'jp chenet'.
+    Ajuda match quando DB tem 'D.Eugenio' (→ 'deugenio') e OCR le 'D. Eugenio' (→ 'd eugenio').
+    """
+    tokens = name_norm.split()
+    result = []
+    i = 0
+    while i < len(tokens):
+        if len(tokens[i]) == 1 and i + 1 < len(tokens):
+            result.append(tokens[i] + tokens[i + 1])
+            i += 2
+        else:
+            result.append(tokens[i])
+            i += 1
+    return ' '.join(result)
+
+
+def _build_scoring_name(w):
+    """Build a clean name from OCR structured fields for scoring.
+
+    Remove region/origin info (e.g. 'La Mancha') que viraria false line token.
+    Usa campos estruturados quando disponiveis, senao o name raw.
+    """
+    producer = (w.get("producer") or "").strip()
+    line = (w.get("line") or "").strip()
+    variety = (w.get("variety") or "").strip()
+    classification = (w.get("classification") or "").strip()
+    name = (w.get("name") or "").strip()
+
+    if line or variety:
+        parts = []
+        if producer:
+            parts.append(producer)
+        if line:
+            parts.append(line)
+        if classification and classification.lower() != (line or "").lower():
+            parts.append(classification)
+        if variety:
+            parts.append(variety)
+        built = " ".join(parts)
+        if built:
+            return built
+
+    return name
+
+
 def _score_match(ocr_name, candidate):
     """Score de qualidade do match OCR vs candidato do banco.
 
@@ -314,25 +362,93 @@ def _pick_best(ocr_name, candidates, seen_ids):
     return best
 
 
-def _fast_resolve(name, producer, seen_ids):
-    """Fase 1: single attempt, exact/prefix/producer, sem tokens, 1s timeout."""
+def _fast_resolve(name, producer, seen_ids, scoring_name=None, timeout_ms=1500, limit=10):
+    """Fase 1: exact/prefix/producer, sem tokens.
+
+    scoring_name: nome limpo (sem regiao) para avaliacao nos gates.
+    Tenta query original, depois variante com iniciais colapsadas.
+    """
+    eval_name = scoring_name or name
     kwargs = {"produtor": producer} if producer else {}
     try:
-        result = search_wine(name, limit=5, allow_fuzzy=False, skip_tokens=True, timeout_ms=1000, **kwargs)
-        best = _pick_best(name, result.get("wines", []), seen_ids)
+        result = search_wine(name, limit=limit, allow_fuzzy=False, skip_tokens=True, timeout_ms=timeout_ms, **kwargs)
+        best = _pick_best(eval_name, result.get("wines", []), seen_ids)
         if best:
-            print(f"[resolver] multi_item phase=1 matched={best.get('id')}", flush=True)
+            print(f"[resolver] multi_item phase=fast matched={best.get('id')}", flush=True)
             return best
     except Exception:
         pass
+
+    # Retry com iniciais colapsadas: 'd eugenio' → 'deugenio'
+    name_norm = normalizar(name)
+    collapsed = _collapse_initials(name_norm)
+    if collapsed != name_norm:
+        try:
+            result = search_wine(collapsed, limit=limit, allow_fuzzy=False, skip_tokens=True, timeout_ms=timeout_ms)
+            best = _pick_best(eval_name, result.get("wines", []), seen_ids)
+            if best:
+                print(f"[resolver] multi_item phase=fast_collapsed matched={best.get('id')}", flush=True)
+                return best
+        except Exception:
+            pass
+
     return None
 
 
-def _fallback_resolve(name, seen_ids):
-    """Fase 2: 1 par de tokens distintivos, timeout 1.5s.
+def _structured_resolve(w, seen_ids, scoring_name=None):
+    """Busca usando campos estruturados do OCR (line, variety).
 
-    Roda so quando Fase 1 falhou. Query curta (2 tokens) para token search rapido.
+    Forma queries curtas e especificas que o prefix/exact pode encontrar
+    mesmo quando o name completo falha.
+    Ex: producer='Freixenet', line='ICE' → query 'Freixenet ICE'
+    Ex: line='Aura', variety='Carmenere' → query 'Aura Carmenere'
     """
+    name = (w.get("name") or "").strip()
+    producer = (w.get("producer") or "").strip() or None
+    line = (w.get("line") or "").strip() or None
+    variety = (w.get("variety") or "").strip() or None
+
+    if not line and not variety:
+        return None
+
+    eval_name = scoring_name or name
+    queries = []
+
+    # Query 1: line + variety (mais especifica)
+    if line and variety:
+        q = f"{line} {variety}"
+        if producer:
+            queries.append((q, {"produtor": producer}))
+        queries.append((q, {}))
+
+    # Query 2: producer + line (para vinhos como 'Freixenet ICE')
+    if producer and line:
+        queries.append((f"{producer} {line}", {}))
+
+    # Query 3: line sozinha (para linhas com nome forte)
+    if line and len(line.split()) >= 2:
+        queries.append((line, {}))
+
+    for query, kwargs in queries:
+        try:
+            result = search_wine(query, limit=10, allow_fuzzy=False, skip_tokens=True, timeout_ms=1500, **kwargs)
+            best = _pick_best(eval_name, result.get("wines", []), seen_ids)
+            if best:
+                print(f"[resolver] multi_item phase=structured q={query!r} matched={best.get('id')}", flush=True)
+                return best
+        except Exception:
+            continue
+
+    return None
+
+
+def _fallback_resolve(name, seen_ids, scoring_name=None):
+    """Fase fallback: token pairs, timeout 2s, limit 10.
+
+    Roda so quando fast e structured falharam. Queries curtas (2 tokens)
+    que ativam o token LIKE search no search_wine.
+    """
+    eval_name = scoring_name or name
     name_norm = normalizar(name)
     distinctive = _extract_distinctive(name_norm)
     if not distinctive:
@@ -355,10 +471,10 @@ def _fallback_resolve(name, seen_ids):
 
         query = f"{top} {other}"
         try:
-            result = search_wine(query, limit=5, allow_fuzzy=False, timeout_ms=1500)
-            best = _pick_best(name, result.get("wines", []), seen_ids)
+            result = search_wine(query, limit=10, allow_fuzzy=False, timeout_ms=2000)
+            best = _pick_best(eval_name, result.get("wines", []), seen_ids)
             if best:
-                print(f"[resolver] multi_item phase=2 pair={pair} matched={best.get('id')}", flush=True)
+                print(f"[resolver] multi_item phase=fallback pair={pair} matched={best.get('id')}", flush=True)
                 return best
         except Exception:
             continue
@@ -426,15 +542,18 @@ def _resolve_multi(ocr_result):
     unresolved_items = []
     seen_ids = set()
 
-    # Tier A: fast-only (shelf) ou fast+fallback (screenshot)
+    # Tier A: fast + structured (shelf) ou fast+fallback (screenshot)
     use_fallback_a = not is_shelf
     for w in tier_a:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
+        scoring_name = _build_scoring_name(w)
 
-        matched = _fast_resolve(name, producer, seen_ids)
+        matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
+        if not matched and is_shelf:
+            matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
         if not matched and use_fallback_a:
-            matched = _fallback_resolve(name, seen_ids)
+            matched = _fallback_resolve(name, seen_ids, scoring_name=scoring_name)
 
         if matched:
             seen_ids.add(matched['id'])
@@ -442,14 +561,17 @@ def _resolve_multi(ocr_result):
         else:
             unresolved_items.append({"ocr": w})
 
-    # Tier B: fast + fallback (shelf only — amplia cobertura com mesmos gates)
+    # Tier B: fast + structured + fallback (shelf — recall ampliado, mesmos gates)
     for w in tier_b:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
+        scoring_name = _build_scoring_name(w)
 
-        matched = _fast_resolve(name, producer, seen_ids)
+        matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
         if not matched:
-            matched = _fallback_resolve(name, seen_ids)
+            matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
+        if not matched:
+            matched = _fallback_resolve(name, seen_ids, scoring_name=scoring_name)
 
         if matched:
             seen_ids.add(matched['id'])

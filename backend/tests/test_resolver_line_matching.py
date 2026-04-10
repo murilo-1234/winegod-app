@@ -15,6 +15,8 @@ from tools.resolver import (
     _score_match,
     _extract_line_tokens,
     _extract_canonical_varieties,
+    _collapse_initials,
+    _build_scoring_name,
     _MIN_MATCH_SCORE,
 )
 from tools.normalize import normalizar
@@ -317,7 +319,7 @@ def test_terrazas():
 # =============================================
 
 def test_variety_toro_centenario():
-    """Bug confirmado: Toro Centenario Chardonnay → Rose."""
+    """Bug confirmado: Toro Centenario Chardonnay -> Rose."""
     section("VARIETY: Toro Centenario (cross-grape)")
     results = []
 
@@ -514,6 +516,130 @@ def test_combined_montGras_aura_cross_grape():
     return results
 
 
+# =============================================
+# RECALL HELPERS TESTS
+# =============================================
+
+def test_collapse_initials():
+    """_collapse_initials: single-letter words collapse."""
+    section("UNIT: _collapse_initials")
+    results = []
+
+    cases = [
+        ("d eugenio crianza", "deugenio crianza"),
+        ("j p chenet", "jp chenet"),
+        ("montgras aura", "montgras aura"),  # no single-letter words
+        ("d o mancha", "do mancha"),
+        ("alamos malbec", "alamos malbec"),
+    ]
+
+    for input_val, expected in cases:
+        actual = _collapse_initials(input_val)
+        ok = actual == expected
+        status = "PASS" if ok else "FAIL"
+        print(f"  {status}: {input_val!r} -> {actual!r}")
+        if not ok:
+            print(f"         expected={expected!r}")
+        results.append(ok)
+
+    return results
+
+
+def test_build_scoring_name():
+    """_build_scoring_name: structured fields -> clean name."""
+    section("UNIT: _build_scoring_name")
+    results = []
+
+    cases = [
+        # (ocr_dict, expected_scoring_name)
+        ({"name": "D. Eugenio Crianza 2018 La Mancha", "producer": "D. Eugenio",
+          "line": "Crianza", "classification": "Crianza"},
+         "D. Eugenio Crianza"),  # removes "La Mancha", dedup classification
+        ({"name": "Freixenet ICE Cuvée Especial", "producer": "Freixenet",
+          "line": "ICE", "classification": "Cuvée Especial"},
+         "Freixenet ICE Cuvée Especial"),
+        ({"name": "Cuatro Vientos Tinto"},  # no structured fields
+         "Cuatro Vientos Tinto"),
+        ({"name": "MontGras Aura Reserva Carmenere", "producer": "MontGras",
+          "line": "Aura", "variety": "Carmenere", "classification": "Reserva"},
+         "MontGras Aura Reserva Carmenere"),
+    ]
+
+    for w, expected in cases:
+        actual = _build_scoring_name(w)
+        ok = actual == expected
+        status = "PASS" if ok else "FAIL"
+        print(f"  {status}: {w.get('name')!r} -> {actual!r}")
+        if not ok:
+            print(f"         expected={expected!r}")
+        results.append(ok)
+
+    return results
+
+
+# =============================================
+# RECALL: SCORING WITH CLEAN NAME (positive)
+# =============================================
+
+def test_recall_d_eugenio():
+    """D. Eugenio: scoring_name removes 'La Mancha' region."""
+    section("RECALL: D. Eugenio (scoring_name)")
+    results = []
+
+    # With raw name, "mancha" would be a false line token -> reject
+    # With scoring_name "D. Eugenio Crianza", no false line tokens
+    results.append(assert_accepts(
+        "D. Eugenio Crianza",  # scoring_name (clean)
+        "D.Eugenio Vino de Crianza", "D. Eugenio",
+        "scoring_name removes region, crianza matches"
+    ))
+
+    # Safety: still rejects wrong wine
+    results.append(assert_rejects(
+        "D. Eugenio Crianza",
+        "Marques de Riscal Crianza", "Marques de Riscal",
+        "different producer"
+    ))
+
+    return results
+
+
+def test_recall_cuatro_vientos():
+    """Cuatro Vientos: producer=Aromo, but 'Cuatro Vientos' in wine name."""
+    section("RECALL: Cuatro Vientos")
+    results = []
+
+    # DB producer is "Aromo" but wine name contains "Cuatro Vientos"
+    results.append(assert_accepts(
+        "Cuatro Vientos Tinto",
+        "Cuatro Vientos Tinto", "Aromo",
+        "line tokens match even with different producer"
+    ))
+
+    return results
+
+
+def test_recall_freixenet_ice():
+    """Freixenet ICE: line 'ICE' in scoring."""
+    section("RECALL: Freixenet ICE")
+    results = []
+
+    results.append(assert_accepts(
+        "Freixenet ICE Cuvée Especial",
+        "Freixenet Ice Cuvee Especial", "Freixenet",
+        "exact wine match"
+    ))
+
+    # Safety: ICE != Cordon Negro
+    results.append(assert_rejects(
+        "Freixenet ICE Cuvée Especial",
+        "Freixenet Cordon Negro Brut", "Freixenet",
+        "wrong line: ICE vs Cordon Negro"
+    ))
+
+    return results
+
+
 # --- Main ---
 
 def main():
@@ -549,6 +675,15 @@ def main():
     all_results.extend(test_combined_krug_ruinart())
     all_results.extend(test_combined_contada_1926())
     all_results.extend(test_combined_montGras_aura_cross_grape())
+
+    # Recall helper tests
+    all_results.extend(test_collapse_initials())
+    all_results.extend(test_build_scoring_name())
+
+    # Recall positive tests (scoring with clean name)
+    all_results.extend(test_recall_d_eugenio())
+    all_results.extend(test_recall_cuatro_vientos())
+    all_results.extend(test_recall_freixenet_ice())
 
     passed = sum(all_results)
     total = len(all_results)
