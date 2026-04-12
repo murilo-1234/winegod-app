@@ -110,6 +110,26 @@ def _qwen_generate(image_bytes, mime_type, prompt):
         return None
 
 
+QWEN_TEXT_MODEL = "qwen-turbo"
+
+
+def _qwen_text_generate(prompt_text):
+    """Chama Qwen-turbo (texto puro, sem visao). Retorna texto ou None se falhar."""
+    client = _get_qwen_client()
+    if client is None:
+        return None
+    try:
+        resp = client.chat.completions.create(
+            model=QWEN_TEXT_MODEL,
+            messages=[{"role": "user", "content": prompt_text}],
+            temperature=0.0,
+        )
+        return resp.choices[0].message.content or ""
+    except Exception as e:
+        print(f"[qwen_text] error: {type(e).__name__}: {e}", flush=True)
+        return None
+
+
 def _preprocess_image_for_dense_shelf(image_bytes):
     """Preprocessing pra prateleiras densas: CLAHE + upscale 1.5x + sharpen + contrast."""
     import io
@@ -823,8 +843,12 @@ def _extract_wines_native_chunked(text, chunk_size=8000, max_workers=4):
 
     def _process_chunk(args):
         idx, chunk = args
+        prompt_text = PDF_TEXT_PROMPT + chunk
         try:
-            raw = _gemini_generate(PDF_TEXT_PROMPT + chunk)
+            # Tenta Qwen-turbo (mais barato), fallback Gemini
+            raw = _qwen_text_generate(prompt_text)
+            if raw is None:
+                raw = _gemini_generate(prompt_text, thinking=False)
             result = _parse_gemini_json(raw)
             return idx, result.get("wines", []), None
         except Exception as e:
@@ -922,16 +946,21 @@ def process_pdf(base64_pdf):
                 except Exception as e:
                     print(f"[process_pdf] direct chunked error: {e}", flush=True)
             else:
-                # Texto curto/medio: caminho rapido com chamada monolitica unica
+                # Texto curto/medio: caminho rapido — Qwen-turbo primeiro, fallback Gemini
                 try:
-                    raw_text = _gemini_generate(PDF_TEXT_PROMPT + truncated_text)
+                    prompt_text = PDF_TEXT_PROMPT + truncated_text
+                    raw_text = _qwen_text_generate(prompt_text)
+                    provider = "qwen_turbo"
+                    if raw_text is None:
+                        raw_text = _gemini_generate(prompt_text, thinking=False)
+                        provider = "gemini"
                     result = _parse_gemini_json(raw_text)
                     wines_from_text = result.get("wines", [])
                     if wines_from_text:
                         all_wines.extend(wines_from_text)
                         extraction_method = "native_text"
                         print(
-                            f"[process_pdf] native_text: {len(wines_from_text)} wines",
+                            f"[process_pdf] native_text ({provider}): {len(wines_from_text)} wines",
                             flush=True,
                         )
                 except Exception as e:
@@ -999,10 +1028,13 @@ def process_pdf(base64_pdf):
                             pil_image.save(buf, format="JPEG", quality=85)
                             img_bytes = buf.getvalue()
 
-                            raw_text = _gemini_generate([
-                                PDF_IMAGE_PROMPT,
-                                types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
-                            ])
+                            # Tenta Qwen-flash (mais barato), fallback Gemini
+                            raw_text = _qwen_generate(img_bytes, "image/jpeg", PDF_IMAGE_PROMPT)
+                            if raw_text is None:
+                                raw_text = _gemini_generate([
+                                    PDF_IMAGE_PROMPT,
+                                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                                ])
                             result = _parse_gemini_json(raw_text)
                             all_wines.extend(result.get("wines", []))
                         except Exception:

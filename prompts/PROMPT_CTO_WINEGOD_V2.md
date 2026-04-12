@@ -53,6 +53,9 @@ Estes 4 arquivos definem TODO o projeto. Leia-os ANTES de qualquer coisa:
 4. **baco-character-bible_ADDENDUM_V3.md** — Regras de produto pro Baco (como ele opera dentro do WineGod)
    `C:\winegod\Documentos conceito final\finalizacao\arquivos-aplicar-execucao\baco-character-bible_ADDENDUM_V3.md`
 
+5. **BRAND_GUIDELINES_WINEGOD.md** — Identidade visual completa: logo, cores, tipografia, layout, design system, meta tags, emails
+   `C:\winegod-app\prompts\BRAND_GUIDELINES_WINEGOD.md`
+
 ---
 
 ## REPOSITORIOS
@@ -114,7 +117,10 @@ GEMINI_API_KEY=AIzaSy-XXXXXXXXX (ver .env)
 - Plano Render pequeno (Starter/Basic no historico; confirmar nome exato no painel), 15GB storage
 
 ### PC local — vivino_db
-- vivino_vinhos: 1.73M | vivino_reviews: 33M | vivino_reviewers: 4.8M | vivino_vinicolas: 213K
+- vivino_vinhos: 1.73M | vivino_reviews: 33M (crescendo — re-scrape em andamento) | vivino_reviewers: 4.8M | vivino_vinicolas: 213K
+- **Re-scrape em andamento (desde 12/04/2026):** 147.135 vinhos capados (que tinham apenas 100 reviews cada) estao sendo re-scrapeados com MAX_PAGES=350 (ate 17.500 reviews/vinho). Estimativa: +160-210M reviews novas ao longo de ~60 dias. Worker no Render (`whatsapp-automation-bots`) em modo broker, escrevendo no PC via ngrok. Config: WORKERS=1, MAX_RETRIES=5, SLEEP_PER_WINE_MS=500. IP proxy ISP Brasil fixo (IPRoyal, flat rate). Custo: ~$5-10 total.
+- Teto efetivo da API do Vivino (via proxy): entre 351 e 399 paginas. MAX_PAGES=350 é o safe cap validado em pilotos com 4 vinhos reais.
+- Backup pre-reset: `C:\winegod-app\backup_capados_pre_reset.csv`
 
 ### PC local — winegod_db
 - lojas_scraping: 86,089 lojas classificadas
@@ -135,12 +141,37 @@ GEMINI_API_KEY=AIzaSy-XXXXXXXXX (ver .env)
 - Cache: Upstash Redis. CDN: Cloudflare. Analytics: PostHog. Tudo gratuito
 
 ### Formula WineGod Score
+#### Atualizacao 11-12/04/2026 — revisao da nota oficial exibida ao cliente
+- Estamos refinando a regra da nota de qualidade que o site mostra ao cliente.
+- Tese de produto que orienta esta frente:
+  - o app quer valorizar vinhos excelentes e subvalorizados, inclusive vinhos novos e menos famosos
+  - nao queremos deixar fama antiga e volume historico gigante de reviews dominarem a percepcao do usuario
+  - por isso, `sample_size` entra como credibilidade, mas a comunicacao publica de reviews deve ter teto
+  - direcao aprovada: ao falar com o usuario, limitar a linguagem publica a algo como `500+ avaliacoes`
+- Direcao ja aprovada:
+  - a nota principal do WG passa a ser `nota_wcf`
+  - a base matematica sera o `WCF antigo`
+  - `nota_estimada` sai da decisao do produto
+  - reviewers experientes continuam valendo mais, mas amostra pequena tera freio
+  - o freio nao vai puxar para media global seca; vai puxar para uma `nota_base` contextual em cascata
+  - a v2 deve dar nota para todos os vinhos com contexto suficiente, mesmo sem reviews suficientes no Vivino
+  - `nota_wcf_sample_size` deixa de ser trava para existir nota e passa a ser medidor de credibilidade
+  - classificacao aprovada: `verified = 100+`, `estimated = 1-99`, `contextual = 0`
+  - cascata aprovada ate agora: `vinicola + sub_regiao + tipo` -> `sub_regiao + tipo` -> `vinicola + regiao + tipo` -> `regiao + tipo` -> `vinicola + pais + tipo` -> `pais + tipo` -> `vinicola + tipo` -> sem nota
+  - usar `pais` (ISO 2 letras) da tabela `wines`; `pais_nome` esta incompleto para esta frente
+  - sem `tipo global`, sem fallback global universal e sem contexto suficiente = sem nota
+  - clamp recomendado para a v2: `vivino -0.30 / +0.20`
+  - `winegod_score` nao deve ser exibido para nota puramente `contextual`
+  - para falar de volume de avaliacoes ao usuario, usar `vivino_reviews` com teto publico em `500+`
+- Documento de continuidade desta frente:
+  - [`../reports/2026-04-11_handoff_nota_wcf_v2.md`](../reports/2026-04-11_handoff_nota_wcf_v2.md)
+
 - Escala 0-5, 2 casas decimais
 - WCF com pesos 1x (1-10 reviews) ate 4x (500+)
 - 4 micro-ajustes: Avaliacoes +0.00, Paridade +0.02, Legado +0.02, Capilaridade +0.01. Teto +0.05
 - `nota_wcf` bruta NUNCA e sobrescrita
 - Nao materializar `display_note`/`display_score` no banco; resolver campos canonicos em runtime no backend
-- Regra oficial da nota canonica:
+- Regra oficial atual da nota canonica em producao:
   - `nota_wcf` + `nota_wcf_sample_size >= 100` + `vivino_rating > 0` -> `clamp(nota_wcf, vivino_rating ± 0.30)` como nota principal, tipo `verified`, source `wcf`
   - `nota_wcf` + `nota_wcf_sample_size >= 25` e `< 100` + `vivino_rating > 0` -> `clamp(nota_wcf, vivino_rating ± 0.30)`, tipo `estimated`, source `wcf`
   - abaixo de `25` samples WCF -> fallback para `vivino_rating`, tipo `estimated`, source `vivino`
@@ -169,6 +200,18 @@ R1: NUNCA scraping Vivino | R2: NUNCA ManyChat | R3: NUNCA nota sem aviso | R4: 
 
 **Atualizacao P5 (09-10/04/2026):** Fases 0 e 1 de dedup/matching concluidas. Fase 0 corrigiu busca, cache, UX e import. Fase 1 criou `wine_aliases` (43 aliases ativos em producao, consumidos por search.py e details.py). 4/4 casos criticos resolvidos: Dom Perignon (4.6), Luigi Bosca De Sangre (4.1), Casillero del Diablo (3.5), Perez Cruz (3.8). Busca por produtor+nome reclassificada como melhoria futura. Frente encerrada. Ler: [`../reports/RESUMO_FASE0_DEDUP_2026-04-09.md`](../reports/RESUMO_FASE0_DEDUP_2026-04-09.md) e [`../reports/RELATORIO_SESSAO_DEDUP_2026-04-08.md`](../reports/RELATORIO_SESSAO_DEDUP_2026-04-08.md).
 
+**Atualizacao cauda Vivino (11/04/2026) -- FONTE CENTRAL ATUAL:** para qualquer trabalho de auditoria da cauda, sanitizacao da base, deduplicacao historica, matching Vivino da cauda ou pilot de revisao, usar como fonte oficial o handoff mestre: [`../reports/tail_audit_master_state_2026-04-11.md`](../reports/tail_audit_master_state_2026-04-11.md).
+
+Resumo curto do estado atual dessa frente:
+
+- snapshot live e reconciliacao oficial fechados;
+- full fan-out bloqueado por performance;
+- projeto pivotado para `sample-first audit`;
+- `working_pool_1200`, `pilot_120` e `reservas_60` ja existem;
+- R1 Claude do `pilot_120` ja foi feita;
+- pacote para Murilo ja existe;
+- proxima etapa recomendada: endurecer o pacote Murilo e preparar concordancia Claude vs Murilo.
+
 ### HISTORICO COMPLETO DE CHATS (A-S)
 
 #### BATCH 1 (Chats A-F) — CONCLUIDO ✅
@@ -190,6 +233,35 @@ Commit inicial: `ff0f820` — "feat: initial release"
 #### BATCH 3 (Chats M, P, R + Integracao CTO) — CONCLUIDO ✅
 Chat O ELIMINADO — G ja fez o trabalho. L+N adiado para apos H.
 - **M (OCR)** ✅: `process_image` em `backend/tools/media.py` agora usa Gemini Flash para OCR de rotulos. `chat.py` aceita campo `image` (base64) no POST body. Frontend: botao de imagem ativado em ChatInput.tsx (file picker + preview + resize >4MB), `api.ts` envia campo image, `page.tsx` passa imagem. `requirements.txt` atualizado (google-generativeai).
+
+##### Atualizacao 11/04/2026 — sandbox de avaliacao OCR multi-modelo (chat)
+Rodado sandbox isolado em `sandbox/ocr_test/` comparando o OCR de producao (Gemini 2.5 Flash) contra 5 modelos Qwen VL (flash, plus, 32b, ocr, 3.6-plus) e Gemini Flash-Lite em 3 fotos (1 label facil, 1 shelf medio, 1 shelf denso 9 vinhos). Zero impacto em producao. Achados criticos:
+- **Gemini 2.5 Flash esta gastando ~5-6x mais do que o pricing publico sugere no chat**: `media.py` nao seta `thinking_config`, entao thinking tokens estao LIGADOS por default (~2.700-4.000 thinking tokens por foto de prateleira, cobrados a tarifa de output $2.50/1M). Custo real medido: $0.008/foto em vez de $0.0013. Mesma pegadinha do Pipeline Y2 (linha 904), agora confirmada no chat tambem.
+- **Qwen3-VL-flash** ($0.05/$0.40) e ~25x mais barato e 2,5x mais rapido. Acerta 100% em label/shelf ate 3 vinhos, mas tem teto empirico de ~4/9 (44%) em shelf denso — testadas 14 tecnicas de prompt engineering (CoT, spatial grid, few-shot, self-consistency, chines, vl_high_resolution_images, tiling, detect-then-read); nenhuma passou do teto.
+- **Gemini 2.5 Flash-Lite**: descartado — aluciona precos e nomes de vinho (risco inaceitavel pra produto com score de custo-beneficio).
+- **"Encoding quebrado" do Qwen (C�tes du Rh�ne) era FALSO**: o modelo devolve UTF-8 correto, o problema era terminal Windows cp1252. Registrado no handoff pra evitar confusao futura.
+
+##### Atualizacao 12/04/2026 — Fase 1.5 (combos multi-tecnica × 4 modelos) e Fase 2 (flash only × 10 fotos × 8 tecnicas)
+
+**Fase 1.5**: testados 5 combos empilhando 3-5 tecnicas academicas em 4 modelos Qwen (flash, 32b, plus, max) com pos-filtro DB verify. Resultado: **qwen3-vl-flash venceu em TODAS as dimensoes** (acuracia, custo, velocidade). qwen-vl-max (40x mais caro) performou PIOR que o flash. Modelos maiores nao ajudam nessa tarefa.
+
+**Fase 2**: 8 tecnicas × 10 fotos ordenadas por dificuldade (2 a 43 vinhos) rodadas SOMENTE no qwen3-vl-flash. Descobertas:
+- **Prompt em PT-BR (T6)**: media 68% (+14 pontos sobre baseline EN). Na foto 14, subiu de 25% pra 100%. ZERO custo extra — so trocar idioma do prompt.
+- **Combo max (T8)** CLAHE+upscale1.5+sharp+contrast+PT-BR: **80% na foto 7** (10 vinhos) — novo recorde absoluto da sessao inteira (fase 1 teto era 50%). Melhor tecnica pra fotos densas.
+- **Preprocessing pode PIORAR**: sharpen forte deu 0% em 2 fotos; preproc basic (winner fase 1) caiu pra 49% media. Arma de dois gumes.
+- **Foto 18 (43 vinhos): 0% em TODAS tecnicas** — limite absoluto do flash.
+
+**Estrategia final — pipeline 3 camadas**:
+1. Camada 1: qwen3-vl-flash + prompt PT-BR ($0.0003/foto). Resolve ~85% dos casos (label, ≤3 vinhos = 100%).
+2. Camada 2: qwen3-vl-flash + CLAHE+upscale+sharp+PT-BR ($0.0004/foto). Ativa quando 4+ vinhos. Hit rate 66-80%.
+3. Camada 3: Gemini 2.5 Flash + thinking ($0.008-0.012/foto). Fallback pra 14+ vinhos ou parse falhou.
+4. Pos-filtro em TODAS camadas: DB verify via `resolver.search_wine()` — mata alucinacoes, custo zero.
+
+**Custo projetado: $0.0007/foto vs $0.008 atual = economia de 91%.**
+
+**Handoff completo** (3 fases, tabelas, 12 tecnicas pesquisadas, 80 runs fase 2, estrategia final): [`../sandbox/ocr_test/HANDOFF.md`](../sandbox/ocr_test/HANDOFF.md).
+
+**Handoff completo** (decisoes, tabelas, 12 tecnicas pesquisadas com fontes academicas, como retomar): [`../sandbox/ocr_test/HANDOFF.md`](../sandbox/ocr_test/HANDOFF.md). Artefatos: `sandbox/ocr_test/compare.py` (comparacao 6 modelos), `sandbox/ocr_test/experiments.py` (10 experimentos prompt eng), `sandbox/ocr_test/results/*.json`.
 - **P (Auth)** ✅: Google OAuth em `backend/routes/auth.py` (login, callback, /me, logout + JWT). Sistema de creditos em `backend/routes/credits.py` (5 guest, 15 user/dia, decorator `@require_credits`). Banco: `backend/db/models_auth.py` (tabelas users + message_log). Frontend: `frontend/components/auth/` (LoginButton, UserMenu, CreditsBanner), `frontend/lib/auth.ts`, `frontend/app/auth/callback/page.tsx`. **FALTA: criar credenciais Google OAuth no Google Cloud Console + setar envs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET.**
 - **R (Share)** ✅: Compartilhamento em `backend/routes/sharing.py` (POST/GET /api/share, ID curto 7 chars base62). Banco: `backend/db/models_share.py` (tabela shares com wine_ids array + view_count). Frontend: `frontend/app/c/[id]/page.tsx` (SSR com WineCards), `layout.tsx` (OG metadata dinamica), `opengraph-image.tsx` (imagem 1200x630 via next/og), `frontend/components/ShareButton.tsx`. **FALTA: criar tabela shares no banco Render.**
 - **Integracao CTO** ✅ (commit `219ee07`): app.py registra blueprints auth_bp, credits_bp, sharing_bp. chat.py tem `@require_credits` nos endpoints /chat e /chat/stream.
@@ -202,7 +274,7 @@ Adiantado — rodou em paralelo com Batch 3 porque dependencias (I e K) ja estav
 #### L+N (WineGod Score) — CONCLUIDO ✅
 - **L+N (Score)** ✅: WineGod Score v1 calculado para 1,727,054 vinhos. Distribuicao historica: 72% entre 3-4, 22% entre 4-5. 342K verified, 1.38M estimated. 11,783 com preco (score medio 3.27 = custo-beneficio real), 1.71M sem preco (score = nota ajustada). Scripts historicos: `scripts/calc_score.py`, `scripts/score_report.py`.
 
-#### P7/P8 (Notas + Score v2) — DECISAO FECHADA / EXECUCAO EM ANDAMENTO
+#### P7/P8 (Notas + Score v2) — HISTORICO FECHADO / REVISAO DA NOTA REABERTA
 - O score v1 acima e HISTORICO. Ele saturava os vinhos baratos e misturava score com nota quando nao havia preco.
 - Diagnostico fechado:
   - WCF real bate com media ponderada por `usuario_total_ratings`
@@ -233,7 +305,7 @@ Adiantado — rodou em paralelo com Batch 3 porque dependencias (I e K) ja estav
   - o passo lento e o `UPDATE wines ... FROM tmp_scores` no Render, que pode demorar bastante por I/O
   - antes de assumir que terminou, qualquer novo chat deve verificar no banco se o backfill realmente concluiu
 
-**ADDENDUM FINAL P7/P8 (10/04/2026) — LER ANTES DE REABRIR QUALQUER CHAT DE SCORE**
+**ADDENDUM FINAL P7/P8 (10/04/2026) — HISTORICO DO ROLLOUT ANTERIOR**
 - O rollout de score/notas foi CONCLUIDO e esta em producao.
 - Estado final validado no banco Render:
   - `1.718.463` scores legados/falsos foram limpos
@@ -260,8 +332,9 @@ Adiantado — rodou em paralelo com Batch 3 porque dependencias (I e K) ja estav
   - backend Render live
   - frontend Vercel / `chat.winegod.ai` live
 - Regra de ouro daqui para frente:
-  - NAO reabrir P7/P8 como se o rollout ainda estivesse pendente
-  - novas frentes de score so devem tratar:
+  - o rollout historico de score/camada canonica acima foi concluido
+  - porem a revisao da `nota_wcf v2` foi reaberta em 11-12/04/2026 e deve seguir o handoff novo
+  - novas frentes de score/nota devem tratar:
     1. aumento de cobertura de preco
     2. aumento de cobertura de reviews WCF
     3. tuning futuro da formula com nova evidencia empirica
@@ -504,7 +577,9 @@ prompts/
   PROMPT_SETUP_GUIADO.md          # Bloco 1 — guia interativo DNS + OAuth + Redis (PENDENTE)
   PROMPT_AVATAR_GUIADO.md         # Bloco 2 — guia interativo criacao avatar Baco (PENDENTE)
   PROMPT_AVATAR_BACO.md           # Bloco 2 — prompts de imagem prontos pra IAs externas
-  PROMPT_IDENTIDADE_VISUAL_GUIADO.md  # Bloco 7 — guia interativo identidade visual (PENDENTE)
+  PROMPT_IDENTIDADE_VISUAL_GUIADO.md  # Bloco 7 — guia interativo identidade visual (CONCLUIDO 12/04/2026)
+  BRAND_GUIDELINES_WINEGOD.md         # Bloco 7 — resultado: brand guidelines completo (CONCLUIDO 12/04/2026)
+  PROMPT_EXECUTOR_BRAND_V1.md         # Bloco 7 — executor: implementar brand guidelines no frontend (PENDENTE)
   ANALISE_PROMPTS_EXECUCAO_AUTONOMA.md  # Auditoria dos prompts (execucao autonoma)
 
 DEPLOY.md                  # Passo a passo deploy Render + Vercel
@@ -1090,11 +1165,11 @@ Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_
 **Problemas conhecidos nos dados (contexto pra Fase X):**
 - `vinicola_nome` e o DOMINIO DA LOJA (ex: "demaisoneast"), NAO o produtor — por isso usamos `produtor_extraido` da Fase W
 - Zero vinhos tem `vivino_id` — nenhum link direto pro Vivino (Chat Y resolve)
-- Hash_dedup so cobre 28% dos vinhos — por isso Splink e necessario pros outros 72%
+- Hash_dedup so cobre 28% dos vinhos — contexto historico apenas; isso NAO reabre Splink nem deduplicacao como frente atual
 - 22K hashes repetidos entre paises (50K rows duplicadas entre lojas/paises)
 - ~500-600K registros com problemas de preco nas fontes — CORRIGIDO (1.35M registros tratados)
 - Supermercados BR (~30K registros mistos vinho + nao-vinho) — precisa filtro por produto no Chat Z
-- URLs duplicadas (~80K) — Splink vai agrupar naturalmente
+- URLs duplicadas (~80K) — contexto historico; nao usar isso para justificar reabrir a Fase X
 
 ### TAREFAS MANUAIS DO FUNDADOR (pendentes)
 1. **V: DNS** — apontar chat.winegod.ai → Vercel no GoDaddy (CNAME `chat` → `cname.vercel-dns.com`)
@@ -1103,23 +1178,27 @@ Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_
 
 ### TIMELINE RESTANTE
 
-```
-[CONCLUIDO]    Chat W: 3,955,624 vinhos limpos ✅
-[CONCLUIDO]    Correcao precos fonte: 1.35M registros ✅
-[CONCLUIDO]    Chat X: 2,942,304 vinhos unicos (10 abas paralelas + merge) ✅ (descartado)
-[CONCLUIDO]    Chat Y v1: Match Vivino por strings — FALHOU (precisao 12-87%)
-[CONCLUIDO]    Chat Y v2: Formato validado — LLM + pg_trgm texto_busca = 97% match (testes)
-[CONCLUIDO]    Chat Y v2 Gemini API: 748K/3.96M (19%) — PAUSADO por custo ($200 pra 19%)
-[CONCLUIDO]    Wine Classifier: sistema automatizado com Playwright (3 browsers + Codex)
-[CONCLUIDO]    Classificacao: ~3.96M processados; resultado consolidado em matched/new/duplicate/not_wine/spirit/error
-[Depois]       Duplicatas e nao-vinhos → tabela separada pra analise
-[AGORA]        Correcao de cobertura de wine_sources no Render (matched/new) em batches com dry-run + pilotos
-[AGORA]        Matched bucket 1 concluido: 150 inserts, 513 -> 363 matched sem source
-[AGORA]        New bucket A auditado: 72.999 corrigiveis agora; pilotos 500 e 5.000 passaram sem erro
-[DEPOIS]       Reconciliacao de pureza: limpar wrong_owner em wine_sources com prova canonica
-[NAO ASSUMIR]  Chat Z nao e mais "so importar pro Render"; precisa seguir o addendum W->Z e os handoffs de auditoria/correcao
-[Paralelo]     Fundador faz: DNS, Google OAuth, Upstash
-```
+A timeline abaixo ficou historica para a frente da cauda Vivino e NAO deve ser usada como fonte de estado atual dessa auditoria.
+
+Para o estado oficial da frente de sanitizacao/matching/auditoria da cauda, ler:
+
+- [`../reports/tail_audit_master_state_2026-04-11.md`](../reports/tail_audit_master_state_2026-04-11.md)
+
+Resumo operacional atual dessa frente:
+
+- full fan-out bloqueado por performance;
+- projeto em `sample-first audit`;
+- `working_pool_1200` pronto;
+- `pilot_120` pronto;
+- R1 Claude pronta;
+- pacote para Murilo pronto;
+- proxima etapa recomendada: endurecer o pacote Murilo e preparar concordancia/adjudicacao.
+
+Itens paralelos de infraestrutura geral continuam valendo fora dessa frente:
+
+- DNS
+- Google OAuth
+- Upstash Redis
 
 ---
 
@@ -1145,8 +1224,8 @@ Scripts e prompts do X existem no repo (PROMPT_CHAT_X1.md a X10.md, PROMPT_CHAT_
 - Agentes automaticos (semana 8)
 - Remarketing (mes 2)
 - Stripe/pagamento Pro (mes 2)
-- Importar 10M+ reviews restantes → recalcular WCF (2-3 dias de scraping)
-- Sistema de recomendacao por perfil de gosto (collaborative filtering com 300M reviews)
+- ~~Importar 10M+ reviews restantes~~ → **EM ANDAMENTO (12/04/2026):** re-scrape dos 147K vinhos capados com MAX_PAGES=350 no worker do Render. Meta: +160-210M reviews (base final ~200-240M). ETA: ~60 dias. Apos conclusao: recalcular WCF/score dos vinhos afetados. `nota_estimada` continua fora da decisao do produto e nao deve ser subida para o Render. Ver detalhes na secao "PC local — vivino_db" acima.
+- Sistema de recomendacao por perfil de gosto (collaborative filtering com 200M+ reviews — apos re-scrape concluir)
 
 ---
 
@@ -2000,89 +2079,37 @@ Estrategia: "1 Post para o Mundo" — 1 video ingles, plataformas traduzem, link
 700 perguntas via 7 IAs → curadoria CTO → 200-300 unicas → rodar no chat → documentar bugs/respostas ruins.
 
 ### Bloco 7 — Identidade Visual e Design (aba interativa guia o fundador)
-**Status:** PENDENTE
+**Status:** CONCLUIDO (12/04/2026)
 **Prompt:** `prompts/PROMPT_IDENTIDADE_VISUAL_GUIADO.md`
+**Resultado:** `prompts/BRAND_GUIDELINES_WINEGOD.md`
 
-Aba interativa que guia o fundador por 8 topicos de identidade visual. Le os 4 documentos fundamentais + codigo atual do frontend antes de comecar. Apresenta opcoes concretas com recomendacao pra cada topico. Documenta as decisoes em `BRAND_GUIDELINES_WINEGOD.md`.
-**Prompt:** a criar apos refinamento
+Sessao interativa com o fundador definiu todos os 8 topicos. Documento completo em `BRAND_GUIDELINES_WINEGOD.md`.
 
-O projeto NAO tem brand guidelines, logo formal, design system nem landing page. Tudo que existe e um tema escuro improvisado nos chats A/J. Este bloco formaliza a identidade visual do WineGod.
+#### Resumo das decisoes tomadas:
 
-**Topicos a definir:**
+| Topico | Decisao |
+|--------|---------|
+| **7.1 Logo** | Simbolo independente (coroa de louros, sem uvas) + texto "WineGod .ai" serif bold. Tagline: "The AI Sommelier". Gerada por IA, sem designer externo. Arquivo base: `C:\Users\muril\OneDrive\Documentos\WINEGOD\logo\logo_inegod.jpeg` |
+| **7.2 Cores** | Light mode unificado (estilo ChatGPT). Accent vinho #8B1A4A + dourado #FFD700. Wine cards clareados (mesmo tom do app). Dark mode futuro. |
+| **7.3 Tipografia** | Logo: Playfair Display Black. Corpo/UI: Inter. Baco: mesma fonte do corpo (Inter). |
+| **7.4 Design System** | WineCard claro com borda vinho no hover. Botoes: primario preenchido + secundario outline. Badges: pill vinho 10% opacidade. Skeleton screens nos cards. Icones: Lucide. |
+| **7.5 Landing Page** | NAO criar landing page. Chat direto na `/` com welcome do Baco + 6 cards (estilo Gemini: 4 em cima + 2 embaixo). Layout geral estilo ChatGPT. Sidebar hamburger com: Novo chat, Historico, Favoritos, Minha conta, Plano & creditos, Ajuda. |
+| **7.6 Assets Sociais** | PENDENTE — depende do logo vetorizado. Avatar definido: `assets/baco/v4_final/baco_closeup_recraft_v4pro.png` |
+| **7.7 Favicon/Meta** | Favicon: coroa de louros (placeholder "W" ate vetorizar). og:title: "winegod.ai — Wine Intelligence, Powered by Gods". og:description: "Your personal wine god. Find the best wines for your budget. Photo, voice, or text — just ask." |
+| **7.8 Email** | v1: boas-vindas + creditos esgotados. Fundo branco, botao vinho, tom do Baco (nao corporativo). |
 
-#### 7.1 — Logo e Marca
-- Formato: texto puro "winegod.ai"? Simbolo + texto? So simbolo?
-- Simbolo candidato: tirso (bastao de Baco), videira/uva, copa de vinho, combinacao
-- Estilo: minimalista? Detalhado? Flat? 3D sutil?
-- Cores do logo: monocromatico (dourado sobre escuro)? Multicolor?
-- Versoes: claro (fundo escuro), escuro (fundo claro), monocromatico, favicon (16x16)
-- Tagline: "The Wine God" ? "AI Sommelier" ? Nenhuma?
-- Ferramenta: gerar via IA de imagem (Midjourney/Ideogram pra texto) ou contratar designer?
+#### 6 Cards do welcome screen:
+1. "Tire foto de um rotulo" (Camera)
+2. "Me indica um vinho ate R$80" (Copa)
+3. "Analise um cardapio de vinhos" (Clipboard)
+4. "Foto da prateleira do mercado" (Store)
+5. "Compare dois vinhos pra mim" (Scale)
+6. "Envie uma lista de vinhos" (FileText)
 
-#### 7.2 — Paleta de Cores
-- Cores atuais no codigo (sem documento formal):
-  - Background: `#0D0D1A` (quase preto), `#1A1A2E` (cards)
-  - Borders: `#2A2A4E`
-  - Accent: `#8B1A4A` (vinho escuro)
-  - Stars: `#FFD700` (dourado)
-- Formalizar? Manter essas? Ajustar?
-- Adicionar: cor de sucesso, erro, aviso, texto secundario
-- Gradientes: usar? Estilo?
-- Dark mode e o unico? Ou tera light mode tambem?
-
-#### 7.3 — Tipografia
-- Fonte do logo: serif classica (autoridade)? Sans moderna (tech)? Display/decorativa?
-- Fonte do corpo: qual sans-serif? Inter (atual)? Algo mais distintivo?
-- Fonte do Baco (mensagens dele): diferente do usuario? Italico? Serif?
-- Hierarquia: H1/H2/H3/body/caption — tamanhos e pesos
-
-#### 7.4 — Design System (componentes)
-- Botoes: estilo, bordas, hover, estados
-- Cards de vinho: refinar o WineCard atual ou redesenhar?
-- Input do chat: estilo atual ou redesenhar?
-- Badges/termos (Avaliações, Paridade, Legado, Capilaridade): estilo visual
-- Icones: pack? Lucide (atual)? Heroicons? Custom?
-- Espacamentos: grid system, padding, margins padronizados
-- Animacoes: transicoes, loading states, skeleton screens
-
-#### 7.5 — Landing Page
-- Hoje o site abre direto no chat. Nao tem pagina explicando o que e o WineGod
-- Criar landing page em `/` com:
-  - Hero: frase do Baco + CTA "Conversar com Baco"
-  - O que e: 3-4 bullets visuais (foto, chat, precos, global)
-  - Como funciona: 3 passos simples
-  - Exemplo de conversa (screenshot ou mockup)
-  - Footer com links
-- Chat passa pra `/chat` (ou manter em `/` com landing como overlay no primeiro acesso?)
-
-#### 7.6 — Assets para Redes Sociais
-- Foto de perfil (depende do avatar — Bloco 2)
-- Banner/header pra cada rede (Instagram, TikTok, YouTube, X, Facebook)
-- Template de post (fundo + tipografia + layout)
-- Template de Reels/Stories (vertical, com espaco pro avatar)
-- Cores e fontes consistentes com o site
-
-#### 7.7 — Favicon e Meta Tags
-- Favicon: mini-logo ou simbolo (16x16, 32x32, 180x180 Apple Touch)
-- og:image padrao: imagem que aparece quando alguem compartilha o link
-- og:title, og:description padrao
-- Twitter Card: summary_large_image
-
-#### 7.8 — Email Templates
-- Template Brevo pra emails transacionais (boas-vindas, alertas de preco)
-- Visual consistente com o site
-- Assinatura do Baco
-
-**Dependencias:**
-- 7.1 e 7.6 dependem parcialmente do avatar (Bloco 2)
-- 7.2, 7.3, 7.4, 7.5, 7.7, 7.8 podem comecar sem o avatar
-
-**Perguntas pro fundador antes de executar:**
-1. Quer logo gerada por IA ou contratada?
-2. As cores atuais estao boas ou quer mudar a paleta?
-3. Quer landing page ou prefere manter o chat como pagina inicial?
-4. Light mode e prioridade ou so dark?
-5. Qual nivel de polish? MVP rapido ou visual final de lancamento?
+#### Pendencias do Bloco 7:
+- Vetorizar logo base (SVG) → necessario pra favicon, og:image, assets
+- Assets de redes sociais → depende do logo vetorizado
+- Dark mode → futuro
 
 ---
 
@@ -2196,7 +2223,14 @@ ILIKE/pg_trgm retorna matches incorretos: "Alamos" → Los Alamos Vineyard (Cali
 #### GRAVES (degradam experiencia):
 
 **P7 — Discrepancia de notas (WCF vs Vivino)**
-Diagnostico historico fechado: o problema principal nao era o WCF em si, e sim a exposicao de notas WCF com amostra fraca e a formula antiga de score por mediana global. Decisao final: nota canonica com guardrail por `nota_wcf_sample_size` (100/25/fallback) e custo-beneficio novo por `mesmo pais + nota com peso por proximidade`. Ver addendum P7/P8 acima.
+Diagnostico historico fechado: o problema principal nao era o WCF em si, e sim a exposicao de notas WCF com amostra fraca e a formula antiga de score por mediana global.
+
+Atualizacao 11/04/2026:
+- a frente foi reaberta para fechar a `nota_wcf v2`
+- direcao mantida: `nota_wcf` como nota principal, pesos do WCF antigo, freio por amostra pequena e centro contextual em cascata
+- decisoes novas: nota para todo vinho com contexto suficiente, `sample_size` como credibilidade e nao como trava, uso de `pais` ISO, ultimo degrau `vinicola + tipo`, sem `tipo global` e sem fallback global universal
+- direcao de risco: bloco sem contexto minimo hoje fica em torno de `~240k` vinhos; eles continuam sem nota ate novo enrichment
+- documento de continuidade: [`../reports/2026-04-11_handoff_nota_wcf_v2.md`](../reports/2026-04-11_handoff_nota_wcf_v2.md)
 
 **P8 — Performance 28-98 segundos por foto**
 Pipeline completo (OCR + Baco + tools) demora 28-98s. OCR isolada leva 5-43s (aceitavel). Gargalo: Claude Haiku faz multiplas tool calls sequenciais.
@@ -2241,10 +2275,18 @@ Cada frente tem um prompt de handoff detalhado com todo o contexto, dados, arqui
 #### Frente 2 — Scores / Notas (P7 -> P8)
 **Prompt de estudo historico:** `C:\winegod-app\prompts\HANDOFF_P7_SCORES.md`
 **Prompt executor final:** `C:\winegod-app\prompts\HANDOFF_P8_SCORE_PAIS_NOTA.md`
-**Escopo atual:** rollout CONCLUIDO. Nao reabrir P7/P8 como se estivesse pendente. Novas frentes aqui so se forem:
-1. aumento de cobertura de preco
-2. aumento de cobertura de reviews WCF
-3. tuning futuro da formula com nova evidencia empirica
+**Escopo atual:** o rollout historico foi concluido, mas a regra de negocio da `nota_wcf v2` foi reaberta. Novas frentes aqui podem tratar:
+1. implementacao da nova regra de nota oficial descrita em `../reports/2026-04-11_handoff_nota_wcf_v2.md`
+2. aumento de cobertura de preco
+3. aumento de cobertura de reviews WCF — **EM ANDAMENTO:**
+   - Re-scrape de 147K vinhos capados com MAX_PAGES=350 (ate 17.500 reviews/vinho) rodando desde 12/04/2026
+   - Worker: Render `whatsapp-automation-bots` (`vivino_reviews_worker.js`) em broker mode → PC local (`vivino-broker/server.js`) → `vivino_db`
+   - Config validada: WORKERS=1, MAX_RETRIES=5, SLEEP_PER_WINE_MS=500, proxy ISP Brasil flat rate
+   - Pilotos comprovaram: MAX_PAGES=50 ✅, 200 ✅, 300 ✅, 350 ✅, 400 ❌, 500 ❌, 1000 ❌. Teto real da API: entre 351-399 paginas.
+   - ETA: ~60 dias. Meta: +160-210M reviews novas. Base final projetada: ~200-240M reviews.
+   - Apos conclusao: recalcular WCF/score dos vinhos afetados. `nota_estimada` segue como campo legado local fora da decisao do produto e nao deve ser subida pro Render.
+   - Monitoramento: checar pendentes via `SELECT COUNT(*) FROM vivino_vinhos WHERE reviews_coletados = FALSE;` no vivino_db local.
+   - Requisitos pra funcionar: PC ligado (PostgreSQL + broker + ngrok ativos), Render rodando.
 4. monitoramento/correcao da automacao incremental
 **Repo principal:** `winegod-app` (calc_wcf.py, calc_score.py, backend/services/display.py, Baco, share page, OG)
 
@@ -2325,7 +2367,7 @@ cd C:\winegod-app && claude -p (Get-Content prompts/HANDOFF_PROMPTS.md -Raw)
 cd C:\winegod-app && claude -p (Get-Content prompts/HANDOFF_INFRA.md -Raw)
 ```
 
-**Status:** PARCIALMENTE EXECUTADO. A frente de scores/notas ja teve diagnostico concluido, regras finais decididas e codigo alterado no repo. O ponto a verificar em qualquer novo chat e se o backfill massivo do banco (`UPDATE wines ... FROM tmp_scores`) concluiu de fato no Render.
+**Status:** PARCIALMENTE EXECUTADO. A frente de score/nota ja teve diagnostico forte e a regra de negocio da `nota_wcf v2` esta quase fechada. Ler antes de continuar: [`../reports/2026-04-11_handoff_nota_wcf_v2.md`](../reports/2026-04-11_handoff_nota_wcf_v2.md). O foco agora e implementar a nova regra no backend/pipeline, preencher `nota_wcf_sample_size`, ajustar a exposicao de `display_note`/`display_note_type` e decidir se havera enrichment extra de `pais`/`uvas` antes do rollout.
 
 ### Notas tecnicas para o CTO
 
