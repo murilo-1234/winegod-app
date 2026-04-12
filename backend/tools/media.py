@@ -1,6 +1,7 @@
 """Media processing: process_image, process_video, process_pdf, process_voice."""
 
 import base64
+import concurrent.futures
 import json
 import os
 import shutil
@@ -9,6 +10,14 @@ import tempfile
 
 from google import genai
 from google.genai import types
+
+
+# Acima deste tamanho de texto, pular chamada monolitica e ir direto para chunked
+# paralelo. Threshold escolhido empiricamente: textos <=15000 chars completam
+# de forma confiavel em uma chamada (Elephante 9k, Hendricks 9k, ALINA 2k).
+# Acima disso a chamada monolitica fica perto do limite de 300s e/ou retorna
+# JSON malformado (Posada 30k, Cambio 24k).
+_LONG_TEXT_THRESHOLD = 15000
 
 
 # Garantir ffmpeg no PATH via imageio-ffmpeg (pacote Python com binario embutido)
@@ -142,32 +151,43 @@ If you cannot identify a field, use null.
 If there are NO wines visible, return {"wines": []}"""
 
 PDF_TEXT_PROMPT = """Analyze the following text extracted from a PDF document (wine list, catalog, or menu).
-Identify ALL wines mentioned with as much detail as possible:
-- Wine name
-- Producer/Winery
-- Vintage year
-- Region
-- Grape variety
-- Price
 
-Return ONLY a JSON object:
+## Your task
+1. Identify ALL wines mentioned.
+2. Ignore decorative text: section headers ("Nossa Selecao", "Destaques"), descriptions,
+   marketing copy, legal text, restaurant info — these are NOT wines.
+3. For each wine, extract only what is clearly stated — do NOT guess or infer.
+
+## Price rules
+- Only associate a price with a wine when the price clearly belongs to that specific item.
+- In tabular layouts, match price to the wine on the same row or directly adjacent.
+- If a price could belong to multiple wines or is ambiguous, return null for price.
+- Preserve currency symbol (R$, $, €, etc.).
+
+## Output
+Return ONLY a JSON object (no markdown, no commentary):
 {"wines": [{"name": "...", "producer": "...", "vintage": "...", "region": "...", "grape": "...", "price": "..."}]}
 
 If you cannot identify a field, use null.
+If there are NO wines in the text, return {"wines": []}.
 
 Text:
 """
 
 PDF_IMAGE_PROMPT = """Analyze this page image from a PDF document (wine list, catalog, or menu).
-Identify ALL wines visible with as much detail as possible:
-- Wine name
-- Producer/Winery
-- Vintage year
-- Region
-- Grape variety
-- Price
 
-Return ONLY a JSON object:
+## Your task
+1. Identify ALL wines visible on this page.
+2. Ignore decorative elements: headers, logos, background images, marketing text.
+3. For each wine, extract only what you can clearly read — do NOT guess.
+
+## Price rules
+- Only associate a price with a wine when the price is clearly next to or aligned with that wine.
+- If a price is ambiguous (could belong to multiple items), return null for price.
+- Preserve currency symbol (R$, $, €, etc.).
+
+## Output
+Return ONLY a JSON object (no markdown, no commentary):
 {"wines": [{"name": "...", "producer": "...", "vintage": "...", "region": "...", "grape": "...", "price": "..."}]}
 
 If you cannot identify a field, use null.
@@ -574,6 +594,146 @@ def process_video(base64_video):
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+# Keywords que indicam conteudo sobre vinho (precisa >= 2 matches)
+_WINE_KEYWORDS = {
+    "vinho", "vinhos", "wine", "wines", "vino", "vini",
+    "tinto", "branco", "rosé", "espumante", "sparkling",
+    "reserva", "gran reserva", "crianza",
+    "cabernet", "merlot", "chardonnay", "sauvignon", "pinot",
+    "syrah", "shiraz", "malbec", "tempranillo", "carmenere",
+    "tannat", "touriga", "sangiovese", "nebbiolo", "grenache",
+    "safra", "vintage", "colheita",
+    "chateau", "château", "domaine", "bodega", "cantina",
+    "carta de vinhos", "wine list", "wine menu",
+    "sommelier",
+}
+
+
+def _text_looks_wine_related(text, min_matches=2):
+    """Checa se texto extraido contem keywords de vinho suficientes.
+
+    Amostra inicio, meio e fim do texto para nao perder catalogos
+    com prefacio/capa longa antes dos vinhos.
+    """
+    n = len(text)
+    chunk = 2000
+    # Inicio + meio + fim (sem duplicar se texto for curto)
+    parts = [text[:chunk]]
+    if n > chunk * 2:
+        mid = n // 2
+        parts.append(text[mid - chunk // 2 : mid + chunk // 2])
+    if n > chunk:
+        parts.append(text[-chunk:])
+    sample = " ".join(parts).lower()
+    matches = sum(1 for kw in _WINE_KEYWORDS if kw in sample)
+    return matches >= min_matches
+
+
+def _split_text_into_chunks(text, chunk_size=8000):
+    """Divide texto em chunks de aproximadamente chunk_size chars.
+
+    Respeita limites de paragrafo (dupla newline). Se um paragrafo isolado
+    exceder chunk_size, divide por linha simples. Nao garante tamanho exato
+    — prioridade e preservar estrutura legivel para o Gemini.
+    """
+    if len(text) <= chunk_size:
+        return [text]
+
+    chunks = []
+    current = []
+    current_size = 0
+
+    for paragraph in text.split("\n\n"):
+        p_size = len(paragraph) + 2  # +2 para o separador \n\n
+
+        if p_size > chunk_size:
+            # Paragrafo gigante: flush current e divide por linha
+            if current:
+                chunks.append("\n\n".join(current))
+                current = []
+                current_size = 0
+
+            sub_lines = []
+            sub_size = 0
+            for line in paragraph.split("\n"):
+                line_size = len(line) + 1
+                if sub_size + line_size > chunk_size and sub_lines:
+                    chunks.append("\n".join(sub_lines))
+                    sub_lines = [line]
+                    sub_size = line_size
+                else:
+                    sub_lines.append(line)
+                    sub_size += line_size
+            if sub_lines:
+                chunks.append("\n".join(sub_lines))
+        elif current_size + p_size > chunk_size and current:
+            chunks.append("\n\n".join(current))
+            current = [paragraph]
+            current_size = p_size
+        else:
+            current.append(paragraph)
+            current_size += p_size
+
+    if current:
+        chunks.append("\n\n".join(current))
+
+    return chunks
+
+
+def _extract_wines_native_chunked(text, chunk_size=8000, max_workers=4):
+    """Extrai vinhos dividindo texto em chunks e chamando Gemini em PARALELO.
+
+    Usa ThreadPoolExecutor com limite fixo de max_workers (default 4) para que o
+    tempo total seja ~max(chunk_time) em vez de sum(chunk_time). Chunks que falham
+    sao descartados silenciosamente; chunks que sucedem contribuem com seus
+    vinhos. Caller e responsavel por deduplicar.
+
+    Usado tanto como caminho direto para texto MUITO longo wine-related (pulando
+    chamada monolitica cara) quanto como recovery quando a chamada monolitica de
+    texto medio falha.
+    """
+    chunks = _split_text_into_chunks(text, chunk_size)
+    if not chunks:
+        return []
+
+    def _process_chunk(args):
+        idx, chunk = args
+        try:
+            raw = _gemini_generate(PDF_TEXT_PROMPT + chunk)
+            result = _parse_gemini_json(raw)
+            return idx, result.get("wines", []), None
+        except Exception as e:
+            return idx, [], e
+
+    workers = min(max_workers, len(chunks))
+    all_wines = []
+    success_count = 0
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        for idx, wines, err in executor.map(
+            _process_chunk, list(enumerate(chunks))
+        ):
+            if err is None:
+                all_wines.extend(wines)
+                success_count += 1
+                print(
+                    f"[chunked] chunk {idx+1}/{len(chunks)}: {len(wines)} wines",
+                    flush=True,
+                )
+            else:
+                print(
+                    f"[chunked] chunk {idx+1}/{len(chunks)} failed: {type(err).__name__}",
+                    flush=True,
+                )
+
+    print(
+        f"[chunked] total: {len(all_wines)} wines from {success_count}/{len(chunks)} chunks "
+        f"(parallel x{workers})",
+        flush=True,
+    )
+    return all_wines
+
+
 def process_pdf(base64_pdf):
     """Processa PDF: extrai texto com pdfplumber, fallback OCR visual com pypdfium2 + Gemini."""
     tmpdir = None
@@ -602,69 +762,156 @@ def process_pdf(base64_pdf):
         full_text = "\n\n".join(text_pages).strip()
 
         all_wines = []
+        extraction_method = "none"
+        was_truncated = False
+        native_text_failed = False
 
+        # Branch 1: texto nativo extraido com pdfplumber
         if len(full_text) > 100:
-            try:
-                truncated = full_text[:30000]
-                raw_text = _gemini_generate(PDF_TEXT_PROMPT + truncated)
-                result = _parse_gemini_json(raw_text)
-                all_wines.extend(result.get("wines", []))
-            except Exception:
-                all_wines = []
+            was_truncated = len(full_text) > 30000
+            truncated_text = full_text[:30000]
 
+            # P3A.2: para texto MUITO longo wine-related, pular chamada monolitica
+            # cara (que tipicamente leva 150-260s e/ou retorna JSON malformado em
+            # PDFs com 100+ vinhos) e ir DIRETO para chunked paralelo. Isso evita
+            # gastar metade do orcamento de 300s antes do recovery comecar.
+            if (
+                len(full_text) > _LONG_TEXT_THRESHOLD
+                and _text_looks_wine_related(full_text)
+            ):
+                print(
+                    f"[process_pdf] long wine text ({len(full_text)} chars) — "
+                    f"direct parallel chunked (skip monolithic)",
+                    flush=True,
+                )
+                try:
+                    wines_from_text = _extract_wines_native_chunked(truncated_text)
+                    if wines_from_text:
+                        all_wines.extend(wines_from_text)
+                        extraction_method = "native_text_chunked"
+                        print(
+                            f"[process_pdf] native_text_chunked (direct): "
+                            f"{len(wines_from_text)} wines",
+                            flush=True,
+                        )
+                except Exception as e:
+                    print(f"[process_pdf] direct chunked error: {e}", flush=True)
+            else:
+                # Texto curto/medio: caminho rapido com chamada monolitica unica
+                try:
+                    raw_text = _gemini_generate(PDF_TEXT_PROMPT + truncated_text)
+                    result = _parse_gemini_json(raw_text)
+                    wines_from_text = result.get("wines", [])
+                    if wines_from_text:
+                        all_wines.extend(wines_from_text)
+                        extraction_method = "native_text"
+                        print(
+                            f"[process_pdf] native_text: {len(wines_from_text)} wines",
+                            flush=True,
+                        )
+                except Exception as e:
+                    native_text_failed = True
+                    print(f"[process_pdf] native_text error: {e}", flush=True)
+
+        # Branch 1.5: recovery nativo paralelo — so se a monolitica de texto medio
+        # raise E texto parece ser wine-related. Evita cair no visual_fallback lento
+        # para PDFs cujo unico problema foi JSON malformado do Gemini.
+        if not all_wines and native_text_failed and _text_looks_wine_related(full_text):
+            print("[process_pdf] trying parallel chunked recovery", flush=True)
+            try:
+                chunked_wines = _extract_wines_native_chunked(full_text[:30000])
+                if chunked_wines:
+                    all_wines.extend(chunked_wines)
+                    extraction_method = "native_text_chunked"
+                    print(
+                        f"[process_pdf] native_text_chunked (recovery): "
+                        f"{len(chunked_wines)} wines",
+                        flush=True,
+                    )
+            except Exception as e:
+                print(f"[process_pdf] chunked recovery error: {e}", flush=True)
+
+        # Branch 2: fallback visual — so se nao achou vinhos E faz sentido tentar
         if not all_wines:
-            try:
-                import pypdfium2 as pdfium
-                from PIL import Image
-                import io
+            text_is_substantial = len(full_text) > 100
+            text_is_wine = _text_looks_wine_related(full_text) if text_is_substantial else False
 
-                doc = pdfium.PdfDocument(pdf_path)
-                ocr_page_count = min(len(doc), 20)
+            # Fallback se: texto curto/ausente (PDF escaneado) OU texto parece ser sobre vinho
+            should_fallback = not text_is_substantial or text_is_wine
+            print(
+                f"[process_pdf] fallback: text_len={len(full_text)}, "
+                f"wine_related={text_is_wine if text_is_substantial else 'N/A'}, "
+                f"will_try={should_fallback}", flush=True,
+            )
 
-                for i in range(ocr_page_count):
-                    try:
-                        page = doc[i]
-                        bitmap = page.render(scale=150 / 72)
-                        pil_image = bitmap.to_pil()
+            if should_fallback:
+                try:
+                    import pypdfium2 as pdfium
+                    from PIL import Image
+                    import io
 
-                        w, h = pil_image.size
-                        max_side = 1024
-                        if w > max_side or h > max_side:
-                            if w > h:
-                                new_w = max_side
-                                new_h = int(h * max_side / w)
-                            else:
-                                new_h = max_side
-                                new_w = int(w * max_side / h)
-                            pil_image = pil_image.resize((new_w, new_h), Image.LANCZOS)
+                    doc = pdfium.PdfDocument(pdf_path)
+                    ocr_page_count = min(len(doc), 20)
 
-                        buf = io.BytesIO()
-                        pil_image.save(buf, format="JPEG", quality=85)
-                        img_bytes = buf.getvalue()
+                    for i in range(ocr_page_count):
+                        try:
+                            page = doc[i]
+                            bitmap = page.render(scale=150 / 72)
+                            pil_image = bitmap.to_pil()
 
-                        raw_text = _gemini_generate([
-                            PDF_IMAGE_PROMPT,
-                            types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
-                        ])
-                        result = _parse_gemini_json(raw_text)
-                        all_wines.extend(result.get("wines", []))
-                    except Exception:
-                        continue
+                            w, h = pil_image.size
+                            max_side = 1024
+                            if w > max_side or h > max_side:
+                                if w > h:
+                                    new_w = max_side
+                                    new_h = int(h * max_side / w)
+                                else:
+                                    new_h = max_side
+                                    new_w = int(w * max_side / h)
+                                pil_image = pil_image.resize((new_w, new_h), Image.LANCZOS)
 
-                doc.close()
-            except ImportError:
-                pass
+                            buf = io.BytesIO()
+                            pil_image.save(buf, format="JPEG", quality=85)
+                            img_bytes = buf.getvalue()
+
+                            raw_text = _gemini_generate([
+                                PDF_IMAGE_PROMPT,
+                                types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                            ])
+                            result = _parse_gemini_json(raw_text)
+                            all_wines.extend(result.get("wines", []))
+                        except Exception:
+                            continue
+
+                    doc.close()
+
+                    if all_wines:
+                        extraction_method = "visual_fallback"
+                        print(f"[process_pdf] visual_fallback: {len(all_wines)} wines", flush=True)
+                except ImportError:
+                    print("[process_pdf] pypdfium2 not available, skipping visual", flush=True)
+            else:
+                extraction_method = "native_text_no_wine"
+                print("[process_pdf] skipped visual: text not wine-related", flush=True)
 
         unique_wines = _deduplicate_wines(all_wines)
 
         if not unique_wines:
-            return {
-                "message": (
+            if extraction_method == "native_text_no_wine":
+                msg = (
+                    "Li o PDF mas o conteudo nao parece ser uma carta ou catalogo de vinhos. "
+                    "Envie um PDF com lista de vinhos ou me diga os vinhos que te interessam!"
+                )
+            else:
+                msg = (
                     "Li o PDF mas nao consegui identificar vinhos. "
-                    "Se for uma carta de vinhos, tente enviar uma foto mais nitida "
+                    "Se for uma carta de vinhos, tente um PDF com texto selecionavel "
                     "ou me diga os vinhos que te interessam!"
-                ),
+                )
+            return {
+                "message": msg,
                 "status": "no_wines_found",
+                "extraction_method": extraction_method,
             }
 
         description = _wines_to_description(unique_wines, "PDF")
@@ -674,6 +921,9 @@ def process_pdf(base64_pdf):
             "wines": unique_wines,
             "wine_count": len(unique_wines),
             "description": description,
+            "extraction_method": extraction_method,
+            "was_truncated": was_truncated,
+            "pages_processed": page_count,
         }
 
     except Exception as e:

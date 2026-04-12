@@ -1,11 +1,23 @@
 """Pre-resolve: resolve vinhos do OCR no backend antes de chamar o Claude."""
 
 import time
-from tools.search import search_wine
+from tools.search import search_wine, search_wine_tokens
 from tools.normalize import normalizar
 from services.display import resolve_display
 
 # Paises que o OCR pode devolver no campo "region" por engano
+def _derive_item_status(wine):
+    """Derive explicit item status from a resolved wine dict.
+
+    Returns one of: 'confirmed_with_note', 'confirmed_no_note'.
+    For unresolved items, callers set 'visual_only' directly.
+    """
+    d = resolve_display(wine)
+    if d["display_note"] is not None:
+        return "confirmed_with_note"
+    return "confirmed_no_note"
+
+
 _KNOWN_COUNTRIES = {
     "argentina", "france", "italy", "spain", "chile", "portugal",
     "australia", "germany", "south africa", "new zealand", "united states",
@@ -33,8 +45,11 @@ def resolve_wines_from_ocr(ocr_result):
         resolved, unresolved = _resolve_label(ocr_result)
         # Derivar resolved_items/unresolved_items para label (forward compat)
         ocr_data = ocr_result.get("ocr_result", {})
-        resolved_items = [{"ocr": ocr_data, "wine": w} for w in resolved]
-        unresolved_items = [{"ocr": {"name": n}} for n in unresolved]
+        resolved_items = [
+            {"ocr": ocr_data, "wine": w, "status": _derive_item_status(w)}
+            for w in resolved
+        ]
+        unresolved_items = [{"ocr": {"name": n}, "status": "visual_only"} for n in unresolved]
     elif image_type in ("screenshot", "shelf"):
         resolved_items, unresolved_items = _resolve_multi(ocr_result)
         # Derivar resolved_wines/unresolved para callers existentes
@@ -188,7 +203,6 @@ _CANONICAL_VARIETIES = sorted([
     'espumante', 'sparkling',
 ], key=len, reverse=True)
 
-
 def _extract_distinctive(name_norm):
     """Tokens distintivos: sem genericos, sem anos, len >= 3."""
     return [t for t in name_norm.split()
@@ -286,9 +300,9 @@ def _score_match(ocr_name, candidate):
     Matches apenas no produtor recebem 30% de peso.
     Tiebreaker: overlap de todos os tokens OCR com o nome do vinho.
     """
-    ocr_norm = normalizar(ocr_name)
-    cand_name = normalizar(candidate.get('nome', ''))
-    prod_name = normalizar(candidate.get('produtor', ''))
+    ocr_norm = _collapse_initials(normalizar(ocr_name))
+    cand_name = _collapse_initials(normalizar(candidate.get('nome', '')))
+    prod_name = _collapse_initials(normalizar(candidate.get('produtor', '')))
     cand_full = cand_name + ' ' + prod_name
 
     # GATE 0 — LINHA/FAMILIA (obrigatorio, antes de tudo):
@@ -303,18 +317,23 @@ def _score_match(ocr_name, candidate):
         if not all(t in cand_words for t in line_tokens):
             return 0.0
 
+        # Guard: se o candidato tem MUITO mais tokens de linha que o OCR,
+        # os tokens podem ser coincidencia (e.g. "Cuatro Vientos"
+        # como frase em "Griten a los Cuatro Vientos Los Ninos Tienen Derechos").
+        cand_line_tokens = _extract_line_tokens(cand_name, prod_name)
+        if cand_line_tokens and len(line_tokens) / len(cand_line_tokens) < 0.4:
+            return 0.0
+
     # GATE V — VARIEDADE/ESTILO (comparacao por frase canonica):
     # Extrai variedades como frases completas ("cabernet sauvignon", nao
     # "cabernet" + "sauvignon"). Se OCR tem variedade canonica, a frase
     # inteira deve aparecer no nome do candidato.
-    # Ex: "Sauvignon Blanc" nao casa com "Cabernet Sauvignon" — mesmo
-    # compartilhando "sauvignon", as frases canonicas sao diferentes.
+    # Ex: "Sauvignon Blanc" nao casa com "Cabernet Sauvignon".
+    # Ex: "Tinto" nao casa com "Chardonnay".
     ocr_varieties = _extract_canonical_varieties(ocr_norm)
     if ocr_varieties:
         if not any(v in cand_name for v in ocr_varieties):
-            cand_varieties = _extract_canonical_varieties(cand_name)
-            if cand_varieties:
-                return 0.0
+            return 0.0
 
     distinctive = _extract_distinctive(ocr_norm)
 
@@ -366,23 +385,30 @@ def _fast_resolve(name, producer, seen_ids, scoring_name=None, timeout_ms=1500, 
     """Fase 1: exact/prefix/producer, sem tokens.
 
     scoring_name: nome limpo (sem regiao) para avaliacao nos gates.
-    Tenta query original, depois variante com iniciais colapsadas.
+    Se o nome tem iniciais colapsiveis ('D. Eugenio' → 'deugenio'),
+    pula a query original (que vai estourar timeout no prefix 'd%')
+    e vai direto para a forma colapsada.
     """
     eval_name = scoring_name or name
     kwargs = {"produtor": producer} if producer else {}
-    try:
-        result = search_wine(name, limit=limit, allow_fuzzy=False, skip_tokens=True, timeout_ms=timeout_ms, **kwargs)
-        best = _pick_best(eval_name, result.get("wines", []), seen_ids)
-        if best:
-            print(f"[resolver] multi_item phase=fast matched={best.get('id')}", flush=True)
-            return best
-    except Exception:
-        pass
 
-    # Retry com iniciais colapsadas: 'd eugenio' → 'deugenio'
     name_norm = normalizar(name)
     collapsed = _collapse_initials(name_norm)
-    if collapsed != name_norm:
+    has_initials = collapsed != name_norm
+
+    # Query original: pula se nome tem iniciais (prefix 'd%' estoura timeout)
+    if not has_initials:
+        try:
+            result = search_wine(name, limit=limit, allow_fuzzy=False, skip_tokens=True, timeout_ms=timeout_ms, **kwargs)
+            best = _pick_best(eval_name, result.get("wines", []), seen_ids)
+            if best:
+                print(f"[resolver] multi_item phase=fast matched={best.get('id')}", flush=True)
+                return best
+        except Exception:
+            pass
+
+    # Forma colapsada: 'd eugenio' → 'deugenio' (prefix mais especifico, rapido)
+    if has_initials:
         try:
             result = search_wine(collapsed, limit=limit, allow_fuzzy=False, skip_tokens=True, timeout_ms=timeout_ms)
             best = _pick_best(eval_name, result.get("wines", []), seen_ids)
@@ -438,6 +464,63 @@ def _structured_resolve(w, seen_ids, scoring_name=None):
                 return best
         except Exception:
             continue
+
+    return None
+
+
+def _token_resolve(name, producer, seen_ids, scoring_name=None, timeout_ms=3000, prefer_broad=False):
+    """Busca direta por tokens, bypassa exact/prefix/producer.
+
+    Path rapido para casos de normalizacao divergente (D.Eugenio, Cuatro Vientos).
+    Extrai 2-3 tokens mais distintivos e faz LIKE AND direto no banco.
+    Inclui tokens da variante colapsada para cobrir 'deugenio'.
+    Quando producer e fornecido, filtra por produtor (impede cross-producer).
+    prefer_broad: inverte ordem — tenta sem producer e menos tokens PRIMEIRO.
+    Usado para initials onde o producer do OCR nao bate com o DB.
+    """
+    eval_name = scoring_name or name
+    name_norm = normalizar(name)
+    collapsed = _collapse_initials(name_norm)
+
+    # Coletar tokens de ambas as variantes
+    all_tokens = set()
+    for variant in [name_norm, collapsed]:
+        for t in variant.split():
+            if (len(t) >= 3
+                    and t not in _GENERIC_WINE_TOKENS
+                    and t not in _CLASSIFICATION_TOKENS
+                    and not (len(t) == 4 and t.isdigit())):
+                all_tokens.add(t)
+
+    if len(all_tokens) < 2:
+        return None
+
+    # Top 3 por tamanho (mais distintivos)
+    search_tokens = sorted(all_tokens, key=len, reverse=True)[:3]
+
+    # Tentar combinacoes: [3 tokens, 2 tokens] x [com producer, sem producer]
+    # Default: mais tokens com producer primeiro (mais seguro)
+    # prefer_broad: inverte — sem producer e menos tokens primeiro (mais rapido para initials)
+    producers = [producer, None] if producer else [None]
+    token_counts = [len(search_tokens)]
+    if len(search_tokens) > 2:
+        token_counts.append(2)
+
+    if prefer_broad:
+        producers = list(reversed(producers))
+        token_counts = list(reversed(token_counts))
+
+    for p in producers:
+        for n in token_counts:
+            try:
+                result = search_wine_tokens(search_tokens[:n], limit=10, timeout_ms=timeout_ms, produtor=p)
+                best = _pick_best(eval_name, result.get("wines", []), seen_ids)
+                if best:
+                    label = f"tokens={search_tokens[:n]} prod={'yes' if p else 'no'}"
+                    print(f"[resolver] multi_item phase=token_direct {label} matched={best.get('id')}", flush=True)
+                    return best
+            except Exception:
+                continue
 
     return None
 
@@ -542,46 +625,60 @@ def _resolve_multi(ocr_result):
     unresolved_items = []
     seen_ids = set()
 
-    # Tier A: fast + structured (shelf) ou fast+fallback (screenshot)
+    # Tier A: fast + structured + token_direct (shelf) ou fast+fallback (screenshot)
     use_fallback_a = not is_shelf
     for w in tier_a:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
         scoring_name = _build_scoring_name(w)
 
-        matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
-        if not matched and is_shelf:
-            matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
-        if not matched and use_fallback_a:
-            matched = _fallback_resolve(name, seen_ids, scoring_name=scoring_name)
+        # Detectar initials colapsiveis: pular fast/structured (desperdicam
+        # tempo em prefix timeout) e ir direto para token com ordem invertida
+        _has_init = _collapse_initials(normalizar(name)) != normalizar(name)
+
+        if _has_init:
+            matched = _token_resolve(name, producer, seen_ids, scoring_name=scoring_name, prefer_broad=True)
+        else:
+            matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
+            if not matched and is_shelf:
+                matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
+            if not matched and is_shelf:
+                matched = _token_resolve(name, producer, seen_ids, scoring_name=scoring_name)
+            if not matched and use_fallback_a:
+                matched = _fallback_resolve(name, seen_ids, scoring_name=scoring_name)
 
         if matched:
             seen_ids.add(matched['id'])
-            resolved_items.append({"ocr": w, "wine": matched})
+            resolved_items.append({"ocr": w, "wine": matched, "status": _derive_item_status(matched)})
         else:
-            unresolved_items.append({"ocr": w})
+            unresolved_items.append({"ocr": w, "status": "visual_only"})
 
-    # Tier B: fast + structured + fallback (shelf — recall ampliado, mesmos gates)
+    # Tier B: fast + structured + token_direct (shelf — recall ampliado, mesmos gates)
     for w in tier_b:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
         scoring_name = _build_scoring_name(w)
 
-        matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
-        if not matched:
-            matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
-        if not matched:
-            matched = _fallback_resolve(name, seen_ids, scoring_name=scoring_name)
+        _has_init = _collapse_initials(normalizar(name)) != normalizar(name)
+
+        if _has_init:
+            matched = _token_resolve(name, producer, seen_ids, scoring_name=scoring_name, prefer_broad=True)
+        else:
+            matched = _fast_resolve(name, producer, seen_ids, scoring_name=scoring_name)
+            if not matched:
+                matched = _structured_resolve(w, seen_ids, scoring_name=scoring_name)
+            if not matched:
+                matched = _token_resolve(name, producer, seen_ids, scoring_name=scoring_name)
 
         if matched:
             seen_ids.add(matched['id'])
-            resolved_items.append({"ocr": w, "wine": matched})
+            resolved_items.append({"ocr": w, "wine": matched, "status": _derive_item_status(matched)})
         else:
-            unresolved_items.append({"ocr": w})
+            unresolved_items.append({"ocr": w, "status": "visual_only"})
 
     # Tier C: visual only — unresolved direto
     for w in skipped:
-        unresolved_items.append({"ocr": w})
+        unresolved_items.append({"ocr": w, "status": "visual_only"})
 
     print(
         f"[resolver] multi: resolved={len(resolved_items)} "
@@ -602,7 +699,7 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
     parts = []
 
     if image_type == "label":
-        # --- Label: sem mudancas ---
+        # --- Label ---
         ocr = ocr_result.get("ocr_result", {})
         search_text = ocr_result.get("search_text", "")
         parts.append(f"[O usuario enviou foto de um rotulo. OCR identificou: {search_text}.]")
@@ -610,11 +707,16 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
         if resolved_wines:
             w = resolved_wines[0]
             d = resolve_display(w)
+            item_status = resolved_items[0].get("status", "confirmed_no_note") if resolved_items else _derive_item_status(w)
             nota_str = f"{d['display_note']}" if d['display_note'] else "sem nota"
             nota_tipo_str = f"({d['display_note_type']})" if d['display_note_type'] else ""
-            score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
+            # Score so aparece se confirmed_with_note; confirmed_no_note nunca expoe score numerico
+            if item_status == "confirmed_with_note":
+                score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
+            else:
+                score_str = "sem score"
             parts.append(
-                f"[Vinho encontrado no banco: {w.get('nome', '?')} "
+                f"[Vinho encontrado no banco (status: {item_status}): {w.get('nome', '?')} "
                 f"| Produtor: {w.get('produtor', '?')} "
                 f"| Pais: {w.get('pais_nome', '?')} "
                 f"| Regiao: {w.get('regiao', '?')} "
@@ -630,26 +732,44 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                 others = [f"{r.get('nome', '?')} (ID:{r.get('id', '?')})" for r in resolved_wines[1:4]]
                 parts.append(f"[Outros candidatos: {', '.join(others)}]")
                 parts.append(f"[IMPORTANTE: comece dizendo que o candidato mais provavel e {wine_name}, sem afirmar certeza absoluta.]")
-            parts.append("[Responda sobre este vinho. Use get_wine_details ou get_prices se precisar de mais dados.]")
+            if item_status == "confirmed_with_note":
+                parts.append("[Responda sobre este vinho. Use get_wine_details ou get_prices se precisar de mais dados.]")
+            else:
+                parts.append(
+                    "[Vinho confirmado na base mas SEM nota de qualidade. "
+                    "Apresente dados do banco (produtor, pais, regiao, preco). "
+                    "NAO invente nota, score, ranking ou qualidade. "
+                    "Use get_wine_details ou get_prices se precisar de mais dados.]"
+                )
         else:
-            parts.append("[Vinho NAO encontrado no banco. Responda com o que sabe e avise que nao temos dados completos.]")
+            # visual_only — label nao confirmado
+            parts.append(
+                "[Vinho NAO encontrado no banco (status: visual_only). "
+                "Responda com o que sabe e avise que nao temos dados completos. "
+                "NAO invente nota, score ou qualidade.]"
+            )
 
     elif image_type in ("screenshot", "shelf"):
         type_label = "prateleira" if image_type == "shelf" else "screenshot"
 
         if resolved_items is not None:
-            # --- Novo formato: vinculo OCR -> banco ---
+            # --- Formato com vinculo OCR -> banco + status explicito ---
             _unresolved = unresolved_items or []
             total_read = len(resolved_items) + len(_unresolved)
+
+            # Separar confirmados por status para instrucoes finais
+            items_with_note = [it for it in resolved_items if it.get("status") == "confirmed_with_note"]
+            items_no_note = [it for it in resolved_items if it.get("status") == "confirmed_no_note"]
 
             parts.append(f"[O usuario enviou foto de {type_label}.]")
             if total_read > 0:
                 parts.append(f"[OCR identificou {total_read} vinho(s) por nome. Pode haver outros na imagem nao legiveis.]")
 
-            # Vinhos resolvidos
-            if resolved_items:
-                parts.append(f"[{len(resolved_items)} vinho(s) encontrado(s) no banco:]")
-                for i, item in enumerate(resolved_items, 1):
+            # Vinhos confirmados COM nota (aptos a ranking)
+            counter = 1
+            if items_with_note:
+                parts.append(f"[{len(items_with_note)} vinho(s) CONFIRMADO(S) COM NOTA (apto a ranking/comparacao):]")
+                for item in items_with_note:
                     ocr_i = item["ocr"]
                     w = item["wine"]
                     d = resolve_display(w)
@@ -660,11 +780,11 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     if image_type == "screenshot" and ocr_i.get("rating"):
                         ocr_parts.append(f"Nota visivel no screenshot: {ocr_i['rating']}")
 
-                    nota_str = f"{d['display_note']}" if d['display_note'] else "sem nota"
+                    nota_str = f"{d['display_note']}"
                     nota_tipo_str = f"({d['display_note_type']})" if d['display_note_type'] else ""
                     score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
 
-                    parts.append(f"  {i}. {' | '.join(ocr_parts)}")
+                    parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
                     parts.append(
                         f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
                         f"| Nota: {nota_str} {nota_tipo_str} "
@@ -672,46 +792,65 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                         f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                         f"| ID: {w.get('id', '?')}"
                     )
+                    counter += 1
 
-            # Vinhos nao resolvidos
+            # Vinhos confirmados SEM nota (dados de banco, mas nao aptos a ranking)
+            if items_no_note:
+                parts.append(f"[{len(items_no_note)} vinho(s) CONFIRMADO(S) SEM NOTA (dados de banco, mas NAO apto a ranking):]")
+                for item in items_no_note:
+                    ocr_i = item["ocr"]
+                    w = item["wine"]
+
+                    ocr_parts = [f"Lido na imagem: {ocr_i.get('name', '?')}"]
+                    if ocr_i.get("price"):
+                        ocr_parts.append(f"Preco visivel na imagem: {ocr_i['price']}")
+                    if image_type == "screenshot" and ocr_i.get("rating"):
+                        ocr_parts.append(f"Nota visivel no screenshot: {ocr_i['rating']}")
+
+                    parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
+                    parts.append(
+                        f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
+                        f"| Nota: sem nota | Score: sem score "
+                        f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
+                        f"| ID: {w.get('id', '?')}"
+                    )
+                    counter += 1
+
+            # Vinhos nao resolvidos (visual_only)
             if _unresolved:
-                parts.append("[Nao encontrado(s) no banco:]")
-                start = len(resolved_items) + 1
-                for i, item in enumerate(_unresolved, start):
+                parts.append("[NAO ENCONTRADO(S) no banco (apenas leitura visual):]")
+                for item in _unresolved:
                     ocr_i = item["ocr"]
                     ocr_parts = [ocr_i.get("name", "?")]
                     if ocr_i.get("price"):
                         ocr_parts.append(f"Preco visivel: {ocr_i['price']}")
                     if image_type == "screenshot" and ocr_i.get("rating"):
                         ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
-                    parts.append(f"  {i}. {' | '.join(ocr_parts)}")
+                    parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
+                    counter += 1
 
-            # Instrucao final com niveis de certeza
-            if resolved_items and _unresolved:
-                # Caso misto: alguns confirmados, alguns apenas visuais
-                parts.append(
-                    "[REGRAS DE CERTEZA: "
-                    "Itens marcados 'Banco:' estao CONFIRMADOS — use nota, score e preco da base com confianca. "
-                    "Itens em 'Nao encontrado(s)' sao APENAS LEITURA VISUAL — cite nome e preco visivel, mas NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
-                    "Para ranking ou recomendacao, compare APENAS os confirmados. "
-                    "Dos nao confirmados, diga que ainda nao tem no acervo.]"
+            # Instrucao final com 3 niveis explicitos de certeza
+            rules = ["[REGRAS DE CERTEZA (3 niveis):"]
+            if items_with_note:
+                rules.append(
+                    "  - CONFIRMADO COM NOTA: use nota, score e preco da base com confianca. "
+                    "Apto a ranking, comparacao e recomendacao."
                 )
-            elif resolved_items:
-                # Todos confirmados
-                parts.append(
-                    "[Todos os vinhos foram confirmados na base. "
-                    "Responda com os dados ja fornecidos (nota, score, preco). "
-                    "NAO chame get_wine_details nem get_prices — os dados essenciais ja estao aqui.]"
+            if items_no_note:
+                rules.append(
+                    "  - CONFIRMADO SEM NOTA: apresente dados do banco (produtor, preco). "
+                    "NAO invente nota, score ou qualidade. NAO inclua em ranking ou comparacao."
                 )
-            else:
-                # Nenhum confirmado
-                parts.append(
-                    "[Nenhum destes vinhos foi confirmado na base ainda. "
-                    "Apresente com confianca os nomes e precos claramente lidos na imagem — sao dados visuais seguros. "
-                    "NAO invente nota, score, perfil sensorial, qualidade ou reputacao. "
-                    "NAO faca ranking ou custo-beneficio sem dados da base. "
-                    "Diga que ainda nao tem esses vinhos no acervo e ofereca buscar mais informacoes.]"
+            if _unresolved:
+                rules.append(
+                    "  - NAO ENCONTRADO (visual): cite nome e preco visivel. "
+                    "NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
+                    "Diga que ainda nao tem no acervo."
                 )
+            rules.append(
+                "  Para ranking ou recomendacao, use APENAS vinhos CONFIRMADOS COM NOTA.]"
+            )
+            parts.append("\n".join(rules))
 
         else:
             # --- Fallback: formato antigo (callers sem resolved_items) ---

@@ -87,9 +87,71 @@ def _process_media(data, message, trace):
             result = process_pdf(pdf_base64)
         if result.get("status") == "success":
             desc = result.get("description", "")
+            method = result.get("extraction_method", "unknown")
+            was_truncated = result.get("was_truncated", False)
+            pages = result.get("pages_processed", "?")
+
+            # Contexto honesto: informar branch de extracao ao Baco
+            if method == "native_text":
+                source_note = "Texto extraido diretamente do PDF (alta confianca)"
+            elif method == "native_text_chunked":
+                source_note = (
+                    "Texto extraido do PDF em partes apos falha do parse inicial "
+                    "(confianca moderada — alguns trechos podem ter sido pulados)"
+                )
+            elif method == "visual_fallback":
+                source_note = "PDF escaneado — leitura visual por OCR (confianca moderada)"
+            else:
+                source_note = "Leitura de PDF"
+
+            truncation_note = ""
+            if was_truncated:
+                truncation_note = (
+                    " ATENCAO: o PDF foi truncado por tamanho — "
+                    "podem existir vinhos adicionais nao listados aqui."
+                )
+
             ctx = (
-                f"[O usuario enviou um PDF (carta de vinhos/catalogo). {desc}. "
-                f"Use search_wine para buscar estes vinhos e responda sobre eles.]"
+                f"[O usuario enviou um PDF ({pages} paginas processadas). "
+                f"{source_note}.{truncation_note}\n\n"
+                f"{desc}\n\n"
+                f"REGRAS CRITICAS DESTE PDF (siga sem excecao):\n\n"
+                f"1) FONTE UNICA DA CARTA: a lista numerada acima e a UNICA fonte "
+                f"sobre o que existe na carta do cliente. Se um vinho NAO aparece "
+                f"textualmente nessa lista, ele NAO esta na carta. Ponto.\n\n"
+                f"2) USO CORRETO DO search_wine: search_wine serve APENAS para "
+                f"enriquecer, confirmar na base e trazer nota/score/dados adicionais "
+                f"dos itens da lista acima. search_wine NAO serve para encontrar "
+                f"alternativas, sugerir rotulos parecidos, trocar um produtor por "
+                f"outro, nem trocar um vinho da carta por outro 'melhor' da base. "
+                f"EFICIENCIA: faca NO MAXIMO UMA chamada de search_wine por item da "
+                f"lista. NAO repita variantes do mesmo nome (ex: 'Brunello', "
+                f"'Brunello Frescobaldi', 'Frescobaldi Brunello'). Quando o produtor "
+                f"existir no PDF, passe-o no parametro 'produtor' do search_wine — "
+                f"isso ajuda a achar match mais rapido. Se a primeira tentativa nao "
+                f"retornar match compativel, marque o item como nao confirmado e siga "
+                f"em frente sem reintentar.\n\n"
+                f"3) IDENTIDADE DO ITEM: para considerar que um vinho do banco "
+                f"corresponde a um item da carta, o nome sozinho NAO basta. O match "
+                f"precisa ser compativel em produtor (quando o produtor existir no "
+                f"PDF) e/ou regiao/denominacao quando isso diferenciar vinhos "
+                f"parecidos. Se houver divergencia material de produtor, safra ou "
+                f"regiao, trate como vinho DIFERENTE e FORA da carta. Exemplo: se o "
+                f"PDF tem 'Brunello di Montalcino - Frescobaldi' e o search retorna "
+                f"'Brunello di Montalcino - Tenuta Il Poggione', isso NAO e o mesmo "
+                f"item da carta - NAO pode ser ranqueado nem recomendado como vinho "
+                f"do PDF.\n\n"
+                f"4) RANKING DA CARTA: para ranquear custo-beneficio 'da carta', use "
+                f"APENAS itens da lista acima que tenham (a) match compativel na "
+                f"base e (b) score real disponivel. Se nenhum item da lista preencher "
+                f"isso, diga literalmente: 'Eu nao consigo ranquear o custo-beneficio "
+                f"desta carta com seguranca porque os itens confirmados da carta nao "
+                f"tem score suficiente na base.'\n\n"
+                f"5) HONESTIDADE: se o banco trouxer vinhos similares mas nao "
+                f"identicos, voce pode mencionar como observacao externa, mas SEMPRE "
+                f"deixe claro 'isso existe na nossa base, mas NAO esta na carta do "
+                f"seu PDF'. Nunca promova um vinho fora da carta a recomendacao da "
+                f"carta.]"
             )
             return f"{ctx}\n\n{message}", False
         msg = result.get("message", "Nao foi possivel processar o PDF.")
@@ -148,14 +210,14 @@ def _process_batch_images(images, message, trace):
         )
         return f"{ctx}\n\n{message}", False
 
-    all_resolved = []
-    all_unresolved = []
+    all_resolved_items = []
+    all_unresolved_items = []
 
     with trace.step("pre_resolve_batch"):
         for label in batch.get("labels", []):
             r = resolve_wines_from_ocr(label)
-            all_resolved.extend(r["resolved_wines"])
-            all_unresolved.extend(r["unresolved"])
+            all_resolved_items.extend(r.get("resolved_items", []))
+            all_unresolved_items.extend(r.get("unresolved_items", []))
 
         for group_key in ("screenshots", "shelves"):
             for item in batch.get(group_key, []):
@@ -165,27 +227,31 @@ def _process_batch_images(images, message, trace):
                     "total_visible": item.get("total_visible", 0),
                 }
                 r = resolve_wines_from_ocr(fake_ocr)
-                all_resolved.extend(r["resolved_wines"])
-                all_unresolved.extend(r["unresolved"])
+                all_resolved_items.extend(r.get("resolved_items", []))
+                all_unresolved_items.extend(r.get("unresolved_items", []))
 
     # Dedup por id
     seen_ids = set()
-    deduped = []
-    for w in all_resolved:
-        wid = w.get("id")
+    deduped_items = []
+    for item in all_resolved_items:
+        wid = item["wine"].get("id")
         if wid and wid not in seen_ids:
             seen_ids.add(wid)
-            deduped.append(w)
+            deduped_items.append(item)
 
-    context = _build_batch_resolved_context(batch, deduped, all_unresolved, error_count)
+    context = _build_batch_resolved_context(batch, deduped_items, all_unresolved_items, error_count)
 
     # Se nenhum vinho resolvido, photo_mode=False
-    photo_mode = bool(deduped)
+    photo_mode = bool(deduped_items)
     return f"{context}\n\n{message}", photo_mode
 
 
-def _build_batch_resolved_context(batch, resolved_wines, unresolved, error_count=0):
-    """Contexto para batch com dados pre-resolvidos."""
+def _build_batch_resolved_context(batch, resolved_items, unresolved_items, error_count=0):
+    """Contexto para batch com dados pre-resolvidos, preservando precos OCR por item.
+
+    Usa campo 'status' explicito de cada item para separar em 3 niveis:
+    confirmed_with_note, confirmed_no_note, visual_only.
+    """
     from services.display import resolve_display
 
     parts = []
@@ -195,24 +261,98 @@ def _build_batch_resolved_context(batch, resolved_wines, unresolved, error_count
     if error_count > 0:
         parts.append(f"[{error_count} imagem(ns) nao continham vinho identificavel.]")
 
-    if resolved_wines:
-        parts.append(f"[{len(resolved_wines)} vinho(s) encontrado(s) no banco:]")
-        for i, w in enumerate(resolved_wines, 1):
+    # Separar resolved por status
+    items_with_note = [it for it in resolved_items if it.get("status") == "confirmed_with_note"]
+    items_no_note = [it for it in resolved_items if it.get("status") == "confirmed_no_note"]
+
+    counter = 1
+
+    # Confirmados COM nota
+    if items_with_note:
+        parts.append(f"[{len(items_with_note)} vinho(s) CONFIRMADO(S) COM NOTA (apto a ranking/comparacao):]")
+        for item in items_with_note:
+            ocr_i = item["ocr"]
+            w = item["wine"]
             d = resolve_display(w)
-            nota_str = f"{d['display_note']}" if d['display_note'] else "sem nota"
+
+            ocr_parts = [f"Lido na imagem: {ocr_i.get('name', '?')}"]
+            if ocr_i.get("price"):
+                ocr_parts.append(f"Preco visivel na imagem: {ocr_i['price']}")
+            if ocr_i.get("rating"):
+                ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
+
+            nota_str = f"{d['display_note']}"
             score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
+
+            parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
             parts.append(
-                f"  {i}. {w.get('nome', '?')} | {w.get('produtor', '?')} "
+                f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
                 f"| Nota: {nota_str} | Score: {score_str} "
-                f"| Preco: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
+                f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                 f"| ID: {w.get('id', '?')}"
             )
-        parts.append("[Responda sobre os vinhos encontrados. Use get_wine_details ou get_prices para dados extras.]")
-    else:
+            counter += 1
+
+    # Confirmados SEM nota
+    if items_no_note:
+        parts.append(f"[{len(items_no_note)} vinho(s) CONFIRMADO(S) SEM NOTA (NAO apto a ranking):]")
+        for item in items_no_note:
+            ocr_i = item["ocr"]
+            w = item["wine"]
+
+            ocr_parts = [f"Lido na imagem: {ocr_i.get('name', '?')}"]
+            if ocr_i.get("price"):
+                ocr_parts.append(f"Preco visivel na imagem: {ocr_i['price']}")
+            if ocr_i.get("rating"):
+                ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
+
+            parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
+            parts.append(
+                f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
+                f"| Nota: sem nota | Score: sem score "
+                f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
+                f"| ID: {w.get('id', '?')}"
+            )
+            counter += 1
+
+    if not resolved_items:
         parts.append("[Nenhum vinho foi encontrado no banco. Responda com o que sabe dos nomes identificados.]")
 
-    if unresolved:
-        parts.append(f"[Nao encontrados no banco: {', '.join(unresolved)}]")
+    # Nao encontrados (visual_only)
+    if unresolved_items:
+        parts.append("[NAO ENCONTRADO(S) no banco (apenas leitura visual):]")
+        for item in unresolved_items:
+            ocr_i = item["ocr"]
+            ocr_parts = [ocr_i.get("name", "?")]
+            if ocr_i.get("price"):
+                ocr_parts.append(f"Preco visivel: {ocr_i['price']}")
+            if ocr_i.get("rating"):
+                ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
+            parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
+            counter += 1
+
+    # Regras de certeza — 3 niveis
+    rules = ["[REGRAS DE CERTEZA (3 niveis):"]
+    if items_with_note:
+        rules.append(
+            "  - CONFIRMADO COM NOTA: use nota, score e preco da base com confianca. "
+            "Apto a ranking, comparacao e recomendacao."
+        )
+    if items_no_note:
+        rules.append(
+            "  - CONFIRMADO SEM NOTA: apresente dados do banco (produtor, preco). "
+            "NAO invente nota, score ou qualidade. NAO inclua em ranking ou comparacao."
+        )
+    if unresolved_items:
+        rules.append(
+            "  - NAO ENCONTRADO (visual): cite nome e preco visivel. "
+            "NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
+            "Diga que ainda nao tem no acervo."
+        )
+    rules.append(
+        "  Para ranking ou recomendacao, use APENAS vinhos CONFIRMADOS COM NOTA.]"
+    )
+    parts.append("\n".join(rules))
 
     return "\n".join(parts)
 
