@@ -48,93 +48,175 @@ def _get_gemini_client():
     return _gemini_client
 
 
-def _gemini_generate(contents):
+def _gemini_generate(contents, thinking=True):
     """Chama Gemini generate_content com o modelo padrao."""
     client = _get_gemini_client()
+    config = None
+    if not thinking:
+        config = types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=contents,
+        config=config,
     )
     return response.text
 
 
+# --- Lazy Qwen client (DashScope, OpenAI-compatible) ---
+
+_qwen_client = None
+
+QWEN_MODEL = "qwen3-vl-flash"
+
+
+def _get_qwen_client():
+    """Retorna cliente Qwen/DashScope, criado sob demanda."""
+    global _qwen_client
+    if _qwen_client is None:
+        api_key = os.getenv("DASHSCOPE_API_KEY")
+        if not api_key:
+            return None
+        from openai import OpenAI
+        base_url = os.getenv(
+            "DASHSCOPE_BASE_URL",
+            "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        )
+        _qwen_client = OpenAI(api_key=api_key, base_url=base_url)
+    return _qwen_client
+
+
+def _qwen_generate(image_bytes, mime_type, prompt):
+    """Chama Qwen VL via DashScope. Retorna texto ou None se falhar."""
+    client = _get_qwen_client()
+    if client is None:
+        return None
+    b64 = base64.b64encode(image_bytes).decode()
+    data_url = f"data:{mime_type};base64,{b64}"
+    try:
+        resp = client.chat.completions.create(
+            model=QWEN_MODEL,
+            messages=[{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": data_url}},
+                {"type": "text", "text": prompt},
+            ]}],
+            temperature=0.0,
+            extra_body={"vl_high_resolution_images": True},
+        )
+        return resp.choices[0].message.content or ""
+    except Exception as e:
+        print(f"[qwen] error: {type(e).__name__}: {e}", flush=True)
+        return None
+
+
+def _preprocess_image_for_dense_shelf(image_bytes):
+    """Preprocessing pra prateleiras densas: CLAHE + upscale 1.5x + sharpen + contrast."""
+    import io
+    from PIL import Image, ImageEnhance, ImageFilter
+    try:
+        import cv2
+        import numpy as np
+        img = Image.open(io.BytesIO(image_bytes))
+        arr = np.array(img)
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        result = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+        img = Image.fromarray(result)
+    except ImportError:
+        img = Image.open(io.BytesIO(image_bytes))
+    w, h = img.size
+    img = img.resize((int(w * 1.5), int(h * 1.5)), Image.LANCZOS)
+    img = img.filter(ImageFilter.UnsharpMask(radius=3, percent=150, threshold=2))
+    img = ImageEnhance.Contrast(img).enhance(1.15)
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=95)
+    return buf.getvalue()
+
+
 # --- Prompts ---
 
-IMAGE_UNIFIED_PROMPT = """You are a wine-image analyst. Classify this image as ONE of:
+IMAGE_UNIFIED_PROMPT = """Voce e um analista de imagens de vinho. Classifique esta imagem como UMA das opcoes:
 
-## Classification rules
+## Regras de classificacao
 
-"label" — One wine or SKU DOMINATES the scene visually. The label/bottle occupies most of the frame.
-  - Use "label" even if there are 2-5 copies of the SAME wine side by side (e.g. supermarket facing).
-  - Use "label" if one wine is clearly the main subject and background bottles are blurry or secondary.
-  - Do NOT require a single isolated bottle. Visual dominance is the criterion, not bottle count.
+"label" — Um vinho ou SKU DOMINA a cena visualmente. O rotulo/garrafa ocupa a maior parte do quadro.
+  - Use "label" mesmo que haja 2-5 copias do MESMO vinho lado a lado (ex: facing de supermercado).
+  - Use "label" se um vinho e claramente o assunto principal e garrafas ao fundo estao desfocadas.
+  - NAO exija garrafa unica isolada. Dominancia visual e o criterio, nao quantidade de garrafas.
 
-"screenshot" — A screen capture or digital interface showing wine information (app, website, price list, search results).
+"screenshot" — Captura de tela ou interface digital com informacoes de vinho (app, site, lista de precos, resultados de busca).
 
-"shelf" — A photo showing MULTIPLE DIFFERENT wines together on a shelf, display, rack, or table where no single wine dominates the frame.
+"shelf" — Foto mostrando MULTIPLOS vinhos DIFERENTES juntos em prateleira, display, rack ou mesa, sem que um unico vinho domine o quadro.
 
-"not_wine" — The image does not contain wine-related content.
+"not_wine" — A imagem nao contem conteudo relacionado a vinho.
 
-## Output schemas (return ONLY valid JSON, no extra text)
+## Schemas de saida (retorne SOMENTE JSON valido, sem texto extra)
 
-If type is "label":
-{"type": "label", "name": "full wine name", "producer": "winery or null", "vintage": "year or null", "region": "region or null", "grape": "grape variety or null", "price": "price with currency or null"}
+Se tipo "label":
+{"type": "label", "name": "nome completo do vinho", "producer": "vinicola ou null", "vintage": "ano ou null", "region": "regiao ou null", "grape": "uva ou null", "price": "preco com moeda ou null"}
 
-If type is "screenshot":
-{"type": "screenshot", "wines": [{"name": "wine name", "producer": "winery or null", "price": "price or null", "rating": "rating or null", "source": "app/site name or null"}]}
+Se tipo "screenshot":
+{"type": "screenshot", "wines": [{"name": "nome do vinho", "producer": "vinicola ou null", "price": "preco ou null", "rating": "nota ou null", "source": "app/site ou null"}]}
 
-If type is "shelf":
-{"type": "shelf", "wines": [{"name": "full wine name as read", "producer": "winery or null", "line": "wine line/range or null", "variety": "grape variety or null", "classification": "Reserva/Gran Reserva/etc or null", "style": "red/white/rosé/sparkling or null", "price": "price or null"}], "total_visible": 0}
+Se tipo "shelf":
+{"type": "shelf", "wines": [{"name": "nome completo do vinho como lido", "producer": "vinicola ou null", "line": "linha do vinho ou null", "variety": "uva ou null", "classification": "Reserva/Gran Reserva/etc ou null", "style": "red/white/rosé/sparkling ou null", "price": "preco ou null"}], "total_visible": 0}
 
-If type is "not_wine":
-{"type": "not_wine", "description": "brief description of what the image shows"}
+Se tipo "not_wine":
+{"type": "not_wine", "description": "descricao breve do que a imagem mostra"}
 
-## Price rules (CRITICAL for Brazilian supermarket labels)
-Brazilian shelf price tags often show multiple values:
-  - "PRECO R$T 1 L R$146.60" = price per liter — IGNORE this
-  - "R$ 189,99" (larger, usually at bottom) = unit price of the bottle — USE THIS
-  - Always extract the UNIT PRICE of the bottle (typically 750ml), never the per-liter price
-  - If multiple price values are visible for the same wine, pick the one labeled as the bottle/unit price
-  - If unsure which price is the unit price, return null rather than guessing
-  - Preserve the original currency symbol (R$, $, €, etc.)
+## Regras de preco
+Etiquetas de prateleira podem mostrar multiplos valores (preco por litro, por caixa, unitario).
+  - Sempre extraia o PRECO UNITARIO da garrafa (tipicamente 750ml), nunca o preco por litro
+  - Se houver multiplos precos visiveis para o mesmo vinho, escolha o rotulado como preco da garrafa/unitario
+  - Se nao tiver certeza de qual preco e o unitario, retorne null em vez de adivinhar
+  - Preserve o simbolo da moeda original (R$, $, €, £, ¥, etc.)
 
-## Name cleanup rules
-  - Use the FULL wine name as printed on the label, not abbreviated
-  - Fix obvious OCR artifacts: if a letter is clearly wrong based on context, correct it
-    (e.g. "PONTGRAS" on a Chilean wine shelf is almost certainly "MONTGRAS")
-  - Include winery + wine line + variety when visible (e.g. "MontGras Aura Reserva Cabernet Sauvignon")
-  - Do NOT invent or guess parts of the name you cannot read — use what is legible
-  - Separate winery (producer) from wine name when both are clearly distinct on the label
+## Regras de limpeza de nome
+  - Use o nome COMPLETO do vinho como impresso no ROTULO DA GARRAFA, nao abreviado
+  - Remova prefixos de etiqueta de prateleira que NAO fazem parte do nome do vinho (ex: "VINHO TTO", "VINHO TINTO", "V. TTO", "750ML")
+  - Corrija artefatos obvios de OCR: se uma letra esta claramente errada pelo contexto, corrija (ex: "PONTGRAS" em prateleira chilena e quase certamente "MONTGRAS")
+  - Inclua vinicola + linha + variedade quando visiveis (ex: "MontGras Aura Reserva Cabernet Sauvignon")
+  - NAO invente ou adivinhe partes do nome que nao consegue ler — use o que e legivel
+  - Separe vinicola (producer) do nome do vinho quando ambos sao claramente distintos no rotulo
 
-## Grape variety rules
-  - Only report grape varieties you can CLEARLY read on the label
-  - If partially obscured or ambiguous, return null rather than guessing
-  - Common confusions to avoid: Petit Verdot vs Petit Sirah, Grenache vs Garnacha (same grape, both acceptable), Syrah vs Shiraz (same grape, both acceptable)
-  - If you see only 2-3 letters of a grape name, return null
+## Regras de variedade de uva
+  - So reporte variedades que voce consegue LER CLARAMENTE no rotulo
+  - Se parcialmente obstruida ou ambigua, retorne null em vez de adivinhar
+  - Se voce ve apenas 2-3 letras de um nome de uva, retorne null
 
-## Shelf and screenshot producer rules
-  - For each wine, extract "producer" (winery) separately when clearly visible
-  - Keep the FULL wine name in "name" including winery prefix if that is how it reads (e.g. name: "MontGras Reserva Cabernet", producer: "MontGras")
-  - Use null for producer if not legible — do NOT guess or infer from the wine name
+## Regras de produtor para shelf e screenshot
+  - Para cada vinho, extraia "producer" (vinicola) separadamente quando claramente visivel
+  - Mantenha o nome COMPLETO do vinho em "name" incluindo prefixo da vinicola se e assim que aparece (ex: name: "MontGras Reserva Cabernet", producer: "MontGras")
+  - Use null para producer se nao legivel — NAO adivinhe a partir do nome do vinho
 
-## Shelf-specific rules
-  - "wines" list: include only wines whose names you can confidently read
-  - Deduplicate: if the same wine appears multiple times on the shelf, list it only ONCE
-  - "total_visible": estimate the number of DISTINCT wine labels/SKUs visible (not total physical bottles). 10 copies of the same wine = 1 SKU. Be conservative — when uncertain, estimate lower.
-  - For each wine in the list, extract price if a price tag is clearly associated with it
+## Regras especificas de shelf
+  - "wines": inclua apenas vinhos cujos nomes voce consegue ler com confianca
+  - Deduplicar: se o mesmo vinho aparece varias vezes na prateleira, liste apenas UMA vez
+  - "total_visible": estime o numero de rotulos/SKUs DISTINTOS visiveis (nao total de garrafas fisicas). 10 copias do mesmo vinho = 1 SKU. Seja conservador — na duvida, estime pra baixo.
+  - Para cada vinho na lista, extraia preco se uma etiqueta de preco esta claramente associada a ele
 
-## Shelf structured fields (for each wine)
-  - "name": keep the FULL wine name as printed (winery + line + variety + classification). This is the primary field — always fill it.
-  - "line": the wine LINE or RANGE within the producer. Examples: "Aura" in "MontGras Aura Reserva Carmenere", "Family Wines" in "Casa Silva Family Wines Cabernet Sauvignon", "Day One" in "MontGras Day One Carmenere". Use null if not identifiable or if the wine has no distinct line name.
-  - "variety": grape variety when clearly readable (e.g. "Carmenere", "Cabernet Sauvignon", "Merlot", "Chardonnay"). Use null if not visible.
-  - "classification": quality tier when visible (e.g. "Reserva", "Gran Reserva", "Crianza"). Use null if not visible.
-  - "style": overall wine style — use exactly one of: "red", "white", "rosé", "sparkling". Use null if not determinable from the label.
-  - Do NOT guess or infer structured fields from context — only extract what you can clearly read.
+## Campos estruturados de shelf (para cada vinho)
+  - "name": mantenha o nome COMPLETO do vinho como impresso (vinicola + linha + variedade + classificacao). Este e o campo principal — sempre preencha.
+  - "line": a LINHA ou FAIXA do vinho dentro do produtor. Exemplos: "Aura" em "MontGras Aura Reserva Carmenere". Use null se nao identificavel.
+  - "variety": variedade de uva quando claramente legivel. Use null se nao visivel.
+  - "classification": nivel de qualidade quando visivel (ex: "Reserva", "Gran Reserva", "Crianza"). Use null se nao visivel.
+  - "style": estilo geral — use exatamente um de: "red", "white", "rosé", "sparkling". Use null se nao determinavel.
+  - NAO adivinhe ou infira campos estruturados a partir do contexto — extraia apenas o que voce consegue ler claramente.
 
-## General rules
-  - Always use null for fields you truly cannot determine
-  - Return ONLY valid parseable JSON — no markdown, no commentary, no extra text
-  - Do not wrap JSON in code fences"""
+## Processo obrigatorio (interno — retorne apenas o JSON final)
+1. Conte quantos rotulos DIFERENTES de vinho estao visiveis (SKUs distintos, nao garrafas)
+2. Varra da ESQUERDA pra DIREITA, de CIMA pra BAIXO
+3. Para cada vinho, encontre a etiqueta de preco mais proxima
+4. Confira que a quantidade de vinhos na lista bate com a contagem do passo 1
+5. Se nao bater, varra novamente
+
+## Regras gerais
+  - Sempre use null para campos que realmente nao consegue determinar
+  - Retorne SOMENTE JSON valido parseavel — sem markdown, sem comentario, sem texto extra
+  - Nao envolva o JSON em code fences
+  - Se NAO consegue ler claramente o nome de um vinho, OMITA. Nunca invente."""
 
 VIDEO_FRAME_PROMPT = """Analyze this image frame from a video. Look for wine labels, wine bottles,
 wine lists, or any text related to wine. Extract ALL wines you can identify:
@@ -205,19 +287,28 @@ def _parse_gemini_json(text):
 
 
 def _deduplicate_wines(all_wines):
-    """Deduplicate wines by normalized name."""
+    """Deduplicate wines by (normalized name, normalized producer).
+
+    Chave inclui produtor porque em cartas de vinho nomes genericos como
+    'Brut Reserve', 'Brunello', 'Chardonnay' aparecem para multiplos produtores
+    distintos. Chavear so por nome colapsava esses como 1 unico vinho e
+    derrubava ate 38% de uma carta real (Elephante: 184 -> 113). Vinhos com
+    produtor ausente em ambos ainda colapsam (compat com merge de info parcial).
+    """
     seen = {}
     for wine in all_wines:
         name = (wine.get("name") or "").strip().lower()
         if not name:
             continue
-        if name not in seen:
-            seen[name] = wine
+        producer = (wine.get("producer") or "").strip().lower()
+        key = (name, producer)
+        if key not in seen:
+            seen[key] = wine
         else:
-            existing = seen[name]
-            for key in wine:
-                if wine[key] and not existing.get(key):
-                    existing[key] = wine[key]
+            existing = seen[key]
+            for k in wine:
+                if wine[k] and not existing.get(k):
+                    existing[k] = wine[k]
     return list(seen.values())
 
 
@@ -285,23 +376,57 @@ def _detect_mime_type(image_bytes):
 
 
 def process_image(base64_image):
-    """Envia imagem para Gemini Flash. Detecta label, screenshot, shelf ou not_wine."""
+    """Pipeline de 3 camadas: Qwen flash (barato) -> Qwen+preprocessing -> Gemini (fallback)."""
     try:
         image_bytes = base64.b64decode(base64_image)
-
         mime_type = _detect_mime_type(image_bytes)
         print(f"[process_image] bytes={len(image_bytes)}, mime={mime_type}", flush=True)
 
-        raw_text = _gemini_generate([
-            IMAGE_UNIFIED_PROMPT,
-            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-        ])
+        result = None
+        layer_used = "unknown"
 
-        print(f"[process_image] gemini_raw={raw_text[:500]}", flush=True)
+        # --- CAMADA 1: Qwen flash (barato, rapido) ---
+        raw_text = _qwen_generate(image_bytes, mime_type, IMAGE_UNIFIED_PROMPT)
+        if raw_text:
+            try:
+                result = _parse_gemini_json(raw_text)
+                layer_used = "qwen_flash"
+                print(f"[process_image] qwen_flash OK: type={result.get('type')}", flush=True)
 
-        result = _parse_gemini_json(raw_text)
+                # Se shelf com 4+ vinhos, tentar camada 2 (preprocessing)
+                if (result.get("type") == "shelf"
+                        and len(result.get("wines", [])) >= 4):
+                    print("[process_image] shelf 4+ wines, trying layer 2 (preproc)", flush=True)
+                    try:
+                        enhanced_bytes = _preprocess_image_for_dense_shelf(image_bytes)
+                        raw2 = _qwen_generate(enhanced_bytes, "image/jpeg", IMAGE_UNIFIED_PROMPT)
+                        if raw2:
+                            result2 = _parse_gemini_json(raw2)
+                            wines2 = result2.get("wines", [])
+                            if len(wines2) > len(result.get("wines", [])):
+                                result = result2
+                                layer_used = "qwen_flash_preproc"
+                                print(f"[process_image] preproc improved: {len(wines2)} wines", flush=True)
+                    except Exception as e2:
+                        print(f"[process_image] preproc error: {e2}", flush=True)
+
+            except (json.JSONDecodeError, ValueError):
+                print(f"[process_image] qwen parse failed, falling back", flush=True)
+                result = None
+
+        # --- CAMADA 3: Fallback Gemini (quando Qwen nao disponivel ou falhou) ---
+        if result is None:
+            print("[process_image] falling back to Gemini", flush=True)
+            raw_text = _gemini_generate([
+                IMAGE_UNIFIED_PROMPT,
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+            ])
+            result = _parse_gemini_json(raw_text)
+            layer_used = "gemini_fallback"
+
         image_type = result.get("type", "not_wine")
-        print(f"[process_image] parsed_type={image_type}, result={json.dumps(result, ensure_ascii=False)[:300]}", flush=True)
+        print(f"[process_image] layer={layer_used}, type={image_type}, "
+              f"result={json.dumps(result, ensure_ascii=False)[:300]}", flush=True)
 
         if image_type == "label":
             return _handle_label(result)

@@ -113,7 +113,7 @@ def test_dedup_preserves_unique():
 
 
 def test_dedup_merges_same_name():
-    """Vinhos com mesmo nome (case-insensitive) devem ser mergeados."""
+    """Vinhos com mesmo nome (case-insensitive) e produtor ausente em ambos devem ser mergeados."""
     wines = [
         {"name": "Alamos Malbec", "price": "R$ 89", "vintage": None},
         {"name": "alamos malbec", "price": None, "vintage": "2020"},
@@ -122,6 +122,37 @@ def test_dedup_merges_same_name():
     assert len(result) == 1
     assert result[0]["price"] == "R$ 89"
     assert result[0]["vintage"] == "2020"
+
+
+def test_dedup_keeps_different_producers_same_name():
+    """Vinhos com mesmo nome mas produtores DIFERENTES NAO devem colapsar.
+
+    Caso real: 'Brut Reserve' aparece em cartas de Champagne para varios
+    produtores distintos (Bereche, Billecart-Salmon, Philipponnat). O dedup
+    antigo (chave = name) colapsava todos em um, derrubando ~38% da carta
+    do Elephante. O fix usa chave (name, producer) e preserva os 3 vinhos.
+    """
+    wines = [
+        {"name": "Brut Reserve", "producer": "Bereche", "price": "170"},
+        {"name": "Brut Reserve", "producer": "Billecart-Salmon", "price": "180"},
+        {"name": "Brut Reserve", "producer": "Philipponnat", "price": "125"},
+    ]
+    result = _deduplicate_wines(wines)
+    assert len(result) == 3, f"Esperava 3 vinhos distintos, recebi {len(result)}"
+    producers = sorted((r.get("producer") or "").lower() for r in result)
+    assert producers == ["bereche", "billecart-salmon", "philipponnat"]
+
+
+def test_dedup_merges_same_name_same_producer():
+    """Mesmo nome + mesmo produtor (case-insensitive) AINDA deve colapsar."""
+    wines = [
+        {"name": "Brut Reserve", "producer": "Bereche", "price": "170", "vintage": None},
+        {"name": "brut reserve", "producer": "BERECHE", "price": None, "vintage": "2018"},
+    ]
+    result = _deduplicate_wines(wines)
+    assert len(result) == 1
+    assert result[0]["price"] == "170"
+    assert result[0]["vintage"] == "2018"
 
 
 # --- _split_text_into_chunks (P3A.1 chunked recovery) ---
@@ -416,6 +447,8 @@ if __name__ == "__main__":
         test_edge_case_two_keywords,
         test_dedup_preserves_unique,
         test_dedup_merges_same_name,
+        test_dedup_keeps_different_producers_same_name,
+        test_dedup_merges_same_name_same_producer,
         # P3A.1 chunked recovery
         test_split_chunks_short_text_single,
         test_split_chunks_long_text_multiple,

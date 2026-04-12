@@ -33,11 +33,18 @@ def get_baco_response(message, session_id, history=None, photo_mode=False, trace
             tools=tools,
         )
 
-        if response.stop_reason == "end_turn":
+        # Checar se ha tool_use blocks (mesmo que stop_reason seja max_tokens)
+        has_tool_use = any(b.type == "tool_use" for b in response.content)
+
+        if response.stop_reason == "end_turn" and not has_tool_use:
             text = _extract_text(response)
             return text, response.model
 
-        if response.stop_reason == "tool_use":
+        if has_tool_use:
+            # Processar tool calls — funciona tanto para stop_reason="tool_use"
+            # quanto "max_tokens" (Haiku pode gerar 20+ tool calls em paralelo
+            # e estourar max_tokens antes de terminar; as calls completas ainda
+            # sao validas e devem ser executadas).
             messages.append({"role": "assistant", "content": response.content})
 
             tool_results = []
@@ -84,7 +91,9 @@ def stream_baco_response(message, session_id, history=None, photo_mode=False, tr
             tools=tools,
         )
 
-        if response.stop_reason != "tool_use":
+        has_tool_use = any(b.type == "tool_use" for b in response.content)
+
+        if not has_tool_use:
             if not used_tools:
                 break
             for block in response.content:
