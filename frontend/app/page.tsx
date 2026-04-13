@@ -154,17 +154,20 @@ export default function Home() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onNewChat={handleNewChat}
+        onToggle={() => setSidebarOpen((v) => !v)}
         userName={user?.name}
         creditsUsed={creditsUsed}
         creditsLimit={creditsLimit}
         isLoggedIn={!!user}
       />
+      <div className="md:pl-12">
       <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
         <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
           <div className="flex items-center gap-2">
+            {/* Hamburger — mobile only (desktop has icon strip) */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-wine-surface transition-colors text-wine-muted"
+              className="md:hidden p-2 rounded-lg hover:bg-wine-surface transition-colors text-wine-muted"
               aria-label="Abrir menu"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -204,6 +207,7 @@ export default function Home() {
           </>
         )}
       </main>
+      </div>
     </>
   );
 }
