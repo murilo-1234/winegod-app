@@ -7,6 +7,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { CreditsBanner } from "@/components/auth/CreditsBanner";
+import { Sidebar } from "@/components/Sidebar";
 import { sendMessageStream } from "@/lib/api";
 import type { MediaPayload } from "@/lib/api";
 import { getUser, logout as doLogout, isLoggedIn as checkLoggedIn } from "@/lib/auth";
@@ -21,6 +22,7 @@ export default function Home() {
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsLimit, setCreditsLimit] = useState(5);
   const [creditsExhausted, setCreditsExhausted] = useState<"guest_limit" | "daily_limit" | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (checkLoggedIn()) {
@@ -32,6 +34,12 @@ export default function Home() {
         }
       });
     }
+  }, []);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setIsTyping(false);
+    setCreditsExhausted(null);
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -49,7 +57,7 @@ export default function Home() {
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content: text.trim() || "O que voce pode me dizer sobre este vinho?",
+        content: text.trim() || "O que você pode me dizer sobre este vinho?",
         timestamp: new Date(),
         imagePreviews: media?.previews,
       };
@@ -67,7 +75,7 @@ export default function Home() {
       doneCalledRef.current = false;
 
       await sendMessageStream(
-        text.trim() || "O que voce pode me dizer sobre este vinho?",
+        text.trim() || "O que você pode me dizer sobre este vinho?",
         {
           onChunk: (chunk) => {
             setMessages((prev) =>
@@ -110,35 +118,53 @@ export default function Home() {
   );
 
   return (
-    <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="WineGod" className="w-14 h-14" />
-          <span className="text-wine-text text-sm font-medium tracking-wide">
-            winegod.ai
-          </span>
-        </div>
-        {user ? (
-          <UserMenu
-            user={user}
-            creditsUsed={creditsUsed}
-            creditsLimit={creditsLimit}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <LoginButton compact />
-        )}
-      </header>
+    <>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onNewChat={handleNewChat}
+        userName={user?.name}
+        creditsUsed={creditsUsed}
+        creditsLimit={creditsLimit}
+        isLoggedIn={!!user}
+      />
+      <main className="flex flex-col h-dvh pb-16 max-w-3xl mx-auto">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-wine-border">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-wine-surface transition-colors text-wine-muted"
+              aria-label="Abrir menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="8" x2="21" y2="8" />
+                <line x1="3" y1="16" x2="21" y2="16" />
+              </svg>
+            </button>
+            <img src="/logo.png" alt="winegod.ai" className="h-14 w-auto" />
+          </div>
+          {user ? (
+            <UserMenu
+              user={user}
+              creditsUsed={creditsUsed}
+              creditsLimit={creditsLimit}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <LoginButton compact />
+          )}
+        </header>
 
-      {messages.length === 0 && !isTyping ? (
-        <WelcomeScreen onSuggestionClick={handleSend} />
-      ) : (
-        <ChatWindow messages={messages} isTyping={isTyping} onSend={handleSend} />
-      )}
-      {creditsExhausted && (
-        <CreditsBanner isLoggedIn={!!user} reason={creditsExhausted} />
-      )}
-      <ChatInput onSend={handleSend} disabled={isTyping || !!creditsExhausted} />
-    </main>
+        {messages.length === 0 && !isTyping ? (
+          <WelcomeScreen onSuggestionClick={handleSend} userName={user?.name} />
+        ) : (
+          <ChatWindow messages={messages} isTyping={isTyping} onSend={handleSend} />
+        )}
+        {creditsExhausted && (
+          <CreditsBanner isLoggedIn={!!user} reason={creditsExhausted} />
+        )}
+        <ChatInput onSend={handleSend} disabled={isTyping || !!creditsExhausted} />
+      </main>
+    </>
   );
 }

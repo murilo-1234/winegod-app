@@ -95,8 +95,8 @@ export async function sendMessageStream(
   } catch (err) {
     onError(
       err instanceof Error
-        ? `Erro de conexao: ${err.message}`
-        : "Erro de conexao com o servidor"
+        ? `Erro de conexão: ${err.message}`
+        : "Erro de conexão com o servidor"
     );
   }
 }

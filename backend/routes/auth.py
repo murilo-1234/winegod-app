@@ -53,6 +53,7 @@ def google_login():
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "consent",
+        "state": "google",
     }
     query = "&".join(f"{k}={requests.utils.quote(str(v))}" for k, v in params.items())
     return redirect(f"{GOOGLE_AUTH_URL}?{query}")
@@ -97,7 +98,7 @@ def google_callback():
     picture = userinfo.get("picture", "")
 
     # Criar ou atualizar usuario no banco
-    user = upsert_user(google_id, email, name, picture)
+    user = upsert_user("google", google_id, email, name, picture)
 
     # Gerar JWT
     token = _create_jwt(user["id"], user["email"])

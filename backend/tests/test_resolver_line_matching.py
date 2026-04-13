@@ -582,16 +582,15 @@ def test_build_scoring_name():
 # =============================================
 
 def test_recall_d_eugenio():
-    """D. Eugenio: scoring_name removes 'La Mancha' region."""
-    section("RECALL: D. Eugenio (scoring_name)")
+    """D. Eugenio: collapse makes 'd eugenio' match 'deugenio'."""
+    section("RECALL: D. Eugenio (collapse + scoring_name)")
     results = []
 
-    # With raw name, "mancha" would be a false line token -> reject
-    # With scoring_name "D. Eugenio Crianza", no false line tokens
+    # Core case: collapse aligns 'd eugenio' -> 'deugenio'
     results.append(assert_accepts(
         "D. Eugenio Crianza",  # scoring_name (clean)
-        "D.Eugenio Vino de Crianza", "D. Eugenio",
-        "scoring_name removes region, crianza matches"
+        "D.Eugenio Tinto", "Tomillar Virgen de las Vinas",
+        "collapse aligns initials, deugenio matches"
     ))
 
     # Safety: still rejects wrong wine
@@ -605,15 +604,94 @@ def test_recall_d_eugenio():
 
 
 def test_recall_cuatro_vientos():
-    """Cuatro Vientos: producer=Aromo, but 'Cuatro Vientos' in wine name."""
+    """Cuatro Vientos: line tokens + producer safety."""
     section("RECALL: Cuatro Vientos")
     results = []
 
-    # DB producer is "Aromo" but wine name contains "Cuatro Vientos"
+    # Exact match works
     results.append(assert_accepts(
         "Cuatro Vientos Tinto",
         "Cuatro Vientos Tinto", "Aromo",
-        "line tokens match even with different producer"
+        "exact name match"
+    ))
+
+    # CRITICAL: rejects same-producer wines with wrong variety/style
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Cuatro Vientos Grand Reserve Cabernet Sauvignon Syrah", "Aromo",
+        "tinto not in candidate name"
+    ))
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Cuatro Vientos Airen", "Aromo",
+        "tinto not in candidate, airen is white"
+    ))
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Cuatro Vientos Merlot", "Aromo",
+        "tinto not in candidate, merlot is specific grape"
+    ))
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Cuatro Vientos Chardonnay", "Aromo",
+        "tinto not in candidate, chardonnay is white"
+    ))
+
+    # Cross-producer rejection
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Griten a los Cuatro Vientos Los Ninos Tienen Derechos", "Griten",
+        "different wine entirely"
+    ))
+
+    # Safety: completely different wine
+    results.append(assert_rejects(
+        "Cuatro Vientos Tinto",
+        "Sol de Chile Merlot", "Sol de Chile",
+        "different wine entirely"
+    ))
+
+    return results
+
+
+def test_cross_style_rejections():
+    """Cross-style/type conflicts the user explicitly requires."""
+    section("VARIETY: Cross-style rejections (user-required)")
+    results = []
+
+    # Wine Tinto rejects Wine Chardonnay
+    results.append(assert_rejects(
+        "Wine Tinto",
+        "Wine Chardonnay", "Some Winery",
+        "tinto != chardonnay"
+    ))
+
+    # Wine White rejects Wine Rose
+    results.append(assert_rejects(
+        "Wine White",
+        "Wine Rose", "Some Winery",
+        "white != rose"
+    ))
+
+    # Wine White rejects Wine Red
+    results.append(assert_rejects(
+        "Wine White",
+        "Wine Red", "Some Winery",
+        "white != red"
+    ))
+
+    # Specific grapes still conflict
+    results.append(assert_rejects(
+        "Alamos Malbec",
+        "Alamos Merlot", "Catena",
+        "malbec != merlot"
+    ))
+
+    # Non-supertype styles still conflict
+    results.append(assert_rejects(
+        "Freixenet Cava Brut",
+        "Freixenet Cava Seco", "Freixenet",
+        "brut != seco"
     ))
 
     return results
@@ -636,6 +714,46 @@ def test_recall_freixenet_ice():
         "Freixenet Cordon Negro Brut", "Freixenet",
         "wrong line: ICE vs Cordon Negro"
     ))
+
+    return results
+
+
+def test_shelf_flow_cuatro_vientos():
+    """Integration: simulate resolve_wines_from_ocr for Cuatro Vientos shelf.
+    Must result in unresolved, not a wrong confirmed wine.
+    """
+    section("INTEGRATION: Cuatro Vientos shelf flow")
+    results = []
+
+    from tools.resolver import resolve_wines_from_ocr, _score_match, _pick_best, _MIN_MATCH_SCORE
+
+    # Simulate the real OCR result
+    ocr_result = {
+        "image_type": "shelf",
+        "wines": [
+            {"name": "Cuatro Vientos Tinto", "producer": "Aromo", "price": "R$ 59,90",
+             "line": None, "variety": None, "style": "red"},
+        ],
+        "total_visible": 1,
+    }
+
+    # Simulate what _pick_best would do with real DB candidates
+    real_candidates = [
+        {"nome": "Cuatro Vientos Chardonnay", "produtor": "Aromo", "id": 454491},
+        {"nome": "Cuatro Vientos Grand Reserve Cabernet Sauvignon - Syrah", "produtor": "Aromo", "id": 1090221},
+        {"nome": "Cuatro Vientos Airen", "produtor": "Aromo", "id": 1236670},
+        {"nome": "Cuatro Vientos Merlot", "produtor": "Aromo", "id": 365275},
+    ]
+
+    # Use scoring_name as _resolve_multi would build it
+    from tools.resolver import _build_scoring_name
+    scoring_name = _build_scoring_name(ocr_result["wines"][0])
+
+    best = _pick_best(scoring_name, real_candidates, set())
+    ok = best is None
+    status = "PASS" if ok else f"FAIL (matched id={best.get('id') if best else '?'})"
+    print(f"  {status}: _pick_best returns None (all candidates rejected)")
+    results.append(ok)
 
     return results
 
@@ -684,6 +802,10 @@ def main():
     all_results.extend(test_recall_d_eugenio())
     all_results.extend(test_recall_cuatro_vientos())
     all_results.extend(test_recall_freixenet_ice())
+    all_results.extend(test_cross_style_rejections())
+
+    # Integration tests
+    all_results.extend(test_shelf_flow_cuatro_vientos())
 
     passed = sum(all_results)
     total = len(all_results)

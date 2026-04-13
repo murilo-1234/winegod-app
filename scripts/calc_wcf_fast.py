@@ -30,7 +30,9 @@ def confianca(total_reviews):
 def score_type(total_reviews):
     if total_reviews >= 100:
         return "verified"
-    return "estimated"
+    if total_reviews >= 1:
+        return "estimated"
+    return "none"
 
 
 def main():
@@ -47,7 +49,7 @@ def main():
             total_rev = int(r["total_reviews_wcf"])
             conf = confianca(total_rev)
             stype = score_type(total_rev)
-            buf.write(f"{vinho_id}\t{nota_wcf}\t{conf}\t{stype}\n")
+            buf.write(f"{vinho_id}\t{nota_wcf}\t{conf}\t{stype}\t{total_rev}\n")
             count += 1
 
     print(f"   {count:,} linhas preparadas", flush=True)
@@ -63,14 +65,15 @@ def main():
             vivino_id INTEGER,
             nota_wcf NUMERIC(3,2),
             confianca_nota NUMERIC(3,2),
-            winegod_score_type VARCHAR(20)
+            winegod_score_type VARCHAR(20),
+            nota_wcf_sample_size INTEGER
         );
     """)
     conn.commit()
 
     print("4. COPY bulk load...", flush=True)
     buf.seek(0)
-    cur.copy_from(buf, "_wcf_bulk", sep="\t", columns=("vivino_id", "nota_wcf", "confianca_nota", "winegod_score_type"))
+    cur.copy_from(buf, "_wcf_bulk", sep="\t", columns=("vivino_id", "nota_wcf", "confianca_nota", "winegod_score_type", "nota_wcf_sample_size"))
     conn.commit()
 
     cur.execute("SELECT count(*) FROM _wcf_bulk;")
@@ -86,7 +89,8 @@ def main():
         UPDATE wines w
         SET nota_wcf = b.nota_wcf,
             confianca_nota = b.confianca_nota,
-            winegod_score_type = b.winegod_score_type
+            winegod_score_type = b.winegod_score_type,
+            nota_wcf_sample_size = b.nota_wcf_sample_size
         FROM _wcf_bulk b
         WHERE w.vivino_id = b.vivino_id;
     """)

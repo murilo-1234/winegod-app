@@ -72,10 +72,11 @@ export async function getCredits(sessionId?: string): Promise<CreditsData | null
 }
 
 export async function exchangeCodeForToken(
-  code: string
+  code: string,
+  provider: "google" | "facebook" | "apple" | "microsoft" = "google"
 ): Promise<{ token: string; user: UserData } | null> {
   try {
-    const res = await fetch(`${API_URL}/api/auth/google/callback`, {
+    const res = await fetch(`${API_URL}/api/auth/${provider}/callback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
@@ -89,6 +90,18 @@ export async function exchangeCodeForToken(
 
 export function getGoogleLoginUrl(): string {
   return `${API_URL}/api/auth/google`;
+}
+
+export function getFacebookLoginUrl(): string {
+  return `${API_URL}/api/auth/facebook`;
+}
+
+export function getAppleLoginUrl(): string {
+  return `${API_URL}/api/auth/apple`;
+}
+
+export function getMicrosoftLoginUrl(): string {
+  return `${API_URL}/api/auth/microsoft`;
 }
 
 export async function logout(): Promise<void> {

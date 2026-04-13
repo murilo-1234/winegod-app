@@ -12,12 +12,12 @@ interface WineCardProps {
 export function WineCard({ wine, onAction, highlight }: WineCardProps) {
   return (
     <div
-      className={`rounded-xl border p-4 w-full max-w-[400px] ${
-        highlight ? "border-green-700/50" : "border-[#2A2A4E]"
-      } bg-[#1A1A2E]`}
+      className={`rounded-xl border p-4 w-full max-w-[400px] hover:border-wine-accent transition-colors ${
+        highlight ? "border-wine-accent" : "border-wine-border"
+      } bg-wine-surface`}
     >
       <div className="flex gap-3">
-        <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-[#2A2A4E] flex items-center justify-center overflow-hidden">
+        <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-wine-input flex items-center justify-center overflow-hidden">
           {wine.imagem_url ? (
             <img
               src={wine.imagem_url}

@@ -14,7 +14,7 @@ if not RENDER_URL:
     sys.exit("ERROR: DATABASE_URL environment variable is required.")
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "wcf_results.csv")
-BATCH_SIZE = 1000
+BATCH_SIZE = 50000
 
 
 def confianca(total_reviews):

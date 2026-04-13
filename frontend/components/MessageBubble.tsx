@@ -96,12 +96,6 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
           isUser ? "flex-row-reverse max-w-[75%]" : "flex-row w-full max-w-[85%]"
         }`}
       >
-        {!isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-wine-accent flex items-center justify-center text-sm mt-1 text-white font-semibold">
-            B
-          </div>
-        )}
-
         <div className="min-w-0 flex-1">
           <div
             className={

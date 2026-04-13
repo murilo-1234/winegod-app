@@ -10,13 +10,27 @@ function CallbackHandler() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    if (!code) {
-      setError("Codigo de autorizacao nao encontrado");
+    // Apple envia token direto na URL (fluxo form_post via backend)
+    const directToken = searchParams.get("token");
+    if (directToken) {
+      setToken(directToken);
+      router.replace("/");
       return;
     }
 
-    exchangeCodeForToken(code).then((result) => {
+    const code = searchParams.get("code");
+    if (!code) {
+      setError("Código de autorização não encontrado");
+      return;
+    }
+
+    // Detectar provedor via state param (default: google para retrocompatibilidade)
+    const state = searchParams.get("state");
+    const provider = (state === "facebook" || state === "apple" || state === "microsoft")
+      ? state
+      : "google";
+
+    exchangeCodeForToken(code, provider).then((result) => {
       if (result) {
         setToken(result.token);
         router.replace("/");

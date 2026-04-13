@@ -10,7 +10,7 @@ export function TermBadges({ termos }: TermBadgesProps) {
       {termos.map((termo) => (
         <span
           key={termo}
-          className="px-2 py-0.5 text-xs rounded-full bg-[#2A2A4E] text-[#C0C0C0]"
+          className="px-2 py-0.5 text-xs rounded-full bg-wine-accent/10 text-wine-accent"
         >
           {termo}
         </span>

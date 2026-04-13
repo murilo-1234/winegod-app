@@ -23,8 +23,8 @@ export async function generateMetadata({
 
     if (!res.ok) {
       return {
-        title: "Compartilhamento nao encontrado - winegod.ai",
-        description: "Este link de compartilhamento nao existe ou expirou.",
+        title: "Compartilhamento não encontrado - winegod.ai",
+        description: "Este link de compartilhamento não existe ou expirou.",
       };
     }
 

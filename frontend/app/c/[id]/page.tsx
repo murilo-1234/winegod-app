@@ -80,16 +80,16 @@ export default async function SharePage({
   }
 
   return (
-    <main className="min-h-dvh bg-[#0D0D1A] text-[#E0E0E0]">
+    <main className="min-h-dvh bg-wine-bg text-wine-text">
       {/* Header */}
-      <header className="border-b border-[#2A2A4E] px-4 py-3">
+      <header className="border-b border-wine-border px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-white">
-            winegod<span className="text-[#8B1A4A]">.ai</span>
+          <Link href="/" className="text-lg font-bold text-wine-text">
+            winegod<span className="text-wine-accent">.ai</span>
           </Link>
           <Link
             href="/"
-            className="px-4 py-2 text-sm rounded-lg border border-[#8B1A4A] text-[#8B1A4A] hover:bg-[#8B1A4A]/10 transition-colors"
+            className="px-4 py-2 text-sm rounded-lg border border-wine-accent text-wine-accent hover:bg-wine-accent/10 transition-colors"
           >
             Abrir no Chat
           </Link>
@@ -100,9 +100,9 @@ export default async function SharePage({
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Title & Context */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">{data.title}</h1>
+          <h1 className="text-2xl font-bold text-wine-text mb-2">{data.title}</h1>
           {data.context && (
-            <p className="text-[#888888] text-sm">{data.context}</p>
+            <p className="text-wine-muted text-sm">{data.context}</p>
           )}
         </div>
 
@@ -114,18 +114,18 @@ export default async function SharePage({
         </div>
 
         {data.wines.length === 0 && (
-          <p className="text-center text-[#888888] py-12">
+          <p className="text-center text-wine-muted py-12">
             Nenhum vinho encontrado neste compartilhamento.
           </p>
         )}
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#2A2A4E] px-4 py-6 mt-12">
+      <footer className="border-t border-wine-border px-4 py-6 mt-12">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-[#888888] text-sm">
+          <p className="text-wine-muted text-sm">
             Descubra mais vinhos em{" "}
-            <Link href="/" className="text-[#8B1A4A] hover:underline">
+            <Link href="/" className="text-wine-accent hover:underline">
               chat.winegod.ai
             </Link>
           </p>

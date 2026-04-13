@@ -105,8 +105,8 @@ def setup_tables():
     log("Tabelas verificadas")
 
 
-# Edge pega O-S + W + Y (Codex=TUVXZ, 3o browser=MN, Mistral=0-L)
-FAIXA_LETRAS = "opqrswy"
+# Edge pega K (13.750 pendentes)
+FAIXA_LETRAS = "k"
 
 def fetch_next_batch(total_items):
     """Busca proximos N itens da wines_clean nao processados (faixa M-Z)."""

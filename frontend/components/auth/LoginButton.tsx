@@ -1,35 +1,90 @@
 "use client";
 
-import { getGoogleLoginUrl } from "@/lib/auth";
+import { useState, useRef, useEffect } from "react";
+import { getGoogleLoginUrl, getFacebookLoginUrl, getAppleLoginUrl, getMicrosoftLoginUrl } from "@/lib/auth";
 
 interface LoginButtonProps {
   compact?: boolean;
 }
 
 export function LoginButton({ compact = false }: LoginButtonProps) {
-  const handleLogin = () => {
-    window.location.href = getGoogleLoginUrl();
-  };
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
 
   if (compact) {
     return (
-      <button
-        onClick={handleLogin}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-wine-surface border border-wine-border text-wine-text text-sm hover:border-wine-accent transition-colors"
-      >
-        <GoogleIcon />
-        <span>Entrar</span>
-      </button>
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-wine-surface border border-wine-border text-wine-text text-sm hover:border-wine-accent transition-colors"
+        >
+          <span>Entrar</span>
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-wine-surface border border-wine-border shadow-lg z-50 p-2 flex flex-col gap-1">
+            <ProviderButton provider="google" />
+            <ProviderButton provider="facebook" />
+            <ProviderButton provider="apple" />
+            <ProviderButton provider="microsoft" />
+          </div>
+        )}
+      </div>
     );
   }
 
   return (
+    <div className="flex flex-col gap-2 w-full">
+      <ProviderButton provider="google" />
+      <ProviderButton provider="facebook" />
+      <ProviderButton provider="apple" />
+      <ProviderButton provider="microsoft" />
+    </div>
+  );
+}
+
+function ProviderButton({ provider }: { provider: "google" | "facebook" | "apple" | "microsoft" }) {
+  const config = {
+    google: {
+      label: "Entrar com Google",
+      url: getGoogleLoginUrl(),
+      icon: <GoogleIcon />,
+    },
+    facebook: {
+      label: "Entrar com Facebook",
+      url: getFacebookLoginUrl(),
+      icon: <FacebookIcon />,
+    },
+    apple: {
+      label: "Entrar com Apple",
+      url: getAppleLoginUrl(),
+      icon: <AppleIcon />,
+    },
+    microsoft: {
+      label: "Entrar com Microsoft",
+      url: getMicrosoftLoginUrl(),
+      icon: <MicrosoftIcon />,
+    },
+  };
+
+  const { label, url, icon } = config[provider];
+
+  return (
     <button
-      onClick={handleLogin}
+      onClick={() => { window.location.href = url; }}
       className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl bg-wine-surface border border-wine-border text-wine-text text-sm hover:border-wine-accent transition-colors"
     >
-      <GoogleIcon />
-      <span>Entrar com Google</span>
+      {icon}
+      <span>{label}</span>
     </button>
   );
 }
@@ -53,6 +108,39 @@ function GoogleIcon() {
         d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
         fill="#EA4335"
       />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path
+        d="M18 9a9 9 0 10-10.406 8.89v-6.29H5.309V9h2.285V7.017c0-2.255 1.343-3.501 3.4-3.501.984 0 2.014.176 2.014.176v2.215h-1.135c-1.118 0-1.467.694-1.467 1.406V9h2.496l-.399 2.6h-2.097v6.29A9.002 9.002 0 0018 9z"
+        fill="#1877F2"
+      />
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path
+        d="M14.94 9.63c-.02-2.1 1.71-3.11 1.79-3.16-0.97-1.42-2.49-1.62-3.03-1.64-1.29-.13-2.52.76-3.18.76-.66 0-1.67-.74-2.75-.72A4.07 4.07 0 004.34 7.1c-1.47 2.55-.37 6.33 1.06 8.4.7 1.01 1.53 2.15 2.63 2.11 1.06-.04 1.46-.68 2.74-.68 1.28 0 1.64.68 2.75.66 1.14-.02 1.85-1.03 2.55-2.05a8.94 8.94 0 001.15-2.37c-.02-.01-2.22-.85-2.24-3.38l-.04-.16zM12.87 3.34A4.07 4.07 0 0013.8.5a4.15 4.15 0 00-2.69 1.39 3.89 3.89 0 00-.97 2.82 3.44 3.44 0 002.73-1.37z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function MicrosoftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022" />
+      <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00" />
+      <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF" />
+      <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900" />
     </svg>
   );
 }

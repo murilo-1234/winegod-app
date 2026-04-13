@@ -91,7 +91,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
 
     const defaultMsg = hasImages || attachment
-      ? "O que voce pode me dizer sobre este vinho?"
+      ? "O que você pode me dizer sobre este vinho?"
       : "";
 
     onSend(text || defaultMsg, mediaPayload);
@@ -183,13 +183,13 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
       const remaining = MAX_IMAGES - images.length;
       if (remaining <= 0) {
-        alert(`Maximo de ${MAX_IMAGES} fotos por mensagem.`);
+        alert(`Máximo de ${MAX_IMAGES} fotos por mensagem.`);
         return;
       }
 
       const filesToProcess = Array.from(files).slice(0, remaining);
       if (files.length > remaining) {
-        alert(`So e possivel adicionar mais ${remaining} foto(s). Maximo: ${MAX_IMAGES}.`);
+        alert(`Só é possível adicionar mais ${remaining} foto(s). Máximo: ${MAX_IMAGES}.`);
       }
 
       // Clear video/pdf attachment when adding images
@@ -222,7 +222,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       setShowMenu(false);
 
       if (file.size > 50 * 1024 * 1024) {
-        alert("Video muito grande (maximo 50 MB)");
+        alert("Vídeo muito grande (máximo 50 MB)");
         return;
       }
 
@@ -256,7 +256,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       setShowMenu(false);
 
       if (file.size > 20 * 1024 * 1024) {
-        alert("PDF muito grande (maximo 20 MB)");
+        alert("PDF muito grande (máximo 20 MB)");
         return;
       }
 
@@ -462,7 +462,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   <polygon points="23 7 16 12 23 17 23 7" />
                   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                 </svg>
-                Video
+                Vídeo
               </button>
               <button
                 type="button"
@@ -501,7 +501,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                 ? "bg-red-500 border-red-500 text-white animate-pulse"
                 : "bg-wine-input border-wine-border text-wine-muted hover:text-wine-accent hover:border-wine-accent"
             }`}
-            title={isRecording ? "Parar gravacao" : "Gravar voz"}
+            title={isRecording ? "Parar gravação" : "Gravar voz"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -527,7 +527,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           type="button"
           onClick={handleSend}
           disabled={disabled || (!text.trim() && !attachment && images.length === 0)}
-          className="flex-shrink-0 w-10 h-10 rounded-full bg-wine-accent flex items-center justify-center text-wine-text transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-shrink-0 w-10 h-10 rounded-full bg-wine-accent flex items-center justify-center text-white transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

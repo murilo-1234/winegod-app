@@ -19,7 +19,7 @@ function formatCurrency(value: number, moeda: string): string {
 
 export function PriceTag({ precoMin, precoMax, moeda }: PriceTagProps) {
   if (precoMin == null && precoMax == null) {
-    return <span className="text-sm text-wine-muted">Preco indisponivel</span>;
+    return <span className="text-sm text-wine-muted">Preço indisponível</span>;
   }
 
   const min = precoMin ?? precoMax!;

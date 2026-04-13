@@ -79,10 +79,14 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         if not results:
             results, layer_used = _try_layer("prefix", lambda: _search_prefix(conn, q_norm, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
 
-        # Camada 3: match exato/prefixo em produtor_normalizado
-        if not results:
-            search_producer = p_norm or q_norm
-            results, layer_used = _try_layer("producer", lambda: _search_producer(conn, search_producer, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
+        # Camada 3: match exato/prefixo em produtor_normalizado.
+        # SO roda quando produtor foi EXPLICITAMENTE fornecido (p_norm). Sem produtor,
+        # essa camada vira uma busca por nome do vinho na coluna errada (produtor) e
+        # tipicamente da timeout (~5s) no Postgres do Render — pular vai direto para
+        # fuzzy, que e mais eficiente para esse caso. Quando o caller passa produtor
+        # explicitamente (image flow / pre-resolve), o comportamento e o mesmo de antes.
+        if not results and p_norm:
+            results, layer_used = _try_layer("producer", lambda: _search_producer(conn, p_norm, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
 
         # Camada 4: fuzzy com pg_trgm — apenas se allow_fuzzy=True
         if not results and allow_fuzzy:

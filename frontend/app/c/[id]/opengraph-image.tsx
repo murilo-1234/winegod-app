@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "winegod.ai - Recomendacao de vinhos";
+export const alt = "winegod.ai - Recomendação de vinhos";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -25,7 +25,7 @@ export default async function OGImage({
 }) {
   const { id } = await params;
 
-  let title = "Recomendacao de vinhos";
+  let title = "Recomendação de vinhos";
   let wines: ShareWine[] = [];
 
   try {
@@ -49,7 +49,7 @@ export default async function OGImage({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#0D0D1A",
+          backgroundColor: "#8B1A4A",
           padding: "60px",
           fontFamily: "system-ui, sans-serif",
         }}
@@ -118,11 +118,11 @@ export default async function OGImage({
                   width: "40px",
                   height: "40px",
                   borderRadius: "8px",
-                  backgroundColor: "#1A1A2E",
+                  backgroundColor: "rgba(255,255,255,0.15)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#8B1A4A",
+                  color: "#FFFFFF",
                   fontSize: "20px",
                   fontWeight: 700,
                 }}
