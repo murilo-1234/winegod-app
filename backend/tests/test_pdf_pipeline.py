@@ -189,7 +189,7 @@ def test_extract_chunked_combines_wines_from_chunks():
     """Multiples chunks sucedidos devem ter vinhos combinados (parallel-safe)."""
     original = media._gemini_generate
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         # Discriminacao por conteudo do chunk, sem depender de ordem de chamada
         if "primeiro" in contents:
             return '{"wines": [{"name": "Wine A", "price": "10"}]}'
@@ -212,7 +212,7 @@ def test_extract_chunked_skips_failed_chunks():
     """Chunks que raise devem ser pulados; sucessos continuam (parallel-safe)."""
     original = media._gemini_generate
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         # Chunk com 'dois' falha; outros sucedem (sem race em call_count)
         if "dois" in contents:
             raise ValueError("simulated Gemini JSON failure")
@@ -232,7 +232,7 @@ def test_extract_chunked_all_fail_returns_empty():
     """Se todos os chunks falham, retorna lista vazia sem raise."""
     original = media._gemini_generate
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         raise ValueError("always fails")
 
     media._gemini_generate = fake_gen
@@ -296,7 +296,7 @@ def test_process_pdf_chunked_recovery_on_parse_failure():
 
     call_count = [0]
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         call_count[0] += 1
         if call_count[0] == 1:
             raise ValueError("Unterminated string at char 42000")
@@ -325,7 +325,7 @@ def test_process_pdf_no_chunked_recovery_for_non_wine_text():
 
     call_count = [0]
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         call_count[0] += 1
         return '{"wines": []}'
 
@@ -352,7 +352,7 @@ def test_process_pdf_native_text_happy_path_unchanged():
 
     call_count = [0]
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         call_count[0] += 1
         return '{"wines": [{"name": "Alamos Malbec", "price": "R$ 89"}]}'
 
@@ -375,7 +375,7 @@ def test_process_pdf_long_text_skips_monolithic_call():
 
     contents_seen_lengths = []
 
-    def fake_gen(contents):
+    def fake_gen(contents, **kwargs):
         contents_seen_lengths.append(len(contents))
         return '{"wines": [{"name": "Alamos Malbec", "price": "R$ 89"}]}'
 
@@ -412,7 +412,7 @@ def test_process_pdf_scanned_pdf_skips_chunked_recovery():
         chunked_called[0] = True
         return []
 
-    def fake_gemini(contents):
+    def fake_gemini(contents, **kwargs):
         return '{"wines": []}'
 
     pdfplumber.open = _make_fake_pdfplumber_open([""])  # pagina vazia (scan)

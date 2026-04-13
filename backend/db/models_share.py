@@ -101,7 +101,7 @@ def get_share(share_id):
                            w.pais_nome, w.regiao, w.vivino_rating,
                            w.nota_wcf, w.winegod_score,
                            w.preco_min, w.preco_max, w.moeda,
-                           w.nota_wcf_sample_size
+                           w.nota_wcf_sample_size, w.confianca_nota
                     FROM wines w
                     WHERE w.id = ANY(%s)
                     """,
@@ -112,7 +112,7 @@ def get_share(share_id):
                     "pais_nome", "regiao", "vivino_rating",
                     "nota_wcf", "winegod_score",
                     "preco_min", "preco_max", "moeda",
-                    "nota_wcf_sample_size",
+                    "nota_wcf_sample_size", "confianca_nota",
                 ]
                 wines = []
                 for wine_row in cur.fetchall():

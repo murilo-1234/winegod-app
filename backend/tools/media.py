@@ -64,6 +64,11 @@ def _gemini_generate(contents, thinking=True):
     return response.text
 
 
+def gemini_text_generate(prompt_text, thinking=False):
+    """Wrapper publico para Gemini texto puro."""
+    return _gemini_generate(prompt_text, thinking=thinking)
+
+
 # --- Lazy Qwen client (DashScope, OpenAI-compatible) ---
 
 _qwen_client = None
@@ -128,6 +133,11 @@ def _qwen_text_generate(prompt_text):
     except Exception as e:
         print(f"[qwen_text] error: {type(e).__name__}: {e}", flush=True)
         return None
+
+
+def qwen_text_generate(prompt_text):
+    """Wrapper publico de _qwen_text_generate para uso por outros modulos."""
+    return _qwen_text_generate(prompt_text)
 
 
 def _preprocess_image_for_dense_shelf(image_bytes):
@@ -1098,3 +1108,44 @@ def process_voice(audio_text):
     if not audio_text or not audio_text.strip():
         return {"message": "Nao consegui entender o audio. Pode repetir?"}
     return {"transcribed_text": audio_text.strip(), "action": "search"}
+
+
+def extract_wines_from_text(text):
+    """Extrai vinhos de texto puro (carta colada, transcricao, etc).
+
+    Usa Qwen-turbo com PDF_TEXT_PROMPT (validado).
+    Para texto muito longo (>_LONG_TEXT_THRESHOLD), usa chunked paralelo.
+    Retorna dict compativel com process_pdf:
+        {"wines": [...], "wine_count": N, "status": "success"|"no_wines"|"too_short"|"error"}
+    """
+    if not text or len(text.strip()) < 20:
+        return {"wines": [], "wine_count": 0, "status": "too_short"}
+
+    try:
+        clean = text.strip()
+
+        # Texto longo wine-related: chunked paralelo (mesma logica de process_pdf)
+        if len(clean) > _LONG_TEXT_THRESHOLD and _text_looks_wine_related(clean):
+            wines = _extract_wines_native_chunked(clean[:30000])
+            if wines:
+                unique = _deduplicate_wines(wines)
+                return {"wines": unique, "wine_count": len(unique), "status": "success"}
+            return {"wines": [], "wine_count": 0, "status": "no_wines"}
+
+        # Texto curto/medio: monolitico (Qwen primeiro, fallback Gemini)
+        prompt = PDF_TEXT_PROMPT + clean
+        raw = _qwen_text_generate(prompt)
+        if raw is None:
+            raw = _gemini_generate(prompt, thinking=False)
+
+        result = _parse_gemini_json(raw)
+        wines = result.get("wines", [])
+
+        if not wines:
+            return {"wines": [], "wine_count": 0, "status": "no_wines"}
+
+        unique = _deduplicate_wines(wines)
+        return {"wines": unique, "wine_count": len(unique), "status": "success"}
+    except Exception as e:
+        print(f"[extract_wines_from_text] error: {type(e).__name__}: {e}", flush=True)
+        return {"wines": [], "wine_count": 0, "status": "error"}

@@ -11,6 +11,7 @@ from routes.sharing import sharing_bp
 from routes.auth_facebook import auth_facebook_bp
 from routes.auth_apple import auth_apple_bp
 from routes.auth_microsoft import auth_microsoft_bp
+from routes.conversations import conversations_bp
 
 
 def create_app():
@@ -31,6 +32,7 @@ def create_app():
     flask_app.register_blueprint(auth_facebook_bp, url_prefix='/api')
     flask_app.register_blueprint(auth_apple_bp, url_prefix='/api')
     flask_app.register_blueprint(auth_microsoft_bp, url_prefix='/api')
+    flask_app.register_blueprint(conversations_bp, url_prefix='/api')
 
     return flask_app
 

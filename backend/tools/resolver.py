@@ -50,7 +50,7 @@ def resolve_wines_from_ocr(ocr_result):
             for w in resolved
         ]
         unresolved_items = [{"ocr": {"name": n}, "status": "visual_only"} for n in unresolved]
-    elif image_type in ("screenshot", "shelf"):
+    elif image_type in ("screenshot", "shelf", "pdf", "video", "text"):
         resolved_items, unresolved_items = _resolve_multi(ocr_result)
         # Derivar resolved_wines/unresolved para callers existentes
         resolved = [item["wine"] for item in resolved_items]
@@ -135,6 +135,7 @@ def _resolve_label(ocr_result):
 
 
 _MAX_MULTI_ITEMS = 8       # screenshot (itens mais limpos)
+_MAX_PDF_ITEMS = 20        # pdf/text: nomes limpos, fast-only para todos
 _MAX_SHELF_TIER_A = 3      # shelf: confirmacao forte (fast-only)
 _MAX_SHELF_TIER_B = 2      # shelf: confirmacao moderada (fast + fallback)
 _MIN_MATCH_SCORE = 0.4
@@ -569,13 +570,14 @@ def _fallback_resolve(name, seen_ids, scoring_name=None):
 
 
 def _resolve_multi(ocr_result):
-    """Resolve multiplos vinhos de screenshot/shelf.
+    """Resolve multiplos vinhos de screenshot/shelf/pdf.
 
     Shelf: resolve em 2 camadas com mesmos gates de qualidade.
       Tier A (3 itens): fast-only (exact/prefix/producer).
       Tier B (2 itens): fast + fallback (token pairs).
       Tier C (resto): visual only, sem resolucao.
     Screenshot: mais permissivo (8 itens), fast + fallback.
+    PDF: nomes limpos de texto, fast-only para ate 20 itens, ordem preservada.
     """
     wines_list = ocr_result.get("wines", [])
     if not wines_list:
@@ -583,30 +585,42 @@ def _resolve_multi(ocr_result):
 
     image_type = ocr_result.get("image_type", "screenshot")
     is_shelf = image_type == "shelf"
+    is_pdf = image_type in ("pdf", "video", "text")
 
     # 1. Filtrar itens sem nome
     valid = [w for w in wines_list if (w.get("name") or "").strip()]
 
-    # 2. Deduplicar itens OCR por nome normalizado
-    seen_names = set()
+    # 2. Deduplicar itens OCR
+    seen_keys = set()
     deduped = []
     for w in valid:
-        key = (w.get("name") or "").strip().lower()
-        if key not in seen_names:
-            seen_names.add(key)
+        name_key = (w.get("name") or "").strip().lower()
+        if is_pdf:
+            # PDF: dedup por (name, producer) para nao colapsar produtores diferentes
+            prod_key = (w.get("producer") or "").strip().lower()
+            key = (name_key, prod_key)
+        else:
+            key = name_key
+        if key not in seen_keys:
+            seen_keys.add(key)
             deduped.append(w)
 
-    # 3. Priorizar: com preco > nome mais completo > ordem original
-    deduped.sort(key=lambda w: (
-        0 if w.get("price") else 1,
-        -len((w.get("name") or "").split()),
-    ))
+    # 3. Priorizar (NAO para PDF — preservar ordem do documento)
+    if not is_pdf:
+        deduped.sort(key=lambda w: (
+            0 if w.get("price") else 1,
+            -len((w.get("name") or "").split()),
+        ))
 
-    # 4. Dividir em tiers (shelf) ou cap unico (screenshot)
+    # 4. Dividir em tiers
     if is_shelf:
         tier_a = deduped[:_MAX_SHELF_TIER_A]
         tier_b = deduped[_MAX_SHELF_TIER_A:_MAX_SHELF_TIER_A + _MAX_SHELF_TIER_B]
         skipped = deduped[_MAX_SHELF_TIER_A + _MAX_SHELF_TIER_B:]
+    elif is_pdf:
+        tier_a = deduped[:_MAX_PDF_ITEMS]
+        tier_b = []
+        skipped = deduped[_MAX_PDF_ITEMS:]
     else:
         tier_a = deduped[:_MAX_MULTI_ITEMS]
         tier_b = []
@@ -626,7 +640,8 @@ def _resolve_multi(ocr_result):
     seen_ids = set()
 
     # Tier A: fast + structured + token_direct (shelf) ou fast+fallback (screenshot)
-    use_fallback_a = not is_shelf
+    # PDF: fast-only, sem fallback (nomes limpos de texto, nao precisa pg_trgm)
+    use_fallback_a = not is_shelf and not is_pdf
     for w in tier_a:
         name = (w.get("name") or "").strip()
         producer = (w.get("producer") or "").strip() or None
@@ -690,12 +705,22 @@ def _resolve_multi(ocr_result):
 
 
 def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
-                            resolved_items=None, unresolved_items=None):
+                            resolved_items=None, unresolved_items=None,
+                            header_override=None, ocr_label="na imagem"):
     """Formata o resultado do pre-resolve em contexto para o Claude.
 
-    resolved_items/unresolved_items: estruturas vinculadas OCR->banco (shelf/screenshot).
+    resolved_items/unresolved_items: estruturas vinculadas OCR->banco (shelf/screenshot/pdf/video).
     Quando fornecidos, o contexto inclui precos e dados do OCR por item.
+    header_override: se fornecido, substitui o header auto-gerado (ex: para PDF/video).
+    ocr_label: prefixo para labels de item (default "na imagem"; PDF/video auto-resolvem).
     """
+    # Fontes nao-imagem: auto-resolver ocr_label, source_noun e header_desc
+    _SOURCE_NOUNS = {"pdf": "documento", "video": "video", "text": "texto"}
+    _SOURCE_HEADERS = {"pdf": "documento PDF", "video": "video", "text": "texto colado"}
+    _OCR_LABEL_DEFAULTS = {"pdf": "no documento", "video": "no video", "text": "no texto"}
+    if ocr_label == "na imagem" and image_type in _OCR_LABEL_DEFAULTS:
+        ocr_label = _OCR_LABEL_DEFAULTS[image_type]
+
     parts = []
 
     if image_type == "label":
@@ -749,8 +774,10 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                 "NAO invente nota, score ou qualidade.]"
             )
 
-    elif image_type in ("screenshot", "shelf"):
+    elif image_type in ("screenshot", "shelf", "pdf", "video", "text"):
         type_label = "prateleira" if image_type == "shelf" else "screenshot"
+        is_non_image = image_type in _SOURCE_NOUNS
+        source_noun = _SOURCE_NOUNS.get(image_type, "imagem")
 
         if resolved_items is not None:
             # --- Formato com vinculo OCR -> banco + status explicito ---
@@ -761,9 +788,17 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
             items_with_note = [it for it in resolved_items if it.get("status") == "confirmed_with_note"]
             items_no_note = [it for it in resolved_items if it.get("status") == "confirmed_no_note"]
 
-            parts.append(f"[O usuario enviou foto de {type_label}.]")
+            if header_override:
+                parts.append(header_override)
+            elif is_non_image:
+                parts.append(f"[O usuario enviou um {_SOURCE_HEADERS.get(image_type, source_noun)}.]")
+            else:
+                parts.append(f"[O usuario enviou foto de {type_label}.]")
             if total_read > 0:
-                parts.append(f"[OCR identificou {total_read} vinho(s) por nome. Pode haver outros na imagem nao legiveis.]")
+                if is_non_image:
+                    parts.append(f"[Identificados {total_read} vinho(s) por nome no {source_noun}.]")
+                else:
+                    parts.append(f"[OCR identificou {total_read} vinho(s) por nome. Pode haver outros na imagem nao legiveis.]")
 
             # Vinhos confirmados COM nota (aptos a ranking)
             counter = 1
@@ -774,9 +809,9 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     w = item["wine"]
                     d = resolve_display(w)
 
-                    ocr_parts = [f"Lido na imagem: {ocr_i.get('name', '?')}"]
+                    ocr_parts = [f"Lido {ocr_label}: {ocr_i.get('name', '?')}"]
                     if ocr_i.get("price"):
-                        ocr_parts.append(f"Preco visivel na imagem: {ocr_i['price']}")
+                        ocr_parts.append(f"Preco visivel {ocr_label}: {ocr_i['price']}")
                     if image_type == "screenshot" and ocr_i.get("rating"):
                         ocr_parts.append(f"Nota visivel no screenshot: {ocr_i['rating']}")
 
@@ -801,9 +836,9 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     ocr_i = item["ocr"]
                     w = item["wine"]
 
-                    ocr_parts = [f"Lido na imagem: {ocr_i.get('name', '?')}"]
+                    ocr_parts = [f"Lido {ocr_label}: {ocr_i.get('name', '?')}"]
                     if ocr_i.get("price"):
-                        ocr_parts.append(f"Preco visivel na imagem: {ocr_i['price']}")
+                        ocr_parts.append(f"Preco visivel {ocr_label}: {ocr_i['price']}")
                     if image_type == "screenshot" and ocr_i.get("rating"):
                         ocr_parts.append(f"Nota visivel no screenshot: {ocr_i['rating']}")
 
@@ -818,7 +853,10 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
 
             # Vinhos nao resolvidos (visual_only)
             if _unresolved:
-                parts.append("[NAO ENCONTRADO(S) no banco (apenas leitura visual):]")
+                if is_non_image:
+                    parts.append(f"[NAO ENCONTRADO(S) no banco (identificados no {source_noun}):]")
+                else:
+                    parts.append("[NAO ENCONTRADO(S) no banco (apenas leitura visual):]")
                 for item in _unresolved:
                     ocr_i = item["ocr"]
                     ocr_parts = [ocr_i.get("name", "?")]
@@ -842,11 +880,18 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     "NAO invente nota, score ou qualidade. NAO inclua em ranking ou comparacao."
                 )
             if _unresolved:
-                rules.append(
-                    "  - NAO ENCONTRADO (visual): cite nome e preco visivel. "
-                    "NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
-                    "Diga que ainda nao tem no acervo."
-                )
+                if is_non_image:
+                    rules.append(
+                        f"  - NAO ENCONTRADO: cite nome e preco do {source_noun}. "
+                        "NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
+                        "Diga que ainda nao tem no acervo."
+                    )
+                else:
+                    rules.append(
+                        "  - NAO ENCONTRADO (visual): cite nome e preco visivel. "
+                        "NAO atribua nota, score, ranking, custo-beneficio ou qualidade. "
+                        "Diga que ainda nao tem no acervo."
+                    )
             rules.append(
                 "  Para ranking ou recomendacao, use APENAS vinhos CONFIRMADOS COM NOTA.]"
             )
@@ -854,7 +899,12 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
 
         else:
             # --- Fallback: formato antigo (callers sem resolved_items) ---
-            parts.append(f"[O usuario enviou foto de {type_label}.]")
+            if header_override:
+                parts.append(header_override)
+            elif is_non_image:
+                parts.append(f"[O usuario enviou um {_SOURCE_HEADERS.get(image_type, source_noun)}.]")
+            else:
+                parts.append(f"[O usuario enviou foto de {type_label}.]")
             if resolved_wines:
                 parts.append(f"[{len(resolved_wines)} vinho(s) encontrado(s) no banco:]")
                 for i, w in enumerate(resolved_wines, 1):
@@ -874,6 +924,9 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
             if resolved_wines:
                 parts.append("[Responda sobre os vinhos encontrados. Use get_wine_details ou get_prices para dados extras.]")
             else:
-                parts.append("[Nenhum vinho encontrado no banco. Responda com base nos nomes identificados na imagem. Nao invente dados.]")
+                if is_non_image:
+                    parts.append(f"[Nenhum vinho encontrado no banco. Responda com base nos nomes identificados no {source_noun}. Nao invente dados.]")
+                else:
+                    parts.append("[Nenhum vinho encontrado no banco. Responda com base nos nomes identificados na imagem. Nao invente dados.]")
 
     return "\n".join(parts)

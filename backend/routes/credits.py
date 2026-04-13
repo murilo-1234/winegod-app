@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import Blueprint, request, jsonify
 from routes.auth import decode_jwt
+from config import Config
 from db.models_auth import (
     count_messages_today,
     count_messages_session,
@@ -9,8 +10,8 @@ from db.models_auth import (
 
 credits_bp = Blueprint('credits', __name__)
 
-GUEST_LIMIT = 9999
-USER_LIMIT = 9999
+GUEST_LIMIT = Config.GUEST_CREDIT_LIMIT
+USER_LIMIT = Config.USER_CREDIT_LIMIT
 
 
 def _derive_cost(data):
@@ -139,6 +140,7 @@ def get_credits():
                 "limit": USER_LIMIT,
                 "type": "user",
             })
+        return jsonify({"error": "Token invalido ou expirado"}), 401
 
     session_id = request.args.get("session_id", "")
     used = count_messages_session(session_id) if session_id else 0

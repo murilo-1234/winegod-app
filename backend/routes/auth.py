@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, redirect
 from db.models_auth import upsert_user, get_user_by_id
+from config import Config
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -40,6 +41,17 @@ def decode_jwt(token):
         return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
+
+
+def get_current_user(req):
+    """Extrai e valida usuario do Bearer token. Retorna dict do user ou None."""
+    auth_header = req.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    payload = decode_jwt(auth_header[7:])
+    if not payload:
+        return None
+    return get_user_by_id(payload["user_id"])
 
 
 @auth_bp.route('/auth/google', methods=['GET'])
@@ -117,21 +129,14 @@ def google_callback():
 @auth_bp.route('/auth/me', methods=['GET'])
 def get_me():
     """Retorna dados do usuario logado + creditos restantes."""
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Token nao fornecido"}), 401
-
-    payload = decode_jwt(auth_header[7:])
-    if not payload:
-        return jsonify({"error": "Token invalido ou expirado"}), 401
-
-    user = get_user_by_id(payload["user_id"])
+    user = get_current_user(request)
     if not user:
-        return jsonify({"error": "Usuario nao encontrado"}), 404
+        return jsonify({"error": "Token invalido ou expirado"}), 401
 
     from db.models_auth import count_messages_today
     used = count_messages_today(user["id"])
-    remaining = max(0, 15 - used)
+    limit = Config.USER_CREDIT_LIMIT
+    remaining = max(0, limit - used)
 
     return jsonify({
         "user": {
@@ -139,11 +144,13 @@ def get_me():
             "name": user["name"],
             "email": user["email"],
             "picture_url": user["picture_url"],
+            "provider": user.get("provider", "google"),
+            "last_login": user.get("last_login"),
         },
         "credits": {
             "used": used,
             "remaining": remaining,
-            "limit": 15,
+            "limit": limit,
         }
     })
 

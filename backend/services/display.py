@@ -17,17 +17,19 @@ NAO materializar display fields no banco. Resolver aqui em runtime.
 def resolve_display(wine):
     """Resolve canonical display fields for a wine dict.
 
-    Input: dict with at least nota_wcf, vivino_rating, nota_wcf_sample_size, winegod_score.
+    Input: dict with at least nota_wcf, vivino_rating, nota_wcf_sample_size,
+    confianca_nota, winegod_score.
     Returns: dict with display_note, display_note_type, display_note_source,
              display_score, display_score_available.
     """
     nota_wcf = wine.get("nota_wcf")
     vivino_rating = wine.get("vivino_rating")
     sample_size = wine.get("nota_wcf_sample_size")
+    confidence = wine.get("confianca_nota")
     winegod_score = wine.get("winegod_score")
     preco_min = wine.get("preco_min")
 
-    display = _resolve_note(nota_wcf, vivino_rating, sample_size)
+    display = _resolve_note(nota_wcf, vivino_rating, sample_size, confidence)
 
     # Score requires BOTH a computed score AND a valid price
     has_price = preco_min is not None and float(preco_min) > 0
@@ -54,11 +56,12 @@ def enrich_wines(wines):
     return wines
 
 
-def _resolve_note(nota_wcf, vivino_rating, sample_size):
+def _resolve_note(nota_wcf, vivino_rating, sample_size, confidence=None):
     """Apply the 4-rule note resolution."""
     nwcf = float(nota_wcf) if nota_wcf is not None else None
     vr = float(vivino_rating) if vivino_rating is not None else None
     ss = int(sample_size) if sample_size is not None else None
+    conf = float(confidence) if confidence is not None else None
 
     # Rule 1: WCF verified (sample >= 100, vivino anchor)
     if nwcf is not None and ss is not None and ss >= 100 and vr is not None and vr > 0:
@@ -84,7 +87,17 @@ def _resolve_note(nota_wcf, vivino_rating, sample_size):
             "display_note_source": "vivino",
         }
 
-    # Rule 4: No note available
+    # Rule 4: AI-estimated note for auto-created wines when no public note exists.
+    # This is opt-in via confianca_nota and only applies when the wine has nota_wcf
+    # but no vivino anchor / sample-size evidence.
+    if nwcf is not None and conf is not None and conf >= 0.75:
+        return {
+            "display_note": round(nwcf, 2),
+            "display_note_type": "estimated",
+            "display_note_source": "ai",
+        }
+
+    # Rule 5: No note available
     return {
         "display_note": None,
         "display_note_type": None,

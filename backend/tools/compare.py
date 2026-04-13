@@ -16,7 +16,8 @@ def compare_wines(wine_ids):
             sql = """
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao, uvas,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
+                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size,
+                       confianca_nota
                 FROM wines
                 WHERE id = ANY(%s)
             """
@@ -78,7 +79,8 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
             sql = f"""
                 SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
+                       winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size,
+                       confianca_nota
                 FROM wines
                 {where}
                 ORDER BY winegod_score DESC NULLS LAST,

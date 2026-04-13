@@ -13,7 +13,7 @@ from tools.aliases import resolve_aliases
 _WINE_COLUMNS = """
     id, nome, produtor, safra, tipo, pais_nome, regiao,
     vivino_rating, preco_min, preco_max, moeda,
-    winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size
+    winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size, confianca_nota
 """
 
 # ORDER padrao: prioriza vinhos com dados canonicos, depois reviews.
@@ -466,7 +466,7 @@ def get_similar_wines(wine_id, limit=5):
             sql = f"""
                 SELECT id, nome, produtor, pais_nome, regiao, tipo,
                        vivino_rating, preco_min, preco_max, moeda,
-                       winegod_score, nota_wcf, nota_wcf_sample_size
+                       winegod_score, nota_wcf, nota_wcf_sample_size, confianca_nota
                 FROM wines
                 WHERE {where}
                 ORDER BY vivino_rating DESC NULLS LAST
@@ -500,7 +500,7 @@ def get_similar_wines(wine_id, limit=5):
                 sql2 = f"""
                     SELECT id, nome, produtor, pais_nome, regiao, tipo,
                            vivino_rating, preco_min, preco_max, moeda,
-                           winegod_score, nota_wcf, nota_wcf_sample_size
+                           winegod_score, nota_wcf, nota_wcf_sample_size, confianca_nota
                     FROM wines
                     WHERE {where2}
                     ORDER BY vivino_rating DESC NULLS LAST
