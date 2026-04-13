@@ -35,18 +35,26 @@ function CallbackHandler() {
         setToken(result.token);
         router.replace("/");
       } else {
-        setError("Falha ao fazer login. Tente novamente.");
+        setError("Falha ao conectar com o servidor. O servidor pode estar iniciando — aguarde 30s e tente novamente.");
       }
     });
   }, [searchParams, router]);
 
   if (error) {
     return (
-      <div className="text-center p-6">
+      <div className="text-center p-6 max-w-md">
         <p className="text-wine-text mb-4">{error}</p>
-        <a href="/" className="text-wine-accent hover:underline text-sm">
-          Voltar ao chat
-        </a>
+        <div className="flex flex-col gap-3 items-center">
+          <button
+            onClick={() => window.location.href = "/"}
+            className="px-4 py-2 bg-wine-accent text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
+          >
+            Tentar novamente
+          </button>
+          <a href="/" className="text-wine-muted hover:underline text-xs">
+            Voltar ao chat sem login
+          </a>
+        </div>
       </div>
     );
   }

@@ -14,8 +14,23 @@ import { getUser, logout as doLogout, isLoggedIn as checkLoggedIn } from "@/lib/
 import type { UserData } from "@/lib/auth";
 import type { Message } from "@/lib/types";
 
+const MESSAGES_KEY = "winegod_messages";
+
+function loadMessages(): Message[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(MESSAGES_KEY) || sessionStorage.getItem(MESSAGES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map((m: Message) => ({ ...m, timestamp: new Date(m.timestamp) }));
+    }
+  } catch {}
+  return [];
+}
+
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [isTyping, setIsTyping] = useState(false);
   const doneCalledRef = useRef(false);
   const [user, setUser] = useState<UserData | null>(null);
@@ -36,8 +51,24 @@ export default function Home() {
     }
   }, []);
 
+  // Persist messages to storage
+  useEffect(() => {
+    if (messages.length === 0) {
+      sessionStorage.removeItem(MESSAGES_KEY);
+      localStorage.removeItem(MESSAGES_KEY);
+      return;
+    }
+    const data = JSON.stringify(messages);
+    sessionStorage.setItem(MESSAGES_KEY, data);
+    if (user) {
+      localStorage.setItem(MESSAGES_KEY, data);
+    }
+  }, [messages, user]);
+
   const handleNewChat = useCallback(() => {
     setMessages([]);
+    sessionStorage.removeItem(MESSAGES_KEY);
+    localStorage.removeItem(MESSAGES_KEY);
     setIsTyping(false);
     setCreditsExhausted(null);
   }, []);
@@ -141,7 +172,9 @@ export default function Home() {
                 <line x1="3" y1="16" x2="21" y2="16" />
               </svg>
             </button>
-            <img src="/logo.png" alt="winegod.ai" className="h-14 w-auto" />
+            <button onClick={handleNewChat} className="cursor-pointer" aria-label="Voltar ao início">
+              <img src="/logo.png" alt="winegod.ai" className="h-14 w-auto" />
+            </button>
           </div>
           {user ? (
             <UserMenu
@@ -156,14 +189,20 @@ export default function Home() {
         </header>
 
         {messages.length === 0 && !isTyping ? (
-          <WelcomeScreen onSuggestionClick={handleSend} userName={user?.name} />
+          <WelcomeScreen
+            onSuggestionClick={handleSend}
+            userName={user?.name}
+            chatInputSlot={<ChatInput onSend={handleSend} disabled={isTyping || !!creditsExhausted} />}
+          />
         ) : (
-          <ChatWindow messages={messages} isTyping={isTyping} onSend={handleSend} />
+          <>
+            <ChatWindow messages={messages} isTyping={isTyping} onSend={handleSend} />
+            {creditsExhausted && (
+              <CreditsBanner isLoggedIn={!!user} reason={creditsExhausted} />
+            )}
+            <ChatInput onSend={handleSend} disabled={isTyping || !!creditsExhausted} />
+          </>
         )}
-        {creditsExhausted && (
-          <CreditsBanner isLoggedIn={!!user} reason={creditsExhausted} />
-        )}
-        <ChatInput onSend={handleSend} disabled={isTyping || !!creditsExhausted} />
       </main>
     </>
   );

@@ -38,9 +38,10 @@ const CARDS = [
 interface WelcomeScreenProps {
   onSuggestionClick: (text: string) => void;
   userName?: string;
+  chatInputSlot?: React.ReactNode;
 }
 
-export function WelcomeScreen({ onSuggestionClick, userName }: WelcomeScreenProps) {
+export function WelcomeScreen({ onSuggestionClick, userName, chatInputSlot }: WelcomeScreenProps) {
   const topRow = CARDS.slice(0, 4);
   const bottomRow = CARDS.slice(4, 6);
 
@@ -62,7 +63,14 @@ export function WelcomeScreen({ onSuggestionClick, userName }: WelcomeScreenProp
         </p>
       </div>
 
-      {/* Cards - bottom, just above input (style Gemini) */}
+      {/* Chat input slot - between greeting and cards */}
+      {chatInputSlot && (
+        <div className="px-4 pb-3">
+          {chatInputSlot}
+        </div>
+      )}
+
+      {/* Cards - bottom, below input (style Gemini) */}
       <div className="px-4 pb-3">
         <div className="w-full max-w-xl mx-auto">
           {/* Top row: 4 cards */}

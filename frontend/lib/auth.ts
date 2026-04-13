@@ -76,14 +76,21 @@ export async function exchangeCodeForToken(
   provider: "google" | "facebook" | "apple" | "microsoft" = "google"
 ): Promise<{ token: string; user: UserData } | null> {
   try {
-    const res = await fetch(`${API_URL}/api/auth/${provider}/callback`, {
+    const url = `${API_URL}/api/auth/${provider}/callback`;
+    console.log("[auth] exchanging code with:", url);
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[auth] ${provider} callback failed (${res.status}):`, errText);
+      return null;
+    }
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error("[auth] network error:", err);
     return null;
   }
 }
