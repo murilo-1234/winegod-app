@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Plus, Search, Heart, User, CreditCard, HelpCircle } from "lucide-react";
+import { Plus, Search, Heart, User, CreditCard, CircleHelp, Wine } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,7 +14,8 @@ interface SidebarProps {
   isLoggedIn: boolean;
 }
 
-const ICON_SIZE = 18;
+const ICON_SIZE = 20;
+const STROKE = 1.5;
 
 function IconBtn({
   icon,
@@ -29,7 +30,7 @@ function IconBtn({
     <button
       type="button"
       onClick={onClick}
-      className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-wine-surface text-wine-muted hover:text-wine-text transition-colors"
+      className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-wine-surface text-[#6b6b6b] hover:text-wine-text transition-colors"
       title={tooltip}
     >
       {icon}
@@ -54,7 +55,7 @@ function SidebarLink({
       onClick={onClick}
       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-wine-surface text-sm text-wine-text transition-colors"
     >
-      <span className="text-wine-muted flex-shrink-0">{icon}</span>
+      <span className="text-[#6b6b6b] flex-shrink-0">{icon}</span>
       <span className="flex-1 text-left">{label}</span>
       {shortcut && (
         <span className="text-xs text-wine-muted bg-wine-surface px-1.5 py-0.5 rounded">
@@ -94,30 +95,30 @@ export function Sidebar({
       {/* ── Collapsed icon strip (desktop only, always visible) ── */}
       <nav className="hidden md:flex fixed top-0 left-0 h-full w-12 bg-wine-bg border-r border-wine-border flex-col items-center pt-3 pb-3 gap-0.5 z-30">
         <IconBtn
-          icon={<Plus size={ICON_SIZE} />}
+          icon={<Plus size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Novo chat"
           onClick={onNewChat}
         />
         <IconBtn
-          icon={<Search size={ICON_SIZE} />}
+          icon={<Search size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Buscar"
           onClick={onToggle}
         />
 
-        <div className="w-6 border-t border-wine-border my-1.5" />
+        <div className="w-6 border-t border-wine-border/50 my-1.5" />
 
         <IconBtn
-          icon={<Heart size={ICON_SIZE} />}
+          icon={<Wine size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Meus vinhos favoritos"
           onClick={onToggle}
         />
         <IconBtn
-          icon={<User size={ICON_SIZE} />}
+          icon={<User size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Minha conta"
           onClick={onToggle}
         />
         <IconBtn
-          icon={<CreditCard size={ICON_SIZE} />}
+          icon={<CreditCard size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip={creditsLabel}
           onClick={onToggle}
         />
@@ -125,7 +126,7 @@ export function Sidebar({
         <div className="flex-1" />
 
         <IconBtn
-          icon={<HelpCircle size={ICON_SIZE} />}
+          icon={<CircleHelp size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Ajuda"
           onClick={onToggle}
         />
@@ -175,7 +176,7 @@ export function Sidebar({
         {/* Main menu */}
         <div className="px-2 py-1">
           <SidebarLink
-            icon={<Plus size={ICON_SIZE} />}
+            icon={<Plus size={ICON_SIZE} strokeWidth={STROKE} />}
             label="Novo chat"
             onClick={() => {
               onNewChat();
@@ -183,30 +184,30 @@ export function Sidebar({
             }}
           />
           <SidebarLink
-            icon={<Search size={ICON_SIZE} />}
+            icon={<Search size={ICON_SIZE} strokeWidth={STROKE} />}
             label="Buscar"
             shortcut="Ctrl+K"
           />
         </div>
 
-        <div className="mx-3 border-t border-wine-border" />
+        <div className="mx-3 border-t border-wine-border/50" />
 
         <div className="px-2 py-1">
           <SidebarLink
-            icon={<Heart size={ICON_SIZE} />}
+            icon={<Wine size={ICON_SIZE} strokeWidth={STROKE} />}
             label="Meus vinhos favoritos"
           />
           <SidebarLink
-            icon={<User size={ICON_SIZE} />}
+            icon={<User size={ICON_SIZE} strokeWidth={STROKE} />}
             label="Minha conta"
           />
           <SidebarLink
-            icon={<CreditCard size={ICON_SIZE} />}
+            icon={<CreditCard size={ICON_SIZE} strokeWidth={STROKE} />}
             label={creditsLabel}
           />
         </div>
 
-        <div className="mx-3 border-t border-wine-border" />
+        <div className="mx-3 border-t border-wine-border/50" />
 
         {/* History */}
         <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -221,7 +222,7 @@ export function Sidebar({
         {/* Footer */}
         <div className="px-2 pb-3 border-t border-wine-border pt-2">
           <SidebarLink
-            icon={<HelpCircle size={ICON_SIZE} />}
+            icon={<CircleHelp size={ICON_SIZE} strokeWidth={STROKE} />}
             label="Ajuda"
           />
         </div>
