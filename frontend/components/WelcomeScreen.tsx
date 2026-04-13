@@ -1,6 +1,82 @@
 "use client";
 
+import { useState } from "react";
 import { Camera, Wine, ClipboardList, Store, Scale, FileText } from "lucide-react";
+
+// ── Saudações por período do dia (fuso do usuário) ──
+
+const GREETINGS: Record<string, { anonymous: string[]; named: string[] }> = {
+  madrugada: {
+    anonymous: [
+      "Ainda acordado? Baco também não dorme.",
+      "A madrugada é dos curiosos — e dos bons vinhos.",
+      "As melhores escolhas se fazem quando o mundo dorme.",
+      "Noite longa? Eu conheço o vinho certo pra isso.",
+    ],
+    named: [
+      "Ainda de pé, {name}? Baco também não dorme.",
+      "A madrugada é sua, {name}. E os vinhos também.",
+      "{name}, insônia ou paixão? De qualquer forma, estou aqui.",
+      "O silêncio da noite combina com um bom vinho, {name}.",
+    ],
+  },
+  manha: {
+    anonymous: [
+      "Bom dia! Café primeiro, vinho depois — ou não.",
+      "Manhã fresca. Hora perfeita pra planejar o jantar.",
+      "O dia é jovem e cheio de vinhos por descobrir.",
+      "Bom dia! Já sabe o que vai beber hoje?",
+    ],
+    named: [
+      "Bom dia, {name}! Vamos encontrar algo especial hoje?",
+      "Manhã, {name}! Café ou vinho — por que não os dois?",
+      "{name}, o dia mal começou e já penso em vinhos. Você também?",
+      "Bom dia, {name}! Pronto pra uma nova descoberta?",
+    ],
+  },
+  tarde: {
+    anonymous: [
+      "Boa tarde! O almoço merece um bom acompanhamento.",
+      "Tarde perfeita pra descobrir um vinho novo.",
+      "O sol ainda está alto — e a vontade de vinho também.",
+      "Boa tarde! Me conta: o que você tá buscando?",
+    ],
+    named: [
+      "Boa tarde, {name}! Posso ajudar na escolha de hoje?",
+      "{name}, tarde perfeita pra descobrir algo novo.",
+      "Boa tarde, {name}! Que tipo de vinho combina com o seu dia?",
+      "{name}! A tarde pede um bom cálice. Posso ajudar?",
+    ],
+  },
+  noite: {
+    anonymous: [
+      "Boa noite! Hora perfeita pra um bom cálice.",
+      "A noite chegou — e com ela, a hora do vinho.",
+      "Boa noite! O jantar merece um vinho à altura.",
+      "A noite é pra relaxar. Me diz o que procura.",
+    ],
+    named: [
+      "Boa noite, {name}! Hora de escolher o vinho do jantar?",
+      "{name}, a noite caiu. Vamos encontrar algo especial?",
+      "Boa noite, {name}! Relaxa — o sommelier cuida de tudo.",
+      "{name}! Noite perfeita pra um bom vinho. O que prefere?",
+    ],
+  },
+};
+
+function getTimeGreeting(userName?: string): string {
+  const hour = new Date().getHours();
+  let period: string;
+  if (hour >= 0 && hour < 6) period = "madrugada";
+  else if (hour < 12) period = "manha";
+  else if (hour < 18) period = "tarde";
+  else period = "noite";
+
+  const pool = userName ? GREETINGS[period].named : GREETINGS[period].anonymous;
+  const idx = Math.floor(Math.random() * pool.length);
+  const phrase = pool[idx];
+  return userName ? phrase.replace("{name}", userName) : phrase;
+}
 
 const CARDS = [
   {
@@ -45,9 +121,7 @@ export function WelcomeScreen({ onSuggestionClick, userName, chatInputSlot }: We
   const topRow = CARDS.slice(0, 4);
   const bottomRow = CARDS.slice(4, 6);
 
-  const greeting = userName
-    ? `Saudações, ${userName}!`
-    : "Saudações, alma curiosa!";
+  const [greeting] = useState(() => getTimeGreeting(userName));
 
   return (
     <div className="flex-1 flex flex-col">
