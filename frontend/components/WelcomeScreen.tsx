@@ -74,7 +74,7 @@ const GREETINGS: Record<string, { anonymous: string[]; named: string[] }> = {
       "A noite é pra relaxar. Me diz o que procura.",
       "As estrelas saíram. E os melhores vinhos também.",
       "Boa noite! Fim do dia, começo da diversão. O que vai ser?",
-      "Noite é hora de celebrar — mesmo que seja só uma terça.",
+      "A melhor parte do dia começa agora — com um bom vinho.",
     ],
     named: [
       "Boa noite, {name}! Hora de escolher o vinho do jantar?",
@@ -88,15 +88,62 @@ const GREETINGS: Record<string, { anonymous: string[]; named: string[] }> = {
   },
 };
 
+// ── Saudações extras por dia da semana (0=dom, 1=seg, ..., 6=sab) ──
+
+const DAY_GREETINGS: Record<number, { anonymous: string[]; named: string[] }> = {
+  0: { // Domingo
+    anonymous: ["Domingo e vinho — a combinação perfeita pra recarregar."],
+    named: ["Domingo, {name}! Dia de relaxar com uma boa taça."],
+  },
+  1: { // Segunda
+    anonymous: ["Segunda-feira? Um bom vinho faz qualquer começo de semana melhor."],
+    named: ["{name}, segunda-feira pede coragem — e um bom vinho ajuda."],
+  },
+  2: { // Terça
+    anonymous: ["Noite é hora de celebrar — mesmo que seja só uma terça."],
+    named: ["{name}, terça-feira também merece um brinde. O que vai ser?"],
+  },
+  3: { // Quarta
+    anonymous: ["Quarta-feira — metade da semana, hora de se premiar."],
+    named: ["{name}, metade da semana! Um vinho pra comemorar?"],
+  },
+  4: { // Quinta
+    anonymous: ["Quinta-feira — quase lá. Um vinho pra esquentar a chegada do fim de semana."],
+    named: ["{name}, quinta-feira! O fim de semana já tá no horizonte."],
+  },
+  5: { // Sexta
+    anonymous: ["Sexta-feira! O vinho do fim de semana começa agora."],
+    named: ["Sextou, {name}! Que vinho vai abrir pra celebrar?"],
+  },
+  6: { // Sábado
+    anonymous: ["Sábado! Dia perfeito pra abrir aquela garrafa especial."],
+    named: ["{name}, sábado! Hoje vale abrir algo especial. O que tá pensando?"],
+  },
+};
+
 function getTimeGreeting(userName?: string): string {
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours();
+  const day = now.getDay(); // 0=dom, 6=sab
+
   let period: string;
   if (hour >= 0 && hour < 6) period = "madrugada";
   else if (hour < 12) period = "manha";
   else if (hour < 18) period = "tarde";
   else period = "noite";
 
-  const pool = userName ? GREETINGS[period].named : GREETINGS[period].anonymous;
+  // Pool base do periodo
+  const pool = userName
+    ? [...GREETINGS[period].named]
+    : [...GREETINGS[period].anonymous];
+
+  // Adicionar frase do dia da semana ao pool (se existir)
+  const dayPool = DAY_GREETINGS[day];
+  if (dayPool) {
+    const extras = userName ? dayPool.named : dayPool.anonymous;
+    pool.push(...extras);
+  }
+
   const idx = Math.floor(Math.random() * pool.length);
   const phrase = pool[idx];
   return userName ? phrase.replace("{name}", userName) : phrase;
