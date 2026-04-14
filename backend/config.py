@@ -9,5 +9,5 @@ class Config:
     DATABASE_URL = os.getenv("DATABASE_URL")
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
     FLASK_PORT = os.getenv("FLASK_PORT", "5000")
-    GUEST_CREDIT_LIMIT = int(os.getenv("GUEST_CREDIT_LIMIT", "50"))
+    GUEST_CREDIT_LIMIT = int(os.getenv("GUEST_CREDIT_LIMIT", "1000"))
     USER_CREDIT_LIMIT = int(os.getenv("USER_CREDIT_LIMIT", "15"))
