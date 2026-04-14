@@ -919,6 +919,172 @@ Documentos executivos de referencia (historicos, NAO precisam ser re-executados)
 - `C:\winegod-app\reports\2026-04-13_prompt_1_auditoria_auto_create_online.md`
 - `C:\winegod-app\reports\2026-04-13_prompt_2_homologacao_final_auto_create_online.md`
 
+### Checkpoint posterior - commit/push e proximo passo operacional
+
+Data: 2026-04-13
+
+Esta retomada posterior fez o fechamento de repositorio do pacote aprovado:
+
+1. Revalidacao local antes de commit:
+   - `python -m tests.test_new_wines_pipeline` -> `12 passed`
+   - `python -m tests.test_chat_pdf_video` -> `24 passed`
+   - `python -m tests.test_text_pipeline` -> `17 passed`
+   - `python -m tests.test_discovery_pipeline` -> `20 passed`
+   - `python -m tests.test_discovery_log` -> `19 passed`
+   - `python -m tests.test_pdf_pipeline` -> `22 passed`
+   - `python -m tests.test_item_status` -> `17/17`
+   - `python -m tests.test_resolver_pdf` -> `29 passed`
+   - consolidado revalidado novamente nesta retomada: `160/160`
+
+2. Commit/push do pacote coerente do escopo:
+   - branch: `main`
+   - remote: `origin`
+   - commit criado e enviado: `a829265c0f85a163a45516da0a5bd9a6a25ff7a7`
+   - mensagem do commit:
+     - `Add discovery pipeline, online auto-create, and chat persistence`
+
+3. O que este commit/push levou:
+   - discovery pipeline
+   - auto-create online de vinhos novos
+   - display de nota estimada por IA
+   - integracao nos canais `image`, `batch image`, `pdf`, `video`, `text`
+   - persistencia de conversas e rotas de conversations
+   - migrations/rollback relevantes
+   - testes e documentos executivos deste escopo
+
+4. O que NAO mudou no parecer:
+   - o job continua `aprovado com riscos residuais`
+   - o DB layer real ja foi provado com rollback transacional
+   - o path completo do app com usuario real + IA real + DB real + resposta final ainda NAO foi provado
+
+5. Proximo passo operacional real a partir daqui:
+   - o proximo passo NAO e codigo
+   - o proximo passo NAO e nova homologacao DB-only
+   - o proximo passo e execucao humana controlada no app real pelo operador
+   - canais escolhidos para essa validacao humana:
+     - `foto de prateleira`
+     - `pdf`
+     - `texto`
+   - `video` nao entra nesta rodada porque ainda nao esta em producao
+
+6. Como avaliar essa validacao humana:
+   - confirmar se vinho novo nao encontrado entra no fluxo de enriquecimento
+   - confirmar se, quando a IA classifica com seguranca suficiente como vinho, o cadastro entra na base
+   - confirmar se nome/produtor/safra/pais/regiao/uva vieram de forma aceitavel
+   - confirmar se aparece nota quando houver nota estimada confiavel
+   - confirmar se o sistema responde honestamente "sem nota" quando nao houver criterio suficiente
+   - confirmar que non-wine/spirit nao entram
+   - confirmar que nao duplica vinho existente
+
+7. Instrucoes de retomada para o proximo chat, se este terminal cair:
+   - ler PRIMEIRO este handoff master
+   - NAO rerodar Prompt 1 nem Prompt 2
+   - assumir que o pacote de codigo deste escopo ja foi commitado e pushado no commit acima
+   - assumir que o gap restante e somente a validacao humana ponta a ponta
+   - pedir ao operador os resultados dos 3 testes reais (`foto`, `pdf`, `texto`) e analisar a resposta do app
+
+8. Estado atual do workspace apos o push:
+   - existem outras mudancas locais fora deste escopo em `frontend/`, `prompts/`, `reports/` e `scripts/`
+   - essas mudancas paralelas NAO fazem parte do pacote do auto-create online ja pushado
+   - ao retomar, nao confundir sujeira residual do repo com pendencia deste job especifico
+
+### Checkpoint posterior - validacao humana em producao e instrumentacao de memoria
+
+Data: 2026-04-14
+
+Objetivo desta retomada:
+
+- observar o comportamento real em producao apos deploy
+- entender por que os testes de imagem nao estavam respondendo ao usuario
+- adicionar telemetria suficiente para diferenciar timeout SQL, crash de frontend e possivel estouro de memoria no servidor
+
+Evidencias reais coletadas em producao:
+
+1. Caso `label` (rotulo individual):
+   - OCR funcionou e leu `Finca Las Moras Cabernet Sauvignon`
+   - producer lido: `Finca Las Moras`
+   - safra lida: `2024`
+   - o fluxo entrou em `pre_resolve`
+   - buscas `prefix` e `producer` bateram `statement timeout` de ~5s
+   - a request terminou com HTTP `200`
+   - conclusao:
+     - backend nao caiu neste caso
+     - o fluxo de auto-create NAO ficou provado aqui
+     - houve evidencias de lentidao/timeout no resolver
+     - houve tambem erro de frontend no navegador (`Application error: a client-side exception has occurred`)
+
+2. Caso `shelf` (foto de prateleira):
+   - OCR classificou corretamente como `type=shelf`
+   - o fluxo entrou em `layer 2 (preproc)` para prateleira densa
+   - imediatamente depois houve restart do servico Gunicorn em producao
+   - conclusao:
+     - o canal `image/shelf` esta instavel em producao
+     - a hipotese principal ficou sendo consumo excessivo de memoria e/ou custo computacional alto durante preproc de shelf
+     - este caso NAO valida auto-create; ele morre antes de completar o fluxo
+
+3. Impacto administrativo:
+   - `texto` e `pdf` continuam sendo os canais mais seguros para validar o feature de auto-create ponta a ponta
+   - `image/shelf` passa a ser tratado como bug operacional separado de producao
+
+Instrumentacao adicional implementada nesta retomada:
+
+1. `backend/services/tracing.py`
+   - snapshot de memoria do processo e do cgroup/container:
+     - `rss_mb`
+     - `peak_rss_mb`
+     - `cgroup_current_mb`
+     - `cgroup_limit_mb`
+   - `RequestTrace.log()` agora imprime memoria no inicio/fim e delta de RSS
+   - request_id atual fica disponivel para logs de camadas internas
+
+2. `backend/tools/media.py`
+   - logs de memoria em:
+     - inicio de `process_image`
+     - fim de `qwen_flash`
+     - parse de `qwen_flash`
+     - gatilho de `preproc`
+     - inicio/fim de `_preprocess_image_for_dense_shelf`
+     - fim de `qwen_flash_preproc`
+     - inicio/fim de `gemini_fallback`
+     - fim de `process_image`
+     - excecao de `process_image`
+     - inicio/fim de `process_images_batch`
+     - inicio/fim de cada item do batch
+
+3. `backend/tools/search.py`
+   - logs de memoria em cada camada:
+     - `exact`
+     - `prefix`
+     - `producer`
+     - `fuzzy`
+   - tanto em `START` quanto `DONE` / `FAIL`
+
+Revalidacao local apos instrumentacao:
+
+- `python -m tests.test_new_wines_pipeline` -> `12 passed`
+- `python -m tests.test_chat_pdf_video` -> `24 passed`
+- `python -m tests.test_text_pipeline` -> `17 passed`
+- `python -m tests.test_pdf_pipeline` -> `22 passed`
+- `python -m tests.test_discovery_pipeline` -> `20 passed`
+- `python -m tests.test_resolver_pdf` -> `29 passed`
+
+Leitura executiva atualizada:
+
+- NAO foi possivel recuperar a memoria exata dos requests antigos so pelos logs ja existentes
+- a partir desta instrumentacao, o proximo deploy passa a registrar memoria nos hotspots corretos
+- o proximo passo de diagnostico para `image/shelf` e repetir o teste em producao e observar:
+  - memoria antes/depois do `preproc`
+  - memoria no fim de `qwen_flash`
+  - memoria no momento imediatamente anterior ao restart
+- se houver novo restart sem log de fim do `preproc`, a suspeita de OOM/limite do container sobe muito
+- se nao houver restart, mas houver crescimento grande de RSS/cgroup, teremos evidencia concreta do gargalo
+
+Orientacao de retomada:
+
+- se o objetivo for validar o feature do auto-create agora, priorizar `texto` e `pdf`
+- se o objetivo for diagnosticar o bug de `image/shelf`, usar os novos logs de memoria apos novo deploy
+- nao confundir o bug de estabilidade de imagem com invalidacao do trabalho de `texto/pdf/auto-create`
+
 ## Como manter este documento vivo
 
 Sempre atualizar ESTE arquivo:

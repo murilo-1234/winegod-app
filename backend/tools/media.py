@@ -7,9 +7,11 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 
 from google import genai
 from google.genai import types
+from services.tracing import log_memory
 
 
 # Acima deste tamanho de texto, pular chamada monolitica e ir direto para chunked
@@ -142,6 +144,8 @@ def qwen_text_generate(prompt_text):
 
 def _preprocess_image_for_dense_shelf(image_bytes):
     """Preprocessing pra prateleiras densas: CLAHE + upscale 1.5x + sharpen + contrast."""
+    t0 = time.time()
+    log_memory("dense_shelf_preproc:start", input_bytes=len(image_bytes))
     import io
     from PIL import Image, ImageEnhance, ImageFilter
     try:
@@ -162,7 +166,15 @@ def _preprocess_image_for_dense_shelf(image_bytes):
     img = ImageEnhance.Contrast(img).enhance(1.15)
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=95)
-    return buf.getvalue()
+    out = buf.getvalue()
+    log_memory(
+        "dense_shelf_preproc:end",
+        ms=round((time.time() - t0) * 1000),
+        input_bytes=len(image_bytes),
+        output_bytes=len(out),
+        ratio=round(len(out) / max(len(image_bytes), 1), 2),
+    )
+    return out
 
 
 # --- Prompts ---
@@ -408,55 +420,109 @@ def _detect_mime_type(image_bytes):
 def process_image(base64_image):
     """Pipeline de 3 camadas: Qwen flash (barato) -> Qwen+preprocessing -> Gemini (fallback)."""
     try:
+        t0_total = time.time()
         image_bytes = base64.b64decode(base64_image)
         mime_type = _detect_mime_type(image_bytes)
         print(f"[process_image] bytes={len(image_bytes)}, mime={mime_type}", flush=True)
+        log_memory("process_image:start", bytes=len(image_bytes), mime=mime_type)
 
         result = None
         layer_used = "unknown"
 
         # --- CAMADA 1: Qwen flash (barato, rapido) ---
+        t0_qwen = time.time()
         raw_text = _qwen_generate(image_bytes, mime_type, IMAGE_UNIFIED_PROMPT)
+        qwen_ms = round((time.time() - t0_qwen) * 1000)
+        log_memory(
+            "process_image:qwen_flash",
+            ms=qwen_ms,
+            raw_chars=len(raw_text or ""),
+        )
         if raw_text:
             try:
                 result = _parse_gemini_json(raw_text)
                 layer_used = "qwen_flash"
                 print(f"[process_image] qwen_flash OK: type={result.get('type')}", flush=True)
+                log_memory(
+                    "process_image:qwen_flash:parsed",
+                    image_type=result.get("type"),
+                    wines=len(result.get("wines", [])) if isinstance(result.get("wines"), list) else 0,
+                )
 
                 # Se shelf com 4+ vinhos, tentar camada 2 (preprocessing)
                 if (result.get("type") == "shelf"
                         and len(result.get("wines", [])) >= 4):
                     print("[process_image] shelf 4+ wines, trying layer 2 (preproc)", flush=True)
+                    log_memory(
+                        "process_image:preproc:trigger",
+                        wines=len(result.get("wines", [])),
+                    )
                     try:
+                        t0_preproc = time.time()
                         enhanced_bytes = _preprocess_image_for_dense_shelf(image_bytes)
+                        preproc_ms = round((time.time() - t0_preproc) * 1000)
+                        log_memory(
+                            "process_image:preproc:bytes_ready",
+                            ms=preproc_ms,
+                            enhanced_bytes=len(enhanced_bytes),
+                        )
+                        t0_qwen2 = time.time()
                         raw2 = _qwen_generate(enhanced_bytes, "image/jpeg", IMAGE_UNIFIED_PROMPT)
+                        qwen2_ms = round((time.time() - t0_qwen2) * 1000)
+                        log_memory(
+                            "process_image:qwen_flash_preproc",
+                            ms=qwen2_ms,
+                            raw_chars=len(raw2 or ""),
+                        )
                         if raw2:
                             result2 = _parse_gemini_json(raw2)
                             wines2 = result2.get("wines", [])
+                            log_memory(
+                                "process_image:qwen_flash_preproc:parsed",
+                                wines=len(wines2),
+                                total_visible=result2.get("total_visible"),
+                            )
                             if len(wines2) > len(result.get("wines", [])):
                                 result = result2
                                 layer_used = "qwen_flash_preproc"
                                 print(f"[process_image] preproc improved: {len(wines2)} wines", flush=True)
                     except Exception as e2:
                         print(f"[process_image] preproc error: {e2}", flush=True)
+                        log_memory("process_image:preproc:error", error=type(e2).__name__)
 
             except (json.JSONDecodeError, ValueError):
                 print(f"[process_image] qwen parse failed, falling back", flush=True)
+                log_memory("process_image:qwen_flash:parse_fail")
                 result = None
 
         # --- CAMADA 3: Fallback Gemini (quando Qwen nao disponivel ou falhou) ---
         if result is None:
             print("[process_image] falling back to Gemini", flush=True)
+            log_memory("process_image:gemini_fallback:start")
+            t0_gemini = time.time()
             raw_text = _gemini_generate([
                 IMAGE_UNIFIED_PROMPT,
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
             ])
+            gemini_ms = round((time.time() - t0_gemini) * 1000)
             result = _parse_gemini_json(raw_text)
             layer_used = "gemini_fallback"
+            log_memory(
+                "process_image:gemini_fallback:end",
+                ms=gemini_ms,
+                raw_chars=len(raw_text or ""),
+                image_type=result.get("type"),
+            )
 
         image_type = result.get("type", "not_wine")
         print(f"[process_image] layer={layer_used}, type={image_type}, "
               f"result={json.dumps(result, ensure_ascii=False)[:300]}", flush=True)
+        log_memory(
+            "process_image:end",
+            total_ms=round((time.time() - t0_total) * 1000),
+            layer=layer_used,
+            image_type=image_type,
+        )
 
         if image_type == "label":
             return _handle_label(result)
@@ -474,6 +540,7 @@ def process_image(base64_image):
             }
     except Exception as e:
         print(f"[process_image] EXCEPTION: {type(e).__name__}: {e}", flush=True)
+        log_memory("process_image:exception", error=type(e).__name__)
         return {
             "message": f"Erro ao processar imagem: {str(e)}. Descreva o vinho que voce viu!",
             "status": "error",
@@ -567,11 +634,21 @@ def _handle_shelf(result):
 
 def process_images_batch(images):
     """Processa array de imagens. Deduplica vinhos repetidos. Retorna resultados consolidados."""
+    t0 = time.time()
+    log_memory("process_images_batch:start", count=len(images))
     results = []
     seen_names = set()
 
-    for img_b64 in images:
-        results.append(process_image(img_b64))
+    for idx, img_b64 in enumerate(images, start=1):
+        log_memory("process_images_batch:item_start", index=idx)
+        item_result = process_image(img_b64)
+        results.append(item_result)
+        log_memory(
+            "process_images_batch:item_end",
+            index=idx,
+            image_type=item_result.get("image_type"),
+            status=item_result.get("status"),
+        )
 
     labels = []
     all_wines = []
@@ -620,7 +697,7 @@ def process_images_batch(images):
     if errors:
         parts.append(f"{len(errors)} imagem(ns) sem vinho identificado")
 
-    return {
+    output = {
         "status": "success",
         "image_count": len(images),
         "labels": labels,
@@ -630,6 +707,16 @@ def process_images_batch(images):
         "errors": errors,
         "description": " | ".join(p for p in parts if p),
     }
+    log_memory(
+        "process_images_batch:end",
+        total_ms=round((time.time() - t0) * 1000),
+        labels=len(labels),
+        screenshots=len(screenshots),
+        shelves=len(shelves),
+        all_wines=len(all_wines),
+        errors=len(errors),
+    )
+    return output
 
 
 def process_video(base64_video):
