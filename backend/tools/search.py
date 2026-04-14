@@ -86,8 +86,19 @@ def search_wine(query, limit=10, produtor=None, pais=None, regiao=None, tipo=Non
         # tipicamente da timeout (~5s) no Postgres do Render — pular vai direto para
         # fuzzy, que e mais eficiente para esse caso. Quando o caller passa produtor
         # explicitamente (image flow / pre-resolve), o comportamento e o mesmo de antes.
+        #
+        # Validacao de relevancia: Layer 3 busca SÓ pelo produtor, ignorando o nome.
+        # Pode retornar vinhos irrelevantes (ex: OCR le "Concha y Toro" como produtor
+        # mas o vinho e "Casillero del Diablo", sub-marca). Para evitar isso, quando
+        # ha tokens distintivos no query (nao-uva, nao-classificacao, nao-generico),
+        # pelo menos 1 deve aparecer em algum nome dos resultados.
         if not results and p_norm:
             results, layer_used = _try_layer("producer", lambda: _search_producer(conn, p_norm, limit, extra_where, extra_params, timeout_ms), conn, layer_used)
+            if results and layer_used == "producer":
+                if not _producer_results_relevant(q_norm, results):
+                    print(f"[search] producer results rejected: no distinctive query tokens in result names", flush=True)
+                    results = []
+                    layer_used = "none"
 
         # Camada 4: fuzzy com pg_trgm — apenas se allow_fuzzy=True
         if not results and allow_fuzzy:
@@ -152,6 +163,50 @@ def _try_layer(name, fn, conn, current_layer):
         except Exception:
             pass
         return [], current_layer
+
+
+# Tokens que nao distinguem um vinho especifico — usados para validar
+# se resultados da Layer 3 (producer) sao relevantes para o query.
+_NON_DISTINCTIVE_TOKENS = frozenset({
+    # Uvas
+    'cabernet', 'sauvignon', 'merlot', 'malbec', 'syrah', 'shiraz',
+    'chardonnay', 'pinot', 'noir', 'grigio', 'gris',
+    'tempranillo', 'garnacha', 'grenache', 'carmenere', 'bonarda', 'tannat',
+    'torrontes', 'viognier', 'riesling', 'sangiovese', 'nebbiolo', 'barbera',
+    'primitivo', 'zinfandel', 'mourvedre', 'verdejo', 'albarino', 'moscato',
+    'blanc', 'rouge',
+    # Classificacoes
+    'reserva', 'reserve', 'riserva', 'gran', 'grand', 'grande',
+    'crianza', 'roble', 'joven', 'classico', 'classic', 'superior', 'especial',
+    # Tipos e genericos
+    'tinto', 'blanco', 'branco', 'rosado', 'rose', 'red', 'white',
+    'sparkling', 'espumante', 'dulce', 'seco', 'dry', 'sweet',
+    'premium', 'seleccion', 'selection', 'limited', 'edition',
+    'single', 'vineyard', 'vino', 'wine', 'vin', 'vinho', 'cuvee',
+    'blend', 'estate', 'bodega', 'bodegas', 'chateau', 'domaine',
+    'tenuta', 'quinta', 'the', 'and', 'von', 'van', 'zum', 'sur',
+    'les', 'des', 'del', 'los', 'las',
+})
+
+
+def _producer_results_relevant(q_norm, results):
+    """Verifica se resultados da Layer 3 tem relevancia com o query.
+
+    Extrai tokens distintivos do query (excluindo uvas, classificacoes,
+    genericos). Se existem tokens distintivos, pelo menos 1 deve aparecer
+    em algum nome dos resultados. Se o query so tem tokens genericos
+    (ex: 'Merlot', 'Reserva'), aceita sem checar.
+    """
+    distinctive = [t for t in q_norm.split() if len(t) >= 3 and t not in _NON_DISTINCTIVE_TOKENS]
+    if not distinctive:
+        return True  # query so tem uva/classificacao/generico — aceita
+
+    for token in distinctive:
+        for wine in results:
+            nome = normalizar(wine.get("nome", ""))
+            if token in nome:
+                return True
+    return False
 
 
 def _build_filters(pais, regiao, tipo, safra, p_norm=None):
