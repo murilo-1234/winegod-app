@@ -325,18 +325,12 @@ def _search_tokens(conn, q_norm, limit, extra_where, extra_params):
     if _has_canonical(results):
         return results
 
-    # Tentativa 2: remover 1 token por vez (priorizar subsets maiores)
-    if len(tokens) >= 3:
-        for skip_idx in range(len(tokens)):
-            subset = [t for i, t in enumerate(tokens) if i != skip_idx]
-            results = _tokens_query(conn, subset, limit, extra_where, extra_params)
-            if _has_canonical(results):
-                return results
-
-    # Tentativa 3: identificar produtor dentro da sequencia de tokens.
+    # Tentativa 2: identificar produtor dentro da sequencia de tokens.
     # Tenta janelas de 1-3 tokens consecutivos como match exato em
     # produtor_normalizado (usa indice btree, ~400ms). Tokens restantes
     # sao buscados em nome_normalizado via LIKE.
+    # Roda ANTES do remove-1 porque e mais preciso: exige match exato
+    # no produtor, evitando retornar vinho de outro produtor.
     # Cobre: 'Casillero del Diablo' (3 tokens), 'Dona Dominga' (2 tokens),
     # e qualquer marca que o OCR leu junto com o nome do vinho.
     for window_size in (3, 2, 1):
@@ -350,6 +344,15 @@ def _search_tokens(conn, q_norm, limit, extra_where, extra_params):
             prod_extra = extra_where + " AND produtor_normalizado = %s"
             prod_params = extra_params + [candidate_prod]
             results = _tokens_query(conn, remaining, limit, prod_extra, prod_params)
+            if _has_canonical(results):
+                return results
+
+    # Tentativa 3: remover 1 token por vez (fallback menos preciso).
+    # So roda se a tentativa de produtor exato falhou.
+    if len(tokens) >= 3:
+        for skip_idx in range(len(tokens)):
+            subset = [t for i, t in enumerate(tokens) if i != skip_idx]
+            results = _tokens_query(conn, subset, limit, extra_where, extra_params)
             if _has_canonical(results):
                 return results
 
