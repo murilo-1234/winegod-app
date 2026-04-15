@@ -156,7 +156,15 @@ export function AppShell({
               </button>
               <Link
                 href="/"
-                onClick={() => onNewChat?.()}
+                onClick={(e) => {
+                  if (onNewChat) {
+                    // onNewChat handles navigation itself (hard nav when
+                    // leaving /chat/<id>) — prevent the Link's default to
+                    // avoid a race that resurrects the old conversation.
+                    e.preventDefault();
+                    onNewChat();
+                  }
+                }}
                 aria-label="Voltar ao início"
               >
                 <img

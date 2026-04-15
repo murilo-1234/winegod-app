@@ -270,25 +270,27 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
   }, [toggleNotice]);
 
   const handleNewChat = useCallback(() => {
+    // Clear storage synchronously so a fresh mount on / cannot read stale data
+    sessionStorage.removeItem(MESSAGES_KEY);
+    sessionStorage.removeItem(CONV_ID_KEY);
+    localStorage.removeItem(MESSAGES_KEY);
+    if (user) {
+      resetSessionId();
+    }
+    if (window.location.pathname !== "/") {
+      // Hard navigation — Next's client cache and React component reuse
+      // can otherwise resurrect /chat/<id> state on what should be a clean
+      // /. assign() forces a full reload at /.
+      window.location.assign("/");
+      return;
+    }
     setMessages([]);
     setConversationId(null);
     setConversationSaved(false);
     setOpeningConversation(false);
-    if (user) {
-      resetSessionId();
-    }
-    // Clear storage synchronously — router.push("/") would otherwise mount
-    // the home before the [conversationId] effect runs, and the home would
-    // read the stale CONV_ID_KEY and redirect right back to /chat/<id>.
-    sessionStorage.removeItem(MESSAGES_KEY);
-    sessionStorage.removeItem(CONV_ID_KEY);
-    localStorage.removeItem(MESSAGES_KEY);
     setIsTyping(false);
     setCreditsExhausted(null);
-    if (window.location.pathname !== "/") {
-      router.push("/");
-    }
-  }, [user, router]);
+  }, [user]);
 
   const handleAskBaco = useCallback(
     (text: string) => {
