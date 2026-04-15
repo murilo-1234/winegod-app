@@ -15,7 +15,7 @@ export function DeleteAccountSection() {
   if (!loggedIn) {
     return (
       <p>
-        Para excluir sua conta automaticamente, faca login e acesse esta pagina
+        Para excluir sua conta automaticamente, faça login e acesse esta página
         novamente. Se preferir, envie um e-mail para{" "}
         <a href="mailto:privacy@winegod.ai">privacy@winegod.ai</a> com o e-mail
         usado no login e o provedor utilizado.
@@ -27,8 +27,8 @@ export function DeleteAccountSection() {
     return (
       <div>
         <p>
-          Voce esta logado. Clique abaixo para excluir sua conta e todos os
-          dados associados. Esta acao e irreversivel.
+          Você está logado. Clique abaixo para excluir sua conta e todos os
+          dados associados. Esta ação é irreversível.
         </p>
         <button
           onClick={() => setConfirming(true)}
@@ -43,10 +43,10 @@ export function DeleteAccountSection() {
   return (
     <div className="rounded-xl border border-red-300 bg-red-50/50 p-4 space-y-3">
       <p className="text-sm font-medium text-red-700">
-        Tem certeza? Esta acao e irreversivel.
+        Tem certeza? Esta ação é irreversível.
       </p>
       <p className="text-xs text-red-600">
-        Seus dados de perfil, conversas e favoritos serao excluidos
+        Seus dados de perfil, conversas e favoritos serão excluídos
         permanentemente.
       </p>
       <div className="flex gap-3">

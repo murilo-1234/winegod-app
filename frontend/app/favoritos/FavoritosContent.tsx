@@ -42,7 +42,7 @@ function GuestState() {
         Entre para ver seus favoritos
       </h2>
       <p className="text-wine-muted text-sm mb-6 max-w-sm mx-auto">
-        Faca login para salvar e acessar suas conversas favoritas.
+        Faça login para salvar e acessar suas conversas favoritas.
       </p>
       <LoginButton />
     </div>
@@ -59,7 +59,7 @@ function ErrorState({
   return (
     <div className="text-center py-12">
       <p className="text-wine-muted text-sm mb-2">
-        {message || "Nao foi possivel carregar seus favoritos."}
+        {message || "Não foi possível carregar seus favoritos."}
       </p>
       <button
         onClick={onRetry}
@@ -91,7 +91,7 @@ function EmptyState() {
         Nenhuma conversa salva
       </h2>
       <p className="text-wine-muted text-sm max-w-sm mx-auto">
-        Quando voce salvar uma conversa no chat, ela aparecera aqui.
+        Quando você salvar uma conversa no chat, ela aparecerá aqui.
       </p>
     </div>
   );
@@ -112,7 +112,7 @@ function formatSavedDate(dateStr: string | null | undefined): string {
 
 function getConversationTitle(conv: ConversationSummary): string {
   const title = conv.title?.trim();
-  return title || "Conversa sem titulo";
+  return title || "Conversa sem título";
 }
 
 export function FavoritosContent() {
@@ -201,7 +201,7 @@ export function FavoritosContent() {
           <LoadingSkeleton />
         ) : authError ? (
           <ErrorState
-            message="Nao foi possivel verificar sua conta."
+            message="Não foi possível verificar sua conta."
             onRetry={() => window.location.reload()}
           />
         ) : error ? (
