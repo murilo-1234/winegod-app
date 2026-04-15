@@ -72,6 +72,7 @@ export default function Home() {
   const [conversationSaved, setConversationSaved] = useState(false);
   const [togglePending, setTogglePending] = useState(false);
   const [toggleError, setToggleError] = useState(false);
+  const [toggleNotice, setToggleNotice] = useState<"saved" | "removed" | null>(null);
   const toggleRequestRef = useRef(0);
 
   const refreshCredits = useCallback(async () => {
@@ -236,7 +237,14 @@ export default function Home() {
     toggleRequestRef.current++;
     setTogglePending(false);
     setToggleError(false);
+    setToggleNotice(null);
   }, [conversationId]);
+
+  useEffect(() => {
+    if (!toggleNotice) return;
+    const timeout = window.setTimeout(() => setToggleNotice(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [toggleNotice]);
 
   const handleNewChat = useCallback(() => {
     setMessages([]);
@@ -298,6 +306,7 @@ export default function Home() {
 
     if (ok) {
       setTogglePending(false);
+      setToggleNotice(next ? "saved" : "removed");
       setConvRefreshKey((k) => k + 1);
     } else {
       setConversationSaved(!next); // rollback
@@ -422,47 +431,67 @@ export default function Home() {
       <main className="relative flex flex-col h-full pb-16 max-w-3xl mx-auto w-full">
         {user && conversationId && (
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3 md:pr-5">
-            <button
-              type="button"
-              onClick={handleToggleSaved}
-              disabled={togglePending}
-              className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition-colors md:h-14 md:w-14 ${
-                togglePending
-                  ? "cursor-not-allowed border-wine-border opacity-50"
-                  : toggleError
-                  ? "border-red-300 hover:bg-red-50"
-                  : "border-wine-border hover:border-wine-accent hover:bg-wine-surface"
-              }`}
-              aria-label={
-                togglePending
-                  ? "Salvando..."
-                  : conversationSaved
-                  ? "Remover dos salvos"
-                  : "Salvar conversa"
-              }
-              title={
-                toggleError
-                  ? "Erro ao salvar. Clique para tentar novamente."
-                  : togglePending
-                  ? "Salvando..."
-                  : conversationSaved
-                  ? "Remover dos salvos"
-                  : "Salvar conversa"
-              }
-            >
-              <Heart
-                size={32}
-                strokeWidth={1.8}
-                className={
-                  toggleError
-                    ? "text-red-500"
+            <div className="pointer-events-auto flex items-center gap-2">
+              {(togglePending || toggleError || toggleNotice || conversationSaved) && (
+                <div
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur ${
+                    toggleError
+                      ? "border-red-200 bg-red-50 text-red-600"
+                      : "border-wine-border bg-white/95 text-wine-text"
+                  }`}
+                  aria-live="polite"
+                >
+                  {toggleError
+                    ? "Erro ao salvar"
+                    : togglePending
+                    ? "Salvando..."
+                    : toggleNotice === "removed"
+                    ? "Removida dos favoritos"
+                    : "Salva nos favoritos"}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleToggleSaved}
+                disabled={togglePending}
+                className={`flex h-12 w-12 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition-colors md:h-14 md:w-14 ${
+                  togglePending
+                    ? "cursor-not-allowed border-wine-border opacity-50"
+                    : toggleError
+                    ? "border-red-300 hover:bg-red-50"
+                    : "border-wine-border hover:border-wine-accent hover:bg-wine-surface"
+                }`}
+                aria-label={
+                  togglePending
+                    ? "Salvando..."
                     : conversationSaved
-                    ? "text-wine-accent"
-                    : "text-wine-text"
+                    ? "Remover dos favoritos"
+                    : "Salvar nos favoritos"
                 }
-                fill={conversationSaved ? "currentColor" : "none"}
-              />
-            </button>
+                title={
+                  toggleError
+                    ? "Erro ao salvar. Clique para tentar novamente."
+                    : togglePending
+                    ? "Salvando..."
+                    : conversationSaved
+                    ? "Remover dos favoritos"
+                    : "Salvar nos favoritos"
+                }
+              >
+                <Heart
+                  size={32}
+                  strokeWidth={1.8}
+                  className={
+                    toggleError
+                      ? "text-red-500"
+                      : conversationSaved
+                      ? "text-wine-accent"
+                      : "text-wine-text"
+                  }
+                  fill={conversationSaved ? "currentColor" : "none"}
+                />
+              </button>
+            </div>
           </div>
         )}
         {messages.length === 0 && !isTyping ? (

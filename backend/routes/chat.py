@@ -910,9 +910,6 @@ def chat_stream():
                 _cleanup_conversation_shell(session_id, current_user["id"])
             return
 
-        trace.log()
-        yield f"data: {json.dumps({'type': 'end', 'model': MODEL})}\n\n"
-
         response_text = "".join(full_response)
         session["messages"].append({"role": "user", "content": msg})
         session["messages"].append({"role": "assistant", "content": response_text})
@@ -922,6 +919,9 @@ def chat_stream():
             session["clean_messages"].append({"role": "user", "content": clean_msg})
             session["clean_messages"].append({"role": "assistant", "content": response_text})
             _persist_conversation(session_id, current_user["id"], session["clean_messages"])
+
+        trace.log()
+        yield f"data: {json.dumps({'type': 'end', 'model': MODEL})}\n\n"
 
     return Response(generate(), mimetype='text/event-stream',
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

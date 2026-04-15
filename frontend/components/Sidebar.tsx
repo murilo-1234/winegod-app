@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Menu, Heart, User, CreditCard, CircleHelp, Wine } from "lucide-react";
+import { Plus, Search, Menu, Heart, User, CreditCard, CircleHelp } from "lucide-react";
 import { fetchConversations, type ConversationSummary } from "@/lib/conversations";
 
 interface SidebarProps {
@@ -201,8 +201,8 @@ export function Sidebar({
         <div className="w-6 border-t border-wine-border/50 my-1.5" />
 
         <IconLink
-          icon={<Wine size={ICON_SIZE} strokeWidth={STROKE} />}
-          tooltip="Meus vinhos favoritos"
+          icon={<Heart size={ICON_SIZE} strokeWidth={STROKE} />}
+          tooltip="Favoritos"
           href="/favoritos"
         />
         <IconLink
@@ -293,8 +293,8 @@ export function Sidebar({
 
         <div className="px-2 py-1">
           <SidebarNavLink
-            icon={<Wine size={ICON_SIZE} strokeWidth={STROKE} />}
-            label="Meus vinhos favoritos"
+            icon={<Heart size={ICON_SIZE} strokeWidth={STROKE} />}
+            label="Favoritos"
             href="/favoritos"
             onClick={onClose}
           />

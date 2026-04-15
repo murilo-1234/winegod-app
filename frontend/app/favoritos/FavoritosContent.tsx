@@ -108,6 +108,11 @@ function formatSavedDate(dateStr: string | null | undefined): string {
   }
 }
 
+function getConversationTitle(conv: ConversationSummary): string {
+  const title = conv.title?.trim();
+  return title || "Conversa sem titulo";
+}
+
 export function FavoritosContent() {
   const { user, loading: authLoading, error: authError } = useAuth();
   const router = useRouter();
@@ -149,20 +154,18 @@ export function FavoritosContent() {
           <ErrorState onRetry={loadSaved} />
         ) : !user ? (
           <GuestState />
-        ) : conversations.filter((c) => c.title).length === 0 ? (
+        ) : conversations.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="space-y-2">
-            {conversations
-              .filter((c) => c.title)
-              .map((conv) => (
+            {conversations.map((conv) => (
                 <button
                   key={conv.id}
                   onClick={() => router.push(`/?conv=${conv.id}`)}
                   className="w-full text-left px-4 py-3 rounded-xl bg-wine-surface hover:bg-wine-surface/80 transition-colors"
                 >
                   <p className="text-sm text-wine-text font-medium truncate">
-                    {conv.title}
+                    {getConversationTitle(conv)}
                   </p>
                   {conv.saved_at && (
                     <p className="text-xs text-wine-muted mt-0.5">

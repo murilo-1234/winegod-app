@@ -26,6 +26,7 @@ export async function fetchConversations(): Promise<ConversationSummary[]> {
   if (!token) return [];
   const res = await fetch(`${API_URL}/api/conversations?limit=30`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -38,7 +39,10 @@ export async function searchConversations(
   if (!token) return [];
   const res = await fetch(
     `${API_URL}/api/conversations?q=${encodeURIComponent(query)}&limit=10`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -49,6 +53,7 @@ export async function fetchSavedConversations(): Promise<ConversationSummary[]> 
   if (!token) return [];
   const res = await fetch(`${API_URL}/api/conversations?saved=true&limit=50`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -109,7 +114,10 @@ export async function fetchConversation(
   try {
     const res = await fetch(
       `${API_URL}/api/conversations/${encodeURIComponent(id)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }
     );
     if (!res.ok) return null;
     return res.json();
