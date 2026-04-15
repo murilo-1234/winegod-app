@@ -1632,3 +1632,42 @@ Status operacional final desta coordenacao:
 - rollout `0A-4C` + pos-plano: FORMALMENTE ENCERRADO no workspace atual
 - nao ha blocker conhecido restante dentro do escopo do sidebar/legal/search rollout
 - trilho OAuth real continua aberto e separado do fechamento deste track
+
+### Prompt #27 - QA autenticado real em producao: CONCLUIDO
+
+Data: 2026-04-15
+
+Objetivo:
+- receber os resultados do QA autenticado humano/browser em producao e converter em aprovacao final do trilho
+
+Execucao real:
+- ambiente: https://chat.winegod.ai (producao), browser real, login Google real
+- esta aba atuou como fechador tecnico, auditando codigo antes do QA, corrigindo bugs reais reportados pelo executor humano e revalidando apos cada patch
+- cada correcao de codigo passou por `npm run build` + `npx tsc --noEmit` sequencial antes de commit/push
+- Vercel redeployou cada commit antes do proximo passo do QA
+
+Resultado:
+- 6/6 fluxos autenticados passaram em producao
+- redesign aplicado no meio do QA: criada rota `/chat/<id>` com URL permanente estilo Claude/ChatGPT, substituindo o `/?conv=<id>` que era apagado
+- UI de unsave inline em `/favoritos` (Heart vermelho + optimistic remove + toast)
+- bugs de `+` e logo ressuscitando conversa antiga corrigidos com hard nav
+- portugues das strings tocadas corrigido
+
+Arquivos tocados (resumo no handoff principal, secao 2026-04-15).
+
+Commits desta sessao (em ordem cronologica):
+- 1e91364b, b404bd25, ca831dc2, 2b1ab40c, 5ec292ee, 8916a5a2, 4f483abc, ecd6e5e5, 8897426d
+
+Status consolidado apos o prompt #27:
+- rollout do sidebar (0-4) + pos-plano toggle salvo: FECHADO
+- validacao runtime local sem browser: FECHADA
+- validacao visual/browser guest: FECHADA
+- QA autenticado real em producao: FECHADO
+- URL permanente por conversa: IMPLEMENTADA
+- unsave inline em `/favoritos`: IMPLEMENTADO
+
+Nao ha prompts pendentes neste trilho.
+
+Riscos residuais explicitos que saem deste escopo:
+- i18n real da UI nao existe ainda; R5 (global dia 1) nao esta atendido na interface
+- se/quando o app for abrir para outros paises, abrir trilho proprio de internacionalizacao (next-intl ou react-i18next, arquivos por idioma, tradutor humano nativo)

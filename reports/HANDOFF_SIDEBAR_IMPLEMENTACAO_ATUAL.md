@@ -1154,3 +1154,92 @@ Trilhos que permanecem fora deste fechamento e exigem ambiente com OAuth real:
 - `/favoritos` com lista populada por conta real
 - exclusao de conta real
 - migracao guest -> logado ponta a ponta
+
+### 2026-04-15 - QA autenticado real em producao: CONCLUIDO
+
+Ambiente: producao (https://chat.winegod.ai), executor humano com browser real, login Google real.
+
+Fluxos validados de ponta a ponta:
+
+1. Historico autenticado no sidebar
+   - login Google OK
+   - historico carrega no sidebar expandido
+   - clicar em conversa reabre no chat correto
+   - regressao visual inicial (flash da WelcomeScreen durante fetch) foi corrigida em tres patches sequenciais (spinner -> useLayoutEffect -> mounted gate)
+
+2. URL permanente por conversa
+   - redesign aplicado: criada rota `/chat/[id]` (cliente) como fonte de verdade da conversa
+   - `app/chat/[id]/page.tsx` e wrapper de `components/ChatHome.tsx` (toda a logica do Home foi extraida para esse componente parametrizado por `initialConversationId`)
+   - `app/page.tsx` virou wrapper trivial
+   - sidebar, `/favoritos` e `SearchModal` passam a navegar direto para `/chat/<id>`
+   - legacy `/?conv=<id>` continua funcionando com redirect automatico
+   - promocao de conversa (primeira resposta logada, migracao guest->logado) faz `router.replace(`/chat/<id>`)` para atualizar a URL sem reload
+   - refresh em `/chat/<id>` restaura a conversa via backend
+   - compartilhar o link com quem esta logado abre a conversa
+
+3. Dessalvar em `/favoritos`
+   - adicionado `<Heart>` vermelho inline a direita de cada linha
+   - click remove otimisticamente (UX imediato) + toast "Removida dos favoritos" por ~2.2s
+   - rollback + toast vermelho em caso de falha no backend
+   - botao desativado durante request para impedir double-click
+
+4. Links do sidebar pos-deploy
+   - `/favoritos`, `/conta`, `/plano`, `/ajuda` navegam sem regressao
+   - click em area vazia do collapsed strip agora abre o sidebar expandido (fix de usabilidade)
+   - `+` (novo chat) e logo do header fazem `window.location.assign("/")` quando saindo de `/chat/<id>` para eliminar cache do Next/React que estava ressuscitando a conversa antiga
+
+5. `SearchModal` autenticado
+   - Ctrl+K abre, Esc fecha, overlay fecha
+   - busca retorna secoes `Salvos` + `Conversas`, click abre `/chat/<id>`
+   - CTA `Perguntar ao Baco` continua abrindo novo chat com a pergunta
+
+6. Exclusao de conta real
+   - `/data-deletion` logado mostra `DeleteAccountSection` com confirmacao em 2 etapas
+   - exclusao no backend cascateia: user row, conversations, message_log anonimizado
+   - frontend limpa `winegod_token`, `winegod_session_id`, `winegod_conversation_id`, `winegod_messages` e volta a guest limpo
+   - portugues das strings da exclusao e do `/favoritos` corrigido (acentuacao)
+
+7. Migracao guest -> logado
+   - aba anonima: guest conversa -> login Google -> conversa migrou para o backend
+   - aparece no historico autenticado do sidebar imediatamente
+   - URL promovida para `/chat/<id>` automaticamente
+
+Commits desta sessao:
+- `1e91364b` Suppress WelcomeScreen flash when opening saved conversation
+- `b404bd25` Use useLayoutEffect to set opening flag before paint
+- `ca831dc2` Gate home body on mounted to fully eliminate WelcomeScreen flash
+- `2b1ab40c` Add /chat/<id> route so each conversation has a stable URL
+- `5ec292ee` Add inline unsave action on /favoritos with optimistic remove
+- `8916a5a2` Clear conversation storage synchronously on new chat and logout
+- `4f483abc` Make blank areas of the collapsed strip open the expanded sidebar
+- `ecd6e5e5` Force a hard reload when leaving /chat/<id> for new chat or logo
+- `8897426d` Restore missing Portuguese accents in delete-account and favoritos copy
+
+Validacao tecnica em cada commit:
+- `npm run build` em `frontend/`: OK
+- `npx tsc --noEmit` em `frontend/`, sequencial apos build: OK
+- Vercel redeployou cada commit em producao antes do QA humano do item seguinte
+
+Arquivos alterados nesta sessao:
+- `frontend/app/page.tsx` (vira wrapper trivial de `ChatHome`)
+- `frontend/app/chat/[id]/page.tsx` (novo, wrapper de `ChatHome` com prop)
+- `frontend/components/ChatHome.tsx` (novo, toda a logica do Home)
+- `frontend/components/Sidebar.tsx` (navegacao para `/chat/<id>` + areas vazias clicaveis)
+- `frontend/components/AppShell.tsx` (SearchModal navega para `/chat/<id>`, logo com `preventDefault`)
+- `frontend/app/favoritos/FavoritosContent.tsx` (Heart inline, optimistic unsave, toast, navegacao `/chat/<id>`, acentos)
+- `frontend/app/data-deletion/DeleteAccountSection.tsx` (acentos pt-BR)
+
+Status final do track:
+- rollout `0A` a `4C`: FECHADO
+- pos-plano de toggle salvo no chat: FECHADO
+- validacao runtime local sem browser: FECHADA
+- validacao visual/browser guest: FECHADA
+- QA autenticado real em producao: FECHADO
+- URL permanente por conversa (`/chat/<id>`): IMPLEMENTADA
+- `/favoritos` com unsave inline: IMPLEMENTADO
+- portugues corrigido nas paginas tocadas neste trilho: CONCLUIDO
+
+Riscos residuais explicitos (fora deste trilho):
+- internacionalizacao (i18n) real nao existe ainda — todo texto da UI esta hardcoded em pt-BR; R5 (global dia 1) nao esta atendido na interface mesmo com o system prompt do Baco respondendo em qualquer idioma
+- testes automatizados de cobertura de strings multilingue inexistentes
+- tradutor humano nativo por idioma ainda nao contratado
