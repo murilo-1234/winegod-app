@@ -174,7 +174,11 @@ export function Sidebar({
   return (
     <>
       {/* ── Collapsed icon strip (desktop only, always visible) ── */}
-      <nav className="hidden md:flex fixed top-0 left-0 h-full w-12 bg-wine-bg border-r border-wine-border flex-col items-center pt-3 pb-3 gap-0.5 z-30">
+      <nav
+        className={`hidden md:flex fixed top-0 left-0 h-full w-12 bg-wine-bg border-r border-wine-border flex-col items-center pt-3 pb-3 gap-0.5 ${
+          isOpen ? "z-30" : "z-[60]"
+        }`}
+      >
         <IconBtn
           icon={<Menu size={ICON_SIZE} strokeWidth={STROKE} />}
           tooltip="Abrir menu"
@@ -233,8 +237,8 @@ export function Sidebar({
       <aside
         className={`fixed top-0 left-0 h-full z-50 w-64 bg-wine-bg border-r border-wine-border flex flex-col transition-transform duration-200 ${
           isOpen
-            ? "translate-x-0 pointer-events-auto"
-            : "-translate-x-full pointer-events-none"
+            ? "translate-x-0 visible pointer-events-auto"
+            : "-translate-x-full invisible pointer-events-none"
         }`}
       >
         {/* Header */}
