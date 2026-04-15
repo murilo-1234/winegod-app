@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Heart } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { useAuth } from "@/lib/useAuth";
 import {
   fetchSavedConversations,
+  updateConversationSaved,
   type ConversationSummary,
 } from "@/lib/conversations";
 
@@ -119,6 +121,27 @@ export function FavoritosContent() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [notice, setNotice] = useState<{
+    kind: "removed" | "error";
+    text: string;
+  } | null>(null);
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showNotice = useCallback(
+    (kind: "removed" | "error", text: string) => {
+      setNotice({ kind, text });
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = setTimeout(() => setNotice(null), 2200);
+    },
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
 
   const loadSaved = useCallback(async () => {
     setLoading(true);
@@ -136,6 +159,37 @@ export function FavoritosContent() {
   useEffect(() => {
     if (user) loadSaved();
   }, [user, loadSaved]);
+
+  const handleUnsave = useCallback(
+    async (id: string) => {
+      if (pendingIds.has(id)) return;
+      const previous = conversations;
+      // Optimistic remove
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      setPendingIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      const ok = await updateConversationSaved(id, false);
+
+      setPendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+
+      if (ok) {
+        showNotice("removed", "Removida dos favoritos");
+      } else {
+        // Rollback
+        setConversations(previous);
+        showNotice("error", "Erro ao remover. Tente novamente.");
+      }
+    },
+    [conversations, pendingIds, showNotice]
+  );
 
   return (
     <AppShell>
@@ -158,25 +212,70 @@ export function FavoritosContent() {
           <EmptyState />
         ) : (
           <div className="space-y-2">
-            {conversations.map((conv) => (
-                <button
+            {conversations.map((conv) => {
+              const isPending = pendingIds.has(conv.id);
+              return (
+                <div
                   key={conv.id}
-                  onClick={() => router.push(`/chat/${conv.id}`)}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-wine-surface hover:bg-wine-surface/80 transition-colors"
+                  className="group flex items-center gap-2 px-4 py-3 rounded-xl bg-wine-surface hover:bg-wine-surface/80 transition-colors"
                 >
-                  <p className="text-sm text-wine-text font-medium truncate">
-                    {getConversationTitle(conv)}
-                  </p>
-                  {conv.saved_at && (
-                    <p className="text-xs text-wine-muted mt-0.5">
-                      Salva em {formatSavedDate(conv.saved_at)}
+                  <button
+                    onClick={() => router.push(`/chat/${conv.id}`)}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <p className="text-sm text-wine-text font-medium truncate">
+                      {getConversationTitle(conv)}
                     </p>
-                  )}
-                </button>
-              ))}
+                    {conv.saved_at && (
+                      <p className="text-xs text-wine-muted mt-0.5">
+                        Salva em {formatSavedDate(conv.saved_at)}
+                      </p>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUnsave(conv.id);
+                    }}
+                    disabled={isPending}
+                    className={`flex-shrink-0 p-2 rounded-full transition-colors ${
+                      isPending
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-red-50"
+                    }`}
+                    aria-label="Remover dos favoritos"
+                    title="Remover dos favoritos"
+                  >
+                    <Heart
+                      size={18}
+                      strokeWidth={1.8}
+                      className="text-red-500"
+                      fill="currentColor"
+                    />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+      {notice && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          aria-live="polite"
+        >
+          <div
+            className={`rounded-full border px-4 py-2 text-sm font-medium shadow-lg backdrop-blur ${
+              notice.kind === "error"
+                ? "border-red-200 bg-red-50 text-red-600"
+                : "border-wine-border bg-white/95 text-wine-text"
+            }`}
+          >
+            {notice.text}
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
