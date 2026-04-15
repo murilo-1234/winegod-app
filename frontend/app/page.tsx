@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
 import { Heart } from "lucide-react";
 import { ChatWindow } from "@/components/ChatWindow";
 import { ChatInput } from "@/components/ChatInput";
@@ -20,6 +20,10 @@ import type { Message } from "@/lib/types";
 
 const MESSAGES_KEY = "winegod_messages";
 const CONV_ID_KEY = "winegod_conversation_id";
+
+// useLayoutEffect on the client, useEffect during SSR (silences warning).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function generateMigrationTitle(
   messages: { role: string; content: string }[]
@@ -49,13 +53,17 @@ export default function Home() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [openingConversation, setOpeningConversation] = useState(false);
 
-  // Client-only hydration of guest draft and active conversationId —
-  // reading sessionStorage in useState initializer breaks SSR hydration.
-  useEffect(() => {
+  // useLayoutEffect runs after render but BEFORE the browser paints —
+  // this prevents the WelcomeScreen from being painted for one frame
+  // when arriving at /?conv= or restoring a backend-managed conversation.
+  useIsoLayoutEffect(() => {
+    const convParam = new URLSearchParams(window.location.search).get("conv");
+    if (convParam) {
+      setOpeningConversation(true);
+    }
     const savedConvId = sessionStorage.getItem(CONV_ID_KEY);
     if (savedConvId) {
       setConversationId(savedConvId);
-      // Suppress WelcomeScreen flash while init effect fetches conversation
       setOpeningConversation(true);
       return;
     }
