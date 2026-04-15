@@ -47,6 +47,7 @@ export default function Home() {
   const [creditsLimit, setCreditsLimit] = useState(0);
   const [creditsExhausted, setCreditsExhausted] = useState<"guest_limit" | "daily_limit" | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [openingConversation, setOpeningConversation] = useState(false);
 
   // Client-only hydration of guest draft and active conversationId —
   // reading sessionStorage in useState initializer breaks SSR hydration.
@@ -54,6 +55,8 @@ export default function Home() {
     const savedConvId = sessionStorage.getItem(CONV_ID_KEY);
     if (savedConvId) {
       setConversationId(savedConvId);
+      // Suppress WelcomeScreen flash while init effect fetches conversation
+      setOpeningConversation(true);
       return;
     }
     try {
@@ -129,6 +132,7 @@ export default function Home() {
           const convParam = params.get("conv");
           if (convParam) {
             window.history.replaceState({}, "", "/");
+            setOpeningConversation(true);
             const conv = await fetchConversation(convParam);
             if (conv && conv.messages.length) {
               setMessages(
@@ -143,6 +147,7 @@ export default function Home() {
               setSessionId(convParam);
               setConversationSaved(!!conv.is_saved);
             }
+            setOpeningConversation(false);
           } else {
             const savedConvId = sessionStorage.getItem(CONV_ID_KEY);
             if (savedConvId) {
@@ -163,6 +168,7 @@ export default function Home() {
               } else {
                 setConversationId(null);
               }
+              setOpeningConversation(false);
             } else {
               // No active conversation — migrate guest draft if present
               const draftRaw = sessionStorage.getItem(MESSAGES_KEY);
@@ -202,6 +208,8 @@ export default function Home() {
         }
         // Token invalid/expired — getUser() already removed it, fall through to guest
       }
+      // Guest path or token invalid — clear any pending opening flag
+      setOpeningConversation(false);
       refreshCredits();
     }
     init();
@@ -250,6 +258,7 @@ export default function Home() {
     setMessages([]);
     setConversationId(null);
     setConversationSaved(false);
+    setOpeningConversation(false);
     if (user) {
       resetSessionId();
     }
@@ -268,8 +277,12 @@ export default function Home() {
   );
 
   const handleOpenConversation = useCallback(async (id: string) => {
+    setOpeningConversation(true);
     const conv = await fetchConversation(id);
-    if (!conv || !conv.messages.length) return;
+    if (!conv || !conv.messages.length) {
+      setOpeningConversation(false);
+      return;
+    }
 
     setMessages(
       conv.messages.map((m, i) => ({
@@ -284,6 +297,7 @@ export default function Home() {
     setSessionId(id);
     setIsTyping(false);
     setCreditsExhausted(null);
+    setOpeningConversation(false);
   }, []);
 
   const handleToggleSaved = useCallback(async () => {
@@ -494,7 +508,11 @@ export default function Home() {
             </div>
           </div>
         )}
-        {messages.length === 0 && !isTyping ? (
+        {openingConversation ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-wine-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : messages.length === 0 && !isTyping ? (
           <WelcomeScreen
             onSuggestionClick={handleSend}
             userName={user?.name}
