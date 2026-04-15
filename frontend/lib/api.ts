@@ -1,6 +1,8 @@
+import { getToken } from "./auth";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-function getSessionId(): string {
+export function getSessionId(): string {
   let id = sessionStorage.getItem("winegod_session_id");
   if (!id) {
     id = crypto.randomUUID();
@@ -9,10 +11,19 @@ function getSessionId(): string {
   return id;
 }
 
+export function setSessionId(id: string): void {
+  sessionStorage.setItem("winegod_session_id", id);
+}
+
+export function resetSessionId(): void {
+  sessionStorage.removeItem("winegod_session_id");
+}
+
 export interface StreamCallbacks {
   onChunk: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+  onCreditsExhausted?: (reason: "guest_limit" | "daily_limit") => void;
 }
 
 export interface MediaPayload {
@@ -27,7 +38,7 @@ export async function sendMessageStream(
   callbacks: StreamCallbacks,
   media?: MediaPayload
 ): Promise<void> {
-  const { onChunk, onDone, onError } = callbacks;
+  const { onChunk, onDone, onError, onCreditsExhausted } = callbacks;
 
   try {
     const body: Record<string, unknown> = {
@@ -42,15 +53,30 @@ export async function sendMessageStream(
       }
     }
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}/api/chat/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      onError(`Erro do servidor (${response.status}): ${err}`);
+      const text = await response.text();
+      if (response.status === 429 && onCreditsExhausted) {
+        try {
+          const body = JSON.parse(text);
+          if (body.reason) {
+            onCreditsExhausted(body.reason);
+            return;
+          }
+        } catch {}
+      }
+      onError(`Erro do servidor (${response.status}): ${text}`);
       return;
     }
 

@@ -71,7 +71,7 @@ export function UserMenu({ user, creditsUsed, creditsLimit, onLogout }: UserMenu
               <div className="mt-1 h-1.5 rounded-full bg-wine-bg overflow-hidden">
                 <div
                   className="h-full rounded-full bg-wine-accent transition-all"
-                  style={{ width: `${(remaining / creditsLimit) * 100}%` }}
+                  style={{ width: `${creditsLimit > 0 ? (remaining / creditsLimit) * 100 : 0}%` }}
                 />
               </div>
             </div>

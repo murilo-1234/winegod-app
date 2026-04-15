@@ -23,6 +23,8 @@ export interface UserData {
   name: string;
   email: string;
   picture_url: string;
+  provider?: string;
+  last_login?: string;
 }
 
 export interface CreditsData {
@@ -64,7 +66,10 @@ export async function getCredits(sessionId?: string): Promise<CreditsData | null
     const res = await fetch(`${API_URL}/api/credits?${params}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401) removeToken();
+      return null;
+    }
     return res.json();
   } catch {
     return null;
@@ -109,6 +114,24 @@ export function getAppleLoginUrl(): string {
 
 export function getMicrosoftLoginUrl(): string {
   return `${API_URL}/api/auth/microsoft`;
+}
+
+export async function deleteAccount(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/me`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      removeToken();
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 export async function logout(): Promise<void> {

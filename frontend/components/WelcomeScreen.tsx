@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, Wine, ClipboardList, Store, Scale, FileText } from "lucide-react";
 
 // ── Saudações por período do dia (fuso do usuário) ──
@@ -188,11 +188,17 @@ interface WelcomeScreenProps {
   chatInputSlot?: React.ReactNode;
 }
 
+const DEFAULT_GREETING = "Me diz o que procura que eu resolvo.";
+
 export function WelcomeScreen({ onSuggestionClick, userName, chatInputSlot }: WelcomeScreenProps) {
   const topRow = CARDS.slice(0, 4);
   const bottomRow = CARDS.slice(4, 6);
 
-  const [greeting] = useState(() => getTimeGreeting(userName));
+  const [greeting, setGreeting] = useState(DEFAULT_GREETING);
+
+  useEffect(() => {
+    setGreeting(getTimeGreeting(userName));
+  }, [userName]);
 
   return (
     <div className="flex-1 flex flex-col">

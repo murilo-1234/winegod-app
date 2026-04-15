@@ -19,7 +19,7 @@ def create_app():
     flask_app.config.from_object(Config)
 
     CORS(flask_app, origins=[
-        "http://localhost:3000",
+        re.compile(r"http://localhost:\d+"),
         "https://chat.winegod.ai",
         re.compile(r"https://winegod.*\.vercel\.app"),
     ])
