@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { SearchModal } from "./SearchModal";
 import { LoginButton } from "./auth/LoginButton";
@@ -44,10 +43,6 @@ export function AppShell({
   onOpenConversation,
   onAskBaco,
   activeConversationId,
-  activeConversationSaved,
-  onToggleSaved,
-  toggleSavedPending,
-  toggleSavedError,
   conversationsRefreshKey,
 }: AppShellProps) {
   const router = useRouter();
@@ -172,47 +167,6 @@ export function AppShell({
               </Link>
             </div>
             <div className="flex items-center gap-1">
-              {user && activeConversationId && onToggleSaved && (
-                <button
-                  type="button"
-                  onClick={onToggleSaved}
-                  disabled={toggleSavedPending}
-                  className={`p-2 rounded-lg transition-colors ${
-                    toggleSavedPending
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-wine-surface"
-                  }`}
-                  aria-label={
-                    toggleSavedPending
-                      ? "Salvando..."
-                      : activeConversationSaved
-                      ? "Remover dos salvos"
-                      : "Salvar conversa"
-                  }
-                  title={
-                    toggleSavedError
-                      ? "Erro ao salvar. Clique para tentar novamente."
-                      : toggleSavedPending
-                      ? "Salvando..."
-                      : activeConversationSaved
-                      ? "Remover dos salvos"
-                      : "Salvar conversa"
-                  }
-                >
-                  <Heart
-                    size={18}
-                    strokeWidth={1.5}
-                    className={
-                      toggleSavedError
-                        ? "text-red-500"
-                        : activeConversationSaved
-                        ? "text-wine-accent"
-                        : "text-wine-muted"
-                    }
-                    fill={activeConversationSaved ? "currentColor" : "none"}
-                  />
-                </button>
-              )}
               {user ? (
                 <UserMenu
                   user={user}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { Heart } from "lucide-react";
 import { ChatWindow } from "@/components/ChatWindow";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -416,13 +417,54 @@ export default function Home() {
       onOpenConversation={handleOpenConversation}
       onAskBaco={handleAskBaco}
       activeConversationId={conversationId}
-      activeConversationSaved={conversationSaved}
-      onToggleSaved={handleToggleSaved}
-      toggleSavedPending={togglePending}
-      toggleSavedError={toggleError}
       conversationsRefreshKey={convRefreshKey}
     >
-      <main className="flex flex-col h-full pb-16 max-w-3xl mx-auto">
+      <main className="relative flex flex-col h-full pb-16 max-w-3xl mx-auto w-full">
+        {user && conversationId && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3 md:pr-5">
+            <button
+              type="button"
+              onClick={handleToggleSaved}
+              disabled={togglePending}
+              className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition-colors md:h-14 md:w-14 ${
+                togglePending
+                  ? "cursor-not-allowed border-wine-border opacity-50"
+                  : toggleError
+                  ? "border-red-300 hover:bg-red-50"
+                  : "border-wine-border hover:border-wine-accent hover:bg-wine-surface"
+              }`}
+              aria-label={
+                togglePending
+                  ? "Salvando..."
+                  : conversationSaved
+                  ? "Remover dos salvos"
+                  : "Salvar conversa"
+              }
+              title={
+                toggleError
+                  ? "Erro ao salvar. Clique para tentar novamente."
+                  : togglePending
+                  ? "Salvando..."
+                  : conversationSaved
+                  ? "Remover dos salvos"
+                  : "Salvar conversa"
+              }
+            >
+              <Heart
+                size={32}
+                strokeWidth={1.8}
+                className={
+                  toggleError
+                    ? "text-red-500"
+                    : conversationSaved
+                    ? "text-wine-accent"
+                    : "text-wine-text"
+                }
+                fill={conversationSaved ? "currentColor" : "none"}
+              />
+            </button>
+          </div>
+        )}
         {messages.length === 0 && !isTyping ? (
           <WelcomeScreen
             onSuggestionClick={handleSend}
