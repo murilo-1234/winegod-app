@@ -52,15 +52,18 @@ export default function Home() {
   const [creditsExhausted, setCreditsExhausted] = useState<"guest_limit" | "daily_limit" | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [openingConversation, setOpeningConversation] = useState(false);
+  // The home is statically prerendered, so the SSR'd HTML always shows
+  // the WelcomeScreen — that paints before any JS runs and causes a
+  // visible flash when the URL is /?conv= or a backend conversation is
+  // about to be restored. We gate the body on `mounted` so the very
+  // first paint is a neutral spinner; once hydration runs we know
+  // whether to render WelcomeScreen, spinner, or the conversation.
+  const [mounted, setMounted] = useState(false);
 
-  // useLayoutEffect runs after render but BEFORE the browser paints —
-  // this prevents the WelcomeScreen from being painted for one frame
-  // when arriving at /?conv= or restoring a backend-managed conversation.
   useIsoLayoutEffect(() => {
-    const convParam = new URLSearchParams(window.location.search).get("conv");
-    if (convParam) {
-      setOpeningConversation(true);
-    }
+    setMounted(true);
+    const hasConvParam = new URLSearchParams(window.location.search).has("conv");
+    if (hasConvParam) setOpeningConversation(true);
     const savedConvId = sessionStorage.getItem(CONV_ID_KEY);
     if (savedConvId) {
       setConversationId(savedConvId);
@@ -516,7 +519,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        {openingConversation ? (
+        {!mounted || openingConversation ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-wine-accent border-t-transparent rounded-full animate-spin" />
           </div>
