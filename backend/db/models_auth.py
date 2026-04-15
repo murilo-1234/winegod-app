@@ -160,6 +160,20 @@ def upsert_user(provider, provider_id, email, name, picture_url):
         release_connection(conn)
 
 
+def delete_user(user_id):
+    """Deleta usuario por ID. Retorna True se existia, False se nao.
+    Cascade: conversations deletadas, message_log.user_id set NULL."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            deleted = cur.rowcount > 0
+            conn.commit()
+            return deleted
+    finally:
+        release_connection(conn)
+
+
 def get_user_by_id(user_id):
     """Retorna dados do usuario por ID."""
     conn = get_connection()
