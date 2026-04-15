@@ -71,6 +71,62 @@ def gemini_text_generate(prompt_text, thinking=False):
     return _gemini_generate(prompt_text, thinking=thinking)
 
 
+class ThinkingLeakError(RuntimeError):
+    """Raised when a Gemini enrichment call emits thoughts despite thinking_budget=0."""
+
+
+def gemini_enrichment_generate(prompt_text, model):
+    """Gemini call with strict `thinking=0` guarantees for the v3 enrichment.
+
+    Returns dict with `text`, `model`, `prompt_tokens`, `output_tokens`,
+    `thought_tokens`, `latency_ms`. Raises `ThinkingLeakError` if the response
+    metadata reports non-zero `thoughts_token_count` so the caller fails loudly
+    instead of silently paying for thinking in production.
+    """
+    client = _get_gemini_client()
+    config_kwargs = {
+        "thinking_config": types.ThinkingConfig(thinking_budget=0),
+    }
+    try:
+        # Only newer SDKs expose include_thoughts on ThinkingConfig; set it when
+        # available to make the contract belt-and-suspenders.
+        config_kwargs["thinking_config"] = types.ThinkingConfig(
+            thinking_budget=0, include_thoughts=False
+        )
+    except TypeError:
+        pass
+
+    config = types.GenerateContentConfig(**config_kwargs)
+
+    t0 = time.time()
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt_text,
+        config=config,
+    )
+    latency_ms = round((time.time() - t0) * 1000)
+
+    usage = getattr(response, "usage_metadata", None)
+    prompt_tokens = getattr(usage, "prompt_token_count", 0) or 0
+    output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+    thought_tokens = getattr(usage, "thoughts_token_count", 0) or 0
+
+    if thought_tokens:
+        raise ThinkingLeakError(
+            f"Gemini {model} returned thoughts_token_count={thought_tokens} "
+            "despite thinking_budget=0"
+        )
+
+    return {
+        "text": response.text or "",
+        "model": model,
+        "prompt_tokens": prompt_tokens,
+        "output_tokens": output_tokens,
+        "thought_tokens": thought_tokens,
+        "latency_ms": latency_ms,
+    }
+
+
 # --- Lazy Qwen client (DashScope, OpenAI-compatible) ---
 
 _qwen_client = None

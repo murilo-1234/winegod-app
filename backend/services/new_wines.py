@@ -16,6 +16,11 @@ from tools.media import qwen_text_generate, gemini_text_generate
 from tools.normalize import normalizar
 from tools.resolver import _derive_item_status
 
+try:
+    from config import Config
+except ImportError:  # pragma: no cover
+    from backend.config import Config  # type: ignore
+
 
 MAX_SYNC_NEW_WINES = 2
 MAX_BUDGET_MS = 8000
@@ -139,7 +144,15 @@ def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=Non
     t0 = time.time()
     to_process = unresolved_items[:MAX_SYNC_NEW_WINES]
     skipped = unresolved_items[MAX_SYNC_NEW_WINES:]
-    payload = _classify_candidates(to_process)
+
+    use_v3 = (
+        Config.ENRICHMENT_MODE == "gemini_hybrid_v3"
+        and Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE
+    )
+    if use_v3:
+        payload = _classify_candidates_v3(to_process, source_channel)
+    else:
+        payload = _classify_candidates(to_process)
 
     if not payload:
         return {
@@ -246,6 +259,30 @@ def _classify_candidates(unresolved_items):
     except Exception as e:
         print(f"[new_wines] classify error: {type(e).__name__}: {e}", flush=True)
         return None
+
+
+def _classify_candidates_v3(unresolved_items, source_channel):
+    """Classificador via enrichment v3 hibrido (Gemini 2.5 + 3.1).
+
+    Retorna payload compativel com o formato JSON do legado
+    (`{"items": [{...}]}`) para que `_is_insertable_wine()` e
+    `_insert_or_get_wine()` sigam funcionando sem mudanca de contrato.
+    """
+    if not unresolved_items:
+        return None
+
+    from services.enrichment_v3 import enrich_items_v3, to_auto_create_enriched
+
+    try:
+        v3 = enrich_items_v3(
+            unresolved_items, source_channel=f"auto_create_{source_channel}"
+        )
+    except Exception as e:
+        print(f"[new_wines] v3 classify error: {type(e).__name__}: {e}", flush=True)
+        return None
+
+    items = [to_auto_create_enriched(parsed) for parsed in v3.get("items", [])]
+    return {"items": items, "v3_stats": v3.get("stats")}
 
 
 def _parse_llm_json(raw_text):

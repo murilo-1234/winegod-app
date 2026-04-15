@@ -10,6 +10,11 @@ from tools.media import qwen_text_generate
 from tools.search import search_wine
 from tools.resolver import _pick_best, _derive_item_status
 
+try:
+    from config import Config
+except ImportError:  # pragma: no cover
+    from backend.config import Config  # type: ignore
+
 # Limites operacionais
 MAX_SYNC_UNKNOWNS = 2
 MAX_ENRICHMENT_CALLS = 2
@@ -58,15 +63,24 @@ def discover_unknowns(unresolved_items, trace=None, initial_seen_ids=None):
     enrichment_count = 0
     seen_ids = set(initial_seen_ids) if initial_seen_ids else set()
 
-    for item in to_enrich:
+    v3_stats = None
+    enriched_by_index: dict[int, dict] = {}
+    if Config.ENRICHMENT_MODE == "gemini_hybrid_v3" and to_enrich:
+        # hibrido v3: uma unica chamada em batch (2.5 + escalacao 3.1)
+        from services.enrichment_v3 import enrich_items_v3, to_discovery_enriched
+        v3 = enrich_items_v3(to_enrich, source_channel="discovery", trace=trace)
+        v3_stats = v3["stats"]
+        for idx, parsed in enumerate(v3["items"], start=1):
+            enriched = to_discovery_enriched(parsed)
+            if enriched:
+                enriched_by_index[idx] = enriched
+        enrichment_count = v3_stats.get("total_items", 0)
+
+    for idx, item in enumerate(to_enrich, start=1):
         # Circuit breaker por tempo
         elapsed_ms = (time.time() - t0) * 1000
         if elapsed_ms > MAX_BUDGET_MS:
             print(f"[discovery] budget exceeded ({elapsed_ms:.0f}ms), stopping", flush=True)
-            still_unresolved.append(item)
-            continue
-
-        if enrichment_count >= MAX_ENRICHMENT_CALLS:
             still_unresolved.append(item)
             continue
 
@@ -78,9 +92,14 @@ def discover_unknowns(unresolved_items, trace=None, initial_seen_ids=None):
             still_unresolved.append(item)
             continue
 
-        # Enrichment via Qwen-turbo
-        enriched = _enrich_wine(raw_name, raw_producer)
-        enrichment_count += 1
+        if Config.ENRICHMENT_MODE == "gemini_hybrid_v3":
+            enriched = enriched_by_index.get(idx)
+        else:
+            if enrichment_count >= MAX_ENRICHMENT_CALLS:
+                still_unresolved.append(item)
+                continue
+            enriched = _enrich_wine(raw_name, raw_producer)
+            enrichment_count += 1
 
         if not enriched:
             still_unresolved.append(item)
@@ -111,7 +130,10 @@ def discover_unknowns(unresolved_items, trace=None, initial_seen_ids=None):
         "resolved_second": len(newly_resolved),
         "budget_used_ms": elapsed_ms,
         "skipped": len(skipped),
+        "mode": Config.ENRICHMENT_MODE,
     }
+    if v3_stats is not None:
+        stats["v3"] = v3_stats
     print(
         f"[discovery] done: enriched={enrichment_count} "
         f"resolved={len(newly_resolved)} "
