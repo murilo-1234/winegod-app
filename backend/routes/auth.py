@@ -3,7 +3,7 @@ import jwt
 import requests
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, redirect
-from db.models_auth import upsert_user, get_user_by_id
+from db.models_auth import upsert_user, get_user_by_id, delete_user
 from config import Config
 
 auth_bp = Blueprint('auth', __name__)
@@ -63,8 +63,6 @@ def google_login():
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "openid email profile",
-        "access_type": "offline",
-        "prompt": "consent",
         "state": "google",
     }
     query = "&".join(f"{k}={requests.utils.quote(str(v))}" for k, v in params.items())
@@ -153,6 +151,21 @@ def get_me():
             "limit": limit,
         }
     })
+
+
+@auth_bp.route('/auth/me', methods=['DELETE'])
+def delete_me():
+    """DELETE /api/auth/me — exclui a conta do usuario autenticado.
+    Cascade: conversations deletadas, message_log.user_id set NULL."""
+    user = get_current_user(request)
+    if not user:
+        return jsonify({"error": "Token invalido ou expirado"}), 401
+
+    deleted = delete_user(user["id"])
+    if not deleted:
+        return jsonify({"error": "Usuario nao encontrado"}), 404
+
+    return jsonify({"message": "Conta excluida com sucesso"})
 
 
 @auth_bp.route('/auth/logout', methods=['POST'])
