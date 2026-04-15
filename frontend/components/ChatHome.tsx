@@ -277,7 +277,11 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
     if (user) {
       resetSessionId();
     }
+    // Clear storage synchronously — router.push("/") would otherwise mount
+    // the home before the [conversationId] effect runs, and the home would
+    // read the stale CONV_ID_KEY and redirect right back to /chat/<id>.
     sessionStorage.removeItem(MESSAGES_KEY);
+    sessionStorage.removeItem(CONV_ID_KEY);
     localStorage.removeItem(MESSAGES_KEY);
     setIsTyping(false);
     setCreditsExhausted(null);
@@ -336,6 +340,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
     setCreditsExhausted(null);
     resetSessionId();
     sessionStorage.removeItem(MESSAGES_KEY);
+    sessionStorage.removeItem(CONV_ID_KEY);
     localStorage.removeItem(MESSAGES_KEY);
     refreshCredits();
     if (window.location.pathname !== "/") {
