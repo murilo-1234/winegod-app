@@ -359,7 +359,7 @@ export function Sidebar({
                       if (onOpenConversation) {
                         onOpenConversation(conv.id);
                       } else {
-                        router.push(`/?conv=${conv.id}`);
+                        router.push(`/chat/${conv.id}`);
                       }
                       onClose();
                     }}

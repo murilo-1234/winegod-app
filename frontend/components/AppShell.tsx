@@ -196,7 +196,7 @@ export function AppShell({
           if (onOpenConversation) {
             onOpenConversation(id);
           } else {
-            router.push(`/?conv=${id}`);
+            router.push(`/chat/${id}`);
           }
           setSearchOpen(false);
         }}

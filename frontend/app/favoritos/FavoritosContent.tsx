@@ -161,7 +161,7 @@ export function FavoritosContent() {
             {conversations.map((conv) => (
                 <button
                   key={conv.id}
-                  onClick={() => router.push(`/?conv=${conv.id}`)}
+                  onClick={() => router.push(`/chat/${conv.id}`)}
                   className="w-full text-left px-4 py-3 rounded-xl bg-wine-surface hover:bg-wine-surface/80 transition-colors"
                 >
                   <p className="text-sm text-wine-text font-medium truncate">
