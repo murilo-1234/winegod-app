@@ -175,9 +175,16 @@ export function Sidebar({
     <>
       {/* ── Collapsed icon strip (desktop only, always visible) ── */}
       <nav
-        className={`hidden md:flex fixed top-0 left-0 h-full w-12 bg-wine-bg border-r border-wine-border flex-col items-center pt-3 pb-3 gap-0.5 ${
+        className={`hidden md:flex fixed top-0 left-0 h-full w-12 bg-wine-bg border-r border-wine-border flex-col items-center pt-3 pb-3 gap-0.5 cursor-pointer select-none ${
           isOpen ? "z-30" : "z-[60]"
         }`}
+        onClick={(e) => {
+          // Clicking the bare strip area (between or around icons) opens
+          // the expanded sidebar; clicks on individual icons keep their
+          // own behavior because IconBtn/IconLink are children that
+          // handle their own onClick.
+          if (e.target === e.currentTarget) onExpandSidebar?.();
+        }}
       >
         <IconBtn
           icon={<Menu size={ICON_SIZE} strokeWidth={STROKE} />}
@@ -185,7 +192,10 @@ export function Sidebar({
           onClick={onExpandSidebar}
         />
 
-        <div className="w-6 border-t border-wine-border/50 my-1.5" />
+        <div
+          className="w-6 border-t border-wine-border/50 my-1.5"
+          onClick={onExpandSidebar}
+        />
 
         <IconBtn
           icon={<Plus size={ICON_SIZE} strokeWidth={STROKE} />}
@@ -198,7 +208,10 @@ export function Sidebar({
           onClick={onSearch}
         />
 
-        <div className="w-6 border-t border-wine-border/50 my-1.5" />
+        <div
+          className="w-6 border-t border-wine-border/50 my-1.5"
+          onClick={onExpandSidebar}
+        />
 
         <IconLink
           icon={<Heart size={ICON_SIZE} strokeWidth={STROKE} />}
@@ -216,7 +229,7 @@ export function Sidebar({
           href="/plano"
         />
 
-        <div className="flex-1" />
+        <div className="flex-1" onClick={onExpandSidebar} />
 
         <IconLink
           icon={<CircleHelp size={ICON_SIZE} strokeWidth={STROKE} />}
