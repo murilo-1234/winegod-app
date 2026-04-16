@@ -26,6 +26,8 @@ try:
 except ImportError:  # pragma: no cover - fallback for flat imports
     from backend.config import Config  # type: ignore
 
+from utils.country_names import iso_to_name as _central_iso_to_name
+
 
 _PROMPT_CACHE: dict[str, str] = {}
 _CONTROLLED_ROLLOUT_WARNED = False
@@ -62,36 +64,7 @@ _STYLE_CODE_MAP = {
     "d": "sobremesa",
 }
 
-_COUNTRY_NAMES = {
-    "ar": "Argentina",
-    "at": "Austria",
-    "au": "Australia",
-    "br": "Brasil",
-    "bg": "Bulgaria",
-    "ca": "Canada",
-    "ch": "Switzerland",
-    "cl": "Chile",
-    "cz": "Czech Republic",
-    "de": "Germany",
-    "es": "Spain",
-    "fr": "France",
-    "gb": "United Kingdom",
-    "ge": "Georgia",
-    "gr": "Greece",
-    "hr": "Croatia",
-    "hu": "Hungary",
-    "it": "Italy",
-    "jp": "Japan",
-    "md": "Moldova",
-    "mx": "Mexico",
-    "nz": "New Zealand",
-    "pt": "Portugal",
-    "ro": "Romania",
-    "si": "Slovenia",
-    "us": "United States",
-    "uy": "Uruguay",
-    "za": "South Africa",
-}
+_COUNTRY_NAMES = None  # Removido — usar _central_iso_to_name de utils.country_names
 
 
 def _warn_controlled_rollout_once(source_channel: str | None) -> None:
@@ -539,7 +512,7 @@ def to_discovery_enriched(parsed: dict[str, Any]) -> dict[str, Any] | None:
     return {
         "name": parsed.get("full_name") or parsed.get("wine_name"),
         "producer": parsed.get("producer"),
-        "country": _COUNTRY_NAMES.get((country_code or "").lower()),
+        "country": _central_iso_to_name((country_code or "").lower()) or None,
         "region": parsed.get("region"),
         "grape": parsed.get("grape"),
     }

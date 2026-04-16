@@ -1,6 +1,7 @@
 """Tool de estatisticas: get_wine_stats — contagens e agregacoes sobre o banco."""
 
 from db.connection import get_connection, release_connection
+from utils.country_names import text_to_iso, iso_to_name
 
 
 METRICS = {
@@ -17,7 +18,7 @@ METRICS = {
 }
 
 GROUP_COLUMNS = {
-    "pais": "pais_nome",
+    "pais": "pais",
     "regiao": "regiao",
     "tipo": "tipo",
     "produtor": "produtor",
@@ -51,8 +52,13 @@ def get_wine_stats(
             params = []
 
             if filter_pais:
-                where_clauses.append("LOWER(pais_nome) = LOWER(%s)")
-                params.append(filter_pais)
+                pais_iso = text_to_iso(filter_pais)
+                if pais_iso:
+                    where_clauses.append("pais = %s")
+                    params.append(pais_iso)
+                else:
+                    where_clauses.append("LOWER(pais_nome) = LOWER(%s)")
+                    params.append(filter_pais)
             if filter_tipo:
                 where_clauses.append("LOWER(tipo) = LOWER(%s)")
                 params.append(filter_tipo)
@@ -113,6 +119,11 @@ def get_wine_stats(
                 cur.execute(sql, params)
                 rows = cur.fetchall()
                 results = [{"grupo": r[0], "valor": _to_number(r[1])} for r in rows]
+                # Se agrupando por pais (ISO), converter para nome bonito
+                if group_by == "pais":
+                    for item in results:
+                        if item["grupo"]:
+                            item["grupo"] = iso_to_name(item["grupo"])
                 return {
                     "metric": metric,
                     "group_by": group_by,
@@ -148,7 +159,7 @@ def _count_distinct(cur, metric, where_clauses, params):
     col_map = {
         "count_producers": "produtor",
         "count_regions": "regiao",
-        "count_countries": "pais_nome",
+        "count_countries": "pais",
     }
     col = col_map[metric]
     where_sql = ""
@@ -179,7 +190,11 @@ def _count_distinct(cur, metric, where_clauses, params):
 def _count_stores(cur, filter_pais=None):
     """Conta lojas, opcionalmente filtrado por pais."""
     if filter_pais:
-        cur.execute("SELECT COUNT(*) FROM stores WHERE pais ILIKE %s", (f"%{filter_pais}%",))
+        pais_iso = text_to_iso(filter_pais)
+        if pais_iso:
+            cur.execute("SELECT COUNT(*) FROM stores WHERE pais = %s", (pais_iso,))
+        else:
+            cur.execute("SELECT COUNT(*) FROM stores WHERE pais ILIKE %s", (f"%{filter_pais}%",))
     else:
         cur.execute("SELECT COUNT(*) FROM stores")
     row = cur.fetchone()
@@ -189,13 +204,23 @@ def _count_stores(cur, filter_pais=None):
 def _count_sources(cur, filter_pais=None):
     """Conta wine_sources (vinhos disponiveis em lojas)."""
     if filter_pais:
-        cur.execute("""
-            SELECT COUNT(*) FROM wine_sources ws
-            JOIN stores s ON ws.store_id = s.id
-            JOIN wines w ON w.id = ws.wine_id
-            WHERE s.pais ILIKE %s
-              AND w.suppressed_at IS NULL
-        """, (f"%{filter_pais}%",))
+        pais_iso = text_to_iso(filter_pais)
+        if pais_iso:
+            cur.execute("""
+                SELECT COUNT(*) FROM wine_sources ws
+                JOIN stores s ON ws.store_id = s.id
+                JOIN wines w ON w.id = ws.wine_id
+                WHERE s.pais = %s
+                  AND w.suppressed_at IS NULL
+            """, (pais_iso,))
+        else:
+            cur.execute("""
+                SELECT COUNT(*) FROM wine_sources ws
+                JOIN stores s ON ws.store_id = s.id
+                JOIN wines w ON w.id = ws.wine_id
+                WHERE s.pais ILIKE %s
+                  AND w.suppressed_at IS NULL
+            """, (f"%{filter_pais}%",))
     else:
         cur.execute("""
             SELECT COUNT(*)

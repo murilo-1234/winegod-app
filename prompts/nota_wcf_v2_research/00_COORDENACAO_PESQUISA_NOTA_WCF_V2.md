@@ -6,9 +6,14 @@ Objetivo deste pacote:
 - evitar que cada aba reabra decisões já fechadas
 - concentrar o esforço em pesquisa, validação e proposta, não em implementação
 
-Status desta coordenação em 2026-04-12:
+Status desta coordenação em 2026-04-16:
 - `WG SAI NOTA_ESTIMADA` = concluída como pesquisa
 - referência final da frente: `C:\winegod-app\reports\2026-04-12_pesquisa_06_remocao_nota_estimada.md`
+- `01_ESTUDO_PAIS_VS_PAIS_NOME` = concluída (pesquisa + implementação)
+- referência final: `C:\winegod-app\reports\2026-04-16_handoff_pesquisa_01_pais_vs_pais_nome.md`
+- plano de execução: `C:\winegod-app\reports\2026-04-16_decisoes_e_plano_migracao_pais_pais_nome.md`
+- decisão: `pais` (ISO) é canônico; `pais_nome` é display only
+- módulo central: `C:\winegod-app\backend\utils\country_names.py`
 
 Arquivos principais de contexto para todas as abas:
 - [2026-04-11_handoff_nota_wcf_v2.md](C:/winegod-app/reports/2026-04-11_handoff_nota_wcf_v2.md)

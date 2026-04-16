@@ -24,6 +24,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from pre_ingest_filter import should_skip_wine
+from utils.country_names import iso_to_name as _central_iso_to_name
 
 try:
     from config import Config
@@ -35,36 +36,7 @@ MAX_SYNC_NEW_WINES = 2
 MAX_BUDGET_MS = 8000
 MIN_CONFIDENCE = 0.75
 
-_COUNTRY_NAMES = {
-    "ar": "Argentina",
-    "at": "Austria",
-    "au": "Australia",
-    "br": "Brasil",
-    "bg": "Bulgaria",
-    "ca": "Canada",
-    "ch": "Switzerland",
-    "cl": "Chile",
-    "cz": "Czech Republic",
-    "de": "Germany",
-    "es": "Spain",
-    "fr": "France",
-    "gb": "United Kingdom",
-    "ge": "Georgia",
-    "gr": "Greece",
-    "hr": "Croatia",
-    "hu": "Hungary",
-    "it": "Italy",
-    "jp": "Japan",
-    "md": "Moldova",
-    "mx": "Mexico",
-    "nz": "New Zealand",
-    "pt": "Portugal",
-    "ro": "Romania",
-    "si": "Slovenia",
-    "us": "United States",
-    "uy": "Uruguay",
-    "za": "South Africa",
-}
+_COUNTRY_NAMES = None  # Removido — usar _central_iso_to_name de utils.country_names
 
 _STYLE_MAP = {
     "tinto": "tinto",
@@ -378,7 +350,7 @@ def _insert_or_get_wine(enriched, ocr, source_channel, session_id):
         hash_dedup = _generate_hash_dedup(nome_normalizado, produtor_normalizado, vintage)
 
         pais = _clean_country_code(enriched.get("country_code"))
-        pais_nome = _COUNTRY_NAMES.get(pais) if pais else None
+        pais_nome = _central_iso_to_name(pais) if pais else None
         estilo = _clean_style(enriched.get("style"))
         uvas_json = _to_jsonb_list(enriched.get("grape"))
         abv = _parse_abv(enriched.get("abv"))

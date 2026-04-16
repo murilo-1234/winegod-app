@@ -3,6 +3,7 @@
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_RECOMMENDATIONS
 from services.display import enrich_wines
+from utils.country_names import text_to_iso
 
 
 def compare_wines(wine_ids):
@@ -14,8 +15,8 @@ def compare_wines(wine_ids):
     try:
         with conn.cursor() as cur:
             sql = """
-                SELECT id, nome, produtor, safra, tipo, pais_nome, regiao, uvas,
-                       vivino_rating, preco_min, preco_max, moeda,
+                SELECT id, nome, produtor, safra, tipo, pais_nome, pais, regiao, sub_regiao, uvas,
+                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
                        winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size,
                        confianca_nota
                 FROM wines
@@ -59,8 +60,13 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
                 conditions.append("tipo ILIKE %s")
                 params.append(f"%{tipo}%")
             if pais:
-                conditions.append("pais_nome ILIKE %s")
-                params.append(f"%{pais}%")
+                pais_iso = text_to_iso(pais)
+                if pais_iso:
+                    conditions.append("pais = %s")
+                    params.append(pais_iso)
+                else:
+                    conditions.append("pais_nome ILIKE %s")
+                    params.append(f"%{pais}%")
             if regiao:
                 conditions.append("regiao ILIKE %s")
                 params.append(f"%{regiao}%")
@@ -78,8 +84,8 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
             params.append(limit)
 
             sql = f"""
-                SELECT id, nome, produtor, safra, tipo, pais_nome, regiao,
-                       vivino_rating, preco_min, preco_max, moeda,
+                SELECT id, nome, produtor, safra, tipo, pais_nome, pais, regiao, sub_regiao,
+                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
                        winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size,
                        confianca_nota
                 FROM wines

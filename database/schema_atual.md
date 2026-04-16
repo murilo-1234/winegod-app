@@ -36,8 +36,8 @@ Principal tabela do sistema. Contém 1,727,058 vinhos importados do Vivino.
 | produtor_normalizado | text | YES | — |
 | safra | varchar(4) | YES | — |
 | tipo | varchar(50) | YES | — |
-| pais | varchar(2) | YES | — |
-| pais_nome | varchar(100) | YES | — |
+| pais | varchar(2) | YES | — | CANONICO (ISO 3166-1 alpha-2). Usado em busca, filtro, score, trigger. |
+| pais_nome | varchar(100) | YES | — | DISPLAY ONLY. Preenchido via dicionario ISO->PT-BR. Nao usar em logica. |
 | regiao | text | YES | — |
 | sub_regiao | text | YES | — |
 | uvas | jsonb | YES | — |

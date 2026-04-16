@@ -25,6 +25,10 @@ import sys
 import time
 from statistics import median
 
+# Add backend to path so we can import services.note_v2
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+from services.note_v2 import resolve_note_v2, BucketCache
+
 import psycopg2
 from psycopg2.extras import execute_values
 
@@ -70,29 +74,29 @@ def converter_para_usd(preco, moeda):
     return round(p * taxa, 2) if taxa else None
 
 
-def compute_nota_base(nota_wcf, vivino_rating, sample_size):
-    """Canonical quality note (same logic as display.py / calc_score.py)."""
-    nwcf = float(nota_wcf) if nota_wcf is not None else None
-    vr = float(vivino_rating) if vivino_rating is not None else None
-    ss = int(sample_size) if sample_size is not None else None
-    if nwcf is not None and ss is not None and ss >= 25 and vr is not None and vr > 0:
-        return round(max(vr - 0.30, min(nwcf, vr + 0.30)), 2)
-    if vr is not None and vr > 0:
-        return round(vr, 2)
-    return None
+def compute_nota_base(wine_dict, bucket_lookup_fn=None):
+    """Canonical quality note via note_v2 engine.
+
+    Args:
+        wine_dict: dict with DB fields for resolve_note_v2.
+        bucket_lookup_fn: callable for BucketCache lookup.
+
+    Returns:
+        float note value or None.
+    """
+    v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+    return v2["display_note"]
 
 
-def compute_nota_source(nota_wcf, vivino_rating, sample_size):
-    nwcf = nota_wcf is not None
-    vr = vivino_rating is not None and float(vivino_rating) > 0
-    ss = int(sample_size) if sample_size is not None else None
-    if nwcf and ss is not None and ss >= 100 and vr:
-        return "wcf_verified"
-    if nwcf and ss is not None and ss >= 25 and vr:
-        return "wcf_estimated"
-    if vr:
-        return "vivino"
-    return None
+def compute_nota_source(wine_dict, bucket_lookup_fn=None):
+    """Determine source/type labels via note_v2 engine.
+
+    Returns:
+        (nota_source, nota_type) — nota_source is the display_note_source,
+        nota_type is the display_note_type (used for winegod_score_type).
+    """
+    v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+    return v2["display_note_source"], v2["display_note_type"]
 
 
 def weighted_median(prices, weights):
@@ -110,10 +114,12 @@ def weighted_median(prices, weights):
 # Peer index — identico a calc_score.py
 # ------------------------------------------------------------------
 
-def build_peer_index(cur):
+def build_peer_index(cur, bucket_lookup_fn=None):
     """Build in-memory peer index for all wines with price + nota."""
     cur.execute("""
-        SELECT pais_nome, nota_wcf, vivino_rating, nota_wcf_sample_size, preco_min, moeda
+        SELECT pais, nota_wcf, vivino_rating, nota_wcf_sample_size,
+               vivino_reviews, preco_min, moeda,
+               tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines
         WHERE preco_min > 0 AND moeda IS NOT NULL
           AND (nota_wcf IS NOT NULL OR (vivino_rating IS NOT NULL AND vivino_rating > 0))
@@ -123,8 +129,15 @@ def build_peer_index(cur):
     all_prices = []
     country_prices = {}
 
-    for pais, nw, vr, ss, pm, mo in cur:
-        nb = compute_nota_base(nw, vr, ss)
+    for (pais, nw, vr, ss, vr_reviews, pm, mo,
+         tipo, regiao, sub_regiao, produtor, confianca_nota) in cur:
+        wine_dict = {
+            "nota_wcf": nw, "vivino_rating": vr,
+            "nota_wcf_sample_size": ss, "vivino_reviews": vr_reviews,
+            "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+            "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+        }
+        nb = compute_nota_base(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
         pu = converter_para_usd(pm, mo)
         if nb is None or pu is None or pu <= 0:
             continue
@@ -182,7 +195,7 @@ def find_peer_reference(country_peers, country_notas, target_nota, country,
 # Score de um vinho — mesma semantica do calc_score.py
 # ------------------------------------------------------------------
 
-def score_wine(wine_id, cur, peer_index, paridade, capilaridade):
+def score_wine(wine_id, cur, peer_index, paridade, capilaridade, bucket_lookup_fn=None):
     """Calculate score for a single wine.
 
     Returns:
@@ -193,16 +206,28 @@ def score_wine(wine_id, cur, peer_index, paridade, capilaridade):
 
     cur.execute("""
         SELECT nota_wcf, vivino_rating, nota_wcf_sample_size, vivino_reviews,
-               preco_min, moeda, pais_nome
+               preco_min, moeda, pais,
+               tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines WHERE id = %s
     """, (wine_id,))
     row = cur.fetchone()
     if not row:
         return None
 
-    nota_wcf, vr, ss, reviews, preco_min, moeda, pais = row
-    nota_base = compute_nota_base(nota_wcf, vr, ss)
-    nota_source = compute_nota_source(nota_wcf, vr, ss)
+    (nota_wcf, vr, ss, reviews, preco_min, moeda, pais,
+     tipo, regiao, sub_regiao, produtor, confianca_nota) = row
+
+    wine_dict = {
+        "nota_wcf": nota_wcf, "vivino_rating": vr,
+        "nota_wcf_sample_size": ss, "vivino_reviews": reviews,
+        "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+        "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+    }
+
+    v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+    nota_base = v2["display_note"]
+    nota_source = v2["display_note_source"]
+    nota_type = v2["display_note_type"]
 
     if nota_base is None:
         return (None, None, {
@@ -234,7 +259,7 @@ def score_wine(wine_id, cur, peer_index, paridade, capilaridade):
 
     ln_ratio = math.log(ref_price / preco_usd) if ref_price > 0 else 0
     score = round(max(0.0, min(nota_base + micro + LN_COEFF * ln_ratio, 5.00)), 2)
-    score_type = "verified" if nota_source == "wcf_verified" else "estimated"
+    score_type = nota_type if nota_type in ("verified", "estimated", "contextual") else "estimated"
 
     components = {
         "formula_version": FORMULA_VERSION,
@@ -263,7 +288,7 @@ def score_wine(wine_id, cur, peer_index, paridade, capilaridade):
 # Enfileiramento de peers — corrigido
 # ------------------------------------------------------------------
 
-def enqueue_peers(cur, wine_id):
+def enqueue_peers(cur, wine_id, bucket_lookup_fn=None):
     """Enqueue peers for recalc: same country, nota_base within +/-0.20.
 
     Uses SQL to pre-filter candidates (vivino_rating/nota_wcf within +/-0.50
@@ -273,15 +298,22 @@ def enqueue_peers(cur, wine_id):
     Returns number of peers enqueued.
     """
     cur.execute("""
-        SELECT pais_nome, nota_wcf, vivino_rating, nota_wcf_sample_size
+        SELECT pais, nota_wcf, vivino_rating, nota_wcf_sample_size,
+               vivino_reviews, tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines WHERE id = %s
     """, (wine_id,))
     row = cur.fetchone()
     if not row:
         return 0
 
-    pais, nw, vr, ss = row
-    nota_base = compute_nota_base(nw, vr, ss)
+    pais, nw, vr, ss, vr_reviews, tipo, regiao, sub_regiao, produtor, confianca_nota = row
+    wine_dict = {
+        "nota_wcf": nw, "vivino_rating": vr,
+        "nota_wcf_sample_size": ss, "vivino_reviews": vr_reviews,
+        "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+        "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+    }
+    nota_base = compute_nota_base(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
     if nota_base is None or not pais:
         return 0
 
@@ -291,9 +323,10 @@ def enqueue_peers(cur, wine_id):
     hi = nota_base + margin
 
     cur.execute("""
-        SELECT id, nota_wcf, vivino_rating, nota_wcf_sample_size
+        SELECT id, nota_wcf, vivino_rating, nota_wcf_sample_size,
+               vivino_reviews, tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines
-        WHERE pais_nome = %s AND id != %s
+        WHERE pais = %s AND id != %s
           AND preco_min > 0 AND moeda IS NOT NULL
           AND (
             (vivino_rating BETWEEN %s AND %s)
@@ -302,8 +335,15 @@ def enqueue_peers(cur, wine_id):
     """, (pais, wine_id, lo, hi, lo, hi))
 
     peer_ids = []
-    for pid, p_nw, p_vr, p_ss in cur:
-        p_nota = compute_nota_base(p_nw, p_vr, p_ss)
+    for (pid, p_nw, p_vr, p_ss, p_vr_reviews,
+         p_tipo, p_regiao, p_sub_regiao, p_produtor, p_confianca_nota) in cur:
+        p_wine_dict = {
+            "nota_wcf": p_nw, "vivino_rating": p_vr,
+            "nota_wcf_sample_size": p_ss, "vivino_reviews": p_vr_reviews,
+            "pais": pais, "regiao": p_regiao, "sub_regiao": p_sub_regiao,
+            "tipo": p_tipo, "produtor": p_produtor, "confianca_nota": p_confianca_nota,
+        }
+        p_nota = compute_nota_base(p_wine_dict, bucket_lookup_fn=bucket_lookup_fn)
         if p_nota is not None and abs(p_nota - nota_base) <= PEER_RECALC_WINDOW:
             peer_ids.append(pid)
 
@@ -368,13 +408,17 @@ def _update_wine_score(cur, wine_id, score, score_type, components):
 
 
 def build_scoring_context(conn):
-    """Build peer index + paridade + capilaridade once.
+    """Build peer index + paridade + capilaridade + bucket cache once.
 
-    Returns (peer_index, paridade, capilaridade) to be reused across rounds.
+    Returns (peer_index, paridade, capilaridade, bucket_cache) to be reused across rounds.
     """
+    # Initialize bucket cache (fail-fast for batch)
+    bucket_cache = BucketCache()
+    bucket_cache.ensure_loaded()
+
     cur = conn.cursor()
     print("Building peer index...", flush=True)
-    peer_index = build_peer_index(cur)
+    peer_index = build_peer_index(cur, bucket_lookup_fn=bucket_cache.lookup)
 
     cur.execute("""
         SELECT ws.wine_id, COUNT(DISTINCT s.pais)
@@ -386,7 +430,7 @@ def build_scoring_context(conn):
     capilaridade = dict(cur.fetchall())
     cur.close()
 
-    return peer_index, paridade, capilaridade
+    return peer_index, paridade, capilaridade, bucket_cache
 
 
 def process_queue(conn, batch_size=100, scoring_ctx=None):
@@ -413,9 +457,9 @@ def process_queue(conn, batch_size=100, scoring_ctx=None):
     print(f"Pending: {pending:,} items", flush=True)
 
     if scoring_ctx:
-        peer_index, paridade, capilaridade = scoring_ctx
+        peer_index, paridade, capilaridade, bucket_cache = scoring_ctx
     else:
-        peer_index, paridade, capilaridade = build_scoring_context(conn)
+        peer_index, paridade, capilaridade, bucket_cache = build_scoring_context(conn)
 
     # Claim batch with locking
     items = claim_batch(conn, batch_size)
@@ -429,7 +473,8 @@ def process_queue(conn, batch_size=100, scoring_ctx=None):
 
     for queue_id, wine_id, reason in items:
         try:
-            result = score_wine(wine_id, cur, peer_index, paridade, capilaridade)
+            result = score_wine(wine_id, cur, peer_index, paridade, capilaridade,
+                                bucket_lookup_fn=bucket_cache.lookup)
 
             if result is None:
                 # Wine doesn't exist in DB — mark done
@@ -444,7 +489,7 @@ def process_queue(conn, batch_size=100, scoring_ctx=None):
 
             # Enqueue peers only for direct changes (not peer-triggered recalcs)
             if not reason.startswith("peer_of_"):
-                n = enqueue_peers(cur, wine_id)
+                n = enqueue_peers(cur, wine_id, bucket_lookup_fn=bucket_cache.lookup)
                 peers_enqueued += n
 
             cur.execute(
@@ -478,10 +523,14 @@ def sweep_all_with_price(conn, commit_every=500):
 
     Uses server-side cursor to avoid loading all IDs into memory.
     """
+    # Initialize bucket cache (fail-fast for batch)
+    bucket_cache = BucketCache()
+    bucket_cache.ensure_loaded()
+
     cur = conn.cursor()
 
     print("SWEEP: recalculating all wines with price...", flush=True)
-    peer_index = build_peer_index(cur)
+    peer_index = build_peer_index(cur, bucket_lookup_fn=bucket_cache.lookup)
 
     cur.execute("""
         SELECT ws.wine_id, COUNT(DISTINCT s.pais)
@@ -510,7 +559,8 @@ def sweep_all_with_price(conn, commit_every=500):
     for (wid,) in srv:
         total += 1
         try:
-            result = score_wine(wid, cur, peer_index, paridade, capilaridade)
+            result = score_wine(wid, cur, peer_index, paridade, capilaridade,
+                                bucket_lookup_fn=bucket_cache.lookup)
             if result is None:
                 continue
             score, score_type, components = result

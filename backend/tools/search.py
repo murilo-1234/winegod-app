@@ -9,11 +9,12 @@ from services.display import enrich_wines
 from services.tracing import log_memory
 from tools.normalize import normalizar
 from tools.aliases import resolve_aliases
+from utils.country_names import text_to_iso, iso_to_name
 
 # Colunas retornadas em todas as buscas
 _WINE_COLUMNS = """
-    id, nome, produtor, safra, tipo, pais_nome, regiao,
-    vivino_rating, preco_min, preco_max, moeda,
+    id, nome, produtor, safra, tipo, pais_nome, pais, regiao, sub_regiao,
+    vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
     winegod_score, winegod_score_type, nota_wcf, nota_wcf_sample_size, confianca_nota
 """
 
@@ -222,8 +223,13 @@ def _build_filters(pais, regiao, tipo, safra, p_norm=None):
         clauses.append("produtor_normalizado LIKE %s")
         params.append(f"{p_norm}%")
     if pais:
-        clauses.append("pais_nome ILIKE %s")
-        params.append(f"%{pais}%")
+        pais_iso = text_to_iso(pais)
+        if pais_iso:
+            clauses.append("pais = %s")
+            params.append(pais_iso)
+        else:
+            clauses.append("pais_nome ILIKE %s")
+            params.append(f"%{pais}%")
     if regiao:
         clauses.append("regiao ILIKE %s")
         params.append(f"%{regiao}%")
@@ -522,7 +528,7 @@ def get_similar_wines(wine_id, limit=5):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT tipo, pais_nome, regiao, preco_min FROM wines WHERE id = %s AND suppressed_at IS NULL",
+                "SELECT tipo, pais, regiao, preco_min FROM wines WHERE id = %s AND suppressed_at IS NULL",
                 (wine_id,),
             )
             base = cur.fetchone()
@@ -537,7 +543,7 @@ def get_similar_wines(wine_id, limit=5):
                 conditions.append("tipo = %s")
                 params.append(tipo)
             if pais:
-                conditions.append("pais_nome = %s")
+                conditions.append("pais = %s")
                 params.append(pais)
             if regiao:
                 conditions.append("regiao = %s")
@@ -550,8 +556,8 @@ def get_similar_wines(wine_id, limit=5):
             where = " AND ".join(conditions)
 
             sql = f"""
-                SELECT id, nome, produtor, pais_nome, regiao, tipo,
-                       vivino_rating, preco_min, preco_max, moeda,
+                SELECT id, nome, produtor, pais_nome, pais, regiao, sub_regiao, tipo,
+                       vivino_rating, vivino_reviews, preco_min, preco_max, moeda,
                        winegod_score, nota_wcf, nota_wcf_sample_size, confianca_nota
                 FROM wines
                 WHERE {where}
@@ -576,7 +582,7 @@ def get_similar_wines(wine_id, limit=5):
                     conditions2.append("tipo = %s")
                     params2.append(tipo)
                 if pais:
-                    conditions2.append("pais_nome = %s")
+                    conditions2.append("pais = %s")
                     params2.append(pais)
                 if preco:
                     conditions2.append("preco_min BETWEEN %s AND %s")

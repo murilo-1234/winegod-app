@@ -7,6 +7,7 @@ from datetime import datetime
 
 from db.connection import get_connection, release_connection
 from services.display import enrich_wine
+from utils.country_names import iso_to_name
 
 
 def generate_share_id():
@@ -98,7 +99,8 @@ def get_share(share_id):
                 cur.execute(
                     """
                     SELECT w.id, w.nome, w.produtor, w.safra, w.tipo,
-                           w.pais_nome, w.regiao, w.vivino_rating,
+                           w.pais_nome, w.pais, w.regiao, w.sub_regiao,
+                           w.vivino_rating, w.vivino_reviews,
                            w.nota_wcf, w.winegod_score,
                            w.preco_min, w.preco_max, w.moeda,
                            w.nota_wcf_sample_size, w.confianca_nota
@@ -110,7 +112,8 @@ def get_share(share_id):
                 )
                 cols = [
                     "id", "nome", "produtor", "safra", "tipo",
-                    "pais_nome", "regiao", "vivino_rating",
+                    "pais_nome", "pais", "regiao", "sub_regiao",
+                    "vivino_rating", "vivino_reviews",
                     "nota_wcf", "winegod_score",
                     "preco_min", "preco_max", "moeda",
                     "nota_wcf_sample_size", "confianca_nota",
@@ -121,6 +124,8 @@ def get_share(share_id):
                         cols[i]: _convert_value(wine_row[i])
                         for i in range(len(cols))
                     }
+                    if not wine.get("pais_nome") and wine.get("pais"):
+                        wine["pais_nome"] = iso_to_name(wine["pais"])
                     enrich_wine(wine)
                     wines.append(wine)
                 share["wines"] = wines

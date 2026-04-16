@@ -37,8 +37,8 @@ Principal tabela do sistema. Contém 1,727,058 vinhos importados do Vivino.
 | 6 | produtor_normalizado | text | YES | — | Produtor normalizado |
 | 7 | safra | varchar(4) | YES | — | Ano da safra (ex: 2020) |
 | 8 | tipo | varchar(50) | YES | — | tinto, branco, rose, espumante, etc |
-| 9 | pais | varchar(2) | YES | — | Codigo ISO 2 letras (br, us, it, etc) |
-| 10 | pais_nome | varchar(100) | YES | — | Nome do pais por extenso |
+| 9 | pais | varchar(2) | YES | — | CANONICO. Codigo ISO 3166-1 alpha-2 (br, us, it, etc). Usado em busca, filtro, score, trigger. |
+| 10 | pais_nome | varchar(100) | YES | — | DISPLAY ONLY. Nome PT-BR derivado de pais via dicionario. Nao usar em logica funcional. |
 | 11 | regiao | text | YES | — | Regiao vinicola |
 | 12 | sub_regiao | text | YES | — | Sub-regiao (quando disponivel) |
 | 13 | uvas | jsonb | YES | — | Lista de uvas/castas |

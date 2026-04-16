@@ -93,7 +93,7 @@ def get_store_wines(store_name, tipo=None, preco_max=None):
 
             where = " AND ".join(conditions)
             sql = f"""
-                SELECT w.id, w.nome, w.produtor, w.tipo, w.pais_nome,
+                SELECT w.id, w.nome, w.produtor, w.tipo, w.pais, w.pais_nome,
                        ws.preco, ws.moeda, w.vivino_rating, w.winegod_score
                 FROM wine_sources ws
                 JOIN wines w ON ws.wine_id = w.id

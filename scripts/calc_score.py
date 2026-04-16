@@ -23,6 +23,10 @@ import sys
 import time
 from statistics import median
 
+# Add backend to path so we can import services.note_v2
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+from services.note_v2 import resolve_note_v2, BucketCache
+
 import psycopg2
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -61,38 +65,29 @@ def converter_para_usd(preco, moeda):
     return round(p * taxa, 2)
 
 
-def compute_nota_base(nota_wcf, vivino_rating, sample_size):
-    """Canonical quality note (same logic as backend/services/display.py).
+def compute_nota_base(wine_dict, bucket_lookup_fn=None):
+    """Canonical quality note via note_v2 engine.
 
-    Rules:
-      1/2. WCF capped by vivino ±0.30 when sample >= 25
-      3.   Vivino fallback
-      4.   None
+    Args:
+        wine_dict: dict with DB fields for resolve_note_v2.
+        bucket_lookup_fn: callable for BucketCache lookup.
+
+    Returns:
+        float note value or None.
     """
-    nwcf = float(nota_wcf) if nota_wcf is not None else None
-    vr = float(vivino_rating) if vivino_rating is not None else None
-    ss = int(sample_size) if sample_size is not None else None
-
-    if nwcf is not None and ss is not None and ss >= 25 and vr is not None and vr > 0:
-        return round(max(vr - 0.30, min(nwcf, vr + 0.30)), 2)
-    if vr is not None and vr > 0:
-        return round(vr, 2)
-    return None
+    v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+    return v2["display_note"]
 
 
-def compute_nota_base_source(nota_wcf, vivino_rating, sample_size):
-    """Determine source label for nota_base."""
-    nwcf = nota_wcf is not None
-    vr = vivino_rating is not None and float(vivino_rating) > 0
-    ss = int(sample_size) if sample_size is not None else None
+def compute_nota_base_source(wine_dict, bucket_lookup_fn=None):
+    """Determine source/type labels via note_v2 engine.
 
-    if nwcf and ss is not None and ss >= 100 and vr:
-        return "wcf_verified"
-    if nwcf and ss is not None and ss >= 25 and vr:
-        return "wcf_estimated"
-    if vr:
-        return "vivino"
-    return None
+    Returns:
+        (nota_source, nota_type) — nota_source is the display_note_source,
+        nota_type is the display_note_type (used for winegod_score_type).
+    """
+    v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+    return v2["display_note_source"], v2["display_note_type"]
 
 
 def weighted_median(prices, weights):
@@ -115,7 +110,7 @@ def find_peer_reference(country_peers, country_notas, target_nota, country,
         country_peers: dict[country] -> list of (nota, price_usd) sorted by nota
         country_notas: dict[country] -> sorted list of notas (for bisect)
         target_nota: canonical quality note of the wine being scored
-        country: pais_nome
+        country: pais (ISO code)
         country_medians: dict[country] -> median price USD
         global_median: global median price USD
 
@@ -173,10 +168,16 @@ def main():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
 
+    # Initialize bucket cache (fail-fast for batch)
+    _bucket_cache = BucketCache()
+    _bucket_cache.ensure_loaded()
+
     # ========== Step 1: Build peer index ==========
     print("1. Building peer index (country + nota + price)...", flush=True)
     cur.execute("""
-        SELECT pais_nome, nota_wcf, vivino_rating, nota_wcf_sample_size, preco_min, moeda
+        SELECT pais, nota_wcf, vivino_rating, nota_wcf_sample_size,
+               vivino_reviews, preco_min, moeda,
+               tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines
         WHERE preco_min > 0 AND moeda IS NOT NULL
           AND (nota_wcf IS NOT NULL OR (vivino_rating IS NOT NULL AND vivino_rating > 0))
@@ -187,8 +188,15 @@ def main():
     all_prices_usd = []
     country_prices = {}     # country -> [price_usd] for median fallback
 
-    for pais, nota_wcf, vr, ss, preco_min, moeda in cur:
-        nb = compute_nota_base(nota_wcf, vr, ss)
+    for (pais, nota_wcf, vr, ss, vr_reviews, preco_min, moeda,
+         tipo, regiao, sub_regiao, produtor, confianca_nota) in cur:
+        wine_dict = {
+            "nota_wcf": nota_wcf, "vivino_rating": vr,
+            "nota_wcf_sample_size": ss, "vivino_reviews": vr_reviews,
+            "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+            "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+        }
+        nb = compute_nota_base(wine_dict, bucket_lookup_fn=_bucket_cache.lookup)
         price_usd = converter_para_usd(preco_min, moeda)
         if nb is None or price_usd is None or price_usd <= 0:
             continue
@@ -250,7 +258,8 @@ def main():
     srv.itersize = 10000
     srv.execute("""
         SELECT id, nota_wcf, vivino_rating, nota_wcf_sample_size, vivino_reviews,
-               preco_min, moeda, pais_nome
+               preco_min, moeda, pais,
+               tipo, regiao, sub_regiao, produtor, confianca_nota
         FROM wines WHERE nota_wcf IS NOT NULL ORDER BY id
     """)
 
@@ -259,9 +268,19 @@ def main():
     count = 0
     stats = {"with_price": 0, "no_price": 0, "no_nota": 0, "strategies": {}}
 
-    for wine_id, nota_wcf, vivino_rating, sample_size, vivino_reviews, preco_min, moeda, pais_nome in srv:
-        nota_base = compute_nota_base(nota_wcf, vivino_rating, sample_size)
-        nota_source = compute_nota_base_source(nota_wcf, vivino_rating, sample_size)
+    for (wine_id, nota_wcf, vivino_rating, sample_size, vivino_reviews,
+         preco_min, moeda, pais,
+         tipo, regiao, sub_regiao, produtor, confianca_nota) in srv:
+        wine_dict = {
+            "nota_wcf": nota_wcf, "vivino_rating": vivino_rating,
+            "nota_wcf_sample_size": sample_size, "vivino_reviews": vivino_reviews,
+            "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+            "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+        }
+        v2 = resolve_note_v2(wine_dict, bucket_lookup_fn=_bucket_cache.lookup)
+        nota_base = v2["display_note"]
+        nota_source = v2["display_note_source"]
+        nota_type = v2["display_note_type"]
 
         if nota_base is None:
             stats["no_nota"] += 1
@@ -313,7 +332,7 @@ def main():
         stats["with_price"] += 1
 
         # Peer reference price
-        country = pais_nome or "__unknown__"
+        country = pais or "__unknown__"
         ref_price, strategy, window, peer_count, weighting = find_peer_reference(
             country_peers, country_notas, nota_base, country,
             country_medians, global_median_usd
@@ -325,7 +344,7 @@ def main():
         raw = nota_base + micro_total + LN_COEFF * ln_ratio
         score = round(max(0.0, min(raw, 5.00)), 2)
 
-        score_type = "verified" if nota_source == "wcf_verified" else "estimated"
+        score_type = nota_type if nota_type in ("verified", "estimated", "contextual") else "estimated"
 
         components = json.dumps({
             "formula_version": FORMULA_VERSION,

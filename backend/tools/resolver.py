@@ -4,8 +4,7 @@ import time
 from tools.search import search_wine, search_wine_tokens
 from tools.normalize import normalizar
 from services.display import resolve_display
-
-# Paises que o OCR pode devolver no campo "region" por engano
+from utils.country_names import is_country, iso_to_name
 def _derive_item_status(wine):
     """Derive explicit item status from a resolved wine dict.
 
@@ -18,14 +17,7 @@ def _derive_item_status(wine):
     return "confirmed_no_note"
 
 
-_KNOWN_COUNTRIES = {
-    "argentina", "france", "italy", "spain", "chile", "portugal",
-    "australia", "germany", "south africa", "new zealand", "united states",
-    "usa", "brasil", "brazil", "uruguay", "greece", "austria", "hungary",
-    "romania", "georgia", "lebanon", "israel", "canada", "mexico",
-    "peru", "bolivia", "china", "japan", "india", "turkey", "croatia",
-    "slovenia", "switzerland", "england", "uk",
-}
+_KNOWN_COUNTRIES = None  # Substituido por is_country() de utils.country_names
 
 
 def resolve_wines_from_ocr(ocr_result):
@@ -89,7 +81,7 @@ def _resolve_label(ocr_result):
     pais_kw = None
     regiao_kw = None
     if region:
-        if region.strip().lower() in _KNOWN_COUNTRIES:
+        if is_country(region.strip()):
             pais_kw = region
         else:
             regiao_kw = region
@@ -740,12 +732,13 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                 score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
             else:
                 score_str = "sem score"
+            bucket_str = f" | Avaliacoes: {d['public_ratings_bucket']}" if d.get('public_ratings_bucket') else ""
             parts.append(
                 f"[Vinho encontrado no banco (status: {item_status}): {w.get('nome', '?')} "
                 f"| Produtor: {w.get('produtor', '?')} "
-                f"| Pais: {w.get('pais_nome', '?')} "
+                f"| Pais: {iso_to_name(w.get('pais')) or w.get('pais_nome', '?')} "
                 f"| Regiao: {w.get('regiao', '?')} "
-                f"| Nota: {nota_str} {nota_tipo_str} "
+                f"| Nota: {nota_str} {nota_tipo_str}{bucket_str} "
                 f"| Score: {score_str} "
                 f"| Preco: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                 f"| ID: {w.get('id', '?')}]"
@@ -819,10 +812,11 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     nota_tipo_str = f"({d['display_note_type']})" if d['display_note_type'] else ""
                     score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
 
+                    bucket_str = f" | Avaliacoes: {d['public_ratings_bucket']}" if d.get('public_ratings_bucket') else ""
                     parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
                     parts.append(
                         f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
-                        f"| Nota: {nota_str} {nota_tipo_str} "
+                        f"| Nota: {nota_str} {nota_tipo_str}{bucket_str} "
                         f"| Score: {score_str} "
                         f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                         f"| ID: {w.get('id', '?')}"
@@ -912,9 +906,10 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
                     nota_str = f"{d['display_note']}" if d['display_note'] else "sem nota"
                     nota_tipo_str = f"({d['display_note_type']})" if d['display_note_type'] else ""
                     score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
+                    bucket_str = f" | Avaliacoes: {d['public_ratings_bucket']}" if d.get('public_ratings_bucket') else ""
                     parts.append(
                         f"  {i}. {w.get('nome', '?')} | {w.get('produtor', '?')} "
-                        f"| Nota: {nota_str} {nota_tipo_str} "
+                        f"| Nota: {nota_str} {nota_tipo_str}{bucket_str} "
                         f"| Score: {score_str} "
                         f"| Preco: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                         f"| ID: {w.get('id', '?')}"
