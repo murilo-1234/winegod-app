@@ -131,8 +131,12 @@ def test_classify_candidates_falls_back_to_gemini():
 def test_auto_create_skips_not_wine():
     orig_classify = nw_mod._classify_candidates
     orig_insert = nw_mod._insert_or_get_wine
+    orig_mode = nw_mod.Config.ENRICHMENT_MODE
+    orig_enable = nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE
     insert_called = [False]
 
+    nw_mod.Config.ENRICHMENT_MODE = "legacy"
+    nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = False
     nw_mod._classify_candidates = lambda items: {
         "items": [{"index": 1, "kind": "not_wine", "full_name": None, "producer": None, "confidence": 0.99}]
     }
@@ -147,20 +151,70 @@ def test_auto_create_skips_not_wine():
     finally:
         nw_mod._classify_candidates = orig_classify
         nw_mod._insert_or_get_wine = orig_insert
+        nw_mod.Config.ENRICHMENT_MODE = orig_mode
+        nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = orig_enable
 
     assert len(result["newly_resolved"]) == 0
     assert len(result["still_unresolved"]) == 1
+    assert result["blocked_items"] == []
+    assert insert_called[0] is False
+
+
+def test_auto_create_blocks_catalog_not_wine_before_insert():
+    orig_classify = nw_mod._classify_candidates
+    orig_insert = nw_mod._insert_or_get_wine
+    orig_mode = nw_mod.Config.ENRICHMENT_MODE
+    orig_enable = nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE
+    insert_called = [False]
+
+    nw_mod.Config.ENRICHMENT_MODE = "legacy"
+    nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = False
+    nw_mod._classify_candidates = lambda items: {
+        "items": [{
+            "index": 1,
+            "kind": "wine",
+            "full_name": "Giffard Liqueur Gift Pack",
+            "producer": "Giffard",
+            "wine_name": "Liqueur Gift Pack",
+            "country_code": "FR",
+            "style": "tinto",
+            "confidence": 0.99,
+        }]
+    }
+
+    def spy_insert(*a, **kw):
+        insert_called[0] = True
+        return None
+
+    nw_mod._insert_or_get_wine = spy_insert
+    try:
+        result = nw_mod.auto_create_unknowns([_make_unresolved("Giffard Liqueur Gift Pack", producer="Giffard")])
+    finally:
+        nw_mod._classify_candidates = orig_classify
+        nw_mod._insert_or_get_wine = orig_insert
+        nw_mod.Config.ENRICHMENT_MODE = orig_mode
+        nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = orig_enable
+
+    assert result["stats"]["blocked_not_wine"] == 1
+    assert result["newly_resolved"] == []
+    assert result["still_unresolved"] == []
+    assert len(result["blocked_items"]) == 1
+    assert result["blocked_items"][0]["reason"] == "wine_filter=giffard"
     assert insert_called[0] is False
 
 
 def test_auto_create_caps_at_two():
     orig_classify = nw_mod._classify_candidates
     orig_insert = nw_mod._insert_or_get_wine
+    orig_mode = nw_mod.Config.ENRICHMENT_MODE
+    orig_enable = nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE
 
+    nw_mod.Config.ENRICHMENT_MODE = "legacy"
+    nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = False
     nw_mod._classify_candidates = lambda items: {
         "items": [
-            {"index": 1, "kind": "wine", "full_name": "Wine A", "producer": "Prod A", "wine_name": "A", "country_code": "AR", "style": "tinto", "confidence": 0.9},
-            {"index": 2, "kind": "wine", "full_name": "Wine B", "producer": "Prod B", "wine_name": "B", "country_code": "CL", "style": "tinto", "confidence": 0.9},
+            {"index": 1, "kind": "wine", "full_name": "Wine Alpha", "producer": "Prod A", "wine_name": "Alpha", "country_code": "AR", "style": "tinto", "confidence": 0.9},
+            {"index": 2, "kind": "wine", "full_name": "Wine Beta", "producer": "Prod B", "wine_name": "Beta", "country_code": "CL", "style": "tinto", "confidence": 0.9},
         ]
     }
     nw_mod._insert_or_get_wine = lambda enriched, ocr, source_channel, session_id: _make_wine(
@@ -168,16 +222,50 @@ def test_auto_create_caps_at_two():
     )
     try:
         result = nw_mod.auto_create_unknowns(
-            [_make_unresolved("A"), _make_unresolved("B"), _make_unresolved("C")],
+            [_make_unresolved("Alpha"), _make_unresolved("Beta"), _make_unresolved("Gamma")],
             source_channel="text",
         )
     finally:
         nw_mod._classify_candidates = orig_classify
         nw_mod._insert_or_get_wine = orig_insert
+        nw_mod.Config.ENRICHMENT_MODE = orig_mode
+        nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = orig_enable
 
     assert len(result["newly_resolved"]) == 2
     assert len(result["still_unresolved"]) == 1
-    assert result["still_unresolved"][0]["ocr"]["name"] == "C"
+    assert result["still_unresolved"][0]["ocr"]["name"] == "Gamma"
+
+
+def test_insert_or_get_wine_blocks_catalog_not_wine_without_db_connection():
+    orig_get = nw_mod.get_connection
+    orig_release = nw_mod.release_connection
+    conn_called = [False]
+    release_called = [False]
+
+    nw_mod.get_connection = lambda: conn_called.__setitem__(0, True)
+    nw_mod.release_connection = lambda c: release_called.__setitem__(0, True)
+    try:
+        wine = nw_mod._insert_or_get_wine(
+            {
+                "kind": "wine",
+                "full_name": "Original 10 Year Old",
+                "producer": "Glenmorangie",
+                "wine_name": "Original 10 Year Old",
+                "country_code": "GB",
+                "style": "tinto",
+                "confidence": 0.99,
+            },
+            {"name": "Original 10 Year Old", "producer": "Glenmorangie"},
+            "pdf",
+            "sid-2",
+        )
+    finally:
+        nw_mod.get_connection = orig_get
+        nw_mod.release_connection = orig_release
+
+    assert wine is None
+    assert conn_called[0] is False
+    assert release_called[0] is False
 
 
 def test_insert_or_get_wine_persists_expected_fields():
@@ -332,7 +420,11 @@ def test_pdf_auto_create_moves_item_to_resolved():
 def test_auto_create_respects_initial_seen_ids():
     orig_classify = nw_mod._classify_candidates
     orig_insert = nw_mod._insert_or_get_wine
+    orig_mode = nw_mod.Config.ENRICHMENT_MODE
+    orig_enable = nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE
 
+    nw_mod.Config.ENRICHMENT_MODE = "legacy"
+    nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = False
     nw_mod._classify_candidates = lambda items: {
         "items": [{"index": 1, "kind": "wine", "full_name": "MontGras Aura Reserva Carmenere", "producer": "MontGras", "wine_name": "Aura Reserva Carmenere", "country_code": "CL", "style": "tinto", "confidence": 0.9}]
     }
@@ -352,9 +444,38 @@ def test_auto_create_respects_initial_seen_ids():
     finally:
         nw_mod._classify_candidates = orig_classify
         nw_mod._insert_or_get_wine = orig_insert
+        nw_mod.Config.ENRICHMENT_MODE = orig_mode
+        nw_mod.Config.ENRICHMENT_V3_ENABLE_AUTO_CREATE = orig_enable
 
     assert result["newly_resolved"] == []
     assert len(result["still_unresolved"]) == 1
+
+
+def test_apply_auto_create_removes_blocked_not_wine_without_new_resolution():
+    orig_auto = chat_mod.auto_create_unknowns
+    unresolved = _make_unresolved("Giffard Liqueur Gift Pack", producer="Giffard")
+    resolved = {
+        "resolved_wines": [],
+        "unresolved": [unresolved["ocr"]["name"]],
+        "resolved_items": [],
+        "unresolved_items": [unresolved],
+    }
+
+    chat_mod.auto_create_unknowns = lambda unresolved_items, source_channel="chat", session_id=None, initial_seen_ids=None: {
+        "newly_resolved": [],
+        "still_unresolved": [],
+        "blocked_items": [{"ocr": unresolved["ocr"], "reason": "wine_filter=giffard"}],
+        "stats": {"blocked_not_wine": 1},
+    }
+    try:
+        chat_mod._apply_auto_create(resolved, _FakeTrace())
+    finally:
+        chat_mod.auto_create_unknowns = orig_auto
+
+    assert resolved["resolved_items"] == []
+    assert resolved["resolved_wines"] == []
+    assert resolved["unresolved_items"] == []
+    assert resolved["unresolved"] == []
 
 
 def test_single_image_calls_discovery_before_auto_create():
@@ -556,11 +677,14 @@ if __name__ == "__main__":
         test_classify_candidates_uses_qwen,
         test_classify_candidates_falls_back_to_gemini,
         test_auto_create_skips_not_wine,
+        test_auto_create_blocks_catalog_not_wine_before_insert,
         test_auto_create_caps_at_two,
+        test_insert_or_get_wine_blocks_catalog_not_wine_without_db_connection,
         test_insert_or_get_wine_persists_expected_fields,
         test_resolve_display_supports_ai_estimated_note,
         test_pdf_auto_create_moves_item_to_resolved,
         test_auto_create_respects_initial_seen_ids,
+        test_apply_auto_create_removes_blocked_not_wine_without_new_resolution,
         test_single_image_calls_discovery_before_auto_create,
         test_batch_image_calls_discovery_before_auto_create,
         test_classify_falls_back_to_gemini_on_empty_qwen,

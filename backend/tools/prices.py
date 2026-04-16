@@ -14,6 +14,10 @@ def get_prices(wine_id, country=None):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM wines WHERE id = %s AND suppressed_at IS NULL", (wine_id,))
+            if not cur.fetchone():
+                return {"error": "Vinho nao encontrado"}
+
             # Tentar buscar em wine_sources
             if country:
                 sql = """
@@ -48,7 +52,7 @@ def get_prices(wine_id, country=None):
             # Fallback: se nao tem em wine_sources, pegar da tabela wines
             if not results:
                 cur.execute(
-                    "SELECT id, nome, preco_min, preco_max, moeda FROM wines WHERE id = %s",
+                    "SELECT id, nome, preco_min, preco_max, moeda FROM wines WHERE id = %s AND suppressed_at IS NULL",
                     (wine_id,),
                 )
                 row = cur.fetchone()
@@ -95,6 +99,7 @@ def get_store_wines(store_name, tipo=None, preco_max=None):
                 JOIN wines w ON ws.wine_id = w.id
                 JOIN stores s ON ws.store_id = s.id
                 WHERE {where}
+                  AND w.suppressed_at IS NULL
                 ORDER BY w.vivino_rating DESC NULLS LAST
                 LIMIT 20
             """

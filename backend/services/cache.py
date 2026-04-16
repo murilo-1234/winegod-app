@@ -17,7 +17,7 @@ TTL_RECOMMENDATIONS = 300  # 5 min
 
 # Incrementar para invalidar todo cache após hotfix de busca/dados.
 # Chaves antigas expiram naturalmente pelo TTL.
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 _redis_client = None
 

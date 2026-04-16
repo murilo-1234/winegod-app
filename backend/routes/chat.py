@@ -499,10 +499,12 @@ def _apply_auto_create(resolved, trace, step_name="auto_create", source_channel=
     if created["newly_resolved"]:
         resolved["resolved_items"].extend(created["newly_resolved"])
         resolved["resolved_wines"].extend([r["wine"] for r in created["newly_resolved"]])
-        resolved["unresolved_items"] = created["still_unresolved"]
-        resolved["unresolved"] = [
-            item["ocr"].get("name", "?") for item in created["still_unresolved"]
-        ]
+    # Sempre substituir a lista: o auto-create tambem pode descartar NOT_WINE
+    # bloqueado pelo pre-ingest sem criar nenhum vinho novo.
+    resolved["unresolved_items"] = created["still_unresolved"]
+    resolved["unresolved"] = [
+        item["ocr"].get("name", "?") for item in created["still_unresolved"]
+    ]
 
 
 def _try_text_wine_extraction(message, trace, session_id=None):

@@ -46,6 +46,7 @@ def resolve_aliases(conn, results):
                 JOIN wines wc ON wc.id = wa.canonical_wine_id
                 WHERE wa.source_wine_id = ANY(%s)
                   AND wa.review_status = 'approved'
+                  AND wc.suppressed_at IS NULL
             """, (source_ids,))
 
             alias_map = {}

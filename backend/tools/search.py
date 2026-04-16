@@ -215,7 +215,7 @@ def _build_filters(pais, regiao, tipo, safra, p_norm=None):
     Quando p_norm e fornecido, restringe por produtor_normalizado
     em TODAS as camadas (exato, prefixo, fuzzy), nao apenas na camada 3.
     """
-    clauses = []
+    clauses = ["suppressed_at IS NULL"]
     params = []
 
     if p_norm:
@@ -477,10 +477,10 @@ def search_wine_tokens(tokens, limit=10, timeout_ms=3000, produtor=None):
         return cached
 
     # Filtro de produtor
-    extra_where = ""
+    extra_where = " AND suppressed_at IS NULL"
     extra_params = []
     if p_norm:
-        extra_where = " AND produtor_normalizado LIKE %s"
+        extra_where += " AND produtor_normalizado LIKE %s"
         extra_params = [f"{p_norm}%"]
 
     t0 = time.time()
@@ -522,7 +522,7 @@ def get_similar_wines(wine_id, limit=5):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT tipo, pais_nome, regiao, preco_min FROM wines WHERE id = %s",
+                "SELECT tipo, pais_nome, regiao, preco_min FROM wines WHERE id = %s AND suppressed_at IS NULL",
                 (wine_id,),
             )
             base = cur.fetchone()
@@ -530,7 +530,7 @@ def get_similar_wines(wine_id, limit=5):
                 return {"error": "Vinho nao encontrado", "wines": []}
 
             tipo, pais, regiao, preco = base
-            conditions = ["id != %s"]
+            conditions = ["id != %s", "suppressed_at IS NULL"]
             params = [wine_id]
 
             if tipo:
@@ -570,7 +570,7 @@ def get_similar_wines(wine_id, limit=5):
             if len(results) < limit and regiao:
                 remaining = limit - len(results)
                 found_ids = [r["id"] for r in results] + [wine_id]
-                conditions2 = ["id != ALL(%s)"]
+                conditions2 = ["id != ALL(%s)", "suppressed_at IS NULL"]
                 params2 = [found_ids]
                 if tipo:
                     conditions2.append("tipo = %s")

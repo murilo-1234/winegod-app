@@ -20,6 +20,7 @@ def compare_wines(wine_ids):
                        confianca_nota
                 FROM wines
                 WHERE id = ANY(%s)
+                  AND suppressed_at IS NULL
             """
             cur.execute(sql, (wine_ids,))
             columns = [desc[0] for desc in cur.description]
@@ -51,7 +52,7 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            conditions = []
+            conditions = ["suppressed_at IS NULL"]
             params = []
 
             if tipo:

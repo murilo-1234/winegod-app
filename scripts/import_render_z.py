@@ -26,6 +26,7 @@ import _env
 # Guardrails de owner (scripts/ esta no mesmo diretorio)
 sys.path.insert(0, os.path.dirname(__file__))
 from guardrails_owner import is_producer_valid, has_type_conflict
+from pre_ingest_filter import should_skip_wine
 
 # ============================================================
 # CONEXOES
@@ -569,6 +570,7 @@ def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
     sources_criados = 0
     pulados = 0
     duplicatas_hash = 0
+    bloqueado_not_wine = 0
     erros = 0
 
     executor = ThreadPoolExecutor(max_workers=workers)
@@ -616,6 +618,12 @@ def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
             processados += 1
 
             fontes = fontes_map.get(clean_id, [])
+            nome_candidato = nome_limpo or vinho_banco or ""
+            produtor_candidato = produtor_extraido or prod_banco or ""
+            skip_not_wine, _skip_reason = should_skip_wine(nome_candidato, produtor_candidato)
+            if skip_not_wine:
+                bloqueado_not_wine += 1
+                continue
 
             existing_wine_id = check_exists_in_render(prod_banco, vinho_banco, render_by_prod) if prod_banco else None
 
@@ -661,7 +669,7 @@ def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
                     hash_to_prod[hash_final] = (prod_banco, nome_normalizado or "")
 
         if dry_run:
-            progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render, dup_hash=duplicatas_hash)
+            progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render, dup_hash=duplicatas_hash, not_wine=bloqueado_not_wine)
             continue
 
         # Submeter batch pro worker
@@ -700,7 +708,7 @@ def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
                     render_by_prod[pb] = []
                 render_by_prod[pb].append((wid, nn))
 
-        progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render, dup_hash=duplicatas_hash)
+        progresso(2, processados, total, inicio, criados=criados, existentes=encontrados_render, dup_hash=duplicatas_hash, not_wine=bloqueado_not_wine)
 
     # Esperar todos os futures restantes
     for f in pending_futures:
@@ -716,7 +724,7 @@ def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, f
 
     executor.shutdown(wait=True)
 
-    print(f"\n\nFase 2 concluida: {processados:,} processados | {criados:,} criados | {encontrados_render:,} ja existiam | {duplicatas_hash:,} dup hash | {sources_criados:,} sources | {pulados:,} pulados | {erros:,} erros")
+    print(f"\n\nFase 2 concluida: {processados:,} processados | {criados:,} criados | {encontrados_render:,} ja existiam | {duplicatas_hash:,} dup hash | {sources_criados:,} sources | {bloqueado_not_wine:,} bloqueados_not_wine | {pulados:,} pulados | {erros:,} erros")
     return criados
 
 # ============================================================

@@ -47,7 +47,7 @@ def get_wine_stats(
     try:
         with conn.cursor() as cur:
             # Construir filtros PRIMEIRO
-            where_clauses = []
+            where_clauses = ["suppressed_at IS NULL"]
             params = []
 
             if filter_pais:
@@ -163,7 +163,8 @@ def _count_distinct(cur, metric, where_clauses, params):
     except Exception:
         cur.connection.rollback()
         # Fallback: estimativa rapida com LIMIT
-        sql = f"SELECT {col} FROM wines {where_sql} AND {col} IS NOT NULL GROUP BY {col} LIMIT 5000"
+        prefix = f"{where_sql} AND" if where_sql else "WHERE"
+        sql = f"SELECT {col} FROM wines {prefix} {col} IS NOT NULL GROUP BY {col} LIMIT 5000"
         try:
             cur.execute(sql, params)
             rows = cur.fetchall()
@@ -191,10 +192,17 @@ def _count_sources(cur, filter_pais=None):
         cur.execute("""
             SELECT COUNT(*) FROM wine_sources ws
             JOIN stores s ON ws.store_id = s.id
+            JOIN wines w ON w.id = ws.wine_id
             WHERE s.pais ILIKE %s
+              AND w.suppressed_at IS NULL
         """, (f"%{filter_pais}%",))
     else:
-        cur.execute("SELECT COUNT(*) FROM wine_sources")
+        cur.execute("""
+            SELECT COUNT(*)
+            FROM wine_sources ws
+            JOIN wines w ON w.id = ws.wine_id
+            WHERE w.suppressed_at IS NULL
+        """)
     row = cur.fetchone()
     return {"metric": "count_sources", "value": row[0] if row else 0}
 

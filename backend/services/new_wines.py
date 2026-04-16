@@ -10,11 +10,20 @@ Fluxo:
 import hashlib
 import json
 import time
+from pathlib import Path
+import sys
 
 from db.connection import get_connection, release_connection
 from tools.media import qwen_text_generate, gemini_text_generate
 from tools.normalize import normalizar
 from tools.resolver import _derive_item_status
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS_DIR = _REPO_ROOT / "scripts"
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from pre_ingest_filter import should_skip_wine
 
 try:
     from config import Config
@@ -81,6 +90,7 @@ _FETCH_SQL = """
            confianca_nota
     FROM wines
     WHERE hash_dedup = %s
+      AND suppressed_at IS NULL
     LIMIT 1
 """
 
@@ -139,7 +149,7 @@ Items:
 def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=None, initial_seen_ids=None):
     """Tenta classificar/enriquecer e cadastrar itens nao resolvidos no banco."""
     if not unresolved_items:
-        return {"newly_resolved": [], "still_unresolved": [], "stats": {}}
+        return {"newly_resolved": [], "still_unresolved": [], "blocked_items": [], "stats": {}}
 
     t0 = time.time()
     to_process = unresolved_items[:MAX_SYNC_NEW_WINES]
@@ -158,6 +168,7 @@ def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=Non
         return {
             "newly_resolved": [],
             "still_unresolved": list(unresolved_items),
+            "blocked_items": [],
             "stats": {"classified": 0, "created": 0, "skipped": len(skipped), "budget_used_ms": round((time.time() - t0) * 1000)},
         }
 
@@ -169,8 +180,10 @@ def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=Non
 
     newly_resolved = []
     still_unresolved = []
+    blocked_items = []
     created_count = 0
     classified_count = len(by_index)
+    blocked_not_wine = 0
     seen_ids = set(initial_seen_ids or [])
 
     for idx, unresolved in enumerate(to_process, start=1):
@@ -181,6 +194,17 @@ def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=Non
         enriched = by_index.get(idx)
         if not _is_insertable_wine(enriched):
             still_unresolved.append(unresolved)
+            continue
+
+        skip_reason = _get_pre_ingest_skip_reason(enriched, unresolved.get("ocr", {}))
+        if skip_reason:
+            blocked_not_wine += 1
+            print(f"[new_wines] blocked by pre_ingest: {skip_reason}", flush=True)
+            blocked_items.append({
+                "ocr": unresolved.get("ocr", {}),
+                "reason": skip_reason,
+                "source_channel": source_channel,
+            })
             continue
 
         wine = _insert_or_get_wine(enriched, unresolved.get("ocr", {}), source_channel, session_id)
@@ -208,9 +232,11 @@ def auto_create_unknowns(unresolved_items, source_channel="chat", session_id=Non
     return {
         "newly_resolved": newly_resolved,
         "still_unresolved": still_unresolved,
+        "blocked_items": blocked_items,
         "stats": {
             "classified": classified_count,
             "created": created_count,
+            "blocked_not_wine": blocked_not_wine,
             "skipped": len(skipped),
             "budget_used_ms": elapsed_ms,
         },
@@ -305,7 +331,41 @@ def _is_insertable_wine(enriched):
     return True
 
 
+def _get_pre_ingest_skip_reason(enriched, ocr=None):
+    candidates = []
+
+    if enriched:
+        full_name = _clean_text(enriched.get("full_name"))
+        producer = _clean_text(enriched.get("producer"))
+        wine_name = _compose_wine_name(enriched)
+        if full_name or wine_name or producer:
+            candidates.append((full_name or wine_name or "", producer or ""))
+
+    if ocr:
+        ocr_name = _clean_text(ocr.get("name"))
+        ocr_producer = _clean_text(ocr.get("producer"))
+        if ocr_name or ocr_producer:
+            candidates.append((ocr_name or "", ocr_producer or ""))
+
+    seen = set()
+    for nome, produtor in candidates:
+        key = (nome, produtor)
+        if key in seen:
+            continue
+        seen.add(key)
+        skip, reason = should_skip_wine(nome, produtor)
+        if skip:
+            return reason
+
+    return None
+
+
 def _insert_or_get_wine(enriched, ocr, source_channel, session_id):
+    skip_reason = _get_pre_ingest_skip_reason(enriched, ocr)
+    if skip_reason:
+        print(f"[new_wines] insert blocked by pre_ingest: {skip_reason}", flush=True)
+        return None
+
     conn = get_connection()
     try:
         wine_name = _compose_wine_name(enriched)

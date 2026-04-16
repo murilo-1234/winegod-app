@@ -104,6 +104,7 @@ def get_share(share_id):
                            w.nota_wcf_sample_size, w.confianca_nota
                     FROM wines w
                     WHERE w.id = ANY(%s)
+                      AND w.suppressed_at IS NULL
                     """,
                     (share["wine_ids"],),
                 )

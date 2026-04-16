@@ -16,7 +16,10 @@ def get_wine_details(wine_id):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM wines WHERE id = %s", (wine_id,))
+            cur.execute(
+                "SELECT * FROM wines WHERE id = %s AND suppressed_at IS NULL",
+                (wine_id,),
+            )
             row = cur.fetchone()
             if not row:
                 return {"error": "Vinho nao encontrado"}
@@ -47,7 +50,7 @@ def get_wine_history(wine_id):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, nome, preco_min, preco_max, moeda FROM wines WHERE id = %s",
+                "SELECT id, nome, preco_min, preco_max, moeda FROM wines WHERE id = %s AND suppressed_at IS NULL",
                 (wine_id,),
             )
             row = cur.fetchone()
