@@ -1,18 +1,20 @@
 interface ScoreBadgeProps {
-  nota: number;
-  tipo: "verified" | "estimated";
+  nota: number | null;
+  tipo: "verified" | "estimated" | "contextual" | null;
 }
 
 export function ScoreBadge({ nota, tipo }: ScoreBadgeProps) {
-  const isEstimated = tipo === "estimated";
+  if (nota == null) return null;
+
+  const isApproximate = tipo === "estimated" || tipo === "contextual";
 
   return (
     <span
       className={`text-lg font-bold ${
-        isEstimated ? "text-wine-text/60" : "text-wine-text"
+        isApproximate ? "text-wine-text/60" : "text-wine-text"
       }`}
     >
-      {isEstimated ? "~" : ""}
+      {isApproximate ? "~" : ""}
       {nota.toFixed(2)}{" "}
       <span className="text-[#FFD700]">&#9733;</span>
     </span>

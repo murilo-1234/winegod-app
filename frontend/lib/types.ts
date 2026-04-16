@@ -17,8 +17,9 @@ export interface WineData {
   pais: string;
   regiao: string;
   uvas: string[];
-  nota: number;
-  nota_tipo: "verified" | "estimated";
+  nota: number | null;
+  nota_tipo: "verified" | "estimated" | "contextual" | null;
+  nota_bucket?: string | null;
   score: number;
   termos: string[];
   preco_min: number | null;

@@ -38,12 +38,6 @@ def confianca(n):
     return 0.2
 
 
-def score_type(n):
-    if n >= 100: return "verified"
-    if n >= 1:   return "estimated"
-    return "none"
-
-
 def main():
     print("=" * 60, flush=True)
     print("  UPLOAD WCF -> RENDER (lotes de 10K, com COMMIT)", flush=True)
@@ -77,28 +71,27 @@ def main():
         bt = time.time()
         batch = rows[i : i + BATCH]
         values = [
-            (nw, confianca(tr), score_type(tr), tr, vid)
+            (nw, confianca(tr), tr, vid)
             for nw, tr, vid in batch
         ]
 
         cur.execute(
             "CREATE TEMP TABLE IF NOT EXISTS _wcf_batch ("
             "nota_wcf NUMERIC(3,2), confianca_nota NUMERIC(3,2), "
-            "winegod_score_type VARCHAR, nota_wcf_sample_size INTEGER, "
+            "nota_wcf_sample_size INTEGER, "
             "vivino_id INTEGER) ON COMMIT DELETE ROWS;"
         )
         cur.execute("TRUNCATE _wcf_batch;")
         execute_values(
             cur,
             "INSERT INTO _wcf_batch (nota_wcf, confianca_nota, "
-            "winegod_score_type, nota_wcf_sample_size, vivino_id) VALUES %s",
+            "nota_wcf_sample_size, vivino_id) VALUES %s",
             values,
         )
         cur.execute(
             "UPDATE wines w SET "
             "nota_wcf = b.nota_wcf, "
             "confianca_nota = b.confianca_nota, "
-            "winegod_score_type = b.winegod_score_type, "
             "nota_wcf_sample_size = b.nota_wcf_sample_size "
             "FROM _wcf_batch b WHERE w.vivino_id = b.vivino_id;"
         )

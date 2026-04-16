@@ -696,12 +696,14 @@ def _build_batch_resolved_context(batch, resolved_items, unresolved_items, error
                 ocr_parts.append(f"Nota visivel: {ocr_i['rating']}")
 
             nota_str = f"{d['display_note']}"
+            nota_tipo_str = f"({d['display_note_type']})" if d.get('display_note_type') else ""
             score_str = f"{d['display_score']}" if d['display_score_available'] else "sem score"
+            bucket_str = f" | Avaliacoes: {d['public_ratings_bucket']}" if d.get('public_ratings_bucket') else ""
 
             parts.append(f"  {counter}. {' | '.join(ocr_parts)}")
             parts.append(
                 f"     Banco: {w.get('nome', '?')} | {w.get('produtor', '?')} "
-                f"| Nota: {nota_str} | Score: {score_str} "
+                f"| Nota: {nota_str} {nota_tipo_str}{bucket_str} | Score: {score_str} "
                 f"| Preco base: {w.get('preco_min', '?')}-{w.get('preco_max', '?')} {w.get('moeda', '')} "
                 f"| ID: {w.get('id', '?')}"
             )

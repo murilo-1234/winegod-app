@@ -53,7 +53,9 @@ export function WineCard({ wine, onAction, highlight }: WineCardProps) {
       </div>
 
       <div className="mt-3 flex items-center gap-3 flex-wrap">
-        <ScoreBadge nota={wine.nota} tipo={wine.nota_tipo} />
+        {wine.nota !== null && (
+          <ScoreBadge nota={wine.nota} tipo={wine.nota_tipo} />
+        )}
         <TermBadges termos={wine.termos} />
       </div>
 

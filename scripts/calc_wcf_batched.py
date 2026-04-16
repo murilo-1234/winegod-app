@@ -32,8 +32,7 @@ def main():
         cur.execute(f"""
             UPDATE wines w
             SET nota_wcf = b.nota_wcf,
-                confianca_nota = b.confianca_nota,
-                winegod_score_type = b.winegod_score_type
+                confianca_nota = b.confianca_nota
             FROM _wcf_bulk b
             WHERE w.vivino_id = b.vivino_id
               AND b.vivino_id >= {lo}

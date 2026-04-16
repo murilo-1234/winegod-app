@@ -31,8 +31,7 @@ def main():
         cur.execute(f"""
             UPDATE wines w
             SET nota_wcf = ra.media_regiao,
-                confianca_nota = 0.1,
-                winegod_score_type = 'estimated'
+                confianca_nota = 0.1
             FROM _region_avg ra
             WHERE w.regiao = ra.regiao
               AND w.nota_wcf IS NULL
@@ -70,8 +69,7 @@ def main():
                 cur.execute(f"""
                     UPDATE wines w
                     SET nota_wcf = pa.media_pais,
-                        confianca_nota = 0.1,
-                        winegod_score_type = 'estimated'
+                        confianca_nota = 0.1
                     FROM _pais_avg pa
                     WHERE w.pais = pa.pais
                       AND w.nota_wcf IS NULL

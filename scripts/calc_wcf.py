@@ -1,5 +1,5 @@
 """
-calc_wcf.py — Atualiza nota_wcf, confianca_nota e winegod_score_type no Render
+calc_wcf.py — Atualiza nota_wcf, confianca_nota e nota_wcf_sample_size no Render.
 Lê wcf_results.csv (gerado a partir do vivino_db local) e faz UPDATE em lotes.
 """
 
@@ -27,14 +27,6 @@ def confianca(total_reviews):
     if total_reviews >= 10:
         return 0.4
     return 0.2
-
-
-def score_type(total_reviews):
-    if total_reviews >= 100:
-        return "verified"
-    if total_reviews >= 1:
-        return "estimated"
-    return "none"
 
 
 def load_csv():
@@ -66,7 +58,7 @@ def update_render(rows):
         values = []
         for nota_wcf, total_reviews, vinho_id in batch:
             values.append(
-                (nota_wcf, confianca(total_reviews), score_type(total_reviews), total_reviews, vinho_id)
+                (nota_wcf, confianca(total_reviews), total_reviews, vinho_id)
             )
 
         # Use a temp table approach for efficient batch update
@@ -74,7 +66,6 @@ def update_render(rows):
             CREATE TEMP TABLE IF NOT EXISTS _wcf_batch (
                 nota_wcf NUMERIC(3,2),
                 confianca_nota NUMERIC(3,2),
-                winegod_score_type VARCHAR,
                 nota_wcf_sample_size INTEGER,
                 vivino_id INTEGER
             ) ON COMMIT DELETE ROWS;
@@ -83,7 +74,7 @@ def update_render(rows):
 
         execute_values(
             cur,
-            "INSERT INTO _wcf_batch (nota_wcf, confianca_nota, winegod_score_type, nota_wcf_sample_size, vivino_id) VALUES %s",
+            "INSERT INTO _wcf_batch (nota_wcf, confianca_nota, nota_wcf_sample_size, vivino_id) VALUES %s",
             values,
         )
 
@@ -91,7 +82,6 @@ def update_render(rows):
             UPDATE wines w
             SET nota_wcf = b.nota_wcf,
                 confianca_nota = b.confianca_nota,
-                winegod_score_type = b.winegod_score_type,
                 nota_wcf_sample_size = b.nota_wcf_sample_size
             FROM _wcf_batch b
             WHERE w.vivino_id = b.vivino_id;
