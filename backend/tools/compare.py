@@ -65,6 +65,7 @@ def get_recommendations(tipo=None, pais=None, regiao=None, uva=None,
                     conditions.append("pais = %s")
                     params.append(pais_iso)
                 else:
+                    # Politica A (compat): texto nao reconhecido cai no pais_nome legado.
                     conditions.append("pais_nome ILIKE %s")
                     params.append(f"%{pais}%")
             if regiao:

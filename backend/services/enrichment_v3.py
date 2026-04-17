@@ -33,6 +33,38 @@ _PROMPT_CACHE: dict[str, str] = {}
 _CONTROLLED_ROLLOUT_WARNED = False
 
 
+_ISO_TO_EN = {
+    "ad": "Andorra", "al": "Albania", "am": "Armenia", "ar": "Argentina",
+    "at": "Austria", "au": "Australia", "az": "Azerbaijan", "ba": "Bosnia and Herzegovina",
+    "be": "Belgium", "bg": "Bulgaria", "bo": "Bolivia", "br": "Brazil",
+    "ca": "Canada", "ch": "Switzerland", "cl": "Chile", "cn": "China",
+    "co": "Colombia", "cr": "Costa Rica", "cy": "Cyprus", "cz": "Czech Republic",
+    "de": "Germany", "dk": "Denmark", "dz": "Algeria", "ec": "Ecuador",
+    "ee": "Estonia", "eg": "Egypt", "es": "Spain", "et": "Ethiopia",
+    "fi": "Finland", "fr": "France", "gb": "United Kingdom", "ge": "Georgia",
+    "gr": "Greece", "hr": "Croatia", "ht": "Haiti", "hu": "Hungary",
+    "id": "Indonesia", "ie": "Ireland", "il": "Israel", "in": "India",
+    "ir": "Iran", "it": "Italy", "jp": "Japan", "ke": "Kenya",
+    "kr": "South Korea", "lb": "Lebanon", "lt": "Lithuania", "lu": "Luxembourg",
+    "lv": "Latvia", "ma": "Morocco", "md": "Moldova", "me": "Montenegro",
+    "mk": "North Macedonia", "mt": "Malta", "mu": "Mauritius", "mx": "Mexico",
+    "na": "Namibia", "nl": "Netherlands", "no": "Norway", "np": "Nepal",
+    "nz": "New Zealand", "pe": "Peru", "ph": "Philippines", "pl": "Poland",
+    "ps": "Palestine", "pt": "Portugal", "py": "Paraguay", "ro": "Romania",
+    "rs": "Serbia", "ru": "Russia", "sa": "Saudi Arabia", "se": "Sweden",
+    "sg": "Singapore", "si": "Slovenia", "sk": "Slovakia", "sy": "Syria",
+    "th": "Thailand", "tn": "Tunisia", "tr": "Turkey", "tw": "Taiwan",
+    "ua": "Ukraine", "us": "United States", "uy": "Uruguay", "uz": "Uzbekistan",
+    "ve": "Venezuela", "vn": "Vietnam", "xk": "Kosovo", "za": "South Africa",
+}
+
+
+def _iso_to_en(code):
+    if not code:
+        return None
+    return _ISO_TO_EN.get(code.lower())
+
+
 # --- campos do formato tabular W| ---
 _W_FIELDS = (
     "producer",
@@ -512,7 +544,7 @@ def to_discovery_enriched(parsed: dict[str, Any]) -> dict[str, Any] | None:
     return {
         "name": parsed.get("full_name") or parsed.get("wine_name"),
         "producer": parsed.get("producer"),
-        "country": _central_iso_to_name((country_code or "").lower()) or None,
+        "country": _iso_to_en(country_code),
         "region": parsed.get("region"),
         "grape": parsed.get("grape"),
     }

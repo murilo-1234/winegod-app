@@ -124,8 +124,13 @@ def get_share(share_id):
                         cols[i]: _convert_value(wine_row[i])
                         for i in range(len(cols))
                     }
-                    if not wine.get("pais_nome") and wine.get("pais"):
-                        wine["pais_nome"] = iso_to_name(wine["pais"])
+                    # Contrato de share/OG: pais_display e canonico derivado de
+                    # pais (ISO). pais_nome e mantido como compat para clientes
+                    # legados e ainda preenchido via fallback quando vazio.
+                    pais_display = iso_to_name(wine["pais"]) if wine.get("pais") else ""
+                    wine["pais_display"] = pais_display
+                    if not wine.get("pais_nome") and pais_display:
+                        wine["pais_nome"] = pais_display
                     enrich_wine(wine)
                     wines.append(wine)
                 share["wines"] = wines

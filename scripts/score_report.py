@@ -72,7 +72,7 @@ def main():
     print("TOP 10 — WINEGOD SCORE (custo-beneficio)")
     print("=" * 60)
     cur.execute("""
-        SELECT nome, pais_nome, winegod_score, nota_wcf, preco_min, moeda
+        SELECT nome, pais, winegod_score, nota_wcf, preco_min, moeda
         FROM wines
         WHERE winegod_score IS NOT NULL
         ORDER BY winegod_score DESC
@@ -88,7 +88,7 @@ def main():
     print("TOP 10 — NOTA AJUSTADA (qualidade pura)")
     print("=" * 60)
     cur.execute("""
-        SELECT nome, pais_nome,
+        SELECT nome, pais,
                (winegod_score_components->>'nota_ajustada')::numeric as nota_aj,
                nota_wcf, vivino_reviews
         FROM wines
@@ -105,16 +105,20 @@ def main():
     print("SCORE MEDIO POR PAIS (top 15, min 100 vinhos)")
     print("=" * 60)
     cur.execute("""
-        SELECT pais_nome, COUNT(*) as qtd, ROUND(AVG(winegod_score)::numeric, 2) as avg_score
+        SELECT pais, COUNT(*) as qtd, ROUND(AVG(winegod_score)::numeric, 2) as avg_score
         FROM wines
-        WHERE winegod_score IS NOT NULL AND pais_nome IS NOT NULL
-        GROUP BY pais_nome
+        WHERE winegod_score IS NOT NULL AND pais IS NOT NULL
+        GROUP BY pais
         HAVING COUNT(*) >= 100
         ORDER BY avg_score DESC
         LIMIT 15
     """)
-    for pais, qtd, avg in cur.fetchall():
-        print(f"  {pais:<25} {qtd:>8,} vinhos — score medio: {avg}")
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+    from utils.country_names import iso_to_name
+    for pais_iso, qtd, avg in cur.fetchall():
+        nome = iso_to_name(pais_iso) or pais_iso
+        print(f"  {nome:<25} {qtd:>8,} vinhos — score medio: {avg}")
 
     cur.close()
     conn.close()

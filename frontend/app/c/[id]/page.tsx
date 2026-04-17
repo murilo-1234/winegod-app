@@ -11,6 +11,8 @@ interface ShareWine {
   produtor: string;
   safra: string;
   tipo: string;
+  pais: string;
+  pais_display: string;
   pais_nome: string;
   regiao: string;
   vivino_rating: number;
@@ -41,7 +43,7 @@ function toWineData(w: ShareWine): WineData {
     produtor: w.produtor || "",
     safra: w.safra || "",
     tipo: w.tipo || "",
-    pais: w.pais_nome || "",
+    pais: w.pais_display || w.pais_nome || "",
     regiao: w.regiao || "",
     uvas: [],
     nota: w.display_note ?? null,

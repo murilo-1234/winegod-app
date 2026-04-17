@@ -228,6 +228,7 @@ def _build_filters(pais, regiao, tipo, safra, p_norm=None):
             clauses.append("pais = %s")
             params.append(pais_iso)
         else:
+            # Politica A (compat): texto nao reconhecido cai no pais_nome legado.
             clauses.append("pais_nome ILIKE %s")
             params.append(f"%{pais}%")
     if regiao:

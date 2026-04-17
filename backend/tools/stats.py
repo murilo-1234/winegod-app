@@ -57,6 +57,7 @@ def get_wine_stats(
                     where_clauses.append("pais = %s")
                     params.append(pais_iso)
                 else:
+                    # Politica A (compat): texto nao reconhecido cai no pais_nome legado.
                     where_clauses.append("LOWER(pais_nome) = LOWER(%s)")
                     params.append(filter_pais)
             if filter_tipo:
