@@ -101,7 +101,7 @@ System prompt completo: `backend/prompts/baco_system.py`
 
 ## Credenciais
 
-Todas em `.env` (NAO commitado). Variaveis:
+Todas em `C:\winegod-app\.env` (raiz do projeto, NAO commitado). Variaveis:
 - `ANTHROPIC_API_KEY` — Claude API
 - `DATABASE_URL` — PostgreSQL Render
 - `GEMINI_API_KEY` — Google Gemini (OCR)
@@ -133,3 +133,24 @@ Todas em `.env` (NAO commitado). Variaveis:
 - Este repo e o PRODUTO. Scraping, enrichment, discovery ficam no repo `winegod`
 - NAO criar scrapers aqui
 - NAO importar dados brutos aqui
+
+### REGRA 5 - Render: pouca memoria, sempre operar em batches
+- O PostgreSQL do Render deste projeto deve ser tratado como ambiente de pouca memoria e sensivel a operacoes massivas.
+- Para `UPDATE`, `INSERT`, `DELETE`, backfill, filas, recomputes e qualquer escrita em volume: usar batches.
+- Padrao operacional: `10.000` registros por batch.
+- Se houver instabilidade, reduzir para `5.000`, `2.000` ou menos. NUNCA insistir em operacao monolitica.
+- Evitar transacoes gigantes, `GROUP BY` pesado em cima de milhoes de linhas e recalculo global sem fatiamento quando houver alternativa.
+- Preferir: staging table, leitura por cursor/streaming, apply incremental, checkpoints e retomada.
+- Objetivo: evitar perda de tempo com tentativas "all at once", reduzir locks, WAL, timeout e erro de conexao no Render.
+
+### REGRA 6 - Gemini e APIs pagas
+- NAO executar Gemini, enrichment pago ou qualquer chamada massiva de API paga sem autorizacao explicita do usuario nesta conversa.
+- Mesmo que exista plano aprovado, se a etapa envolver Gemini ou custo externo, parar e pedir confirmacao antes de executar.
+- Antes de Gemini, esgotar todas as camadas deterministicas e de baixo custo da base.
+- Se Gemini for autorizado, continuar usando batches controlados e piloto pequeno antes de escalar.
+
+### REGRA 7 - Deploy no Render NAO e automatico
+- `git push` para `main` NAO dispara deploy automatico nos servicos do Render (backend web nem Cron Jobs).
+- Depois de um push, o usuario precisa ir no dashboard do Render e disparar o deploy manualmente em cada servico afetado (botao "Manual Deploy" no web service, ou aguardar proximo schedule / clicar "Trigger Run" nos cron jobs apos rebuild).
+- NUNCA assumir ou afirmar que "o Render vai rebuildar sozinho". Sempre deixar explicito que o deploy e manual e instruir o usuario onde clicar.
+- Ao corrigir bug em producao via push, avisar: "o push foi feito, mas voce precisa disparar o deploy no Render manualmente. Quer que eu te guie onde clicar?"
