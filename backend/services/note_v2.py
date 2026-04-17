@@ -224,8 +224,11 @@ class BucketCache:
         Raises on connection failure (fail-fast for batch).
         """
         import psycopg2
-        from dotenv import load_dotenv
-        load_dotenv()
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
 
         url = db_url or os.environ.get("DATABASE_URL")
         if not url:

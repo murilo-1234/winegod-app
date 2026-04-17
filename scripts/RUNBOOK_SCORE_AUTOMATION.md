@@ -70,7 +70,7 @@ o repo e executam o comando. Nao rodam dentro do web service do backend.
 | **Branch** | `main` |
 | **Runtime** | Python 3 |
 | **Root Directory** | _(vazio — raiz do repo)_ |
-| **Build Command** | `pip install psycopg2-binary` |
+| **Build Command** | `pip install psycopg2-binary python-dotenv` |
 | **Command** | `python scripts/cron_score_recalc.py` |
 | **Schedule** | `*/15 * * * *` |
 
@@ -88,7 +88,7 @@ Env vars:
 | **Branch** | `main` |
 | **Runtime** | Python 3 |
 | **Root Directory** | _(vazio — raiz do repo)_ |
-| **Build Command** | `pip install psycopg2-binary` |
+| **Build Command** | `pip install psycopg2-binary python-dotenv` |
 | **Command** | `python scripts/cron_score_recalc.py --sweep` |
 | **Schedule** | `0 4 * * *` |
 
