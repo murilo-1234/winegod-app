@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>D17 Alias QA Review</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f1eb;color:#1f2933;font-family:Georgia,"Times New Roman",serif}
+.wrap{max-width:1160px;margin:0 auto;padding:18px}
+header{background:#2b2118;color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+h1{font-size:20px;margin:0;letter-spacing:.2px}
+.progress{flex:1;min-width:260px}.bar{height:9px;background:#6f5b46;border-radius:99px;overflow:hidden}.fill{height:100%;width:0;background:#d49b4a}
+.muted{color:#6b7280;font-size:13px}.status{color:#f6d58f;font-size:13px;min-width:210px;text-align:right}
+.panel{background:#fffaf2;border:1px solid #e5d7bf;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input{border:1px solid #bba98f;border-radius:8px;padding:8px 12px;background:#fff;color:#2b2118;font-size:14px}
+button{cursor:pointer;font-weight:700}button.primary{background:#8f4f2d;color:#fff;border-color:#8f4f2d}
+button.good{background:#2f6f4e;color:#fff;border-color:#2f6f4e}button.bad{background:#9f2d2d;color:#fff;border-color:#9f2d2d}button.pending{background:#bf8f35;color:#fff;border-color:#bf8f35}
+.card{background:#fff;border:1px solid #e5d7bf;border-radius:16px;padding:18px;box-shadow:0 6px 24px rgba(43,33,24,.08)}
+.card.correct{border-left:7px solid #2f6f4e}.card.error{border-left:7px solid #9f2d2d}.card.pending{border-left:7px solid #bf8f35}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}.box{background:#fbf7ef;border:1px solid #eadcc4;border-radius:12px;padding:14px}
+.box h2{font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.08em;color:#8f4f2d}
+.name{font-size:19px;line-height:1.28;margin-bottom:8px}.meta{font-size:13px;color:#4b5563;line-height:1.45}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.chip{background:#efe2cf;border:1px solid #dac4a8;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}
+.chip.auto{background:#e6f4ec;border-color:#abd7bd;color:#1f5f3e}.chip.qa{background:#fff0c2;border-color:#e4bd52;color:#7c5713}
+textarea{width:100%;min-height:76px;margin-top:10px;border:1px solid #bba98f;border-radius:10px;padding:10px;font-family:inherit}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.status{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>D17 Alias QA Review</h1><div class="progress"><div class="bar"><div id="fill" class="fill"></div></div><div id="ptext" class="muted">0 / 0</div></div><div id="saveStatus" class="status">sem estado salvo</div></header>
+<div class="panel controls">
+  <label>Reviewer <input id="reviewer" placeholder="seu nome" oninput="saveReviewer()"></label>
+  <label>Lane <select id="laneFilter" onchange="applyFilters()"><option value="">Todas</option></select></label>
+  <label>Estrato <select id="stratumFilter" onchange="applyFilters()"><option value="">Todos</option></select></label>
+  <label>Status <select id="statusFilter" onchange="applyFilters()"><option value="">Todos</option><option value="pending">Pendente</option><option value="CORRECT">CORRECT</option><option value="ERROR">ERROR</option></select></label>
+</div>
+<div class="panel controls"><button onclick="prev()">Anterior</button><select id="jump" onchange="jumpTo(this.value)"></select><button class="primary" onclick="next()">Proximo</button><button onclick="downloadCsv('checkpoint')">Salvar checkpoint CSV</button><button class="primary" onclick="downloadCsv('final')">Exportar CSV final</button><span id="countText" class="muted"></span></div>
+<div id="card"></div>
+</div>
+<script>
+const ROWS = [];
+const FIELDS = [];
+const KEY = "d17_alias_qa_review_pending_2026_04_16";
+let state = JSON.parse(localStorage.getItem(KEY) || '{"reviewer":"","answers":{}}');
+let filtered = [], pos = 0;
+function idOf(r){return r.source_wine_id + ">" + r.canonical_wine_id}
+function ans(id){ if(!state.answers[id]) state.answers[id]={qa_verdict:"",qa_notes:""}; return state.answers[id]; }
+function esc(s){ return String(s||"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); document.getElementById("saveStatus").textContent="salvo " + new Date().toLocaleTimeString("pt-BR"); updateProgress(); }
+function saveReviewer(){ state.reviewer=document.getElementById("reviewer").value; save(); }
+function unique(field){ return [...new Set(ROWS.map(r=>r[field]).filter(Boolean))].sort(); }
+function initFilters(){ document.getElementById("reviewer").value=state.reviewer||""; [["laneFilter","lane"],["stratumFilter","source_stratum"]].forEach(([id,field])=>{const sel=document.getElementById(id); unique(field).forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;sel.appendChild(o);});}); }
+function applyFilters(){ const lane=document.getElementById("laneFilter").value, strat=document.getElementById("stratumFilter").value, status=document.getElementById("statusFilter").value; filtered=ROWS.map((r,i)=>[r,i]).filter(([r])=>{if(lane&&r.lane!==lane)return false;if(strat&&r.source_stratum!==strat)return false;const st=ans(idOf(r)).qa_verdict||"pending";return !status||st===status;}).map(x=>x[1]); pos=0; buildJump(); render(); }
+function buildJump(){ const sel=document.getElementById("jump"); sel.innerHTML=""; filtered.forEach((idx,i)=>{const r=ROWS[idx], o=document.createElement("option"); o.value=i; o.textContent=(i+1)+". "+r.lane+" #"+r.source_wine_id+" -> "+r.canonical_wine_id; sel.appendChild(o);}); }
+function render(){ if(!filtered.length){document.getElementById("card").innerHTML='<div class="card">Nenhum item no filtro.</div>'; updateProgress(); return;} const r=ROWS[filtered[pos]], id=idOf(r), a=ans(id); document.getElementById("jump").value=pos; const cls=a.qa_verdict==="CORRECT"?"correct":(a.qa_verdict==="ERROR"?"error":"pending"); document.getElementById("card").innerHTML=`<div class="card ${cls}"><div class="chips"><span class="chip ${r.lane==='ALIAS_AUTO'?'auto':'qa'}">${esc(r.lane)}</span><span class="chip">score ${esc(r.score)}</span><span class="chip">gap ${esc(r.gap)}</span><span class="chip">${esc(r.source_stratum)}</span><span class="chip">${esc(r.evidence_reason)}</span></div><div class="grid"><div class="box"><h2>Source sem Vivino</h2><div class="name">${esc(r.source_nome)}</div><div class="meta">id: ${esc(r.source_wine_id)}<br>produtor: ${esc(r.source_produtor)}<br>safra: ${esc(r.source_safra)} | tipo: ${esc(r.source_tipo)}<br>sources: ${esc(r.source_wine_sources_count)} | stores: ${esc(r.source_stores_count)}</div></div><div class="box"><h2>Canonical Vivino</h2><div class="name">${esc(r.canonical_nome)}</div><div class="meta">id: ${esc(r.canonical_wine_id)}<br>produtor: ${esc(r.canonical_produtor)}<br>safra: ${esc(r.canonical_safra)} | tipo: ${esc(r.canonical_tipo)}<br>channels: ${esc(r.channels)}</div></div></div><div class="controls"><button class="good" onclick="setVerdict('CORRECT')">CORRECT: mesmo vinho</button><button class="bad" onclick="setVerdict('ERROR')">ERROR: match errado</button><button class="pending" onclick="setVerdict('')">Pendente</button></div><textarea id="notes" placeholder="Notas obrigatorias se marcar ERROR" oninput="setNotes(this.value)">${esc(a.qa_notes)}</textarea><p class="muted">Regra: marque CORRECT somente se source e canonical forem o mesmo vinho. Na duvida, marque ERROR ou deixe pendente.</p></div>`; document.getElementById("countText").textContent=`Item ${pos+1}/${filtered.length}`; updateProgress(); }
+function setVerdict(v){ const r=ROWS[filtered[pos]]; ans(idOf(r)).qa_verdict=v; save(); if(v) next(); else render(); }
+function setNotes(v){ const r=ROWS[filtered[pos]]; ans(idOf(r)).qa_notes=v; save(); }
+function next(){ if(pos<filtered.length-1)pos++; render(); } function prev(){ if(pos>0)pos--; render(); } function jumpTo(v){ pos=Number(v)||0; render(); }
+function updateProgress(){ const done=ROWS.filter(r=>ans(idOf(r)).qa_verdict).length, pct=ROWS.length?(done/ROWS.length*100):0; document.getElementById("fill").style.width=pct+"%"; document.getElementById("ptext").textContent=`${done} / ${ROWS.length} revisados`; }
+function csvEscape(v){ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function downloadCsv(kind){ const lines=[FIELDS.join(",")]; ROWS.forEach(r=>{const a=ans(idOf(r)); const row={...r,qa_verdict:a.qa_verdict||"",qa_notes:a.qa_notes||"",reviewer:state.reviewer||""}; lines.push(FIELDS.map(f=>csvEscape(row[f])).join(","));}); const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=`tail_d17_alias_qa_pending_${kind}_2026-04-16.csv`; a.click(); URL.revokeObjectURL(url); }
+initFilters(); applyFilters();
+</script>
+</body>
+</html>
