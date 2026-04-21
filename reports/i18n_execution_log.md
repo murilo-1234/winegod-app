@@ -1117,3 +1117,16 @@ Handoff arquitetural: `C:\winegod-app\reports\WINEGOD_MULTILINGUE_HANDOFF_OFICIA
 - NAO foi feito: `git add`, `git checkout -b`, `git commit`, `git push`, deploy. Nenhum codigo alterado.
 - Comando de stage atualizado registrado na resposta da fase ao Murilo.
 - Status: F2.8 segue aguardando autorizacao explicita de commit/push do Murilo.
+
+## F2.8 - Commit + push da Onda 2 (autorizado)
+- Data: 2026-04-21 00:25
+- Branch: `i18n/onda-2` (criada a partir de main, working tree preservado).
+- Commit: `efb02ac8` - "i18n: bootstrap multilingual rollout through wave 2".
+- Auditoria pre-commit: 36/36 paths exatos da Lista A; ZERO vazamento da Lista B (audit Python `EXTRA: NENHUM`, `MISSING: NENHUM`).
+- `git diff --cached --stat`: 36 files changed, 11972 insertions(+), 951 deletions(-).
+- Push: `git push -u origin i18n/onda-2` -> branch nova criada no remote, tracking configurado.
+- PR sugerido pelo GitHub: https://github.com/murilo-1234/winegod-app/pull/new/i18n/onda-2 (NAO aberto automaticamente; aguarda decisao do Murilo).
+- Lista B continua sem alteracao no working tree (todos os arquivos sujos preexistentes seguem como `M`/`??` no status, fora deste commit).
+- Render: NAO foi acionado deploy (REGRA 7 do CLAUDE.md). Migrations 015/016/017 aguardam deploy manual quando o Murilo decidir.
+- Vercel: preview podera aparecer automaticamente se o repo estiver ligado a Vercel para PRs/branches; nao houve invencao de URL.
+- Status F2.8: push feito, preview pendente (depende de Vercel auto-deploy de branch).
