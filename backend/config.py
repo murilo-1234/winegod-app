@@ -39,3 +39,7 @@ class Config:
     ENRICHMENT_V3_FALLBACK_MODEL = os.getenv(
         "ENRICHMENT_V3_FALLBACK_MODEL", "gemini-2.5-flash-lite"
     )
+
+    BULK_INGEST_TOKEN = os.getenv("BULK_INGEST_TOKEN", "")
+    BULK_INGEST_BATCH_SIZE = int(os.getenv("BULK_INGEST_BATCH_SIZE", "10000"))
+    BULK_INGEST_MAX_ITEMS = int(os.getenv("BULK_INGEST_MAX_ITEMS", "50000"))

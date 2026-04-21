@@ -736,7 +736,7 @@ def format_resolved_context(resolved_wines, unresolved, image_type, ocr_result,
             parts.append(
                 f"[Vinho encontrado no banco (status: {item_status}): {w.get('nome', '?')} "
                 f"| Produtor: {w.get('produtor', '?')} "
-                f"| Pais: {iso_to_name(w.get('pais')) or w.get('pais_nome', '?')} "
+                f"| Pais: {d.get('pais_display') or iso_to_name(w.get('pais')) or w.get('pais_nome', '?')} "
                 f"| Regiao: {w.get('regiao', '?')} "
                 f"| Nota: {nota_str} {nota_tipo_str}{bucket_str} "
                 f"| Score: {score_str} "
