@@ -6,6 +6,13 @@ load_dotenv()
 
 class Config:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
+    DASHSCOPE_BASE_URL = os.getenv(
+        "DASHSCOPE_BASE_URL",
+        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    )
+    BACO_PROVIDER = os.getenv("BACO_PROVIDER", "qwen").lower()
+    BACO_MODEL = os.getenv("BACO_MODEL", "qwen3.6-plus")
     DATABASE_URL = os.getenv("DATABASE_URL")
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
     FLASK_PORT = os.getenv("FLASK_PORT", "5000")
@@ -21,6 +28,10 @@ class Config:
     ENRICHMENT_GEMINI_25_MODEL = os.getenv(
         "ENRICHMENT_GEMINI_25_MODEL", "gemini-2.5-flash-lite"
     )
+    # Modelo escalado: 3.1 Flash Lite Preview.
+    # Ativado para escalacao pois o 2.5 puro provou insuficiente (output explode em loop).
+    # SEGURANCA: `ThinkingLeakError` em `backend/tools/media.py` aborta se
+    # thoughts_token_count > 0 — nunca paga thinking silenciosamente.
     ENRICHMENT_GEMINI_31_MODEL = os.getenv(
         "ENRICHMENT_GEMINI_31_MODEL", "gemini-3.1-flash-lite-preview"
     )
@@ -43,3 +54,9 @@ class Config:
     BULK_INGEST_TOKEN = os.getenv("BULK_INGEST_TOKEN", "")
     BULK_INGEST_BATCH_SIZE = int(os.getenv("BULK_INGEST_BATCH_SIZE", "10000"))
     BULK_INGEST_MAX_ITEMS = int(os.getenv("BULK_INGEST_MAX_ITEMS", "50000"))
+    # DQ V3 Escopo 4: cut-off defensivo para BLOCKED_QUEUE_EXPLOSION.
+    # Se um run gerar mais de INGEST_QUEUE_ABS_CAP reviews, OU se o ratio
+    # reviews / valid exceder INGEST_QUEUE_PCT_CAP, o apply eh abortado
+    # sem nenhum write.
+    INGEST_QUEUE_ABS_CAP = int(os.getenv("INGEST_QUEUE_ABS_CAP", "20000"))
+    INGEST_QUEUE_PCT_CAP = float(os.getenv("INGEST_QUEUE_PCT_CAP", "0.05"))
