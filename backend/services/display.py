@@ -7,6 +7,7 @@ NAO materializar display fields no banco. Resolver aqui em runtime.
 """
 
 from services.note_v2 import resolve_note_v2, get_bucket_lookup
+from utils.country_names import iso_to_name
 
 
 def resolve_display(wine):
@@ -31,6 +32,11 @@ def resolve_display(wine):
         score = None
         score_available = False
 
+    pais_iso = wine.get("pais")
+    pais_display = iso_to_name(pais_iso) if pais_iso else None
+    if not pais_display:
+        pais_display = wine.get("pais_nome") or None
+
     return {
         "display_note": v2["display_note"],
         "display_note_type": v2["display_note_type"],
@@ -38,6 +44,7 @@ def resolve_display(wine):
         "display_score": score,
         "display_score_available": score_available,
         "public_ratings_bucket": v2["public_ratings_bucket"],
+        "pais_display": pais_display,
     }
 
 
