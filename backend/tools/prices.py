@@ -2,6 +2,7 @@
 
 from db.connection import get_connection, release_connection
 from services.cache import cache_get, cache_set, cache_key, TTL_PRICES
+from services.display import enrich_wines
 
 
 def get_prices(wine_id, country=None):
@@ -118,6 +119,7 @@ def get_store_wines(store_name, tipo=None, preco_max=None):
                     "message": f"Nenhum vinho encontrado na loja '{store_name}'. A loja pode nao estar na nossa base ainda.",
                 }
 
+            enrich_wines(results)
             return {"wines": results, "total": len(results)}
     finally:
         release_connection(conn)
