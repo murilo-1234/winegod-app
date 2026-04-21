@@ -1,10 +1,62 @@
 import os
+import re
 import jwt
 import requests
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, redirect
-from db.models_auth import upsert_user, get_user_by_id, delete_user
+from db.models_auth import (
+    upsert_user,
+    get_user_by_id,
+    delete_user,
+    update_user_preferences,
+)
 from config import Config
+from utils.i18n_locale import with_request_locale
+
+ALLOWED_UI_LOCALES = ("pt-BR", "en-US", "es-419", "fr-FR")
+ALLOWED_PREFERENCE_FIELDS = ("ui_locale", "market_country", "currency_override")
+_COUNTRY_RE = re.compile(r"^[A-Za-z]{2}$")
+_CURRENCY_RE = re.compile(r"^[A-Za-z]{3}$")
+
+
+def _validate_preferences(raw):
+    """Valida o bloco `preferences` do body do PATCH. Retorna
+    (preferences_limpo, erro_tuple). Em caso de erro, preferences_limpo e None
+    e erro_tuple e (message_code, http_status)."""
+    if not isinstance(raw, dict):
+        return None, ("invalid_preferences", 400)
+
+    unknown = [k for k in raw.keys() if k not in ALLOWED_PREFERENCE_FIELDS]
+    if unknown:
+        return None, ("unknown_preference_field", 400)
+
+    if not any(k in raw for k in ALLOWED_PREFERENCE_FIELDS):
+        return None, ("no_preferences_fields", 400)
+
+    clean = {}
+
+    if "ui_locale" in raw:
+        value = raw["ui_locale"]
+        if not isinstance(value, str) or value not in ALLOWED_UI_LOCALES:
+            return None, ("invalid_ui_locale", 400)
+        clean["ui_locale"] = value
+
+    if "market_country" in raw:
+        value = raw["market_country"]
+        if not isinstance(value, str) or not _COUNTRY_RE.match(value):
+            return None, ("invalid_market_country", 400)
+        clean["market_country"] = value.upper()
+
+    if "currency_override" in raw:
+        value = raw["currency_override"]
+        if value is None:
+            clean["currency_override"] = None
+        elif isinstance(value, str) and _CURRENCY_RE.match(value):
+            clean["currency_override"] = value.upper()
+        else:
+            return None, ("invalid_currency_override", 400)
+
+    return clean, None
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -125,6 +177,7 @@ def google_callback():
 
 
 @auth_bp.route('/auth/me', methods=['GET'])
+@with_request_locale
 def get_me():
     """Retorna dados do usuario logado + creditos restantes."""
     user = get_current_user(request)
@@ -145,6 +198,11 @@ def get_me():
             "provider": user.get("provider", "google"),
             "last_login": user.get("last_login"),
         },
+        "preferences": {
+            "ui_locale": user.get("ui_locale") or "pt-BR",
+            "market_country": user.get("market_country") or "BR",
+            "currency_override": user.get("currency_override"),
+        },
         "credits": {
             "used": used,
             "remaining": remaining,
@@ -153,7 +211,90 @@ def get_me():
     })
 
 
+def _get_bearer_payload(req):
+    """F1.7 - Retorna (payload, error_tuple).
+
+    Distingue entre token ausente/invalido (401 unauthorized) e JWT valido
+    cujo user_id nao existe mais no banco (404 user_not_found). Diferente de
+    `get_current_user`, que colapsa os dois casos em None.
+
+    Em sucesso: (payload_dict, None).
+    Em 401: (None, ('unauthorized', 401)).
+    """
+    auth_header = req.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None, ("unauthorized", 401)
+    payload = decode_jwt(auth_header[7:])
+    if not payload or "user_id" not in payload:
+        return None, ("unauthorized", 401)
+    return payload, None
+
+
+@auth_bp.route('/auth/me/preferences', methods=['PATCH'])
+@with_request_locale
+def patch_preferences():
+    """F1.7 - Atualiza preferencias i18n do usuario autenticado.
+
+    Body esperado:
+      { "preferences": { "ui_locale": "...", "market_country": "...",
+                          "currency_override": "..." } }
+
+    Pelo menos uma das 3 chaves deve estar presente. Valida whitelist de
+    ui_locale, ISO alpha-2 de market_country, ISO 4217 de currency_override.
+    Nao valida contra enabled_locales nem markets.json nesta fase.
+    """
+    payload, err = _get_bearer_payload(request)
+    if err is not None:
+        code, status = err
+        return jsonify({
+            "error": code,
+            "message_code": f"errors.auth.{code}",
+        }), status
+
+    user = get_user_by_id(payload["user_id"])
+    if not user:
+        return jsonify({
+            "error": "user_not_found",
+            "message_code": "errors.auth.user_not_found",
+        }), 404
+
+    try:
+        body = request.get_json(silent=False)
+    except Exception:
+        body = None
+
+    if not isinstance(body, dict):
+        return jsonify({
+            "error": "invalid_json",
+            "message_code": "errors.auth.invalid_json",
+        }), 400
+
+    if "preferences" not in body:
+        return jsonify({
+            "error": "missing_preferences",
+            "message_code": "errors.auth.missing_preferences",
+        }), 400
+
+    clean, err = _validate_preferences(body.get("preferences"))
+    if err is not None:
+        code, status = err
+        return jsonify({
+            "error": code,
+            "message_code": f"errors.auth.{code}",
+        }), status
+
+    updated = update_user_preferences(user["id"], clean)
+    if updated is None:
+        return jsonify({
+            "error": "user_not_found",
+            "message_code": "errors.auth.user_not_found",
+        }), 404
+
+    return jsonify({"preferences": updated})
+
+
 @auth_bp.route('/auth/me', methods=['DELETE'])
+@with_request_locale
 def delete_me():
     """DELETE /api/auth/me — exclui a conta do usuario autenticado.
     Cascade: conversations deletadas, message_log.user_id set NULL."""

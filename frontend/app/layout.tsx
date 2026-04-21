@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,14 +29,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // F2.3b: locale e messages vem do request config (frontend/i18n/request.ts).
+  // F2.4 substituira o stub por resolucao real (cookie wg_locale_choice,
+  // header geo, fallback chain). Nesta fase, garante que useTranslations()
+  // funciona em todas as rotas sem prefixo (/, /chat/[id], /conta, etc.).
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.className} ${playfair.variable}`}>{children}</body>
+    <html lang={locale}>
+      <body className={`${inter.className} ${playfair.variable}`}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }
