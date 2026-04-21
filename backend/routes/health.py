@@ -55,12 +55,21 @@ def health():
     except Exception:
         db_status = "error"
 
-    claude_status = "configured" if Config.ANTHROPIC_API_KEY else "missing"
+    if Config.BACO_PROVIDER == "qwen":
+        baco_status = "configured" if Config.DASHSCOPE_API_KEY else "missing"
+    elif Config.BACO_PROVIDER == "anthropic":
+        baco_status = "configured" if Config.ANTHROPIC_API_KEY else "missing"
+    else:
+        baco_status = "invalid_provider"
 
     return jsonify({
         "status": "ok",
         "database": db_status,
-        "claude_api": claude_status,
+        "baco_api": baco_status,
+        "baco_provider": Config.BACO_PROVIDER,
+        "baco_model": Config.BACO_MODEL,
+        # Campo legado mantido para smokes antigos.
+        "claude_api": "configured" if Config.ANTHROPIC_API_KEY else "missing",
         "wines_count_estimate": wines_estimate,
         "version": "0.2.0",
     })

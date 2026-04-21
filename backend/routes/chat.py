@@ -825,7 +825,7 @@ def chat():
         trace.log()
         if shell_created:
             _cleanup_conversation_shell(session_id, current_user["id"])
-        return jsonify({"error": f"Erro ao chamar Claude API: {str(e)}"}), 500
+        return jsonify({"error": f"Erro ao chamar IA do Baco: {str(e)}"}), 500
 
     trace.log()
 

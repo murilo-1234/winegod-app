@@ -6,6 +6,13 @@ load_dotenv()
 
 class Config:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY")
+    DASHSCOPE_BASE_URL = os.getenv(
+        "DASHSCOPE_BASE_URL",
+        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    )
+    BACO_PROVIDER = os.getenv("BACO_PROVIDER", "qwen").lower()
+    BACO_MODEL = os.getenv("BACO_MODEL", "qwen3.6-plus")
     DATABASE_URL = os.getenv("DATABASE_URL")
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
     FLASK_PORT = os.getenv("FLASK_PORT", "5000")
