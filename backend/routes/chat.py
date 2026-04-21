@@ -13,6 +13,7 @@ from services.new_wines import auto_create_unknowns
 from services.tracing import RequestTrace
 from routes.credits import require_credits
 from routes.auth import get_current_user
+from utils.i18n_locale import with_request_locale
 from db.models_conversations import (
     create_conversation, get_conversation, update_conversation,
     delete_conversation, DuplicateConversationError,
@@ -774,6 +775,7 @@ def _build_batch_resolved_context(batch, resolved_items, unresolved_items, error
 
 
 @chat_bp.route('/chat', methods=['POST'])
+@with_request_locale
 @require_credits
 def chat():
     """POST /api/chat — Envia mensagem e recebe resposta completa do Baco."""
@@ -844,6 +846,7 @@ def chat():
 
 
 @chat_bp.route('/chat/stream', methods=['POST'])
+@with_request_locale
 @require_credits
 def chat_stream():
     """POST /api/chat/stream — SSE streaming da resposta do Baco.
