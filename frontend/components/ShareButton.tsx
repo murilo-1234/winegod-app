@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -11,6 +12,7 @@ interface ShareButtonProps {
 }
 
 export function ShareButton({ wine_ids, title, context }: ShareButtonProps) {
+  const t = useTranslations("shareButton");
   const [status, setStatus] = useState<"idle" | "loading" | "copied" | "error">(
     "idle"
   );
@@ -42,14 +44,7 @@ export function ShareButton({ wine_ids, title, context }: ShareButtonProps) {
     }
   }
 
-  const label =
-    status === "loading"
-      ? "Gerando..."
-      : status === "copied"
-        ? "Link copiado!"
-        : status === "error"
-          ? "Erro, tente novamente"
-          : "Compartilhar";
+  const label = t(status);
 
   return (
     <button
