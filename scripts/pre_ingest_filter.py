@@ -1,6 +1,21 @@
 """
 Pre-ingest filter para novos wines (scraping Natura, e-commerces, etc.)
 
+FONTE UNICA DE VERDADE (DQ V3 Escopo 5 -- 2026-04-21)
+=====================================================
+
+Este modulo e o **unico** ponto de entrada oficial para decidir se um
+candidato e NOT_WINE no repo vivo `C:\\winegod-app`. Todos os pipelines
+(bulk_ingest, new_wines, import_render_z) devem importar EXATAMENTE
+este modulo:
+
+    from pre_ingest_filter import should_skip_wine
+
+Por baixo ele delega para `scripts/wine_filter.classify_product` (fonte
+da regex multilingua consolidada). Nao importe `wine_filter` diretamente
+de outros lugares nem sincronize com copias legadas (incluindo
+`C:\\winegod\\utils\\wine_filter.py`, que esta morto).
+
 Uso tipico no pipeline:
 
     from pre_ingest_filter import should_skip_wine
