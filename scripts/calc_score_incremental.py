@@ -36,6 +36,30 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     sys.exit("ERROR: DATABASE_URL environment variable is required.")
 
+# --- Controle de fanout de peers por reason da fila ---
+# Quando upload WCF em bulk mode enfileira via trigger, nao queremos que
+# cada wine recalc dispare peers (evita avalanche na score_recalc_queue).
+NO_PEER_FANOUT_REASONS = {"wcf_full_upload", "wcf_incremental_upload"}
+
+
+def should_enqueue_peers(reason):
+    """Decide se enqueue_peers deve ser chamado para um item da fila.
+
+    Regras:
+      - reason None ou vazio: True (fallback conservador)
+      - reason em NO_PEER_FANOUT_REASONS: False (upload WCF bulk)
+      - reason comeca com 'peer_of_': False (evita fanout infinito)
+      - resto: True (trigger_update, trigger_insert, manual_retry, etc.)
+    """
+    if not reason:
+        return True
+    if reason in NO_PEER_FANOUT_REASONS:
+        return False
+    if reason.startswith("peer_of_"):
+        return False
+    return True
+
+
 # --- Constantes identicas a calc_score.py ---
 
 TAXAS_USD = {
@@ -487,8 +511,8 @@ def process_queue(conn, batch_size=100, scoring_ctx=None):
             score, score_type, components = result
             _update_wine_score(cur, wine_id, score, score_type, components)
 
-            # Enqueue peers only for direct changes (not peer-triggered recalcs)
-            if not reason.startswith("peer_of_"):
+            # Enqueue peers only for direct changes (not peer_of_* e WCF bulk upload)
+            if should_enqueue_peers(reason):
                 n = enqueue_peers(cur, wine_id, bucket_lookup_fn=bucket_cache.lookup)
                 peers_enqueued += n
 
