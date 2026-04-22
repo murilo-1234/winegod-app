@@ -346,10 +346,169 @@ def run_check(local_cur, render_cur, valid_wine_ids, domain_to_store):
 # ============================================================
 # FASE 1 — Wine Sources dos Matched (score >= 0.5)
 # ============================================================
+#
+# DQ V3 Escopo 6 (2026-04-21):
+#   `fase1_via_bulk_ingest` e a nova porta oficial. Consolida via
+#   `backend.services.bulk_ingest.process_sources_only` em vez de INSERT
+#   paralelo direto. `fase1` (abaixo) continua funcionando mas esta
+#   DEPRECATED para rollback rapido.
+# ============================================================
+
+
+def fase1_via_bulk_ingest(local_cur, render_conn, valid_wine_ids, domain_to_store,
+                           fontes_map, limite=None, dry_run=False, run_id=None):
+    """Versao consolidada da Fase 1 usando process_sources_only.
+
+    Mantem guardrails de produtor e tipo (`is_producer_valid` + `has_type_conflict`)
+    como filtros pre-pipeline, e delega criacao/UPSERT de wine_sources ao
+    pipeline central. Nao cria wine novo (fase 2 cuida disso).
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+    from services.bulk_ingest import process_sources_only
+
+    print("\n" + "=" * 60)
+    print(f"FASE 1 (via bulk_ingest) -- dry_run={dry_run}")
+    print("=" * 60)
+
+    local_cur.execute("""
+        SELECT COUNT(*) FROM y2_results
+        WHERE status = 'matched' AND match_score >= 0.5
+    """)
+    total = local_cur.fetchone()[0]
+    if limite:
+        total = min(total, limite)
+    print(f"Total a processar: {total:,}")
+
+    inicio = time.time()
+    last_id = 0
+    processados = 0
+    sem_vivino = 0
+    sem_fontes = 0
+    sem_loja = 0
+    rejeitado_owner = 0
+    rejeitado_tipo = 0
+    items_montados = 0
+
+    grand = {
+        "sources_in_input": 0, "sources_inserted": 0, "sources_updated": 0,
+        "sources_rejected_count": 0, "sources_duplicates_in_input": 0,
+        "would_insert_sources": 0, "would_update_sources": 0,
+        "batches": 0, "errors": [],
+    }
+
+    while True:
+        if limite and processados >= limite:
+            break
+
+        batch_limit = min(BATCH_SIZE, (limite - processados) if limite else BATCH_SIZE)
+
+        local_cur.execute("""
+            SELECT id, vivino_id, clean_id, prod_banco, vivino_produtor, cor
+            FROM y2_results
+            WHERE status = 'matched' AND match_score >= 0.5
+            AND id > %s
+            ORDER BY id
+            LIMIT %s
+        """, (last_id, batch_limit))
+
+        rows = local_cur.fetchall()
+        if not rows:
+            break
+        last_id = rows[-1][0]
+
+        items: list[dict] = []
+        for row in rows:
+            y_id, vivino_id, clean_id, prod_banco, vivino_produtor, cor = row
+            processados += 1
+
+            prod_ok, _pr = is_producer_valid(prod_banco)
+            if not prod_ok:
+                rejeitado_owner += 1
+                continue
+
+            if cor and vivino_produtor:
+                cor_loja = "tinto" if cor == "T" else ("branco" if cor == "B" else None)
+                if cor_loja and has_type_conflict(cor_loja, vivino_produtor):
+                    rejeitado_tipo += 1
+                    continue
+
+            wine_id = vivino_id if vivino_id in valid_wine_ids else None
+            if not wine_id:
+                sem_vivino += 1
+                continue
+
+            fontes = fontes_map.get(clean_id)
+            if not fontes:
+                sem_fontes += 1
+                continue
+
+            wine_sources_entries = []
+            for url, preco, moeda in fontes:
+                if not url:
+                    continue
+                dominio = get_domain(url)
+                if not dominio:
+                    continue
+                store_id = domain_to_store.get(dominio)
+                if not store_id:
+                    sem_loja += 1
+                    continue
+                wine_sources_entries.append({
+                    "store_id": store_id,
+                    "url": url,
+                    "preco": preco,
+                    "moeda": moeda,
+                    "disponivel": True,
+                })
+
+            if wine_sources_entries:
+                items.append({
+                    "wine_id": wine_id,
+                    "sources": wine_sources_entries,
+                })
+                items_montados += 1
+
+        if items:
+            r = process_sources_only(
+                items,
+                dry_run=dry_run,
+                source="import_render_z_fase1_v6",
+                run_id=run_id,
+            )
+            for k in ("sources_in_input", "sources_inserted", "sources_updated",
+                      "sources_rejected_count", "sources_duplicates_in_input",
+                      "would_insert_sources", "would_update_sources", "batches"):
+                grand[k] += r.get(k, 0)
+            if r.get("errors"):
+                grand["errors"].extend(r["errors"])
+
+        if processados % 10_000 == 0 or processados >= total:
+            elapsed = time.time() - inicio
+            rate = processados / elapsed if elapsed > 0 else 0
+            print(f"  {processados:,}/{total:,}  rate={rate:.0f}/s  "
+                  f"items_montados={items_montados:,}  grand={grand}")
+
+    print(f"\nFase 1 (v6) concluida: {processados:,} processados | "
+          f"items_montados={items_montados:,}")
+    print(f"  sem vivino_id: {sem_vivino:,} | sem fontes: {sem_fontes:,} | sem loja: {sem_loja:,}")
+    print(f"  rejeitado owner: {rejeitado_owner:,} | rejeitado tipo: {rejeitado_tipo:,}")
+    print(f"  RESULT: {grand}")
+    return grand
+
 
 def fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, limite=None, dry_run=False):
+    """DEPRECATED (DQ V3 Escopo 6). Use `fase1_via_bulk_ingest`.
+
+    Mantida para rollback rapido. Esta versao escreve em `wine_sources`
+    via INSERT paralelo, fora do pipeline central do guardrail.
+    """
+    import warnings
+    warnings.warn(
+        "fase1 esta DEPRECATED (DQ V3 Escopo 6). Use fase1_via_bulk_ingest.",
+        DeprecationWarning, stacklevel=2,
+    )
     print("\n" + "=" * 60)
-    print("FASE 1 — Wine Sources dos Matched (score >= 0.5)")
+    print("FASE 1 (DEPRECATED) — Wine Sources dos Matched (score >= 0.5)")
     print("=" * 60)
 
     # Contar total
@@ -550,9 +709,202 @@ def _processar_batch_fase2(batch_data, domain_to_store, dry_run, worker_id):
     return result
 
 
-def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, limite=None, dry_run=False, workers=1):
+def fase2_via_bulk_ingest(local_cur, render_conn, domain_to_store, fontes_map,
+                            limite=None, dry_run=False, run_id=None):
+    """Versao consolidada da Fase 2 usando `bulk_ingest.process_bulk`.
+
+    Monta items no schema oficial do bulk_ingest (com bloco `sources`) e
+    delega toda a logica de dedup / auto-merge fuzzy / review queue ao
+    pipeline central. Remove o ThreadPoolExecutor da versao antiga -- o
+    `process_bulk` ja faz batches de 10k internamente, entao nao
+    precisamos gerenciar workers manualmente.
+
+    Itens NAO vao mais pra `wines` via INSERT paralelo. Tudo passa pelo
+    guardrail DQ V3: hash/tripla -> UPDATE, fuzzy estrito -> UPDATE no
+    canonical, fuzzy ambiguo -> review queue, resto -> INSERT.
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+    from services.bulk_ingest import process_bulk
+
     print("\n" + "=" * 60)
-    print(f"FASE 2 — Vinhos Novos com Anti-Duplicata (BATCH, {workers} workers)")
+    print(f"FASE 2 (via bulk_ingest) -- dry_run={dry_run}")
+    print("=" * 60)
+
+    local_cur.execute("SELECT COUNT(*) FROM y2_results WHERE status = 'new'")
+    total = local_cur.fetchone()[0]
+    if limite:
+        total = min(total, limite)
+    print(f"Total a processar: {total:,}")
+
+    inicio = time.time()
+    last_id = 0
+    processados = 0
+    items_montados = 0
+    bloqueado_not_wine = 0
+    pulados_sem_nome = 0
+
+    grand = {
+        "received": 0, "valid": 0, "duplicates_in_input": 0,
+        "would_insert": 0, "would_update": 0, "inserted": 0, "updated": 0,
+        "would_auto_merge_strict": 0, "auto_merge_strict_count": 0,
+        "would_enqueue_review": 0, "enqueue_for_review_count": 0,
+        "sources_in_input": 0, "sources_inserted": 0, "sources_updated": 0,
+        "sources_rejected_count": 0, "sources_duplicates_in_input": 0,
+        "filtered_notwine_count": 0, "rejected_count": 0,
+        "blocked": None, "block_reason": None,
+        "batches": 0, "errors": [],
+    }
+
+    while True:
+        if limite and processados >= limite:
+            break
+
+        batch_limit = min(BATCH_SIZE, (limite - processados) if limite else BATCH_SIZE)
+
+        local_cur.execute("""
+            SELECT y.id, y.prod_banco, y.vinho_banco, y.pais, y.cor, y.safra, y.uva,
+                y.regiao, y.subregiao, y.abv, y.harmonizacao, y.clean_id,
+                wc.nome_limpo, wc.nome_normalizado, wc.produtor_extraido,
+                wc.preco_min, wc.preco_max, wc.moeda, wc.url_imagem,
+                wc.total_fontes, wc.hash_dedup, wc.ean_gtin
+            FROM y2_results y
+            JOIN wines_clean wc ON wc.id = y.clean_id
+            WHERE y.status = 'new'
+            AND y.id > %s
+            ORDER BY y.id
+            LIMIT %s
+        """, (last_id, batch_limit))
+
+        rows = local_cur.fetchall()
+        if not rows:
+            break
+        last_id = rows[-1][0]
+
+        items: list[dict] = []
+        for row in rows:
+            (y_id, prod_banco, vinho_banco, pais, cor, safra, uva,
+             regiao, subregiao, abv, harmonizacao, clean_id,
+             nome_limpo, nome_normalizado, produtor_extraido,
+             preco_min, preco_max, moeda, url_imagem,
+             total_fontes, hash_dedup, ean_gtin) = row
+            processados += 1
+
+            nome = nome_limpo or vinho_banco
+            if not nome:
+                pulados_sem_nome += 1
+                continue
+
+            produtor = produtor_extraido or prod_banco or ""
+
+            abv_float = None
+            if abv:
+                try:
+                    abv_float = float(str(abv).replace("%", "").replace(",", ".").strip())
+                    if abv_float > 100 or abv_float < 0:
+                        abv_float = None
+                except Exception:
+                    pass
+
+            # Mapeia cor local (T/B) para tipo do schema (tinto/branco)
+            tipo = None
+            if cor == "T":
+                tipo = "tinto"
+            elif cor == "B":
+                tipo = "branco"
+
+            # Sources a partir do fontes_map
+            fontes = fontes_map.get(clean_id, [])
+            sources_payload = []
+            for url, preco_f, moeda_f in fontes:
+                if not url:
+                    continue
+                dominio = get_domain(url)
+                if not dominio:
+                    continue
+                store_id = domain_to_store.get(dominio)
+                if not store_id:
+                    continue
+                sources_payload.append({
+                    "store_id": store_id,
+                    "url": url,
+                    "preco": preco_f,
+                    "moeda": moeda_f,
+                    "disponivel": True,
+                })
+
+            item = {
+                "nome": nome,
+                "produtor": produtor or None,
+                "safra": safra,
+                "tipo": tipo,
+                "pais": pais,
+                "regiao": regiao,
+                "sub_regiao": subregiao,
+                "uvas": uva,
+                "teor_alcoolico": abv_float,
+                "harmonizacao": harmonizacao,
+                "imagem_url": url_imagem,
+                "preco_min": preco_min,
+                "preco_max": preco_max,
+                "moeda": moeda,
+                "ean_gtin": ean_gtin,
+            }
+            if sources_payload:
+                item["sources"] = sources_payload
+            items.append(item)
+            items_montados += 1
+
+        if items:
+            r = process_bulk(
+                items,
+                dry_run=dry_run,
+                source="import_render_z_fase2_v6",
+                run_id=run_id,
+                create_sources=True,
+            )
+            for k in ("received", "valid", "duplicates_in_input",
+                      "would_insert", "would_update", "inserted", "updated",
+                      "would_auto_merge_strict", "auto_merge_strict_count",
+                      "would_enqueue_review", "enqueue_for_review_count",
+                      "sources_in_input", "sources_inserted", "sources_updated",
+                      "sources_rejected_count", "sources_duplicates_in_input",
+                      "filtered_notwine_count", "rejected_count", "batches"):
+                grand[k] = grand.get(k, 0) + r.get(k, 0)
+            bloqueado_not_wine += r.get("filtered_notwine_count", 0)
+            if r.get("errors"):
+                grand["errors"].extend(r["errors"])
+            if r.get("blocked"):
+                grand["blocked"] = r["blocked"]
+                grand["block_reason"] = r.get("block_reason")
+                print(f"  *** {r['blocked']}: {r.get('block_reason')} -- abortando Fase 2 v6")
+                break
+
+        if processados % 10_000 == 0 or processados >= total:
+            elapsed = time.time() - inicio
+            rate = processados / elapsed if elapsed > 0 else 0
+            print(f"  {processados:,}/{total:,}  rate={rate:.0f}/s  grand={grand}")
+
+    print(f"\nFase 2 (v6) concluida: {processados:,} processados | "
+          f"items_montados={items_montados:,} | pulados_sem_nome={pulados_sem_nome:,} | "
+          f"bloqueado_not_wine={bloqueado_not_wine:,}")
+    print(f"  RESULT: {grand}")
+    return grand
+
+
+def fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, limite=None, dry_run=False, workers=1):
+    """DEPRECATED (DQ V3 Escopo 6). Use `fase2_via_bulk_ingest`.
+
+    Mantida para rollback rapido. Esta versao escreve em `wines` e
+    `wine_sources` via INSERT paralelo thread-pool, fora do pipeline
+    central do guardrail DQ V3. Sem fuzzy/review queue.
+    """
+    import warnings
+    warnings.warn(
+        "fase2 esta DEPRECATED (DQ V3 Escopo 6). Use fase2_via_bulk_ingest.",
+        DeprecationWarning, stacklevel=2,
+    )
+    print("\n" + "=" * 60)
+    print(f"FASE 2 (DEPRECATED) — Vinhos Novos com Anti-Duplicata (BATCH, {workers} workers)")
     print("=" * 60)
 
     # Contar total
@@ -875,7 +1227,11 @@ def main():
     parser.add_argument("--fase", type=str, choices=["1", "2", "3", "all"], help="Fase a executar")
     parser.add_argument("--dry-run", action="store_true", help="Simula sem INSERT/UPDATE")
     parser.add_argument("--limite", type=int, help="Processar no maximo N registros")
-    parser.add_argument("--workers", type=int, default=4, help="Workers paralelos pra Fase 2 (default: 4)")
+    parser.add_argument("--workers", type=int, default=4, help="Workers paralelos pra Fase 2 (default: 4, IGNORADO em --v6)")
+    parser.add_argument("--legacy", action="store_true",
+                        help="Usa caminho paralelo antigo (DEPRECATED, DQ V3 Escopo 6).")
+    parser.add_argument("--run-id", type=str, default=None,
+                        help="Opcional: ingestion_run_id para tracking granular no caminho v6.")
     args = parser.parse_args()
 
     if not args.check and not args.fase:
@@ -918,22 +1274,37 @@ def main():
     if args.fase in ("2", "all"):
         render_by_prod = carregar_mapa_produtores(render_cur)
 
+    # DQ V3 Escopo 6: por default usa caminho `_via_bulk_ingest`.
+    # `--legacy` volta ao caminho paralelo antigo (fase1/fase2 deprecated).
+    use_legacy = args.legacy
+
     # Executar
     if args.check:
         run_check(local_cur, render_cur, valid_wine_ids, domain_to_store)
-
     elif args.fase == "1":
-        fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, args.limite, args.dry_run)
-
+        if use_legacy:
+            fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, args.limite, args.dry_run)
+        else:
+            fase1_via_bulk_ingest(local_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map,
+                                  limite=args.limite, dry_run=args.dry_run, run_id=args.run_id)
     elif args.fase == "2":
-        fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, args.limite, args.dry_run, args.workers)
-
+        if use_legacy:
+            fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, args.limite, args.dry_run, args.workers)
+        else:
+            fase2_via_bulk_ingest(local_cur, render_conn, domain_to_store, fontes_map,
+                                   limite=args.limite, dry_run=args.dry_run, run_id=args.run_id)
     elif args.fase == "3":
+        # Fase 3 eh enrichment puro, fora do escopo de ingestao. Mantem inalterada.
         fase3(local_cur, render_cur, render_conn, valid_wine_ids, args.limite, args.dry_run)
-
     elif args.fase == "all":
-        fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, args.limite, args.dry_run)
-        fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, args.limite, args.dry_run, args.workers)
+        if use_legacy:
+            fase1(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, args.limite, args.dry_run)
+            fase2(local_cur, render_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map, render_by_prod, args.limite, args.dry_run, args.workers)
+        else:
+            fase1_via_bulk_ingest(local_cur, render_conn, valid_wine_ids, domain_to_store, fontes_map,
+                                  limite=args.limite, dry_run=args.dry_run, run_id=args.run_id)
+            fase2_via_bulk_ingest(local_cur, render_conn, domain_to_store, fontes_map,
+                                   limite=args.limite, dry_run=args.dry_run, run_id=args.run_id)
         fase3(local_cur, render_cur, render_conn, valid_wine_ids, args.limite, args.dry_run)
 
     # Fechar conexoes
