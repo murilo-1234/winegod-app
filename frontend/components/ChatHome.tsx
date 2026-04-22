@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
 import { ChatWindow } from "@/components/ChatWindow";
 import { ChatInput } from "@/components/ChatInput";
@@ -9,6 +10,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { CreditsBanner } from "@/components/auth/CreditsBanner";
 import { AppShell } from "@/components/AppShell";
 import { sendMessageStream, getSessionId, setSessionId, resetSessionId } from "@/lib/api";
+import { useTranslatedError } from "@/lib/i18n/useTranslatedError";
 import {
   fetchConversation,
   migrateGuestConversation,
@@ -26,7 +28,8 @@ const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function generateMigrationTitle(
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  fallbackTitle: string
 ): string {
   const firstUser = messages.find((m) => m.role === "user")?.content || "";
   let text = firstUser.trim();
@@ -39,7 +42,7 @@ function generateMigrationTitle(
   if (text.length > 3) return text.slice(0, 100);
   const firstAsst = messages.find((m) => m.role === "assistant")?.content || "";
   if (firstAsst.trim().length > 3) return firstAsst.trim().slice(0, 100);
-  return "Nova conversa";
+  return fallbackTitle;
 }
 
 interface ChatHomeProps {
@@ -48,6 +51,9 @@ interface ChatHomeProps {
 
 export function ChatHome({ initialConversationId }: ChatHomeProps) {
   const router = useRouter();
+  const tHome = useTranslations("chatHome");
+  const tInput = useTranslations("chatInput");
+  const translateErr = useTranslatedError();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const doneCalledRef = useRef(false);
@@ -202,7 +208,10 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
                   }));
                 if (cleanMsgs.length > 0) {
                   const sid = getSessionId();
-                  const title = generateMigrationTitle(cleanMsgs);
+                  const title = generateMigrationTitle(
+                    cleanMsgs,
+                    tHome("newChatFallbackTitle")
+                  );
                   const ok = await migrateGuestConversation(
                     sid,
                     title,
@@ -233,7 +242,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
       refreshCredits();
     }
     init();
-  }, [refreshCredits, initialConversationId, router]);
+  }, [refreshCredits, initialConversationId, router, tHome]);
 
   // Persist guest draft to sessionStorage only
   useEffect(() => {
@@ -357,7 +366,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content: text.trim() || "O que você pode me dizer sobre este vinho?",
+        content: text.trim() || tInput("defaultPhotoMessage"),
         timestamp: new Date(),
         imagePreviews: media?.previews,
       };
@@ -375,7 +384,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
       doneCalledRef.current = false;
 
       await sendMessageStream(
-        text.trim() || "O que você pode me dizer sobre este vinho?",
+        text.trim() || tInput("defaultPhotoMessage"),
         {
           onChunk: (chunk) => {
             setMessages((prev) =>
@@ -415,7 +424,8 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
             setIsTyping(false);
             refreshCredits();
           },
-          onError: (error) => {
+          onError: (descriptor) => {
+            const errorMsg = translateErr(descriptor);
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === bacoId
@@ -423,7 +433,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
                       ...msg,
                       content:
                         msg.content ||
-                        `Ops, algo deu errado: ${error}. Tente novamente!`,
+                        tHome("errorReply", { error: errorMsg }),
                     }
                   : msg
               )
@@ -434,7 +444,7 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
         media
       );
     },
-    [isTyping, refreshCredits, router]
+    [isTyping, refreshCredits, router, tHome, tInput, translateErr]
   );
 
   useEffect(() => {
@@ -470,12 +480,12 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
                   aria-live="polite"
                 >
                   {toggleError
-                    ? "Erro ao salvar"
+                    ? tHome("saveErrorBadge")
                     : togglePending
-                    ? "Salvando..."
+                    ? tHome("savingBadge")
                     : toggleNotice === "removed"
-                    ? "Removida dos favoritos"
-                    : "Salva nos favoritos"}
+                    ? tHome("removedBadge")
+                    : tHome("savedBadge")}
                 </div>
               )}
               <button
@@ -491,19 +501,19 @@ export function ChatHome({ initialConversationId }: ChatHomeProps) {
                 }`}
                 aria-label={
                   togglePending
-                    ? "Salvando..."
+                    ? tHome("savingBadge")
                     : conversationSaved
-                    ? "Remover dos favoritos"
-                    : "Salvar nos favoritos"
+                    ? tHome("saveAriaRemove")
+                    : tHome("saveAriaAdd")
                 }
                 title={
                   toggleError
-                    ? "Erro ao salvar. Clique para tentar novamente."
+                    ? tHome("saveTitleError")
                     : togglePending
-                    ? "Salvando..."
+                    ? tHome("savingBadge")
                     : conversationSaved
-                    ? "Remover dos favoritos"
-                    : "Salvar nos favoritos"
+                    ? tHome("saveAriaRemove")
+                    : tHome("saveAriaAdd")
                 }
               >
                 <Heart
