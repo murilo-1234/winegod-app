@@ -68,8 +68,11 @@ const baseKeys = new Set(Object.keys(flat[BASELINE]));
 // Heuristica leve de idioma vazando. So sinaliza palavras lexicamente
 // distintivas (PT: você, não, são, crédito). Diacriticos compartilhados
 // (á é í ó ú ê ç) entre romance languages NAO sao marcador confiavel.
-const PT_MARKERS =
-  /\b(voc[êê]|n[ãã]o|s[ãã]o|est[ãã]o|cr[eé]dito|mensagem|conversa|p[aá]gina|pr[oó]xim[oa]|obrigad[oa]|ap[oó]s|atraves|tamb[eé]m)\b/i;
+// So flagar pt-BR quando houver char unico de PT (ã, õ) ou palavras
+// inequivocas (voce com ê, nao/sao/estao/tambem com ã). Palavras que
+// existem tambem em espanhol ou frances (esta, conversa, idioma, ser,
+// ir, pagina, credito) NAO sao marcadores confiaveis.
+const PT_MARKERS = /[ãõ]|\bvoc[êê]\b/;
 const EN_MARKERS =
   /\b(you're|isn't|aren't|doesn't|don't|haven't|can't|won't|please\s+try|sign\s+in|log\s+in|learn\s+more|go\s+back|try\s+again|something\s+went\s+wrong|your\s+(account|plan|chat|wine|credits))\b/i;
 const BRAND_EXEMPT = /winegod|chat\.winegod|@winegod|privacy@|legal/i;
