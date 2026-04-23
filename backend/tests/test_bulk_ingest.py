@@ -493,6 +493,7 @@ def test_counters_rejected_not_capped():
 
 def test_counters_sources_rejected_not_capped():
     """Mais de 100 sources rejeitadas: counter conta, lista capa em 100."""
+    _skip_if_no_db()
     bad_sources = [{"store_id": 1}] * 150  # todas sem url -> url_missing
     items = [{
         "nome": "Chateau Margaux", "produtor": "Chateau Margaux",
