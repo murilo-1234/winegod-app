@@ -2,6 +2,7 @@ import { WineCard } from "@/components/wine/WineCard";
 import type { WineData } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -83,6 +84,8 @@ export default async function SharePage({
     notFound();
   }
 
+  const t = await getTranslations("share.page");
+
   return (
     <main className="min-h-dvh bg-wine-bg text-wine-text">
       {/* Header */}
@@ -95,7 +98,7 @@ export default async function SharePage({
             href="/"
             className="px-4 py-2 text-sm rounded-lg border border-wine-accent text-wine-accent hover:bg-wine-accent/10 transition-colors"
           >
-            Abrir no Chat
+            {t("openInChat")}
           </Link>
         </div>
       </header>
@@ -119,7 +122,7 @@ export default async function SharePage({
 
         {data.wines.length === 0 && (
           <p className="text-center text-wine-muted py-12">
-            Nenhum vinho encontrado neste compartilhamento.
+            {t("empty")}
           </p>
         )}
       </div>
@@ -128,10 +131,13 @@ export default async function SharePage({
       <footer className="border-t border-wine-border px-4 py-6 mt-12">
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-wine-muted text-sm">
-            Descubra mais vinhos em{" "}
-            <Link href="/" className="text-wine-accent hover:underline">
-              chat.winegod.ai
-            </Link>
+            {t.rich("footerInvite", {
+              a: (chunks) => (
+                <Link href="/" className="text-wine-accent hover:underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       </footer>

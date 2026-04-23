@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { ScoreBadge } from "./ScoreBadge";
 import { TermBadges } from "./TermBadges";
 import { PriceTag } from "./PriceTag";
@@ -10,6 +13,8 @@ interface WineCardProps {
 }
 
 export function WineCard({ wine, onAction, highlight }: WineCardProps) {
+  const t = useTranslations("wineCard");
+
   return (
     <div
       className={`rounded-xl border p-4 w-full max-w-[400px] hover:border-wine-accent transition-colors ${
@@ -65,26 +70,30 @@ export function WineCard({ wine, onAction, highlight }: WineCardProps) {
           precoMax={wine.preco_max}
           moeda={wine.moeda}
         />
-        <span className="text-xs text-wine-muted">
-          {wine.total_fontes} {wine.total_fontes === 1 ? "loja" : "lojas"}
-        </span>
+        {wine.total_fontes > 0 && (
+          <span className="text-xs text-wine-muted">
+            {t("shops", { count: wine.total_fontes })}
+          </span>
+        )}
       </div>
 
       {onAction && (
         <div className="mt-3 flex gap-2">
           <button
-            onClick={() => onAction(`Onde compro ${wine.nome}?`)}
-            className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-wine-accent text-wine-accent hover:bg-wine-accent/10 transition-colors"
-          >
-            Onde comprar
-          </button>
-          <button
             onClick={() =>
-              onAction(`Me mostra vinhos similares a ${wine.nome}`)
+              onAction(t("prompts.whereToBuy", { name: wine.nome }))
             }
             className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-wine-accent text-wine-accent hover:bg-wine-accent/10 transition-colors"
           >
-            Similares
+            {t("whereToBuy")}
+          </button>
+          <button
+            onClick={() =>
+              onAction(t("prompts.similar", { name: wine.nome }))
+            }
+            className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-wine-accent text-wine-accent hover:bg-wine-accent/10 transition-colors"
+          >
+            {t("similar")}
           </button>
         </div>
       )}

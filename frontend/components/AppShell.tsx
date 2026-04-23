@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Sidebar } from "./Sidebar";
 import { SearchModal } from "./SearchModal";
 import { LoginButton } from "./auth/LoginButton";
 import { UserMenu } from "./auth/UserMenu";
+import { LocaleSuggestionBanner } from "./LocaleSuggestionBanner";
 import {
   getUser,
   getCredits,
@@ -46,6 +48,7 @@ export function AppShell({
   conversationsRefreshKey,
 }: AppShellProps) {
   const router = useRouter();
+  const t = useTranslations("appShell");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -138,7 +141,7 @@ export function AppShell({
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="md:hidden p-2 rounded-lg hover:bg-wine-surface transition-colors text-wine-muted"
-                aria-label="Abrir menu"
+                aria-label={t("openMenu")}
               >
                 <svg
                   width="20"
@@ -165,7 +168,7 @@ export function AppShell({
                     onNewChat();
                   }
                 }}
-                aria-label="Voltar ao início"
+                aria-label={t("backToHome")}
               >
                 <img
                   src="/logo.png"
@@ -195,6 +198,7 @@ export function AppShell({
             </div>
           </div>
         </header>
+        <LocaleSuggestionBanner />
         <div className="flex-1 min-h-0">{children}</div>
       </div>
       <SearchModal

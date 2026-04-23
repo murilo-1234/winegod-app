@@ -1,18 +1,13 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { useLocale, useTranslations } from "next-intl";
 import { WineCard } from "./wine/WineCard";
 import { WineComparison } from "./wine/WineComparison";
 import { QuickButtons } from "./wine/QuickButtons";
 import { ShareButton } from "./ShareButton";
+import { formatDate } from "@/lib/i18n/formatters";
 import type { Message, WineData } from "@/lib/types";
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 type ContentSegment =
   | { type: "text"; content: string }
@@ -64,6 +59,8 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onSend }: MessageBubbleProps) {
+  const locale = useLocale();
+  const tBubble = useTranslations("messageBubble");
   const isUser = message.role === "user";
   const segments = !isUser ? parseContent(message.content) : [];
   const hasInlineWines = segments.some(
@@ -112,7 +109,7 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
                       <img
                         key={i}
                         src={src}
-                        alt={`Foto ${i + 1}`}
+                        alt={tBubble("imageAlt", { index: i + 1 })}
                         className="h-20 w-20 object-cover rounded-lg"
                       />
                     ))}
@@ -183,7 +180,10 @@ export function MessageBubble({ message, onSend }: MessageBubbleProps) {
               isUser ? "text-right" : "text-left"
             } px-1`}
           >
-            {formatTime(message.timestamp)}
+            {formatDate(message.timestamp, locale, {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </div>
       </div>

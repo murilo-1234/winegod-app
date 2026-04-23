@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
+import { useTranslations, useLocale } from "next-intl";
 
 type MediaType = "image" | "video" | "pdf";
 
@@ -26,6 +27,8 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
+  const t = useTranslations("chatInput");
+  const uiLocale = useLocale();
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState<MediaAttachment | null>(null);
   const [images, setImages] = useState<{ base64: string; preview: string }[]>([]);
@@ -91,7 +94,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
 
     const defaultMsg = hasImages || attachment
-      ? "O que você pode me dizer sobre este vinho?"
+      ? t("defaultPhotoMessage")
       : "";
 
     onSend(text || defaultMsg, mediaPayload);
@@ -183,13 +186,13 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
       const remaining = MAX_IMAGES - images.length;
       if (remaining <= 0) {
-        alert(`Máximo de ${MAX_IMAGES} fotos por mensagem.`);
+        alert(t("alertMaxPhotos", { max: MAX_IMAGES }));
         return;
       }
 
       const filesToProcess = Array.from(files).slice(0, remaining);
       if (files.length > remaining) {
-        alert(`Só é possível adicionar mais ${remaining} foto(s). Máximo: ${MAX_IMAGES}.`);
+        alert(t("alertAddMorePhotos", { remaining, max: MAX_IMAGES }));
       }
 
       // Clear video/pdf attachment when adding images
@@ -222,7 +225,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       setShowMenu(false);
 
       if (file.size > 50 * 1024 * 1024) {
-        alert("Vídeo muito grande (máximo 50 MB)");
+        alert(t("alertVideoTooLarge"));
         return;
       }
 
@@ -256,7 +259,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       setShowMenu(false);
 
       if (file.size > 20 * 1024 * 1024) {
-        alert("PDF muito grande (máximo 20 MB)");
+        alert(t("alertPdfTooLarge"));
         return;
       }
 
@@ -295,7 +298,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     if (!SR) return;
 
     const recognition = new SR();
-    recognition.lang = "pt-BR";
+    recognition.lang = uiLocale;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -316,7 +319,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-  }, [isRecording]);
+  }, [isRecording, uiLocale]);
 
   // --- Preview rendering ---
   const renderPreview = () => {
@@ -325,14 +328,14 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       return (
         <div className="mb-2">
           <div className="flex items-center gap-1 mb-1">
-            <span className="text-xs text-wine-muted">{images.length}/{MAX_IMAGES} fotos</span>
+            <span className="text-xs text-wine-muted">{t("photoCount", { count: images.length, max: MAX_IMAGES })}</span>
           </div>
           <div className="flex gap-2 flex-wrap">
             {images.map((img, idx) => (
               <div key={idx} className="relative">
                 <img
                   src={img.preview}
-                  alt={`Foto ${idx + 1}`}
+                  alt={t("photoAlt", { index: idx + 1 })}
                   className="h-16 w-16 object-cover rounded-lg border border-wine-border"
                 />
                 <button
@@ -359,7 +362,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
           </svg>
           <span className="text-xs text-wine-text truncate max-w-[150px]">
-            {attachment.fileName || "video"}
+            {attachment.fileName || t("videoFallbackName")}
           </span>
           <button
             type="button"
@@ -382,7 +385,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
           <span className="text-xs text-wine-text truncate max-w-[150px]">
-            {attachment.fileName || "documento.pdf"}
+            {attachment.fileName || t("pdfFallbackName")}
           </span>
           <button
             type="button"
@@ -434,7 +437,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             onClick={() => setShowMenu((prev) => !prev)}
             disabled={disabled}
             className="flex-shrink-0 w-10 h-10 rounded-full bg-wine-input border border-wine-border flex items-center justify-center text-wine-muted hover:text-wine-accent hover:border-wine-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-wine-text"
-            title="Anexar arquivo"
+            title={t("attachTooltip")}
           >
             <span className="text-xl leading-none">+</span>
           </button>
@@ -451,7 +454,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
-                Foto
+                {t("menuPhoto")}
               </button>
               <button
                 type="button"
@@ -462,7 +465,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   <polygon points="23 7 16 12 23 17 23 7" />
                   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                 </svg>
-                Vídeo
+                {t("menuVideo")}
               </button>
               <button
                 type="button"
@@ -473,7 +476,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
-                PDF
+                {t("menuPdf")}
               </button>
             </div>
           )}
@@ -485,7 +488,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Pergunte ao Baco sobre vinhos..."
+          placeholder={t("placeholder")}
           rows={1}
           className="flex-1 bg-wine-input border border-wine-border rounded-2xl px-4 py-2.5 text-sm text-wine-text placeholder-wine-muted resize-none focus:outline-none focus:border-wine-accent transition-colors disabled:opacity-50"
         />
@@ -501,7 +504,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                 ? "bg-red-500 border-red-500 text-white animate-pulse"
                 : "bg-wine-input border-wine-border text-wine-muted hover:text-wine-accent hover:border-wine-accent"
             }`}
-            title={isRecording ? "Parar gravação" : "Gravar voz"}
+            title={isRecording ? t("recordStopTooltip") : t("recordStartTooltip")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

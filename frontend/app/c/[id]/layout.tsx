@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -15,6 +16,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const t = await getTranslations("share.meta");
 
   try {
     const res = await fetch(`${API_URL}/api/share/${id}`, {
@@ -23,8 +25,8 @@ export async function generateMetadata({
 
     if (!res.ok) {
       return {
-        title: "Compartilhamento não encontrado - winegod.ai",
-        description: "Este link de compartilhamento não existe ou expirou.",
+        title: t("notFoundTitle"),
+        description: t("notFoundDescription"),
       };
     }
 
@@ -33,10 +35,11 @@ export async function generateMetadata({
       .slice(0, 3)
       .map((w) => w.nome)
       .join(", ");
-    const description = data.context || `Vinhos: ${wineNames}`;
+    const description =
+      data.context || t("descriptionFromWines", { names: wineNames });
 
     return {
-      title: `${data.title} - winegod.ai`,
+      title: t("titleSuffix", { title: data.title }),
       description,
       openGraph: {
         title: data.title,
@@ -53,8 +56,8 @@ export async function generateMetadata({
     };
   } catch {
     return {
-      title: "winegod.ai - Seu sommelier pessoal",
-      description: "Converse com Baco, seu sommelier pessoal.",
+      title: t("fallbackTitle"),
+      description: t("fallbackDescription"),
     };
   }
 }

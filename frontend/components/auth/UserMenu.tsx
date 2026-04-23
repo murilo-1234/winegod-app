@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { UserData } from "@/lib/auth";
 
 interface UserMenuProps {
@@ -11,6 +12,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user, creditsUsed, creditsLimit, onLogout }: UserMenuProps) {
+  const t = useTranslations("userMenu");
   const [open, setOpen] = useState(false);
   const remaining = Math.max(0, creditsLimit - creditsUsed);
 
@@ -66,7 +68,7 @@ export function UserMenu({ user, creditsUsed, creditsLimit, onLogout }: UserMenu
 
             <div className="border-t border-wine-border pt-2 mb-2">
               <p className="text-wine-muted text-xs">
-                {remaining}/{creditsLimit} mensagens hoje
+                {t("dailyMessages", { remaining, limit: creditsLimit })}
               </p>
               <div className="mt-1 h-1.5 rounded-full bg-wine-bg overflow-hidden">
                 <div
@@ -83,7 +85,7 @@ export function UserMenu({ user, creditsUsed, creditsLimit, onLogout }: UserMenu
               }}
               className="w-full text-left px-2 py-1.5 rounded-lg text-wine-muted text-sm hover:bg-wine-bg hover:text-wine-text transition-colors"
             >
-              Sair
+              {t("signOut")}
             </button>
           </div>
         </>

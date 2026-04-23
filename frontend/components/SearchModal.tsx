@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Search, Heart, MessageCircle } from "lucide-react";
 import {
   searchConversations,
@@ -21,6 +22,7 @@ export function SearchModal({
   onOpenConversation,
   onAskBaco,
 }: SearchModalProps) {
+  const t = useTranslations("searchModal");
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const versionRef = useRef(0);
@@ -136,11 +138,11 @@ export function SearchModal({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar conversas..."
+              placeholder={t("placeholder")}
               className="flex-1 bg-transparent text-wine-text text-sm placeholder-wine-muted outline-none"
             />
             <kbd className="hidden sm:inline-flex text-xs text-wine-muted bg-wine-surface px-1.5 py-0.5 rounded">
-              Esc
+              {t("escLabel")}
             </kbd>
           </div>
 
@@ -149,7 +151,7 @@ export function SearchModal({
             {!hasQuery ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-wine-muted">
-                  Digite para buscar em suas conversas.
+                  {t("emptyPrompt")}
                 </p>
               </div>
             ) : loading ? (
@@ -159,13 +161,13 @@ export function SearchModal({
             ) : error ? (
               <div className="px-4 py-6 text-center">
                 <p className="text-sm text-wine-muted">
-                  Erro ao buscar. Tente novamente.
+                  {t("errorText")}
                 </p>
               </div>
             ) : !hasResults ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-wine-muted">
-                  Nenhum resultado encontrado.
+                  {t("noResults")}
                 </p>
               </div>
             ) : (
@@ -173,7 +175,7 @@ export function SearchModal({
                 {filteredSaved.length > 0 && (
                   <div>
                     <p className="px-4 pt-2 pb-1 text-xs font-medium text-wine-muted uppercase tracking-wider">
-                      Salvos
+                      {t("savedHeader")}
                     </p>
                     {filteredSaved.map((conv) => (
                       <ResultItem
@@ -188,7 +190,7 @@ export function SearchModal({
                 {conversationsOnly.length > 0 && (
                   <div>
                     <p className="px-4 pt-2 pb-1 text-xs font-medium text-wine-muted uppercase tracking-wider">
-                      Conversas
+                      {t("conversationsHeader")}
                     </p>
                     {conversationsOnly.map((conv) => (
                       <ResultItem
@@ -212,7 +214,7 @@ export function SearchModal({
               >
                 <MessageCircle size={16} strokeWidth={1.5} className="flex-shrink-0" />
                 <span className="truncate">
-                  Perguntar ao Baco sobre &ldquo;{query.trim().slice(0, 60)}&rdquo;
+                  {t("askBaco", { query: query.trim().slice(0, 60) })}
                 </span>
               </button>
             </div>

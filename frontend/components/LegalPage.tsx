@@ -1,27 +1,41 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
 interface LegalPageProps {
   title: string;
   description?: string;
   lastUpdated?: string;
-  children: React.ReactNode;
+  lastUpdatedLabel?: string;
+  banner?: ReactNode;
+  backToChatAriaLabel?: string;
+  footerTagline?: string;
+  children: ReactNode;
 }
 
+// F7.1/F7.2/F7.3 - LegalPage vira chrome/layout do markdown canonico.
+// Aceita props traduzidas em vez de depender de literais pt-BR internos.
 export function LegalPage({
   title,
   description,
   lastUpdated,
+  lastUpdatedLabel,
+  banner,
+  backToChatAriaLabel,
+  footerTagline,
   children,
 }: LegalPageProps) {
   return (
     <div className="min-h-dvh bg-wine-bg flex flex-col">
       <header className="flex-shrink-0 border-b border-wine-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center">
-          <a href="/" aria-label="Voltar ao chat">
+          <Link href="/" aria-label={backToChatAriaLabel ?? "Back to chat"}>
             <img src="/logo.png" alt="winegod.ai" className="h-12 w-auto" />
-          </a>
+          </Link>
         </div>
       </header>
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+        {banner && <div className="mb-6">{banner}</div>}
         <h1 className="font-display text-2xl font-bold text-wine-text mb-2">
           {title}
         </h1>
@@ -30,7 +44,7 @@ export function LegalPage({
         )}
         {lastUpdated && (
           <p className="text-wine-muted text-xs mb-6">
-            Última atualização: {lastUpdated}
+            {lastUpdatedLabel ?? "Last updated"}: {lastUpdated}
           </p>
         )}
 
@@ -53,10 +67,10 @@ export function LegalPage({
 
       <footer className="flex-shrink-0 border-t border-wine-border">
         <div className="max-w-3xl mx-auto px-4 py-6 text-center text-wine-muted text-xs">
-          <a href="/" className="text-wine-accent hover:underline">
+          <Link href="/" className="text-wine-accent hover:underline">
             winegod.ai
-          </a>
-          {" — Wine Intelligence, Powered by Gods"}
+          </Link>
+          {footerTagline ? ` — ${footerTagline}` : null}
         </div>
       </footer>
     </div>
