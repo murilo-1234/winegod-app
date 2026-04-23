@@ -15,6 +15,7 @@ from routes.conversations import conversations_bp
 from routes.config import config_bp
 from routes.ingest import ingest_bp
 from routes.ingest_review import ingest_review_bp
+from routes.ops import ops_bp
 
 
 def create_app():
@@ -39,6 +40,8 @@ def create_app():
     flask_app.register_blueprint(config_bp, url_prefix='/api')
     flask_app.register_blueprint(ingest_bp, url_prefix='/api')
     flask_app.register_blueprint(ingest_review_bp, url_prefix='/api')
+    # Winegod Data Ops: sem prefixo /api, endpoints em /ops/*.
+    flask_app.register_blueprint(ops_bp)
 
     return flask_app
 

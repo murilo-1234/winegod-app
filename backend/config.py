@@ -60,3 +60,31 @@ class Config:
     # sem nenhum write.
     INGEST_QUEUE_ABS_CAP = int(os.getenv("INGEST_QUEUE_ABS_CAP", "20000"))
     INGEST_QUEUE_PCT_CAP = float(os.getenv("INGEST_QUEUE_PCT_CAP", "0.05"))
+
+    # ========================================================================
+    # Winegod Data Ops / Control Plane (Fase 1)
+    # Schema `ops.*` - observabilidade pura. Nada toca dados de negocio.
+    # Ver WINEGOD_PLATAFORMA_CENTRAL_SCRAPERS_DESIGN_FREEZE.md
+    # ========================================================================
+    # Tokens (SEM valor real no repo - preencher em .env local / Render)
+    OPS_TOKEN = os.getenv("OPS_TOKEN", "")
+    OPS_DASHBOARD_TOKEN = os.getenv("OPS_DASHBOARD_TOKEN", "")
+
+    # Feature flags - defaults por fase
+    OPS_API_ENABLED = os.getenv("OPS_API_ENABLED", "true").lower() == "true"
+    OPS_WRITE_ENABLED = os.getenv("OPS_WRITE_ENABLED", "true").lower() == "true"
+    OPS_DASHBOARD_ENABLED = (
+        os.getenv("OPS_DASHBOARD_ENABLED", "false").lower() == "true"
+    )
+    OPS_ALERTS_ENABLED = (
+        os.getenv("OPS_ALERTS_ENABLED", "false").lower() == "true"
+    )
+    OPS_CANARY_ENABLED = (
+        os.getenv("OPS_CANARY_ENABLED", "true").lower() == "true"
+    )
+    OPS_DEBUG_KEEP_SAMPLE = (
+        os.getenv("OPS_DEBUG_KEEP_SAMPLE", "false").lower() == "true"
+    )
+
+    # Retencao em batches de 10k (REGRA 5 do CLAUDE.md)
+    OPS_RETENTION_BATCH_SIZE = int(os.getenv("OPS_RETENTION_BATCH_SIZE", "10000"))
