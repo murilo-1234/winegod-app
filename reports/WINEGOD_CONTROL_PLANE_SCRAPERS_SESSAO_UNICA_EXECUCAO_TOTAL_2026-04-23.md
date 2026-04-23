@@ -197,7 +197,7 @@ Evidencia complementar:
 Local:
 
 ```text
-d6f85be7
+9752b64c (commit de codigo desta sessao)
 ```
 
 Remoto:
