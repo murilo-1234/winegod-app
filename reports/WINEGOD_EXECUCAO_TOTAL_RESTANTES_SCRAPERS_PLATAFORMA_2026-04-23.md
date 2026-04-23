@@ -15,6 +15,10 @@ APROVADO_PARCIAL_COM_BLOQUEIOS_EXTERNOS
 
 Integracao total local do que e seguro: shadows ausentes foram criados, schedulers por familia foram criados, registry continua consistente, observadores refrescados com 13/13 em success. Permanecem bloqueados somente itens externos/contratuais: Amazon mirror (host externo), reviews_vivino_partition_b/c (hosts externos), commerce_tier1_global e commerce_tier2_* (contrato de saida ausente), reviews_vivino_partition_a (contrato de particao local ausente). Zero Gemini pago, zero writer paralelo, zero apply nao autorizado por este executor.
 
+### Regra de escopo obrigatoria desta execucao (atualizada)
+
+**CellarTracker, Decanter, Wine Enthusiast e Wine-Searcher NAO sobem para o Render nesta fase.** Para essas 4 fontes, o escopo desta sessao foi exclusivamente: plataforma / observer / staging / telemetria. Nao foi criada nota de produto, WCF, score final, uso de produto artificial nem mistura com a base local do Vivino. Todos os wrappers e schedulers criados para essas 4 fontes operam em modo dry-run ou wrapper-validation — nenhum apply habilitado para o Render nesta execucao. O unico caminho canonico de reviews com writer final aprovado no repositorio continua sendo `vivino_wines_to_ratings` e ele NAO foi re-executado aqui.
+
 ## 16.2 Matriz final dos scrapers restantes
 
 Arquivo dedicado: `reports/WINEGOD_RESTANTES_SCRAPERS_MATRIX_2026-04-23.md`.
@@ -69,6 +73,7 @@ Resumo por acao:
 - Scheduler dedicado `run_reviews_scores_dryruns.ps1` cobre 5 sources em dry-run sem tocar `public.wine_scores`.
 - Scheduler `run_plug_reviews_scores_apply.ps1` (apply canonico de `vivino_wines_to_ratings` com `incremental_recent`/`backfill_windowed`) continua disponivel - NAO re-executado nesta sessao.
 - Zero review bruto escrito em `ops.*`. Zero escrita em `wine_sources`.
+- **CellarTracker, Decanter, Wine Enthusiast, Wine-Searcher** - integrados apenas na plataforma/observer/staging/telemetria. NENHUM desses 4 sobe para o Render nesta fase. Nenhum uso de produto, WCF ou score final criado. Dados dessas fontes permanecem em `winegod_db` local (ct_vinhos, decanter_vinhos, we_vinhos, ws_vinhos) e NAO sao misturados na base local do Vivino nem replicados para `public.wine_scores`/`public.wines` no Render.
 
 ### Discovery
 
@@ -160,6 +165,9 @@ Bloqueios reais, com motivo:
 - Zero writer paralelo criado.
 - Zero Gemini pago disparado.
 - Zero escrita em `wines`/`wine_sources`/`store_recipes`.
+- **Zero upload para Render** de `cellartracker`, `decanter`, `wine_enthusiast`, `winesearcher` - nenhuma linha dessas 4 fontes entrou em `public.wine_scores` no Render nesta sessao.
+- **Zero mistura** das 4 fontes acima com a base local do Vivino (`vivino_vinhos`, `vivino_reviews`): dados continuam isolados em `ct_vinhos`, `decanter_vinhos`, `we_vinhos`, `ws_vinhos` (locais ao `winegod_db`).
+- **Zero criacao de nota/WCF/score de produto** para essas 4 fontes - nenhum writer novo, nenhum adapter de merge, nenhum campo derivado escrito.
 - Observador `dq_v3_observer` continua em `success`.
 - Registry `ops.scraper_registry` permanece com 29 entradas, sem mudancas indevidas de `blocked_*` -> `observed` fabricadas.
 
@@ -169,9 +177,11 @@ Baseline de `.env` / `backend/.env` confirmado **somente por lista de chaves** (
 
 - Branch: `data-ops/integracao-restantes-scrapers-total-20260423`
 - Base: `152cb10b` (HEAD da branch anterior `data-ops/execucao-total-commerce-reviews-routing-20260423`)
-- Commit desta sessao: `<preenchido apos commit>`
-- Push remoto: `origin/data-ops/integracao-restantes-scrapers-total-20260423`
-- Diff resumido: 10 arquivos novos (5 shadows + 5 schedulers) + 1 README atualizado + 2 relatorios.
+- Commits desta sessao:
+  - `acf8b91b feat(data-ops): integrate remaining scrapers into central platform` - criacao dos 5 shadows, 5 schedulers e atualizacao do README.
+  - `<preenchido apos amend/novo commit>` - adiciona regra explicita "CellarTracker/Decanter/Wine Enthusiast/Wine-Searcher NAO sobem para Render" na matriz e no relatorio + CLAUDE_RESPOSTAS.
+- Push remoto: `origin/data-ops/integracao-restantes-scrapers-total-20260423` (apos commit final)
+- Diff resumido: 10 arquivos novos (5 shadows + 5 schedulers) + 1 README atualizado + 2 relatorios + 1 CLAUDE_RESPOSTAS.
 - Nenhum merge em main, nenhum force push, nenhum deploy Render/Vercel.
 
 ## Apendice A - Testes (Phase H)

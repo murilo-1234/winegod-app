@@ -5,6 +5,20 @@ Branch: `data-ops/integracao-restantes-scrapers-total-20260423`
 Base: `152cb10b` da branch anterior
 Escopo: classificacao dos scrapers que NAO foram go-live na sessao anterior.
 
+## Regra de escopo obrigatoria desta execucao (atualizada)
+
+**CellarTracker, Decanter, Wine Enthusiast e Wine-Searcher NAO sobem para o Render nesta fase.**
+
+Para essas 4 fontes, o objetivo da sessao e exclusivamente:
+
+- plataforma / observer / staging / telemetria;
+- sem criar nota de produto, WCF, score final ou uso de produto;
+- sem misturar essas fontes na base local do Vivino;
+- sem apply em `public.wine_scores`, `public.wines` ou qualquer tabela final do Render;
+- deixar pronto para o proximo passo sem fingir writer final.
+
+Apenas o caminho ja canonico de Vivino (`vivino_wines_to_ratings`) permanece com writer final aprovado; NAO foi re-executado nesta sessao.
+
 ## Legenda de `acao_nesta_execucao`
 
 - `integrate_and_apply_now` - implementar + apply controlado local
@@ -24,10 +38,10 @@ Escopo: classificacao dos scrapers que NAO foram go-live na sessao anterior.
 | commerce_amazon_mirror | commerce | PC espelho | pc_espelho | shadow wrapper existe | local no espelho | plug_commerce_dq_v3 via shadow | `blocked_external_host` | host externo | manifest + shadow ja existem |
 | commerce_tier1_global | commerce | natura-automation/winegod_admin | este_pc | sem isolamento de contrato vs tier2 | winegod_db indistinto | plug_commerce_dq_v3 | `blocked_contract_missing` | saida nao distingue Tier1/Tier2 | manifest + shadow ja existem |
 | commerce_tier2_chat1..5 + tier2_br | commerce | chats Codex | este_pc | artefato nao padronizado | saida por chat | plug_commerce_dq_v3 | `blocked_contract_missing` | contrato de saida ausente | manifests + shadows ja existem |
-| scores_cellartracker | review | natura-automation/jobs/cellartracker_scraper | este_pc | observer OK | ct_vinhos em winegod_db | plug_reviews_scores (cellartracker_to_scores_reviews) | `integrate_and_dryrun_only` + `automate_existing_path` | - | observer+shadow+manifest OK; falta scheduler dedicado + matching seguro |
-| critics_decanter_persisted | review | natura-automation/winegod_v2 | este_pc | observer OK | decanter_vinhos em winegod_db | plug_reviews_scores (decanter_to_critic_scores) | `integrate_and_dryrun_only` + `automate_existing_path` | - | observer+shadow+manifest OK |
-| critics_wine_enthusiast | review | natura-automation/winegod_v2 | este_pc | observer OK, shadow **ausente** | we_vinhos em winegod_db | plug_reviews_scores (wine_enthusiast_to_critic_scores) | `integrate_shadow_only` | - | manifest OK, shadow wrapper faltava |
-| market_winesearcher | market | natura-automation/winegod_v2 | este_pc | observer OK, shadow **ausente** | ws_vinhos em winegod_db | plug_reviews_scores (winesearcher_to_market_signals) | `integrate_shadow_only` | - | manifest OK, shadow wrapper faltava |
+| scores_cellartracker | review | natura-automation/jobs/cellartracker_scraper | este_pc | observer OK | ct_vinhos em winegod_db (LOCAL, NAO Render) | plug_reviews_scores (cellartracker_to_scores_reviews) - **staging/observer only, NAO sobe para Render** | `integrate_and_dryrun_only` + `automate_existing_path` | ordem explicita: nao sobe para Render nesta fase | observer+shadow+manifest OK; scheduler de dry-run dedicado adicionado; sem apply Render |
+| critics_decanter_persisted | review | natura-automation/winegod_v2 | este_pc | observer OK | decanter_vinhos em winegod_db (LOCAL, NAO Render) | plug_reviews_scores (decanter_to_critic_scores) - **staging/observer only, NAO sobe para Render** | `integrate_and_dryrun_only` + `automate_existing_path` | ordem explicita: nao sobe para Render nesta fase | observer+shadow+manifest OK; sem apply Render |
+| critics_wine_enthusiast | review | natura-automation/winegod_v2 | este_pc | observer OK, shadow **ausente** | we_vinhos em winegod_db (LOCAL, NAO Render) | plug_reviews_scores (wine_enthusiast_to_critic_scores) - **staging/observer only, NAO sobe para Render** | `integrate_shadow_only` | ordem explicita: nao sobe para Render nesta fase | manifest OK, shadow wrapper criado; sem apply Render |
+| market_winesearcher | market | natura-automation/winegod_v2 | este_pc | observer OK, shadow **ausente** | ws_vinhos em winegod_db (LOCAL, NAO Render) | plug_reviews_scores (winesearcher_to_market_signals) - **staging/observer only, NAO sobe para Render** | `integrate_shadow_only` | ordem explicita: nao sobe para Render nesta fase | manifest OK, shadow wrapper criado; sem apply Render |
 | reviewers_vivino_global | review | natura-automation/vivino | este_pc | observer OK, shadow **ausente** | vivino_reviewers em WINEGOD_DATABASE_URL | plug_reviews_scores (apoio) | `integrate_shadow_only` | - | manifest OK, shadow wrapper faltava |
 | catalog_vivino_updates | review | natura-automation/vivino | este_pc | observer OK, shadow **ausente** | vivino_vinhos + vivino_execucoes | plug_reviews_scores (observer) | `integrate_shadow_only` | - | manifest OK, shadow wrapper faltava |
 | reviews_vivino_global | review | natura-automation/vivino | este_pc | path apply canonico ativo via vivino_wines_to_ratings | vivino_reviews + vivino_vinhos | plug_reviews_scores | `automate_existing_path` | - | scheduler apply ja existe; scheduler dry-run ja existe |
