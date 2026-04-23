@@ -1130,3 +1130,38 @@ Handoff arquitetural: `C:\winegod-app\reports\WINEGOD_MULTILINGUE_HANDOFF_OFICIA
 - Render: NAO foi acionado deploy (REGRA 7 do CLAUDE.md). Migrations 015/016/017 aguardam deploy manual quando o Murilo decidir.
 - Vercel: preview podera aparecer automaticamente se o repo estiver ligado a Vercel para PRs/branches; nao houve invencao de URL.
 - Status F2.8: push feito, preview pendente (depende de Vercel auto-deploy de branch).
+
+## FECHAMENTO TOTAL - 2026-04-23
+- Founder autorizou `O1=A` e execucao continua ate fechar 4 locales.
+- Worktree limpo usado para execucao: `C:\winegod-app-h4-closeout`.
+- Commit final enviado para `main`: `9be95488672a5eb742fa337d4bb533c9f3903230` (`i18n: publish es/fr legal docs and enable 4 locales`).
+- Codigo executado:
+  - helper `frontend/lib/legal-routing.ts`
+  - roteamento legal expandido em `age-verify`, `privacy`, `terms`, `data-deletion`, `legal/[country]/[lang]/[doc]`
+  - 8 markdowns legais publicados em `shared/legal/DEFAULT/es-419/*` e `shared/legal/DEFAULT/fr-FR/*`
+  - QA final: `legal-routing.spec.ts`, `legal-visual.spec.ts`, `playwright.share-disabled.config.ts`
+- Validacoes locais:
+  - `node tools/i18n_parity.mjs` -> OK, 335 leaves x4
+  - `cd frontend && npm run lint` -> 0 errors, 10 warnings
+  - `cd frontend && npm run build` -> verde
+  - `cd frontend && npx playwright test` -> 74 passed
+  - `cd frontend && npm run test:e2e:share-disabled` -> 4 passed
+- Ativacao dinamica em producao:
+  - `feature_flags.enabled_locales` atualizado de `["pt-BR","en-US"]` para `["pt-BR","en-US","es-419","fr-FR"]`
+  - `https://winegod-app.onrender.com/api/config/enabled-locales` revalidado com 4 locales e source=`db`
+  - `node tools/enabled_locales_check.mjs` -> OK (static == dynamic)
+- Producao revalidada apos propagacao da Vercel:
+  - `/es/privacy` -> `/legal/DEFAULT/es-419/privacy`
+  - `/fr/privacy` -> `/legal/DEFAULT/fr-FR/privacy`
+  - `/es/terms` -> `/legal/DEFAULT/es-419/terms`
+  - `/fr/data-deletion` -> `/legal/DEFAULT/fr-FR/data-deletion`
+  - `/legal/DEFAULT/es-419/cookies` -> 200
+  - `/legal/DEFAULT/fr-FR/cookies` -> 200
+- Decisoes finais confirmadas:
+  - `O1=A`
+  - `O2=B`
+  - `O3=aceitar residual`
+- Residual consciente mantido:
+  - legal `es-419`/`fr-FR` publicado como traducao operacional sem revisao juridica local
+  - OG `es-419`/`fr-FR` permanece em ingles
+- Artefato de fechamento: `reports/WINEGOD_MULTILINGUE_FECHAMENTO_TOTAL_RESULTADO.md`
