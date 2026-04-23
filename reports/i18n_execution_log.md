@@ -2221,3 +2221,13 @@ Handoff arquitetural: `C:\winegod-app\reports\WINEGOD_MULTILINGUE_HANDOFF_OFICIA
 - Referencias dos prompts e relatorios do metodo atualizadas para o novo caminho canonico.
 - Novo indice criado:
   - `C:\winegod-app\docs\metodo-linguas\README.md`
+
+## 2026-04-23 - Codex - Ponto de entrada do metodo + CTO atualizado
+- Criado ponto unico de entrada do metodo:
+  - `C:\winegod-app\docs\metodo-linguas\COMECE_AQUI.md`
+- `README.md` do metodo passou a apontar para `COMECE_AQUI.md`.
+- `prompts/PROMPT_CTO_WINEGOD_V2.md` foi atualizado para registrar:
+  - que o rollout multilingue esta fechado e operacional em 4 idiomas (`pt-BR`, `en-US`, `es-419`, `fr-FR`)
+  - que as trilhas i18n antigas nao estao mais em execucao
+  - que o metodo oficial para novos idiomas vive em `C:\winegod-app\docs\metodo-linguas\`
+  - onde estao o ponto de entrada, a regra mestre e os templates reutilizaveis

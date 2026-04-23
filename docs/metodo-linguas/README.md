@@ -2,6 +2,10 @@
 
 Diretorio canonico do metodo oficial de rollout i18n do WineGod.
 
+Ponto de entrada:
+
+- `COMECE_AQUI.md`
+
 Arquivos principais:
 
 - `WINEGOD_MULTILINGUE_METODO_BASE_OFICIAL.md`
