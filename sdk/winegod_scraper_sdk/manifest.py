@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .schemas import FAMILY_VALUES
+from .schemas import FAMILY_VALUES, STATUS_VALUES
 
 
 class ManifestContract(BaseModel):
@@ -36,6 +36,8 @@ class Manifest(BaseModel):
     connector_type: str = "TelemetryDelivery"
     contracts: List[ManifestContract]
     outputs: List[str] = Field(default_factory=lambda: ["ops"])
+    registry_status: str = "registered"
+    status_reason: Optional[str] = None
     pii_policy: str = "strict"
     retention_policy: str = "default"
     declared_fields: List[str] = Field(default_factory=list)
@@ -64,6 +66,15 @@ class Manifest(BaseModel):
     def _ops_required(cls, v: List[str]) -> List[str]:
         if "ops" not in v:
             raise ValueError("outputs must include 'ops' in MVP")
+        return v
+
+    @field_validator("registry_status")
+    @classmethod
+    def _check_registry_status(cls, v: str) -> str:
+        if v not in STATUS_VALUES:
+            raise ValueError(
+                f"registry_status must be one of {STATUS_VALUES}, got {v!r}"
+            )
         return v
 
     @field_validator("can_create_wine_sources", "requires_dq_v3", "requires_matching")
@@ -102,7 +113,7 @@ class Manifest(BaseModel):
             "connector_type": self.connector_type,
             "contract_name": primary.name,
             "contract_version": primary.version,
-            "status": "registered",
+            "status": self.registry_status,
             "can_create_wine_sources": False,
             "requires_dq_v3": False,
             "requires_matching": False,

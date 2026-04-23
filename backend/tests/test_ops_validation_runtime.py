@@ -91,6 +91,24 @@ def test_validate_payload_accepts_valid():
     assert validated["scraper_id"] == "canary_synthetic"
 
 
+def test_validate_payload_accepts_extended_registry_status():
+    sys.path.insert(0, str(BACKEND_ROOT))
+    from routes import ops
+    validated, err = ops._validate_payload("ScraperRegisterPayload", {
+        "scraper_id": "commerce_tier2_chat1",
+        "display_name": "Tier2 Chat1",
+        "family": "commerce",
+        "source": "winegod_admin",
+        "host": "este_pc",
+        "connector_type": "TelemetryDelivery",
+        "contract_name": "commerce_offer_candidate.v1",
+        "contract_version": "v1",
+        "status": "blocked_contract_missing",
+    })
+    assert err is None
+    assert validated["status"] == "blocked_contract_missing"
+
+
 # ---------------------------------------------------------------------------
 # §5.6 — contadores negativos via endpoint retornam 422
 # ---------------------------------------------------------------------------

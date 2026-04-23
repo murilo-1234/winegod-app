@@ -16,6 +16,8 @@ def test_all_adapters_mention_source_lineage():
     for name in (
         "winegod_admin_commerce_observer.py",
         "vivino_reviews_observer.py",
+        "reviewers_vivino_observer.py",
+        "catalog_vivino_updates_observer.py",
         "decanter_persisted_observer.py",
         "dq_v3_observer.py",
         "vinhos_brasil_legacy_observer.py",

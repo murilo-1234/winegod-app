@@ -47,15 +47,19 @@
       if (!tbody) return;
       const items = (data && data.items) || [];
       if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="ops-empty">nenhum scraper cadastrado ainda</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="ops-empty">nenhum scraper cadastrado ainda</td></tr>';
         return;
       }
       tbody.innerHTML = items.map(it => {
-        const dotCls = (it.last_run_status === 'failed' || it.last_run_status === 'timeout') ? 'red'
+        const dotCls = (it.status || '').startsWith('blocked_') ? 'yellow'
+                     : (it.status === 'registered_planned') ? 'yellow'
+                     : (it.last_run_status === 'failed' || it.last_run_status === 'timeout' || it.last_run_status === 'error') ? 'red'
                      : (it.last_run_status === 'running' || it.last_run_status === 'started') ? 'green'
                      : (it.last_run_status === 'success') ? 'gray' : 'gray';
         const familyCls = 'ops-badge family ' + (it.family || '');
         const freshCls = 'ops-freshness ' + (it.freshness || 'never');
+        const registryCls = 'ops-badge registry ' + badgeToken(it.status || 'registered');
+        const modeCls = 'ops-badge mode ' + badgeToken(it.last_run_mode || 'observer');
         const lastEnd = it.last_ended ? new Date(it.last_ended).toLocaleString('pt-BR') : '—';
         const url = '/ops/scraper/' + encodeURIComponent(it.scraper_id);
         return `<tr>
@@ -63,7 +67,10 @@
           <td><a href="${url}"><strong>${escapeHtml(it.scraper_id)}</strong></a></td>
           <td><span class="${familyCls}">${escapeHtml(it.family || '')}</span></td>
           <td><span class="ops-pc-tag">${escapeHtml(it.host || '')}</span></td>
-          <td>${escapeHtml(it.status || '')}</td>
+          <td><span class="${registryCls}">${escapeHtml(it.status || '')}</span></td>
+          <td>${it.plug ? `<span class="ops-badge plug">${escapeHtml(it.plug)}</span>` : '<span class="ops-empty-inline">—</span>'}</td>
+          <td>${it.pending ? `<span class="ops-badge pending">${escapeHtml(it.pending)}</span>` : '<span class="ops-empty-inline">—</span>'}</td>
+          <td><span class="${modeCls}">${escapeHtml(it.last_run_mode || 'observer')}</span></td>
           <td>${lastEnd}</td>
           <td>${(it.observado_hoje ?? 0).toLocaleString('pt-BR')}</td>
           <td>${(it.enviado_hoje ?? 0).toLocaleString('pt-BR')}</td>
@@ -273,6 +280,9 @@
   function escapeHtml(s){
     if (s == null) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function badgeToken(s){
+    return String(s || 'none').toLowerCase().replace(/[^a-z0-9]+/g, '-');
   }
   function setText(id, v){
     const el = document.getElementById(id); if (el) el.textContent = v;

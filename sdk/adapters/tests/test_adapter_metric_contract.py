@@ -12,6 +12,8 @@ ADAPTERS_DIR = Path(__file__).resolve().parents[1]
 MANIFESTS = [
     "commerce_world_winegod_admin.yaml",
     "reviews_vivino_global.yaml",
+    "reviewers_vivino_global.yaml",
+    "catalog_vivino_updates.yaml",
     "critics_decanter_persisted.yaml",
     "commerce_dq_v3_observer.yaml",
     "commerce_br_vinhos_brasil_legacy.yaml",
@@ -41,6 +43,8 @@ def test_scraper_ids_correct():
     assert got == {
         "commerce_world_winegod_admin",
         "reviews_vivino_global",
+        "reviewers_vivino_global",
+        "catalog_vivino_updates",
         "critics_decanter_persisted",
         "commerce_dq_v3_observer",
         "commerce_br_vinhos_brasil_legacy",
@@ -58,6 +62,8 @@ def test_families_correct():
     assert fams == {
         "commerce",
         "review",
+        "reviewer",
+        "catalog_identity",
         "critic",
         "community_rating",
         "market",
@@ -72,6 +78,8 @@ def test_dry_run_contracts_pass():
     for mod_name in (
         "adapters.winegod_admin_commerce_observer",
         "adapters.vivino_reviews_observer",
+        "adapters.reviewers_vivino_observer",
+        "adapters.catalog_vivino_updates_observer",
         "adapters.decanter_persisted_observer",
         "adapters.dq_v3_observer",
         "adapters.vinhos_brasil_legacy_observer",

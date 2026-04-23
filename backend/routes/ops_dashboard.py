@@ -71,6 +71,90 @@ def _record_attempt(ip: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Helpers puros (testáveis sem DB): classificação de saúde e dedup determinístico
+# ---------------------------------------------------------------------------
+
+_FAILED_STATUSES = {"failed", "timeout", "error"}
+_RUNNING_STATUSES = {"started", "running"}
+
+
+def classify_freshness(last_end, freshness_hours, last_status, now=None):
+    """Classifica freshness/saúde de um scraper considerando status do último run.
+
+    - 'never'        -> sem run.
+    - 'running'      -> last run em started/running.
+    - 'error'        -> last run em failed/timeout/error (NÃO conta como saudável).
+    - 'fresh'        -> last success dentro da janela SLA.
+    - 'stale'        -> last success entre 1x e 3x a janela.
+    - 'very_stale'   -> last success além de 3x a janela.
+    """
+    import datetime as _dt
+    if last_end is None:
+        return "never"
+    if last_status in _RUNNING_STATUSES:
+        return "running"
+    if last_status in _FAILED_STATUSES:
+        return "error"
+    # success (ou legacy sem status)
+    now = now or _dt.datetime.now(_dt.timezone.utc)
+    delta = now - last_end
+    hours = delta.total_seconds() / 3600
+    if hours <= freshness_hours:
+        return "fresh"
+    elif hours <= 3 * freshness_hours:
+        return "stale"
+    else:
+        return "very_stale"
+
+
+def is_healthy(last_end, freshness_hours, last_status, now=None):
+    """Healthy = last run success E dentro da janela SLA. Qualquer outro caso não é healthy."""
+    return classify_freshness(last_end, freshness_hours, last_status, now) == "fresh"
+
+
+def compute_fake_alert_keys(scraper_id):
+    """scope_key + dedup_key determinísticos para POST /ops/alerts/fake.
+
+    Repetidas chamadas para o mesmo scraper devem produzir o MESMO dedup_key,
+    permitindo ON CONFLICT (dedup_key) DO UPDATE incrementar occurrences.
+    """
+    import hashlib
+    sid = scraper_id or "__global__"
+    scope_key = f"dashboard_fake_test:{sid}"
+    dedup_key = hashlib.sha256(
+        f"{sid}|dashboard.fake_test|P3|{scope_key}".encode()
+    ).hexdigest()
+    return scope_key, dedup_key
+
+
+def parse_registry_tags(tags):
+    plug = None
+    pending = None
+    for tag in tags or []:
+        if not isinstance(tag, str):
+            continue
+        if plug is None and tag.startswith("plug:"):
+            plug = tag.split(":", 1)[1]
+        if pending is None and tag.startswith("pending:"):
+            pending = tag.split(":", 1)[1]
+    return {"plug": plug, "pending": pending}
+
+
+def classify_run_mode(run_params, registry_status=None):
+    if registry_status == "registered_planned":
+        return "planned"
+    if registry_status and registry_status.startswith("blocked_"):
+        return "blocked"
+    if not isinstance(run_params, dict) or not run_params:
+        return "observer"
+    if "dry_run" in run_params:
+        return "dry_run" if bool(run_params.get("dry_run")) else "apply"
+    if bool(run_params.get("shadow")):
+        return "shadow"
+    return "observer"
+
+
+# ---------------------------------------------------------------------------
 # Guards
 # ---------------------------------------------------------------------------
 
@@ -219,26 +303,31 @@ def api_summary():
                 """)
                 sent_today = int(cur.fetchone()[0] or 0)
 
-                # SLA health = % de scrapers active com last_end fresh
+                # SLA health = % de scrapers active com last run SUCCESS E fresh.
+                # last_status IN ('failed','timeout','error') NÃO conta como saudável.
+                # last_status IN ('started','running') também NÃO conta (ainda sem resultado).
                 cur.execute("""
                     WITH last_run AS (
-                      SELECT scraper_id, max(ended_at) AS last_end
-                      FROM ops.scraper_runs GROUP BY 1
+                      SELECT DISTINCT ON (scraper_id)
+                        scraper_id, ended_at AS last_end, status AS last_status
+                      FROM ops.scraper_runs
+                      ORDER BY scraper_id, started_at DESC
                     )
                     SELECT
                       count(*) AS total,
                       count(*) FILTER (
                         WHERE lr.last_end IS NOT NULL
+                          AND lr.last_status = 'success'
                           AND lr.last_end >= now() - (rg.freshness_sla_hours || ' hours')::interval
-                      ) AS fresh
+                      ) AS healthy
                     FROM ops.scraper_registry rg
                     LEFT JOIN last_run lr ON lr.scraper_id = rg.scraper_id
-                    WHERE rg.status IN ('active','registered')
+                    WHERE rg.status IN ('active','registered','observed')
                 """)
                 row = cur.fetchone()
                 total = int(row[0] or 0)
-                fresh = int(row[1] or 0)
-                sla_pct = round(100.0 * fresh / total, 1) if total else 100.0
+                healthy = int(row[1] or 0)
+                sla_pct = round(100.0 * healthy / total, 1) if total else 100.0
         finally:
             release_connection(conn)
 
@@ -282,7 +371,11 @@ def api_scrapers():
                         SELECT sum(items_sent) FROM ops.scraper_runs r
                         WHERE r.scraper_id = rg.scraper_id
                           AND r.started_at >= date_trunc('day', now())
-                      ), 0) AS sent_today
+                      ), 0) AS sent_today,
+                      (SELECT run_params FROM ops.scraper_runs r
+                         WHERE r.scraper_id = rg.scraper_id
+                         ORDER BY started_at DESC LIMIT 1) AS last_run_params,
+                      rg.tags
                     FROM ops.scraper_registry rg
                     ORDER BY rg.family, rg.scraper_id
                     LIMIT 500
@@ -292,18 +385,11 @@ def api_scrapers():
                 for r in rows:
                     last_end = r[7]
                     freshness_hours = r[5]
-                    if last_end is None:
-                        freshness = "never"
-                    else:
-                        import datetime as _dt
-                        delta = _dt.datetime.now(_dt.timezone.utc) - last_end
-                        hours = delta.total_seconds() / 3600
-                        if hours <= freshness_hours:
-                            freshness = "fresh"
-                        elif hours <= 3 * freshness_hours:
-                            freshness = "stale"
-                        else:
-                            freshness = "very_stale"
+                    last_run_status = r[8]
+                    freshness = classify_freshness(
+                        last_end, freshness_hours, last_run_status
+                    )
+                    meta = parse_registry_tags(r[12] or [])
                     items.append({
                         "scraper_id": r[0],
                         "display_name": r[1],
@@ -317,6 +403,9 @@ def api_scrapers():
                         "observado_hoje": int(r[9] or 0),
                         "enviado_hoje": int(r[10] or 0),
                         "freshness": freshness,
+                        "last_run_mode": classify_run_mode(r[11], r[4]),
+                        "plug": meta["plug"],
+                        "pending": meta["pending"],
                     })
         finally:
             release_connection(conn)
@@ -348,12 +437,14 @@ def api_scraper_detail(scraper_id: str):
                 row = cur.fetchone()
                 if not row:
                     return jsonify({"error": "scraper_not_found"}), 404
+                meta = parse_registry_tags(row[11] or [])
                 identity = {
                     "scraper_id": row[0], "display_name": row[1], "family": row[2],
                     "source": row[3], "variant": row[4], "host": row[5],
                     "status": row[6], "contract_name": row[7],
                     "contract_version": row[8], "freshness_sla_hours": row[9],
                     "declared_fields": row[10] or [], "tags": row[11] or [],
+                    "plug": meta["plug"], "pending": meta["pending"],
                     "can_create_wine_sources": row[12],
                     "requires_dq_v3": row[13], "requires_matching": row[14],
                     "manifest_hash": row[15],
@@ -616,17 +707,18 @@ def api_alerts():
 @ops_dashboard_bp.route("/ops/alerts/fake", methods=["POST"])
 @requires_auth
 def post_alert_fake():
-    """Gera alerta sintético P3 em `ops.scraper_alerts`. Nunca envia externo."""
-    import hashlib
+    """Gera alerta sintético P3 em `ops.scraper_alerts`. Nunca envia externo.
+
+    dedup_key DETERMINÍSTICO (scraper_id|code|priority|scope_key) para que
+    chamadas repetidas incrementem `occurrences` via ON CONFLICT em vez de
+    criar alertas duplicados. Regra de dedup deterministico dos alertas.
+    """
     import uuid as _uuid
 
     scraper_id = (request.json or {}).get("scraper_id") if request.is_json else None
     code = "dashboard.fake_test"
     priority = "P3"
-    scope_key = f"event:{_uuid.uuid4()}"
-    dedup_key = hashlib.sha256(
-        f"{scraper_id or '__global__'}|{code}|{priority}|{scope_key}".encode()
-    ).hexdigest()
+    scope_key, dedup_key = compute_fake_alert_keys(scraper_id)
 
     try:
         conn = get_connection()

@@ -64,6 +64,21 @@ def test_register_rejects_invalid_family():
         })
 
 
+def test_register_accepts_extended_registry_status():
+    p = ScraperRegisterPayload.model_validate({
+        "scraper_id": "commerce_amazon_mirror",
+        "display_name": "Amazon PC Espelho",
+        "family": "commerce",
+        "source": "amazon",
+        "host": "pc_espelho",
+        "connector_type": "TelemetryDelivery",
+        "contract_name": "commerce_offer_candidate.v1",
+        "contract_version": "v1",
+        "status": "blocked_external_host",
+    })
+    assert p.status == "blocked_external_host"
+
+
 # ----- StartRun -----
 
 def test_start_run_ok():

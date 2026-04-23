@@ -30,7 +30,9 @@ FAMILY_VALUES = (
     "community_rating", "critic", "market", "enrichment", "canary",
 )
 STATUS_VALUES = (
-    "draft", "registered", "contract_validated", "active", "paused",
+    "draft", "registered", "observed", "registered_planned",
+    "blocked_external_host", "blocked_missing_source",
+    "blocked_contract_missing", "contract_validated", "active", "paused",
     "stale", "error", "blocked_quality", "deprecated",
 )
 RUN_END_OK = ("success", "aborted")

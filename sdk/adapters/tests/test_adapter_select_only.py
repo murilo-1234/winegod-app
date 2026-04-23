@@ -65,6 +65,8 @@ def test_adapters_never_call_write_methods():
     files = [
         ADAPTERS_DIR / "winegod_admin_commerce_observer.py",
         ADAPTERS_DIR / "vivino_reviews_observer.py",
+        ADAPTERS_DIR / "reviewers_vivino_observer.py",
+        ADAPTERS_DIR / "catalog_vivino_updates_observer.py",
         ADAPTERS_DIR / "decanter_persisted_observer.py",
         ADAPTERS_DIR / "dq_v3_observer.py",
         ADAPTERS_DIR / "vinhos_brasil_legacy_observer.py",

@@ -24,6 +24,8 @@ if str(SDK_ROOT) not in sys.path:
 ADAPTERS = [
     ("winegod_admin_commerce_observer", "adapters.winegod_admin_commerce_observer"),
     ("vivino_reviews_observer", "adapters.vivino_reviews_observer"),
+    ("reviewers_vivino_observer", "adapters.reviewers_vivino_observer"),
+    ("catalog_vivino_updates_observer", "adapters.catalog_vivino_updates_observer"),
     ("decanter_persisted_observer", "adapters.decanter_persisted_observer"),
     ("dq_v3_observer", "adapters.dq_v3_observer"),
     ("vinhos_brasil_legacy_observer", "adapters.vinhos_brasil_legacy_observer"),
