@@ -73,7 +73,7 @@ Estado final do registry em `ops.scraper_registry`: `29` linhas
 
 ### `blocked_contract_missing`
 
-- `commerce_amazon_mirror`
+- `reviews_vivino_partition_a`
 - `commerce_tier1_global`
 - `commerce_tier2_chat1`
 - `commerce_tier2_chat2`
@@ -84,7 +84,7 @@ Estado final do registry em `ops.scraper_registry`: `29` linhas
 
 ### `blocked_external_host`
 
-- `reviews_vivino_partition_a`
+- `commerce_amazon_mirror`
 - `reviews_vivino_partition_b`
 - `reviews_vivino_partition_c`
 
@@ -161,6 +161,9 @@ Dry-run validado com sucesso para:
 - `run_commerce_amazon_mirror_shadow.ps1`
 - `run_commerce_tier2_chat1_shadow.ps1`
 - `run_reviews_vivino_global_shadow.ps1`
+- `run_reviews_vivino_partition_a_shadow.ps1`
+- `run_reviews_vivino_partition_b_shadow.ps1`
+- `run_reviews_vivino_partition_c_shadow.ps1`
 
 ## 7. Applies reais executados
 
@@ -227,7 +230,7 @@ Validacoes operacionais tambem concluidas com sucesso:
 ## 11. Commits criados
 
 - `24499291` - `feat(data-ops): add scraper plug dry-run control plane`
-- Este relatorio foi preparado para um commit seletivo de documentacao imediatamente apos a consolidacao final.
+- `c569e88d` - `docs(data-ops): record full scraper plug execution report`
 
 ## 12. Branch publicada
 
@@ -237,7 +240,7 @@ Branch de trabalho:
 data-ops/scraper-plugs-execucao-total-20260423
 ```
 
-Destino remoto planejado/publicado ao final desta sessao:
+Branch publicada e rastreando o remoto:
 
 ```text
 origin/data-ops/scraper-plugs-execucao-total-20260423
@@ -281,14 +284,17 @@ powershell -File scripts/data_ops_shadow/run_commerce_br_vinhos_brasil_legacy_sh
 powershell -File scripts/data_ops_shadow/run_commerce_world_winegod_admin_shadow.ps1
 powershell -File scripts/data_ops_shadow/run_commerce_amazon_local_shadow.ps1
 powershell -File scripts/data_ops_shadow/run_reviews_vivino_global_shadow.ps1
+powershell -File scripts/data_ops_shadow/run_reviews_vivino_partition_a_shadow.ps1
+powershell -File scripts/data_ops_shadow/run_reviews_vivino_partition_b_shadow.ps1
+powershell -File scripts/data_ops_shadow/run_reviews_vivino_partition_c_shadow.ps1
 ```
 
 ### Reviews/discovery/enrichment staging
 
 ```powershell
 python -m sdk.plugs.reviews_scores.runner --source vivino_reviews_to_scores_reviews --limit 50 --dry-run
-python -m sdk.plugs.discovery_stores.runner --limit 100 --dry-run
-python -m sdk.plugs.enrichment.runner --limit 100 --dry-run
+python -m sdk.plugs.discovery_stores.runner --source agent_discovery --limit 100 --dry-run
+python -m sdk.plugs.enrichment.runner --source gemini_batch_reports --limit 100 --dry-run
 ```
 
 ### Git publish
