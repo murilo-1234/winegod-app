@@ -67,6 +67,13 @@ def test_adapters_never_call_write_methods():
         ADAPTERS_DIR / "vivino_reviews_observer.py",
         ADAPTERS_DIR / "decanter_persisted_observer.py",
         ADAPTERS_DIR / "dq_v3_observer.py",
+        ADAPTERS_DIR / "vinhos_brasil_legacy_observer.py",
+        ADAPTERS_DIR / "cellartracker_observer.py",
+        ADAPTERS_DIR / "winesearcher_observer.py",
+        ADAPTERS_DIR / "wine_enthusiast_observer.py",
+        ADAPTERS_DIR / "discovery_agent_observer.py",
+        ADAPTERS_DIR / "enrichment_gemini_observer.py",
+        ADAPTERS_DIR / "amazon_local_observer.py",
     ]
     banned = re.compile(r"(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|DROP\s+TABLE|ALTER\s+TABLE|TRUNCATE\s+TABLE)",
                         re.IGNORECASE)

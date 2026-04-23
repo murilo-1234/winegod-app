@@ -18,6 +18,13 @@ def test_all_adapters_mention_source_lineage():
         "vivino_reviews_observer.py",
         "decanter_persisted_observer.py",
         "dq_v3_observer.py",
+        "vinhos_brasil_legacy_observer.py",
+        "cellartracker_observer.py",
+        "winesearcher_observer.py",
+        "wine_enthusiast_observer.py",
+        "discovery_agent_observer.py",
+        "enrichment_gemini_observer.py",
+        "amazon_local_observer.py",
     ):
         src = _adapter_src(name)
         # Deve conter source_lineage com os 4 campos minimos
@@ -64,3 +71,10 @@ def test_dq_v3_observer_never_writes():
     banned = _re.compile(r"(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM)", _re.IGNORECASE)
     m = banned.search(cleaned)
     assert not m, f"DQ V3 observer contem escrita: {m.group(0) if m else ''}"
+
+
+def test_enrichment_observer_no_live_gemini_call():
+    src = _adapter_src("enrichment_gemini_observer.py")
+    assert "google.generativeai" not in src
+    assert "generativelanguage.googleapis.com" not in src
+    assert "genai.Client" not in src

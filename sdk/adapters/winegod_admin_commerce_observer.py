@@ -1,6 +1,6 @@
 """Observer read-only: WineGod Admin Commerce Mundial.
 
-Lê fonte local do Winegod Admin (DATABASE_URL_LOCAL_WINEGOD ou equivalente).
+Lê fonte local do Winegod Admin (WINEGOD_DATABASE_URL ou equivalente).
 Se fonte indisponível, registra evento e fecha run com status blocked/failed.
 """
 from __future__ import annotations
@@ -23,15 +23,20 @@ from .common import SafeReadOnlyClient, load_envs_from_repo  # noqa: E402
 MANIFEST_PATH = HERE / "manifests" / "commerce_world_winegod_admin.yaml"
 
 
+def _get_source_dsn() -> str | None:
+    return (
+        os.environ.get("WINEGOD_DATABASE_URL")
+        or os.environ.get("DATABASE_URL_LOCAL_WINEGOD")
+        or os.environ.get("WINEGOD_DB_URL")
+    )
+
+
 def run(dry_run: bool = True, limit: int = 0) -> int:
     load_envs_from_repo()
     manifest = load_manifest(MANIFEST_PATH)
     print(f"[{manifest.scraper_id}] manifest loaded, dry_run={dry_run}")
 
-    dsn = (
-        os.environ.get("DATABASE_URL_LOCAL_WINEGOD")
-        or os.environ.get("WINEGOD_DB_URL")
-    )
+    dsn = _get_source_dsn()
 
     if dry_run:
         # Valida pipeline de payload sem HTTP
@@ -70,11 +75,14 @@ def run(dry_run: bool = True, limit: int = 0) -> int:
         # Fonte indisponível — reporta blocked
         reporter.event(
             code="source.unavailable",
-            message="DATABASE_URL_LOCAL_WINEGOD / WINEGOD_DB_URL nao configurado",
+            message=(
+                "WINEGOD_DATABASE_URL / DATABASE_URL_LOCAL_WINEGOD / "
+                "WINEGOD_DB_URL nao configurado"
+            ),
             level="warn",
         )
         reporter.fail(
-            error_summary="source_unavailable: DATABASE_URL_LOCAL_WINEGOD not set",
+            error_summary="source_unavailable: WINEGOD_DATABASE_URL not set",
             status="failed",
         )
         print(f"[{manifest.scraper_id}] source unavailable -> run=failed")

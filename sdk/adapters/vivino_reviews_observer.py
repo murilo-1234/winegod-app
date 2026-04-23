@@ -35,12 +35,20 @@ def _assert_no_pii(payload: dict) -> None:
             raise RuntimeError(f"PII key '{k}' found in payload — blocked by adapter")
 
 
+def _get_source_dsn() -> str | None:
+    return (
+        os.environ.get("VIVINO_DATABASE_URL")
+        or os.environ.get("DATABASE_URL_LOCAL_VIVINO")
+        or os.environ.get("VIVINO_DB_URL")
+    )
+
+
 def run(dry_run: bool = True, limit: int = 0) -> int:
     load_envs_from_repo()
     manifest = load_manifest(MANIFEST_PATH)
     print(f"[{manifest.scraper_id}] manifest loaded, dry_run={dry_run}")
 
-    dsn = os.environ.get("DATABASE_URL_LOCAL_VIVINO") or os.environ.get("VIVINO_DB_URL")
+    dsn = _get_source_dsn()
 
     if dry_run:
         from winegod_scraper_sdk.schemas import BatchEventPayload
@@ -78,11 +86,14 @@ def run(dry_run: bool = True, limit: int = 0) -> int:
     if not dsn:
         reporter.event(
             code="source.unavailable",
-            message="DATABASE_URL_LOCAL_VIVINO / VIVINO_DB_URL nao configurado",
+            message=(
+                "VIVINO_DATABASE_URL / DATABASE_URL_LOCAL_VIVINO / "
+                "VIVINO_DB_URL nao configurado"
+            ),
             level="warn",
         )
         reporter.fail(
-            error_summary="source_unavailable: DATABASE_URL_LOCAL_VIVINO not set",
+            error_summary="source_unavailable: VIVINO_DATABASE_URL not set",
             status="failed",
         )
         print(f"[{manifest.scraper_id}] source unavailable -> run=failed")

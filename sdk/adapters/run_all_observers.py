@@ -1,4 +1,4 @@
-"""Runner unificado dos 4 observers Fase 4.
+"""Runner unificado dos observers read-only.
 
 Roda todos os adapters em ordem. Se um falhar, segue com os demais e
 registra falhas. Exit code != 0 se qualquer --apply falhar.
@@ -23,9 +23,16 @@ if str(SDK_ROOT) not in sys.path:
 
 ADAPTERS = [
     ("winegod_admin_commerce_observer", "adapters.winegod_admin_commerce_observer"),
-    ("vivino_reviews_observer",          "adapters.vivino_reviews_observer"),
-    ("decanter_persisted_observer",      "adapters.decanter_persisted_observer"),
-    ("dq_v3_observer",                   "adapters.dq_v3_observer"),
+    ("vivino_reviews_observer", "adapters.vivino_reviews_observer"),
+    ("decanter_persisted_observer", "adapters.decanter_persisted_observer"),
+    ("dq_v3_observer", "adapters.dq_v3_observer"),
+    ("vinhos_brasil_legacy_observer", "adapters.vinhos_brasil_legacy_observer"),
+    ("cellartracker_observer", "adapters.cellartracker_observer"),
+    ("winesearcher_observer", "adapters.winesearcher_observer"),
+    ("wine_enthusiast_observer", "adapters.wine_enthusiast_observer"),
+    ("discovery_agent_observer", "adapters.discovery_agent_observer"),
+    ("enrichment_gemini_observer", "adapters.enrichment_gemini_observer"),
+    ("amazon_local_observer", "adapters.amazon_local_observer"),
 ]
 
 

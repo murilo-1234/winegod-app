@@ -25,6 +25,7 @@ _FORBIDDEN_PATTERNS = [
     re.compile(r"\bCREATE\b", re.IGNORECASE),
     re.compile(r"\bCOPY\s+.*\s+FROM\b", re.IGNORECASE),
 ]
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class WriteAttemptError(RuntimeError):
@@ -94,3 +95,165 @@ def load_envs_from_repo() -> None:
     for p in (root / ".env", root / "backend" / ".env"):
         if p.exists():
             load_dotenv(p, override=False)
+
+
+def _safe_ident(name: str) -> str:
+    if not _IDENTIFIER_RE.match(name or ""):
+        raise ValueError(f"unsafe SQL identifier: {name!r}")
+    return name
+
+
+def _qualified_table(schema: str, table_name: str) -> str:
+    return f"{_safe_ident(schema)}.{_safe_ident(table_name)}"
+
+
+def table_exists(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    schema: str = "public",
+) -> bool:
+    row = client.fetchone(
+        """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = %s AND table_name = %s
+        """,
+        (schema, table_name),
+    )
+    return bool(row)
+
+
+def list_tables(
+    client: SafeReadOnlyClient,
+    like_pattern: str,
+    schema: str = "public",
+) -> List[str]:
+    rows = client.fetchall(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = %s AND table_name LIKE %s
+        ORDER BY table_name
+        """,
+        (schema, like_pattern),
+    )
+    return [str(row[0]) for row in rows]
+
+
+def columns_for_table(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    schema: str = "public",
+) -> List[str]:
+    rows = client.fetchall(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (schema, table_name),
+    )
+    return [str(row[0]) for row in rows]
+
+
+def first_existing_column(columns: List[str], candidates: List[str]) -> Optional[str]:
+    known = set(columns)
+    for candidate in candidates:
+        if candidate in known:
+            return candidate
+    return None
+
+
+def count_rows(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    schema: str = "public",
+) -> int:
+    sql = f"SELECT count(*) FROM {_qualified_table(schema, table_name)}"
+    row = client.fetchone(sql)
+    return int(row[0] or 0) if row else 0
+
+
+def count_recent_rows(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    timestamp_column: str,
+    hours: int,
+    schema: str = "public",
+) -> int:
+    sql = (
+        f"SELECT count(*) FROM {_qualified_table(schema, table_name)} "
+        f"WHERE {_safe_ident(timestamp_column)} >= now() - interval '{int(hours)} hours'"
+    )
+    row = client.fetchone(sql)
+    return int(row[0] or 0) if row else 0
+
+
+def count_distinct(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    column_name: str,
+    schema: str = "public",
+) -> int:
+    sql = (
+        f"SELECT count(DISTINCT {_safe_ident(column_name)}) "
+        f"FROM {_qualified_table(schema, table_name)}"
+    )
+    row = client.fetchone(sql)
+    return int(row[0] or 0) if row else 0
+
+
+def sum_column(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    column_name: str,
+    schema: str = "public",
+) -> float:
+    sql = (
+        f"SELECT coalesce(sum({_safe_ident(column_name)}), 0) "
+        f"FROM {_qualified_table(schema, table_name)}"
+    )
+    row = client.fetchone(sql)
+    return float(row[0] or 0) if row else 0.0
+
+
+def max_column(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    column_name: str,
+    schema: str = "public",
+):
+    sql = (
+        f"SELECT max({_safe_ident(column_name)}) "
+        f"FROM {_qualified_table(schema, table_name)}"
+    )
+    row = client.fetchone(sql)
+    return row[0] if row else None
+
+
+def max_column_by_candidates(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    candidates: List[str],
+    schema: str = "public",
+):
+    columns = columns_for_table(client, table_name, schema=schema)
+    column_name = first_existing_column(columns, candidates)
+    if not column_name:
+        return None
+    return max_column(client, table_name, column_name, schema=schema)
+
+
+def count_recent_rows_by_candidates(
+    client: SafeReadOnlyClient,
+    table_name: str,
+    candidates: List[str],
+    hours: int,
+    schema: str = "public",
+) -> int:
+    columns = columns_for_table(client, table_name, schema=schema)
+    column_name = first_existing_column(columns, candidates)
+    if not column_name:
+        return 0
+    return count_recent_rows(client, table_name, column_name, hours, schema=schema)

@@ -12,6 +12,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 HERE = Path(__file__).resolve().parent
 SDK_ROOT = HERE.parent
@@ -20,7 +21,16 @@ if str(SDK_ROOT) not in sys.path:
 
 from winegod_scraper_sdk import Reporter, load_manifest  # noqa: E402
 from winegod_scraper_sdk.connectors import ConnectorError, TelemetryDelivery  # noqa: E402
-from .common import SafeReadOnlyClient, load_envs_from_repo  # noqa: E402
+from .common import (  # noqa: E402
+    SafeReadOnlyClient,
+    columns_for_table,
+    count_recent_rows,
+    count_rows,
+    first_existing_column,
+    load_envs_from_repo,
+    max_column,
+    table_exists,
+)
 
 
 MANIFEST_PATH = HERE / "manifests" / "critics_decanter_persisted.yaml"
@@ -36,13 +46,53 @@ def _safe_read_status(path: Path) -> dict:
         return {}
 
 
+def _get_source_dsn() -> str | None:
+    return (
+        os.environ.get("WINEGOD_DATABASE_URL")
+        or os.environ.get("DATABASE_URL_LOCAL_DECANTER")
+        or os.environ.get("DECANTER_DB_URL")
+    )
+
+
+def _count_if_table_exists(client: SafeReadOnlyClient, table_name: str) -> int:
+    if not table_exists(client, table_name):
+        return 0
+    return count_rows(client, table_name)
+
+
+def _latest_timestamp(client: SafeReadOnlyClient, table_name: str) -> Optional[object]:
+    if not table_exists(client, table_name):
+        return None
+    columns = columns_for_table(client, table_name)
+    ts_column = first_existing_column(
+        columns,
+        ["atualizado_em", "executada_em", "criada_em", "descoberto_em"],
+    )
+    if not ts_column:
+        return None
+    return max_column(client, table_name, ts_column)
+
+
+def _recent_rows(client: SafeReadOnlyClient, table_name: str, hours: int) -> int:
+    if not table_exists(client, table_name):
+        return 0
+    columns = columns_for_table(client, table_name)
+    ts_column = first_existing_column(
+        columns,
+        ["atualizado_em", "executada_em", "criada_em", "descoberto_em"],
+    )
+    if not ts_column:
+        return 0
+    return count_recent_rows(client, table_name, ts_column, hours)
+
+
 def run(dry_run: bool = True, limit: int = 0) -> int:
     load_envs_from_repo()
     manifest = load_manifest(MANIFEST_PATH)
     print(f"[{manifest.scraper_id}] manifest loaded, dry_run={dry_run}")
 
     status_path = DEFAULT_STATUS_JSON
-    dsn_opt = os.environ.get("DATABASE_URL_LOCAL_DECANTER") or os.environ.get("DECANTER_DB_URL")
+    dsn_opt = _get_source_dsn()
 
     if dry_run:
         from winegod_scraper_sdk.schemas import BatchEventPayload
@@ -89,15 +139,21 @@ def run(dry_run: bool = True, limit: int = 0) -> int:
 
     # Se houver DSN opcional, lê count de decanter_vinhos
     db_records = 0
+    queries_total = 0
+    recent_updates_7d = 0
     db_ok = False
+    latest_seen = None
     if dsn_opt:
         try:
             with SafeReadOnlyClient(dsn_opt) as client:
-                row = client.fetchone("SELECT count(*) FROM decanter_vinhos")
-                if row:
-                    db_records = int(row[0] or 0)
+                if table_exists(client, "decanter_vinhos"):
+                    db_records = count_rows(client, "decanter_vinhos")
+                    recent_updates_7d = _recent_rows(client, "decanter_vinhos", hours=24 * 7)
+                    latest_seen = _latest_timestamp(client, "decanter_vinhos")
                     db_ok = True
                     source_pointer = f"decanter_vinhos+{status_path.name}"
+                queries_total = _count_if_table_exists(client, "decanter_queries")
+                latest_seen = latest_seen or _latest_timestamp(client, "decanter_queries")
         except Exception as e:
             reporter.event(code="source.db_error", message=str(e)[:500], level="warn")
 
@@ -116,7 +172,19 @@ def run(dry_run: bool = True, limit: int = 0) -> int:
                 "source_kind": "table" if db_ok else "file",
                 "source_pointer": source_pointer,
                 "source_record_count": total,
+                "notes": (
+                    f"queries_total={queries_total}; recent_updates_7d={recent_updates_7d}; "
+                    f"latest_seen={latest_seen or status.get('_updated') or 'unknown'}"
+                )[:256],
             },
+        )
+        reporter.event(
+            code="decanter.snapshot",
+            message=(
+                f"total={total} db_records={db_records} queries={queries_total} "
+                f"recent_updates_7d={recent_updates_7d} latest_seen={latest_seen or status.get('_updated') or 'unknown'}"
+            )[:1024],
+            level="audit",
         )
         reporter.end(
             status="success",

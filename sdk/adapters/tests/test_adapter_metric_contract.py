@@ -1,4 +1,4 @@
-"""§4B.10 item 2 — contratos Pydantic dos 4 adapters e item 4 — manifestos."""
+"""Manifestos e dry-runs dos observers read-only."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,6 +14,13 @@ MANIFESTS = [
     "reviews_vivino_global.yaml",
     "critics_decanter_persisted.yaml",
     "commerce_dq_v3_observer.yaml",
+    "commerce_br_vinhos_brasil_legacy.yaml",
+    "scores_cellartracker.yaml",
+    "market_winesearcher.yaml",
+    "critics_wine_enthusiast.yaml",
+    "discovery_agent_global.yaml",
+    "enrichment_gemini_flash.yaml",
+    "commerce_amazon_local.yaml",
 ]
 
 
@@ -36,22 +43,44 @@ def test_scraper_ids_correct():
         "reviews_vivino_global",
         "critics_decanter_persisted",
         "commerce_dq_v3_observer",
+        "commerce_br_vinhos_brasil_legacy",
+        "scores_cellartracker",
+        "market_winesearcher",
+        "critics_wine_enthusiast",
+        "discovery_agent_global",
+        "enrichment_gemini_flash",
+        "commerce_amazon_local",
     }
 
 
 def test_families_correct():
     fams = {load_manifest(ADAPTERS_DIR / "manifests" / n).family for n in MANIFESTS}
-    assert fams == {"commerce", "review", "critic"}
+    assert fams == {
+        "commerce",
+        "review",
+        "critic",
+        "community_rating",
+        "market",
+        "discovery",
+        "enrichment",
+    }
 
 
 def test_dry_run_contracts_pass():
-    """Cada adapter em --dry-run constrói payloads válidos (Pydantic aceita)."""
+    """Cada adapter em --dry-run constroi payloads validos."""
     import importlib
     for mod_name in (
         "adapters.winegod_admin_commerce_observer",
         "adapters.vivino_reviews_observer",
         "adapters.decanter_persisted_observer",
         "adapters.dq_v3_observer",
+        "adapters.vinhos_brasil_legacy_observer",
+        "adapters.cellartracker_observer",
+        "adapters.winesearcher_observer",
+        "adapters.wine_enthusiast_observer",
+        "adapters.discovery_agent_observer",
+        "adapters.enrichment_gemini_observer",
+        "adapters.amazon_local_observer",
     ):
         m = importlib.import_module(mod_name)
         rc = m.run(dry_run=True, limit=0)
