@@ -179,7 +179,7 @@ Baseline de `.env` / `backend/.env` confirmado **somente por lista de chaves** (
 - Base: `152cb10b` (HEAD da branch anterior `data-ops/execucao-total-commerce-reviews-routing-20260423`)
 - Commits desta sessao:
   - `acf8b91b feat(data-ops): integrate remaining scrapers into central platform` - criacao dos 5 shadows, 5 schedulers e atualizacao do README.
-  - `<preenchido apos amend/novo commit>` - adiciona regra explicita "CellarTracker/Decanter/Wine Enthusiast/Wine-Searcher NAO sobem para Render" na matriz e no relatorio + CLAUDE_RESPOSTAS.
+  - `a633135f docs(data-ops): enforce no-Render scope for CT/decanter/WE/WS in reports` - adiciona regra explicita "CellarTracker/Decanter/Wine Enthusiast/Wine-Searcher NAO sobem para Render" na matriz e no relatorio + CLAUDE_RESPOSTAS.
 - Push remoto: `origin/data-ops/integracao-restantes-scrapers-total-20260423` (apos commit final)
 - Diff resumido: 10 arquivos novos (5 shadows + 5 schedulers) + 1 README atualizado + 2 relatorios + 1 CLAUDE_RESPOSTAS.
 - Nenhum merge em main, nenhum force push, nenhum deploy Render/Vercel.

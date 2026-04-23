@@ -80,7 +80,7 @@ Zero linha de CellarTracker, Decanter, Wine Enthusiast ou Wine-Searcher entrou n
 - Base: `152cb10b` (branch anterior)
 - Commits:
   - `acf8b91b feat(data-ops): integrate remaining scrapers into central platform`
-  - `<hash do commit que incluira esta CLAUDE_RESPOSTAS + regra explicita nos relatorios>`
+  - `a633135f docs(data-ops): enforce no-Render scope for CT/decanter/WE/WS in reports`
 - Remote: `origin/data-ops/integracao-restantes-scrapers-total-20260423` (publicado apos commit final)
 
 ## Testes
