@@ -213,7 +213,7 @@ Conciliacao do delta de commerce (apply pelo executor):
 - Remote tracking: `origin/data-ops/execucao-total-commerce-reviews-routing-20260423`
 - Commits desta sessao:
   - `1ccb39ac feat(data-ops): execute total routing with commerce and reviews plugs` - relatorios finais (matriz de roteamento + relatorio executivo) apenas. **Nao incluiu codigo do `plug_reviews_scores`** - gap identificado e corrigido no commit seguinte.
-  - `0d35114c fix(data-ops): publish reviews plug writer and reconcile final report` - publicacao seletiva do codigo do `plug_reviews_scores` (exporters, runner, schemas, writer, checkpoint, confidence, tests test_runner+test_writer, manifest), scheduler `run_plug_reviews_scores_apply.ps1`, `docs/PLUG_REVIEWS_SCORES_CONTRACT.md` atualizado, mais reconciliacao deste relatorio com os artifacts em `reports/data_ops_plugs_staging/`.
+  - `d68ecddd fix(data-ops): publish reviews plug writer and reconcile final report` - publicacao seletiva do codigo do `plug_reviews_scores` (exporters, runner, schemas, writer, checkpoint, confidence, tests test_runner+test_writer, manifest), scheduler `run_plug_reviews_scores_apply.ps1`, `docs/PLUG_REVIEWS_SCORES_CONTRACT.md` atualizado, mais reconciliacao deste relatorio com os artifacts em `reports/data_ops_plugs_staging/`.
 - Nao houve merge em `main`
 - Nao houve force push
 - Worktree continua com alteracoes preexistentes fora do escopo desta sessao; stage foi seletivo (apenas arquivos do plug_reviews_scores + docs do plug + scheduler + este relatorio).
