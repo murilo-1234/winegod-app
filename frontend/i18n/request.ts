@@ -93,6 +93,32 @@ async function loadMessagesWithFallback(
   return merged;
 }
 
+// H4 F4.1 (I5) - Resolucao por Accept-Language como ultimo recurso antes
+// de cair em defaultLocale. Evita que 404s e rotas sem contexto de locale
+// (ex.: estrangeiro sem cookie, sem geo, sem prefixo) renderizem em pt-BR.
+function resolveFromAcceptLanguage(
+  headerValue: string | null,
+): AppLocale | null {
+  if (!headerValue) return null;
+  const tags = headerValue
+    .split(",")
+    .map((entry) => {
+      const [rawTag, qstr] = entry.trim().split(";q=");
+      const q = qstr ? parseFloat(qstr) : 1.0;
+      return { tag: (rawTag || "").trim().toLowerCase(), q };
+    })
+    .filter((t) => t.tag)
+    .sort((a, b) => b.q - a.q);
+
+  for (const { tag } of tags) {
+    if (tag.startsWith("pt")) return "pt-BR";
+    if (tag.startsWith("en")) return "en-US";
+    if (tag.startsWith("es")) return "es-419";
+    if (tag.startsWith("fr")) return "fr-FR";
+  }
+  return null;
+}
+
 async function resolveLocale(
   requested: string | undefined,
 ): Promise<AppLocale> {
@@ -113,6 +139,14 @@ async function resolveLocale(
   const geoCountry = geoCountryRaw?.toUpperCase();
   if (geoCountry && geoCountry in LOCALE_BY_COUNTRY) {
     return LOCALE_BY_COUNTRY[geoCountry];
+  }
+
+  // H4 F4.1 (I5): Accept-Language como ultimo recurso; defaultLocale
+  // permanece "pt-BR" mas deixa de ser o catch-all para estrangeiros.
+  const acceptLang = headerStore.get("accept-language");
+  const alLocale = resolveFromAcceptLanguage(acceptLang);
+  if (alLocale) {
+    return alLocale;
   }
 
   return defaultLocale;

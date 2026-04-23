@@ -2,9 +2,18 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { exchangeCodeForToken, setToken } from "@/lib/auth";
+import { useTranslations } from "next-intl";
+import {
+  exchangeCodeForToken,
+  getLastAuthError,
+  setToken,
+} from "@/lib/auth";
+import { toErrorDescriptor } from "@/lib/i18n/translateError";
+import { useTranslatedError } from "@/lib/i18n/useTranslatedError";
 
 function CallbackHandler() {
+  const t = useTranslations("authCallback");
+  const translateErr = useTranslatedError();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [error, setError] = useState("");
@@ -20,7 +29,7 @@ function CallbackHandler() {
 
     const code = searchParams.get("code");
     if (!code) {
-      setError("Código de autorização não encontrado");
+      setError(t("errorNoCode"));
       return;
     }
 
@@ -35,10 +44,18 @@ function CallbackHandler() {
         setToken(result.token);
         router.replace("/");
       } else {
-        setError("Falha ao conectar com o servidor. O servidor pode estar iniciando — aguarde 30s e tente novamente.");
+        // F4.0b: le o APIError estruturado que a propria `exchangeCodeForToken`
+        // gravou em caso de falha. Fallback generico se nao houver (ex.:
+        // servidor indo pro ar e `getLastAuthError()` ainda nulo).
+        const structured = getLastAuthError();
+        if (structured) {
+          setError(translateErr(toErrorDescriptor(structured)));
+        } else {
+          setError(t("errorServerFallback"));
+        }
       }
     });
-  }, [searchParams, router]);
+  }, [searchParams, router, t, translateErr]);
 
   if (error) {
     return (
@@ -49,10 +66,10 @@ function CallbackHandler() {
             onClick={() => window.location.href = "/"}
             className="px-4 py-2 bg-wine-accent text-white rounded-lg text-sm hover:opacity-80 transition-opacity"
           >
-            Tentar novamente
+            {t("retry")}
           </button>
           <a href="/" className="text-wine-muted hover:underline text-xs">
-            Voltar ao chat sem login
+            {t("backToGuest")}
           </a>
         </div>
       </div>
@@ -62,7 +79,17 @@ function CallbackHandler() {
   return (
     <div className="text-center">
       <div className="w-8 h-8 border-2 border-wine-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-      <p className="text-wine-muted text-sm">Entrando...</p>
+      <p className="text-wine-muted text-sm">{t("signingIn")}</p>
+    </div>
+  );
+}
+
+function CallbackFallback() {
+  const t = useTranslations("authCallback");
+  return (
+    <div className="text-center">
+      <div className="w-8 h-8 border-2 border-wine-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+      <p className="text-wine-muted text-sm">{t("loading")}</p>
     </div>
   );
 }
@@ -70,14 +97,7 @@ function CallbackHandler() {
 export default function AuthCallback() {
   return (
     <main className="flex items-center justify-center h-dvh bg-wine-bg">
-      <Suspense
-        fallback={
-          <div className="text-center">
-            <div className="w-8 h-8 border-2 border-wine-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-wine-muted text-sm">Carregando...</p>
-          </div>
-        }
-      >
+      <Suspense fallback={<CallbackFallback />}>
         <CallbackHandler />
       </Suspense>
     </main>

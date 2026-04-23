@@ -1,4 +1,13 @@
 import { getToken } from "./auth";
+import { APIError, parseApiErrorBody } from "./api-error";
+import {
+  getOutboundLocaleBodyFields,
+  getOutboundLocaleHeaders,
+} from "./i18n/outbound";
+import {
+  toErrorDescriptor,
+  type ErrorDescriptor,
+} from "./i18n/translateError";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -22,7 +31,7 @@ export function resetSessionId(): void {
 export interface StreamCallbacks {
   onChunk: (text: string) => void;
   onDone: () => void;
-  onError: (error: string) => void;
+  onError: (error: ErrorDescriptor) => void;
   onCreditsExhausted?: (reason: "guest_limit" | "daily_limit") => void;
 }
 
@@ -41,9 +50,13 @@ export async function sendMessageStream(
   const { onChunk, onDone, onError, onCreditsExhausted } = callbacks;
 
   try {
+    // F2.9c1: redundancia de locale no body do chat stream. Backend
+    // (F2.4b decorator) le primeiro o header X-WG-UI-Locale; o body
+    // existe como cinto de seguranca para requests legados/cached.
     const body: Record<string, unknown> = {
       message,
       session_id: getSessionId(),
+      ...getOutboundLocaleBodyFields(),
     };
     if (media) {
       if (media.type === "image" && media.images && media.images.length > 0) {
@@ -53,7 +66,10 @@ export async function sendMessageStream(
       }
     }
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...getOutboundLocaleHeaders(),
+    };
     const token = getToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -66,23 +82,47 @@ export async function sendMessageStream(
     });
 
     if (!response.ok) {
+      // F4.0a: caminho HTTP non-ok. Tenta parsear JSON de erro do backend;
+      // se for 429 com reason conhecido, delega para onCreditsExhausted
+      // (contrato preservado). Senao, constroi APIError estruturado e
+      // converte em texto via translateError.
       const text = await response.text();
-      if (response.status === 429 && onCreditsExhausted) {
-        try {
-          const body = JSON.parse(text);
-          if (body.reason) {
-            onCreditsExhausted(body.reason);
-            return;
-          }
-        } catch {}
+      const structured =
+        parseApiErrorBody(text, {
+          status: response.status,
+          source: "http",
+        }) ??
+        new APIError({
+          status: response.status,
+          serverMessage: text || undefined,
+          source: "http",
+        });
+
+      if (
+        response.status === 429 &&
+        onCreditsExhausted &&
+        structured.reason &&
+        (structured.reason === "guest_limit" ||
+          structured.reason === "daily_limit")
+      ) {
+        onCreditsExhausted(structured.reason);
+        return;
       }
-      onError(`Erro do servidor (${response.status}): ${text}`);
+
+      onError(toErrorDescriptor(structured));
       return;
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      onError("Navegador nao suporta streaming");
+      onError(
+        toErrorDescriptor(
+          new APIError({
+            source: "network",
+            code: "streaming_unsupported",
+          }),
+        ),
+      );
       return;
     }
 
@@ -108,7 +148,37 @@ export async function sendMessageStream(
           } else if (event.type === "end") {
             onDone();
           } else if (event.type === "error") {
-            onError(event.content);
+            // F4.0a: event.content pode ser string simples (backend atual
+            // emite `{'type':'error','content': str(e)}`) OU objeto/JSON
+            // serializado (pos-Onda 5). Parse defensivo em ambos os casos.
+            let sseErr: APIError | null = null;
+            const rawContent = event.content;
+            if (typeof rawContent === "string") {
+              sseErr = parseApiErrorBody(rawContent, { source: "sse" });
+              if (!sseErr) {
+                sseErr = new APIError({
+                  source: "sse",
+                  serverMessage: rawContent || undefined,
+                });
+              }
+            } else if (rawContent && typeof rawContent === "object") {
+              const obj = rawContent as Record<string, unknown>;
+              sseErr = new APIError({
+                source: "sse",
+                code: typeof obj.error === "string" ? obj.error : undefined,
+                messageCode:
+                  typeof obj.message_code === "string"
+                    ? obj.message_code
+                    : undefined,
+                reason:
+                  typeof obj.reason === "string" ? obj.reason : undefined,
+                serverMessage:
+                  typeof obj.message === "string" ? obj.message : undefined,
+              });
+            } else {
+              sseErr = new APIError({ source: "sse" });
+            }
+            onError(toErrorDescriptor(sseErr));
           }
         } catch {
           // linha SSE incompleta, ignora
@@ -119,10 +189,14 @@ export async function sendMessageStream(
     // Se nunca recebeu "end", finaliza mesmo assim
     onDone();
   } catch (err) {
-    onError(
-      err instanceof Error
-        ? `Erro de conexão: ${err.message}`
-        : "Erro de conexão com o servidor"
-    );
+    // F4.0a + H4 F1.3: caminho de rede / excecao inesperada. Preserva a
+    // causa original para debug; a UI resolve o texto via useTranslatedError.
+    const networkErr = new APIError({
+      source: "network",
+      code: "network_error",
+      serverMessage: err instanceof Error ? err.message : undefined,
+      cause: err,
+    });
+    onError(toErrorDescriptor(networkErr));
   }
 }
