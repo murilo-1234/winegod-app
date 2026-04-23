@@ -13,7 +13,7 @@ Prompt: `prompts/PROMPT_CLAUDE_EXECUCAO_TOTAL_SCRAPERS_PLUGS_COMMERCE_REVIEWS_EN
 APROVADO_COM_GO_LIVE_LOCAL_CONTROLADO
 ```
 
-Resumo: escada completa `50 -> 200 -> 1000` aplicada com sucesso para `winegod_admin_world`; `vinhos_brasil_legacy` parou em apply 50 por gate de seguranca `BLOCKED_QUEUE_EXPLOSION` (5.58% enqueue > 5% cap) no step 200 - comportamento correto conforme secao 10.3 do prompt. Reviews/discovery/enrichment permaneceram em dry-run/staging por parte do executor. Um processo paralelo (outro terminal de Murilo) executou applies de `plug_reviews_scores` para `vivino_wines_to_ratings` durante esta sessao - documentado abaixo com transparencia. Zero violacao do contrato.
+Resumo: escada completa `50 -> 200 -> 1000` aplicada com sucesso para `winegod_admin_world`; `vinhos_brasil_legacy` parou em apply 50 por gate de seguranca `BLOCKED_QUEUE_EXPLOSION` (5.58% enqueue > 5% cap) no step 200 - comportamento correto conforme secao 10.3 do prompt. Reviews/discovery/enrichment permaneceram em dry-run/staging por parte do executor. Um processo paralelo (outro terminal de Murilo) executou applies de `plug_reviews_scores` para `vivino_wines_to_ratings` durante esta sessao - documentado abaixo com transparencia. Esses applies paralelos inseriram 528 linhas em `public.wine_scores` e geraram **1 update em `wines.vivino_rating` / `vivino_reviews`** (o ultimo apply de 10 items registrou `wines_rating_updated=1`). O caminho permanece valido porque o plug usa o writer canonico `apply_bundle` que respeita o dominio existente; mas a afirmacao inicial de "zero updates" foi corrigida aqui para bater com os artifacts.
 
 ## 16.2 Matriz final de roteamento
 
@@ -103,15 +103,15 @@ Durante a janela 19:03-19:09 UTC (16:03-16:09 horario de Brasilia), um processo 
 - `reports/data_ops_plugs_staging/20260423_190554_vivino_wines_to_ratings_summary.md` (apply 500)
 - `reports/data_ops_plugs_staging/20260423_190927_vivino_wines_to_ratings_summary.md` (apply 10)
 
-Efeito total observado em `public.wine_scores`:
+Efeito total observado em `public.wine_scores` e `public.wines`:
 
-- delta: 0 -> 508
+- `public.wine_scores`: delta 0 -> 508 (final). Soma dos apply payloads: `wine_scores_upserted` 20 + 20 + 498 + 10 = 548 upserts logicos; o resultado final consolidado em disco foi 508 linhas distintas (por dedupe natural de `wine_id+fonte`).
 - `fonte='vivino'` em 100% das 508 linhas
 - `criado_em` entre 19:05:56 e 19:09:28 UTC
-- `wines_rating_updated=0` em todos os payloads - **vivino_rating NAO foi sobrescrito**
-- nenhum texto de review bruto escrito
+- `wines_rating_updated` por payload: apply 20 = 0, apply 20 = 0, apply 500 = 0, apply 10 = **1** (total: **1 update em `wines.vivino_rating` / `vivino_reviews`**). A afirmacao anterior de zero updates estava incorreta e foi reconciliada aqui.
+- nenhum texto de review bruto escrito em `ops.*` ou em tabelas finais
 
-Esta atividade paralela equivale ao Caminho A (`reviews_writer_safe_now`) da secao 12 do prompt, executado pelo humano. Este executor observou, documentou e nao interferiu. O caminho usado (`plug_reviews_scores -> apply_bundle -> public.wine_scores` com fonte vivino e sem sobrescrita de `vivino_rating`) respeita o contrato do plug e as regras R1-R13.
+Esta atividade paralela equivale ao Caminho A (`reviews_writer_safe_now`) da secao 12 do prompt, executado pelo humano. Este executor observou, documentou e nao interferiu. O caminho usado (`plug_reviews_scores -> apply_bundle -> public.wine_scores` com fonte vivino + update pontual em `vivino_rating` via `apply_bundle`) respeita o contrato do plug e as regras R1-R13: o writer canonico controla quando e seguro atualizar `vivino_rating`, nao ha sobrescrita por caminho WCF nao auditado, e o volume ficou em 1 update pontual sobre um campo publico ja existente no dominio.
 
 ### Discovery
 
@@ -166,12 +166,12 @@ Conciliacao do delta de commerce (apply pelo executor):
 - Zero escrita em `public.wine_sources` por reviews/discovery/enrichment (nenhum plug desses cria sources).
 - Zero review bruto ou PII escrito em `ops.*`.
 - Zero Gemini real pago (R6 respeitada).
-- Zero sobrescrita de `vivino_rating` ou `vivino_reviews` - `wines_rating_updated=0` em todos os payloads observados.
+- Atualizacao de `vivino_rating`/`vivino_reviews`: **1 update pontual** registrado no payload de 2026-04-23 19:09:27 UTC (apply 10 items, `wines_rating_updated=1`). Os demais 3 applies (20, 20, 500) reportaram 0 updates. A mudanca veio via writer canonico `apply_bundle` do plug, nao por caminho WCF nao auditado.
 - Gate `BLOCKED_QUEUE_EXPLOSION` funcionou corretamente em vb_brasil_legacy apply 200 (5.58% > 5% cap), prevenindo explosao de ingestion_review_queue.
 - `ingestion_review_queue` cresceu de 0 para 10 (proporcional e dentro do cap).
 - `not_wine_rejections` cresceu de 354 para 546 (+192 conforme filtered_notwine do wine_filter).
 - Apply de commerce ficou exclusivamente no canal `plug_commerce_dq_v3 -> bulk_ingest`.
-- Apply de reviews (executado pelo humano em paralelo) usou canal `plug_reviews_scores -> apply_bundle` com fonte='vivino' em `public.wine_scores`, sem tocar em `vivino_rating`.
+- Apply de reviews (executado pelo humano em paralelo) usou canal `plug_reviews_scores -> apply_bundle` com fonte='vivino' em `public.wine_scores` e 1 update pontual em `wines.vivino_rating`/`vivino_reviews` via writer canonico.
 - Nenhum `git reset --hard`, `force push`, `merge em main` ou `deploy manual Render/Vercel`.
 - `.env` nao foi commitado; `.gitignore` ja inclui `.env`, `backend/.env`.
 
@@ -190,7 +190,7 @@ Conciliacao do delta de commerce (apply pelo executor):
 - Codigo: `sdk/plugs/reviews_scores/runner.py`, `writer.py`, `exporters.py`, `schemas.py`
 - Contrato: `docs/PLUG_REVIEWS_SCORES_CONTRACT.md` - writer final bloqueado por padrao; apply explicito so para `vivino_wines_to_ratings` (rejeita per-review sources)
 - Dry-run pelo executor (Phase C): `vivino_reviews_to_scores_reviews` limit 50 -> staging
-- Apply paralelo (Murilo, 19:03-19:09 UTC): `vivino_wines_to_ratings` limit 20, 500, 10 -> `public.wine_scores` com fonte='vivino' (total 508 linhas, wines_rating_updated=0)
+- Apply paralelo (Murilo, 19:03-19:09 UTC): `vivino_wines_to_ratings` limit 20, 20, 500, 10 -> `public.wine_scores` com fonte='vivino' (total 508 linhas distintas apos dedupe). `wines_rating_updated` por payload: 0, 0, 0, 1 (total **1 update** em `wines.vivino_rating`/`vivino_reviews`).
 
 ### plug_enrichment (apenas observabilidade)
 
@@ -210,10 +210,13 @@ Conciliacao do delta de commerce (apply pelo executor):
 
 - Branch nova criada nesta sessao: `data-ops/execucao-total-commerce-reviews-routing-20260423`
 - Base: HEAD da branch anterior `data-ops/scraper-plugs-execucao-total-20260423` (`647c9896`)
-- Commits desta sessao: ver secao 17 (apos commit/push)
+- Remote tracking: `origin/data-ops/execucao-total-commerce-reviews-routing-20260423`
+- Commits desta sessao:
+  - `1ccb39ac feat(data-ops): execute total routing with commerce and reviews plugs` - relatorios finais (matriz de roteamento + relatorio executivo) apenas. **Nao incluiu codigo do `plug_reviews_scores`** - gap identificado e corrigido no commit seguinte.
+  - `0d35114c fix(data-ops): publish reviews plug writer and reconcile final report` - publicacao seletiva do codigo do `plug_reviews_scores` (exporters, runner, schemas, writer, checkpoint, confidence, tests test_runner+test_writer, manifest), scheduler `run_plug_reviews_scores_apply.ps1`, `docs/PLUG_REVIEWS_SCORES_CONTRACT.md` atualizado, mais reconciliacao deste relatorio com os artifacts em `reports/data_ops_plugs_staging/`.
 - Nao houve merge em `main`
 - Nao houve force push
-- Worktree continua com alteracoes preexistentes fora do escopo desta sessao; stage foi seletivo
+- Worktree continua com alteracoes preexistentes fora do escopo desta sessao; stage foi seletivo (apenas arquivos do plug_reviews_scores + docs do plug + scheduler + este relatorio).
 
 ## 16.9 Pendencias finais reais (externas / humanas)
 
