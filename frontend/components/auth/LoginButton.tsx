@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { getGoogleLoginUrl, getFacebookLoginUrl, getAppleLoginUrl, getMicrosoftLoginUrl } from "@/lib/auth";
 
 interface LoginButtonProps {
@@ -8,6 +9,7 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ compact = false }: LoginButtonProps) {
+  const t = useTranslations("loginButton");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -28,7 +30,7 @@ export function LoginButton({ compact = false }: LoginButtonProps) {
           onClick={() => setOpen(!open)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-wine-surface border border-wine-border text-wine-text text-sm hover:border-wine-accent transition-colors"
         >
-          <span>Entrar</span>
+          <span>{t("signIn")}</span>
         </button>
         {open && (
           <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-wine-surface border border-wine-border shadow-lg z-50 p-2 flex flex-col gap-1">
@@ -53,24 +55,25 @@ export function LoginButton({ compact = false }: LoginButtonProps) {
 }
 
 function ProviderButton({ provider }: { provider: "google" | "facebook" | "apple" | "microsoft" }) {
+  const t = useTranslations("loginButton");
   const config = {
     google: {
-      label: "Entrar com Google",
+      label: t("withGoogle"),
       url: getGoogleLoginUrl(),
       icon: <GoogleIcon />,
     },
     facebook: {
-      label: "Entrar com Facebook",
+      label: t("withFacebook"),
       url: getFacebookLoginUrl(),
       icon: <FacebookIcon />,
     },
     apple: {
-      label: "Entrar com Apple",
+      label: t("withApple"),
       url: getAppleLoginUrl(),
       icon: <AppleIcon />,
     },
     microsoft: {
-      label: "Entrar com Microsoft",
+      label: t("withMicrosoft"),
       url: getMicrosoftLoginUrl(),
       icon: <MicrosoftIcon />,
     },

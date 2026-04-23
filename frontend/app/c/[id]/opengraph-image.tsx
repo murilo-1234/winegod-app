@@ -1,7 +1,11 @@
 import { ImageResponse } from "next/og";
+import { cookies, headers } from "next/headers";
 
 export const runtime = "edge";
-export const alt = "winegod.ai - Recomendação de vinhos";
+// Static `alt` must be a string at module level; kept in US-facing English to
+// remove the pt-BR literal. Image body copy (title fallback + footer) is
+// resolved per-request from cookie/geo in the default export below.
+export const alt = "winegod.ai — Wine recommendation";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -19,14 +23,56 @@ interface ShareData {
   wines: ShareWine[];
 }
 
+// Inline copy mirrored from messages/{pt-BR,en-US}.json > share.og.
+// Kept local to this edge route to avoid bundling the full messages file.
+// es-419 and fr-FR follow the fallback chain to en-US (US-facing default).
+type OgLocale = "pt-BR" | "en-US";
+
+const OG_STRINGS: Record<OgLocale, { fallbackTitle: string; footer: string }> = {
+  "pt-BR": {
+    fallbackTitle: "Recomendação de vinhos",
+    footer: "Recomendado por Baco, o sommelier IA",
+  },
+  "en-US": {
+    fallbackTitle: "Wine recommendation",
+    footer: "Recommended by Baco, the AI sommelier",
+  },
+};
+
+async function resolveOgLocale(): Promise<OgLocale> {
+  try {
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get("wg_locale_choice")?.value;
+    if (cookie === "pt-BR") return "pt-BR";
+    if (cookie === "en-US" || cookie === "es-419" || cookie === "fr-FR") {
+      return "en-US";
+    }
+
+    const headerStore = await headers();
+    const country = (
+      headerStore.get("x-vercel-ip-country") ??
+      headerStore.get("X-Vercel-IP-Country") ??
+      ""
+    ).toUpperCase();
+    if (country === "BR") return "pt-BR";
+    if (country) return "en-US";
+
+    return "pt-BR";
+  } catch {
+    return "pt-BR";
+  }
+}
+
 export default async function OGImage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await resolveOgLocale();
+  const copy = OG_STRINGS[locale];
 
-  let title = "Recomendação de vinhos";
+  let title = copy.fallbackTitle;
   let wines: ShareWine[] = [];
 
   try {
@@ -158,7 +204,7 @@ export default async function OGImage({
             marginTop: "auto",
           }}
         >
-          Recomendado por Baco, o sommelier IA
+          {copy.footer}
         </div>
       </div>
     ),

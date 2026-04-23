@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { AppShell } from "@/components/AppShell";
 
-export const metadata: Metadata = {
-  title: "Ajuda — winegod.ai",
-  description: "Perguntas frequentes, glossário e contato do winegod.ai.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("help.meta");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 /* ── Subcomponentes locais ── */
 
@@ -47,259 +51,189 @@ function Term({ term, children }: { term: string; children: React.ReactNode }) {
   );
 }
 
+const INDEX_ITEMS: { href: string; key: string }[] = [
+  { href: "#chat", key: "chat" },
+  { href: "#fotos", key: "photos" },
+  { href: "#notas", key: "notes" },
+  { href: "#creditos", key: "credits" },
+  { href: "#compartilhar", key: "share" },
+  { href: "#conta", key: "account" },
+  { href: "#glossario", key: "glossary" },
+  { href: "#contato", key: "contact" },
+];
+
+const GLOSSARY_KEYS = [
+  "baco",
+  "rotulo",
+  "safra",
+  "terroir",
+  "tanino",
+  "corpo",
+  "acidez",
+  "secoDoce",
+  "blend",
+  "varietal",
+  "decantacao",
+  "ocr",
+  "wineGodScore",
+  "notaWCF",
+  "credito",
+  "produtor",
+] as const;
+
 /* ── Página ── */
 
-export default function AjudaPage() {
+export default async function AjudaPage() {
+  const t = await getTranslations("help");
+  const chatExamples = t.raw("sections.chat.q2.examples") as string[];
+
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 py-8 overflow-y-auto h-full">
         <h1 className="font-display text-2xl font-bold text-wine-text mb-1">
-          Ajuda
+          {t("header.title")}
         </h1>
         <p className="text-wine-muted text-sm mb-6">
-          Tudo que você precisa saber para usar o winegod.ai.
+          {t("header.subtitle")}
         </p>
 
         {/* ── Índice rápido ── */}
         <nav className="mb-8 text-sm flex flex-wrap gap-x-4 gap-y-1">
-          {[
-            ["#chat", "Chat"],
-            ["#fotos", "Fotos e PDF"],
-            ["#notas", "Notas e score"],
-            ["#creditos", "Créditos"],
-            ["#compartilhar", "Compartilhar"],
-            ["#conta", "Conta"],
-            ["#glossario", "Glossário"],
-            ["#contato", "Contato"],
-          ].map(([href, label]) => (
+          {INDEX_ITEMS.map(({ href, key }) => (
             <a
               key={href}
               href={href}
               className="text-wine-accent hover:underline"
             >
-              {label}
+              {t(`index.${key}`)}
             </a>
           ))}
         </nav>
 
         {/* ── FAQ ── */}
 
-        <Section id="chat" title="Como usar o chat">
-          <Q q="O que é o winegod.ai?">
-            <p>
-              É um assistente de inteligência artificial especializado em
-              vinhos. Você conversa com o Baco — o deus do vinho — e ele
-              responde sobre rótulos, recomendações, comparações e muito mais.
-            </p>
+        <Section id="chat" title={t("sections.chat.title")}>
+          <Q q={t("sections.chat.q1.q")}>
+            <p>{t("sections.chat.q1.a")}</p>
           </Q>
-          <Q q="Que tipo de pergunta posso fazer?">
-            <p>Qualquer coisa sobre vinho. Alguns exemplos:</p>
+          <Q q={t("sections.chat.q2.q")}>
+            <p>{t("sections.chat.q2.intro")}</p>
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
-              <li>Me recomenda um tinto até R$ 80</li>
-              <li>O que combina com risoto de cogumelos?</li>
-              <li>Compara Malbec argentino e Carménère chileno</li>
-              <li>Esse rótulo é bom? (com foto)</li>
+              {chatExamples.map((ex, i) => (
+                <li key={i}>{ex}</li>
+              ))}
             </ul>
           </Q>
-          <Q q="Em que idioma posso conversar?">
-            <p>
-              O Baco responde no idioma em que você escrever. Português, inglês,
-              espanhol, francês e outros.
-            </p>
+          <Q q={t("sections.chat.q3.q")}>
+            <p>{t("sections.chat.q3.a")}</p>
           </Q>
         </Section>
 
-        <Section id="fotos" title="Fotos, OCR e PDF">
-          <Q q="Posso enviar foto de um rótulo?">
-            <p>
-              Sim. Tire uma foto do rótulo e envie pelo chat. O Baco lê a
-              imagem, identifica o vinho e busca informações na base de dados.
-            </p>
+        <Section id="fotos" title={t("sections.photos.title")}>
+          <Q q={t("sections.photos.q1.q")}>
+            <p>{t("sections.photos.q1.a")}</p>
           </Q>
-          <Q q="E foto de prateleira ou cardápio?">
-            <p>
-              Também funciona. O sistema identifica os vinhos visíveis na
-              imagem. Funciona melhor com fotos nítidas e bem iluminadas.
-            </p>
+          <Q q={t("sections.photos.q2.q")}>
+            <p>{t("sections.photos.q2.a")}</p>
           </Q>
-          <Q q="Posso enviar PDF de carta de vinhos?">
-            <p>
-              Sim. O Baco extrai os vinhos listados no PDF, busca cada um na
-              base e responde com o que encontrar. PDFs muito longos podem ser
-              processados parcialmente.
-            </p>
+          <Q q={t("sections.photos.q3.q")}>
+            <p>{t("sections.photos.q3.a")}</p>
           </Q>
-          <Q q="Quantas fotos posso enviar de uma vez?">
-            <p>Até 5 imagens por mensagem.</p>
+          <Q q={t("sections.photos.q4.q")}>
+            <p>{t("sections.photos.q4.a")}</p>
           </Q>
         </Section>
 
-        <Section id="notas" title="Notas e score">
-          <Q q="O que é a nota do vinho?">
-            <p>
-              É uma avaliação de qualidade numa escala de 0 a 5. Pode ser
-              baseada em dados públicos de avaliações reais ou estimada pelo
-              sistema quando há poucos dados disponíveis.
-            </p>
+        <Section id="notas" title={t("sections.notes.title")}>
+          <Q q={t("sections.notes.q1.q")}>
+            <p>{t("sections.notes.q1.a")}</p>
           </Q>
-          <Q q="O que é o WineGod Score?">
-            <p>
-              É um índice de custo-benefício próprio do winegod.ai. Leva em
-              conta a nota de qualidade, o preço e micro-ajustes. Quanto maior,
-              melhor o custo-benefício.
-            </p>
+          <Q q={t("sections.notes.q2.q")}>
+            <p>{t("sections.notes.q2.a")}</p>
           </Q>
-          <Q q="Quando o Baco diz que 'não tem nota', o que significa?">
-            <p>
-              Significa que o vinho existe na base mas não tem avaliações
-              suficientes para gerar uma nota confiável. O Baco não inventa
-              nota — se não tem, ele diz.
-            </p>
+          <Q q={t("sections.notes.q3.q")}>
+            <p>{t("sections.notes.q3.a")}</p>
           </Q>
         </Section>
 
-        <Section id="creditos" title="Créditos">
-          <Q q="Quantas mensagens posso enviar?">
+        <Section id="creditos" title={t("sections.credits.title")}>
+          <Q q={t("sections.credits.q1.q")}>
             <p>
-              Visitantes (sem login) têm <strong>5 mensagens por sessão</strong>
-              . Usuários logados têm <strong>15 mensagens por dia</strong>,
-              renovadas à meia-noite UTC.
+              {t.rich("sections.credits.q1.a", {
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}
             </p>
           </Q>
-          <Q q="Fotos e PDFs custam mais?">
-            <p>
-              Uma foto avulsa custa 1 crédito. Enviar de 2 a 5 fotos de uma
-              vez, um vídeo ou um PDF custa 3 créditos.
-            </p>
+          <Q q={t("sections.credits.q2.q")}>
+            <p>{t("sections.credits.q2.a")}</p>
           </Q>
-          <Q q="Como ganho mais créditos?">
-            <p>
-              Faça login com Google, Facebook, Apple ou Microsoft. Você passa de
-              5 para 15 mensagens por dia, renovadas automaticamente.
-            </p>
+          <Q q={t("sections.credits.q3.q")}>
+            <p>{t("sections.credits.q3.a")}</p>
           </Q>
         </Section>
 
-        <Section id="compartilhar" title="Compartilhamento">
-          <Q q="Posso compartilhar uma seleção de vinhos?">
-            <p>
-              Sim. Quando o Baco lista vinhos, aparece um botão de compartilhar.
-              Ele gera um link público com a seleção, que qualquer pessoa pode
-              abrir sem login.
-            </p>
+        <Section id="compartilhar" title={t("sections.share.title")}>
+          <Q q={t("sections.share.q1.q")}>
+            <p>{t("sections.share.q1.a")}</p>
           </Q>
         </Section>
 
-        <Section id="conta" title="Conta e login">
-          <Q q="Preciso criar conta?">
-            <p>
-              Não. Você pode usar o chat como visitante. Mas o login dá mais
-              créditos e, no futuro, acesso a recursos adicionais.
-            </p>
+        <Section id="conta" title={t("sections.account.title")}>
+          <Q q={t("sections.account.q1.q")}>
+            <p>{t("sections.account.q1.a")}</p>
           </Q>
-          <Q q="Com quais provedores posso entrar?">
-            <p>Google, Facebook, Apple e Microsoft.</p>
+          <Q q={t("sections.account.q2.q")}>
+            <p>{t("sections.account.q2.a")}</p>
           </Q>
-          <Q q="Como excluo minha conta?">
+          <Q q={t("sections.account.q3.q")}>
             <p>
-              Se você estiver logado, pode excluir sua conta diretamente na
-              página{" "}
-              <a href="/data-deletion" className="text-wine-accent underline">
-                Exclusão de dados
-              </a>
-              . Se preferir, também há fallback por e-mail.
+              {t.rich("sections.account.q3.a", {
+                a: (chunks) => (
+                  <a
+                    href="/data-deletion"
+                    className="text-wine-accent underline"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </Q>
         </Section>
 
         {/* ── Glossário ── */}
 
-        <Section id="glossario" title="Glossário">
+        <Section id="glossario" title={t("sections.glossary.title")}>
           <dl>
-            <Term term="Baco">
-              O personagem do winegod.ai — deus do vinho na mitologia. É quem
-              responde suas perguntas.
-            </Term>
-            <Term term="Rótulo (label)">
-              A etiqueta colada na garrafa. Contém nome do vinho, produtor,
-              safra, região e teor alcoólico.
-            </Term>
-            <Term term="Safra (vintage)">
-              O ano em que as uvas foram colhidas. Nem todo vinho tem safra
-              (vinhos non-vintage são misturas de anos).
-            </Term>
-            <Term term="Terroir">
-              Conjunto de clima, solo e práticas locais que dão caráter único a
-              um vinho de determinada região.
-            </Term>
-            <Term term="Tanino">
-              Substância presente na casca, sementes e engaços da uva. Dá
-              sensação de secura e estrutura ao vinho tinto.
-            </Term>
-            <Term term="Corpo">
-              Sensação de peso do vinho na boca. Pode ser leve, médio ou
-              encorpado.
-            </Term>
-            <Term term="Acidez">
-              Frescor do vinho. Vinhos com boa acidez parecem vivos e
-              equilibrados.
-            </Term>
-            <Term term="Seco / doce">
-              Seco = sem açúcar residual perceptível. Doce = com dulçor
-              evidente. Existem níveis intermediários (meio-seco, suave).
-            </Term>
-            <Term term="Blend">
-              Vinho feito com mais de uma variedade de uva. Ex: Cabernet
-              Sauvignon + Merlot.
-            </Term>
-            <Term term="Varietal">
-              Vinho feito predominantemente com uma única uva. Ex: 100% Malbec.
-            </Term>
-            <Term term="Decantação">
-              Transferir o vinho da garrafa para um decanter para aerar e
-              separar sedimentos.
-            </Term>
-            <Term term="OCR">
-              Reconhecimento óptico de caracteres. Tecnologia usada pelo
-              winegod.ai para ler textos em fotos e PDFs.
-            </Term>
-            <Term term="WineGod Score">
-              Índice de custo-benefício do winegod.ai. Combina qualidade e preço
-              numa escala de 0 a 5.
-            </Term>
-            <Term term="Nota WCF">
-              Nota de qualidade pura usada internamente. Base para o cálculo do
-              WineGod Score.
-            </Term>
-            <Term term="Crédito">
-              Unidade de uso do chat. Cada mensagem consome 1 ou mais créditos
-              dependendo do tipo de mídia enviada.
-            </Term>
-            <Term term="Produtor">
-              Vinícola ou empresa que elabora o vinho. Ex: Catena Zapata, Penfolds.
-            </Term>
+            {GLOSSARY_KEYS.map((k) => (
+              <Term key={k} term={t(`sections.glossary.terms.${k}.term`)}>
+                {t(`sections.glossary.terms.${k}.def`)}
+              </Term>
+            ))}
           </dl>
         </Section>
 
         {/* ── Contato ── */}
 
-        <Section id="contato" title="Contato">
+        <Section id="contato" title={t("sections.contact.title")}>
           <p className="text-wine-muted text-sm mb-3">
-            Para dúvidas, sugestões ou problemas, escreva para{" "}
-            <a
-              href="mailto:privacy@winegod.ai"
-              className="text-wine-accent underline"
-            >
-              privacy@winegod.ai
-            </a>
-            .
+            {t.rich("sections.contact.intro", {
+              a: (chunks) => (
+                <a
+                  href="mailto:privacy@winegod.ai"
+                  className="text-wine-accent underline"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
         </Section>
 
         {/* ── Versão ── */}
 
         <div className="mt-12 pt-6 border-t border-wine-border text-wine-muted text-xs">
-          winegod.ai · v0.1.0 beta · Abril 2026
+          {t("footer.version")}
         </div>
       </div>
     </AppShell>

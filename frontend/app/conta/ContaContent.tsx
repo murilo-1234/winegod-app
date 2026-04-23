@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { AppShell } from "@/components/AppShell";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { useAuth } from "@/lib/useAuth";
 import { logout as doLogout } from "@/lib/auth";
 import { resetSessionId } from "@/lib/api";
+import { formatDate as i18nFormatDate } from "@/lib/i18n/formatters";
 import type { UserData } from "@/lib/auth";
 
 function LoadingSkeleton() {
@@ -25,6 +27,7 @@ function LoadingSkeleton() {
 }
 
 function GuestState() {
+  const t = useTranslations("account");
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 rounded-full bg-wine-surface flex items-center justify-center mx-auto mb-4">
@@ -42,11 +45,10 @@ function GuestState() {
         </svg>
       </div>
       <h2 className="font-display text-lg font-bold text-wine-text mb-2">
-        Entre para ver sua conta
+        {t("guest.title")}
       </h2>
       <p className="text-wine-muted text-sm mb-6 max-w-sm mx-auto">
-        Faça login para acessar seu perfil, ver seus créditos e gerenciar sua
-        conta.
+        {t("guest.description")}
       </p>
       <LoginButton />
     </div>
@@ -54,30 +56,35 @@ function GuestState() {
 }
 
 function ErrorState() {
+  const t = useTranslations("account");
   return (
     <div className="text-center py-12">
       <p className="text-wine-muted text-sm mb-2">
-        Não foi possível carregar os dados da conta.
+        {t("error.message")}
       </p>
       <button
         onClick={() => window.location.reload()}
         className="text-wine-accent text-sm underline"
       >
-        Tentar novamente
+        {t("error.retry")}
       </button>
     </div>
   );
 }
 
 function formatProvider(provider?: string): string {
-  if (!provider) return "—";
+  if (!provider) return "";
   return provider.charAt(0).toUpperCase() + provider.slice(1);
 }
 
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return "—";
+function formatLastAccess(
+  dateStr: string | undefined,
+  locale: string,
+  fallback: string,
+): string {
+  if (!dateStr) return fallback;
   try {
-    return new Date(dateStr).toLocaleString("pt-BR", {
+    return i18nFormatDate(dateStr, locale, {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -107,6 +114,12 @@ function Profile({
   user: UserData;
   onLogout: () => void;
 }) {
+  const t = useTranslations("account");
+  const locale = useLocale();
+  const emptyValue = t("emptyValue");
+  const providerValue = formatProvider(user.provider) || emptyValue;
+  const lastAccessValue = formatLastAccess(user.last_login, locale, emptyValue);
+
   return (
     <>
       {/* Avatar + name */}
@@ -133,9 +146,9 @@ function Profile({
 
       {/* Info rows */}
       <div className="bg-wine-surface rounded-xl p-4 mb-8">
-        <InfoRow label="Login via" value={formatProvider(user.provider)} />
-        <InfoRow label="Último acesso" value={formatDate(user.last_login)} />
-        <InfoRow label="Plano" value="Free" />
+        <InfoRow label={t("row.loginVia")} value={providerValue} />
+        <InfoRow label={t("row.lastAccess")} value={lastAccessValue} />
+        <InfoRow label={t("row.plan")} value={t("planFree")} />
       </div>
 
       {/* Actions */}
@@ -144,13 +157,13 @@ function Profile({
           onClick={onLogout}
           className="w-full py-2.5 rounded-lg border border-wine-border text-wine-text text-sm font-medium hover:bg-wine-surface transition-colors"
         >
-          Sair da conta
+          {t("logout")}
         </button>
         <a
           href="/data-deletion"
           className="block text-center text-wine-muted text-xs hover:text-wine-accent transition-colors"
         >
-          Excluir minha conta e dados
+          {t("deleteAccount")}
         </a>
       </div>
     </>
@@ -158,6 +171,7 @@ function Profile({
 }
 
 export function ContaContent() {
+  const t = useTranslations("account");
   const { user, loading, error } = useAuth();
   const router = useRouter();
 
@@ -171,7 +185,7 @@ export function ContaContent() {
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 py-8 overflow-y-auto h-full">
         <h1 className="font-display text-2xl font-bold text-wine-text mb-6">
-          Minha conta
+          {t("heading")}
         </h1>
         {loading ? (
           <LoadingSkeleton />

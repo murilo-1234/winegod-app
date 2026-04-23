@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LoginButton } from "@/components/auth/LoginButton";
@@ -11,6 +12,7 @@ import {
   updateConversationSaved,
   type ConversationSummary,
 } from "@/lib/conversations";
+import { formatDate as i18nFormatDate } from "@/lib/i18n/formatters";
 
 function LoadingSkeleton() {
   return (
@@ -23,6 +25,7 @@ function LoadingSkeleton() {
 }
 
 function GuestState() {
+  const t = useTranslations("favorites");
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 rounded-full bg-wine-surface flex items-center justify-center mx-auto mb-4">
@@ -39,10 +42,10 @@ function GuestState() {
         </svg>
       </div>
       <h2 className="font-display text-lg font-bold text-wine-text mb-2">
-        Entre para ver seus favoritos
+        {t("guest.title")}
       </h2>
       <p className="text-wine-muted text-sm mb-6 max-w-sm mx-auto">
-        Faça login para salvar e acessar suas conversas favoritas.
+        {t("guest.description")}
       </p>
       <LoginButton />
     </div>
@@ -53,25 +56,25 @@ function ErrorState({
   message,
   onRetry,
 }: {
-  message?: string;
+  message: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations("favorites");
   return (
     <div className="text-center py-12">
-      <p className="text-wine-muted text-sm mb-2">
-        {message || "Não foi possível carregar seus favoritos."}
-      </p>
+      <p className="text-wine-muted text-sm mb-2">{message}</p>
       <button
         onClick={onRetry}
         className="text-wine-accent text-sm hover:underline"
       >
-        Tentar novamente
+        {t("error.retry")}
       </button>
     </div>
   );
 }
 
 function EmptyState() {
+  const t = useTranslations("favorites");
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 rounded-full bg-wine-surface flex items-center justify-center mx-auto mb-4">
@@ -88,19 +91,22 @@ function EmptyState() {
         </svg>
       </div>
       <h2 className="font-display text-lg font-bold text-wine-text mb-2">
-        Nenhuma conversa salva
+        {t("empty.title")}
       </h2>
       <p className="text-wine-muted text-sm max-w-sm mx-auto">
-        Quando você salvar uma conversa no chat, ela aparecerá aqui.
+        {t("empty.description")}
       </p>
     </div>
   );
 }
 
-function formatSavedDate(dateStr: string | null | undefined): string {
+function formatSavedDate(
+  dateStr: string | null | undefined,
+  locale: string,
+): string {
   if (!dateStr) return "";
   try {
-    return new Date(dateStr).toLocaleDateString("pt-BR", {
+    return i18nFormatDate(dateStr, locale, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -110,12 +116,9 @@ function formatSavedDate(dateStr: string | null | undefined): string {
   }
 }
 
-function getConversationTitle(conv: ConversationSummary): string {
-  const title = conv.title?.trim();
-  return title || "Conversa sem título";
-}
-
 export function FavoritosContent() {
+  const t = useTranslations("favorites");
+  const locale = useLocale();
   const { user, loading: authLoading, error: authError } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -160,6 +163,14 @@ export function FavoritosContent() {
     if (user) loadSaved();
   }, [user, loadSaved]);
 
+  const getConversationTitle = useCallback(
+    (conv: ConversationSummary): string => {
+      const title = conv.title?.trim();
+      return title || t("untitled");
+    },
+    [t],
+  );
+
   const handleUnsave = useCallback(
     async (id: string) => {
       if (pendingIds.has(id)) return;
@@ -181,31 +192,31 @@ export function FavoritosContent() {
       });
 
       if (ok) {
-        showNotice("removed", "Removida dos favoritos");
+        showNotice("removed", t("notice.removed"));
       } else {
         // Rollback
         setConversations(previous);
-        showNotice("error", "Erro ao remover. Tente novamente.");
+        showNotice("error", t("notice.error"));
       }
     },
-    [conversations, pendingIds, showNotice]
+    [conversations, pendingIds, showNotice, t]
   );
 
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 py-8 overflow-y-auto h-full">
         <h1 className="font-display text-2xl font-bold text-wine-text mb-6">
-          Conversas salvas
+          {t("heading")}
         </h1>
         {authLoading || loading ? (
           <LoadingSkeleton />
         ) : authError ? (
           <ErrorState
-            message="Não foi possível verificar sua conta."
+            message={t("error.auth")}
             onRetry={() => window.location.reload()}
           />
         ) : error ? (
-          <ErrorState onRetry={loadSaved} />
+          <ErrorState message={t("error.default")} onRetry={loadSaved} />
         ) : !user ? (
           <GuestState />
         ) : conversations.length === 0 ? (
@@ -214,6 +225,7 @@ export function FavoritosContent() {
           <div className="space-y-2">
             {conversations.map((conv) => {
               const isPending = pendingIds.has(conv.id);
+              const savedDate = formatSavedDate(conv.saved_at, locale);
               return (
                 <div
                   key={conv.id}
@@ -226,9 +238,9 @@ export function FavoritosContent() {
                     <p className="text-sm text-wine-text font-medium truncate">
                       {getConversationTitle(conv)}
                     </p>
-                    {conv.saved_at && (
+                    {savedDate && (
                       <p className="text-xs text-wine-muted mt-0.5">
-                        Salva em {formatSavedDate(conv.saved_at)}
+                        {t("savedOn", { date: savedDate })}
                       </p>
                     )}
                   </button>
@@ -244,8 +256,8 @@ export function FavoritosContent() {
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:bg-red-50"
                     }`}
-                    aria-label="Remover dos favoritos"
-                    title="Remover dos favoritos"
+                    aria-label={t("removeAria")}
+                    title={t("removeAria")}
                   >
                     <Heart
                       size={18}
