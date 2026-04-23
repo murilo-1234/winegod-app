@@ -258,11 +258,11 @@ Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar
 
 **Decisao:**
 - [ ] A - publicar `shared/legal/DEFAULT/es-419/*` + `shared/legal/DEFAULT/fr-FR/*` e expandir codigo de roteamento (Trilha B+ extendida)
-- [ ] B - manter `es-419` e `fr-FR` fora de `enabled_locales` ate publicar legal proprio (canary-4/5 fechados)
+- [X] B - manter `es-419` e `fr-FR` fora de `enabled_locales` ate publicar legal proprio (canary-4/5 fechados)
 
-**Escolha do founder:** [ASSINE AQUI - A OU B]
+**Escolha do founder:** B
 
-**Racional:** [2-4 linhas]
+**Racional:** [QUero pronto da forma que dá. Se ou quando o app ecalar, vericaremos tudo. EUA é o foco inical.]
 
 **Implicacao operacional:**
 - Se A: execucao adicional necessaria. Write-set estendido: 8 markdowns (privacy+terms+data-deletion+cookies x 2 locales) + `frontend/app/legal/[country]/[lang]/[doc]/page.tsx` (PUBLISHED_MATRIX) + `frontend/app/age-verify/page.tsx` (LegalLocale) + `frontend/app/privacy/page.tsx` + `frontend/app/terms/page.tsx` + `frontend/app/data-deletion/page.tsx` (redirects). Canary-4/5 liberado apos.
@@ -293,8 +293,8 @@ Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar
 
 ```
 Founder: Murilo
-Data: [preencher]
-O1: [A ou B]
+Data: [22/04/2026]
+O1: [B]
 O2: B (default aceito) | A (se founder mudar)
 O3: aceitar residual
 Trilha A (commit 4394b156): autorizada upfront, ja aplicada em i18n/h4-exec
