@@ -189,6 +189,47 @@ Esta decisao e documental. Nao criar migration, nao criar endpoint, nao mexer em
 
 ---
 
+## Decisao complementar 2026-04-22 - H4 pode ser fechado por pack multi-IA
+
+**Decisao:** **SIM**
+
+- O `H4` deixa de significar exclusivamente `Fiverr Tier 1`.
+- O `H4` passa a significar **Native Review Gate**.
+- Caminho padrao aprovado:
+  - **AI Native Review Pack**
+- Caminho opcional de escalacao:
+  - **Fiverr**
+
+### Racional
+
+- O projeto ja fechou os 6 rallies de codigo.
+- O maior risco remanescente do `H4` e qualidade percebida / naturalidade de idioma.
+- Um pack multi-IA bem executado captura grande parte desse risco com custo/atrito muito menor.
+- Fiverr continua util, mas deixa de ser obrigatorio para fechamento.
+
+### Barra minima para o AI Native Review Pack
+
+Para o `H4` passar por IA:
+
+1. `en-US`, `es-419` e `fr-FR` precisam ser revisados
+2. cada locale precisa passar por pelo menos **2 modelos independentes**
+3. nao pode sobrar nenhum achado `S1`
+4. nao pode sobrar nenhum achado `S2` sem decisao explicita
+5. vazamento de `pt-BR` precisa estar zerado
+
+### Implicacao operacional
+
+- Se o AI pack passar, o projeto pode considerar o `H4` **fechado**.
+- Fiverr vira **escalacao opcional** para casos de duvida material, divergencia entre modelos ou inseguranca do founder.
+
+### Artefatos
+
+- `C:\winegod-app\reports\WINEGOD_MULTILINGUE_ANALISE_H4_SUBSTITUTO_IA.md`
+- `C:\winegod-app\reports\WINEGOD_MULTILINGUE_H4_IA_PACK_PROMPT.md`
+- `C:\winegod-app\reports\WINEGOD_MULTILINGUE_H4_IA_REVIEW_PROMPT.md`
+
+---
+
 ## Assinatura
 
 ```
@@ -204,3 +245,58 @@ Posicionamento: US-facing / global-first na experiência de produto
 Com este documento e o arquivo `.sync/t1_onda0_complete` publicados, T1 pode avançar para F0.2 (criar estrutura `shared/`), T2 pode iniciar F0.5 (tooling ESLint + deps), T3 pode iniciar revisão de Onda 7 (Legal) usando as decisões travadas aqui como input.
 
 T4 (QA) está travada em outro problema (zombie em bootstrap) — requer diagnóstico técnico separado, não relacionado a este gate.
+
+---
+
+## Decisoes 2026-04-22 - H4 fechamento (O1, O2, O3)
+
+Bloco preparado por Claude Opus 4.7 via execucao autonoma do plano minimizado.
+Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar O1
+(unica decisao real pendente) e assinar.
+
+### O1 - Legal es-419 e fr-FR
+
+**Decisao:**
+- [ ] A - publicar `shared/legal/DEFAULT/es-419/*` + `shared/legal/DEFAULT/fr-FR/*` e expandir codigo de roteamento (Trilha B+ extendida)
+- [ ] B - manter `es-419` e `fr-FR` fora de `enabled_locales` ate publicar legal proprio (canary-4/5 fechados)
+
+**Escolha do founder:** [ASSINE AQUI - A OU B]
+
+**Racional:** [2-4 linhas]
+
+**Implicacao operacional:**
+- Se A: execucao adicional necessaria. Write-set estendido: 8 markdowns (privacy+terms+data-deletion+cookies x 2 locales) + `frontend/app/legal/[country]/[lang]/[doc]/page.tsx` (PUBLISHED_MATRIX) + `frontend/app/age-verify/page.tsx` (LegalLocale) + `frontend/app/privacy/page.tsx` + `frontend/app/terms/page.tsx` + `frontend/app/data-deletion/page.tsx` (redirects). Canary-4/5 liberado apos.
+- Se B: nenhum trabalho adicional. `feature_flags.enabled_locales` permanece `["pt-BR"]` (e inclui `en-US` apos canary-3). Canary-4/5 permanece bloqueado ate O1 virar A no futuro.
+
+### O2 - OG image es-419 e fr-FR
+
+**Decisao:**
+- [ ] A - expandir `OgLocale` e `OG_STRINGS` em `frontend/app/c/[id]/opengraph-image.tsx` para 4 locales
+- [X] **B - aceitar OG em ingles para es-419 e fr-FR como residual consciente** (default recomendado)
+
+**Escolha do founder:** B pre-selecionado — founder confirma ou muda para A
+
+**Racional:** OG social em ingles para usuarios es-419/fr-FR nao bloqueia uso do produto. Share card e superficie secundaria. Pode virar A depois sem bloqueio.
+
+**Implicacao operacional:** nenhuma mudanca em codigo nesta rodada. Preview social continua em ingles para todos os locales nao-pt.
+
+### O3 - OG alt estatico em ingles
+
+**Decisao:**
+- [X] **Aceitar como residual consciente** (default unico — limitacao de edge runtime do Next.js)
+
+**Racional:** `export const alt` em module level nao pode ser locale-aware pela limitacao de edge runtime. Texto fixo `"winegod.ai — Wine recommendation"` em ingles em todos os locales.
+
+**Implicacao operacional:** nenhuma. Risco residual registrado, gate formal nao fica bloqueado por este item.
+
+### Assinatura
+
+```
+Founder: Murilo
+Data: [preencher]
+O1: [A ou B]
+O2: B (default aceito) | A (se founder mudar)
+O3: aceitar residual
+Trilha A (commit 4394b156): autorizada upfront, ja aplicada em i18n/h4-exec
+```
+
