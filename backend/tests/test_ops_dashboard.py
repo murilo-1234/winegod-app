@@ -266,3 +266,92 @@ def test_rate_limit_after_3_invalid(client_dashboard_on):
     r = client_dashboard_on.post("/ops/login", data={"token": "test-dashboard-token-abc123"})
     # A 4a tentativa eh bloqueada pelo rate limiter (429)
     assert r.status_code == 429
+
+
+# ---------------------------------------------------------------------------
+# 14. Helper puro classify_freshness — saúde considera last_run_status
+#     (Correção 2 Codex: failed/timeout nao pode aparecer como healthy/fresh)
+# ---------------------------------------------------------------------------
+
+def test_classify_freshness_never_when_no_run():
+    from routes.ops_dashboard import classify_freshness
+    assert classify_freshness(None, 6, None) == "never"
+    assert classify_freshness(None, 6, "success") == "never"
+
+
+def test_classify_freshness_failed_is_error_not_fresh():
+    """Run failed recente NAO pode ser 'fresh'."""
+    import datetime as _dt
+    from routes.ops_dashboard import classify_freshness, is_healthy
+    now = _dt.datetime(2026, 4, 23, 12, 0, tzinfo=_dt.timezone.utc)
+    recent = now - _dt.timedelta(minutes=1)
+    for bad_status in ("failed", "timeout", "error"):
+        assert classify_freshness(recent, 6, bad_status, now=now) == "error"
+        assert is_healthy(recent, 6, bad_status, now=now) is False
+
+
+def test_classify_freshness_running_is_running():
+    import datetime as _dt
+    from routes.ops_dashboard import classify_freshness, is_healthy
+    now = _dt.datetime(2026, 4, 23, 12, 0, tzinfo=_dt.timezone.utc)
+    recent = now - _dt.timedelta(minutes=1)
+    for s in ("started", "running"):
+        assert classify_freshness(recent, 6, s, now=now) == "running"
+        assert is_healthy(recent, 6, s, now=now) is False
+
+
+def test_classify_freshness_success_fresh_and_stale():
+    import datetime as _dt
+    from routes.ops_dashboard import classify_freshness, is_healthy
+    now = _dt.datetime(2026, 4, 23, 12, 0, tzinfo=_dt.timezone.utc)
+    # fresh = dentro da janela
+    fresh_end = now - _dt.timedelta(hours=2)
+    assert classify_freshness(fresh_end, 6, "success", now=now) == "fresh"
+    assert is_healthy(fresh_end, 6, "success", now=now) is True
+    # stale = entre 1x e 3x janela
+    stale_end = now - _dt.timedelta(hours=10)
+    assert classify_freshness(stale_end, 6, "success", now=now) == "stale"
+    assert is_healthy(stale_end, 6, "success", now=now) is False
+    # very_stale = além de 3x janela
+    vs_end = now - _dt.timedelta(hours=30)
+    assert classify_freshness(vs_end, 6, "success", now=now) == "very_stale"
+    assert is_healthy(vs_end, 6, "success", now=now) is False
+
+
+# ---------------------------------------------------------------------------
+# 15. Helper puro compute_fake_alert_keys — dedup determinístico
+#     (Correção 3 Codex: 2 chamadas com mesmo scraper_id -> mesmo dedup_key)
+# ---------------------------------------------------------------------------
+
+def test_fake_alert_dedup_key_is_deterministic_per_scraper():
+    from routes.ops_dashboard import compute_fake_alert_keys
+    s1_a = compute_fake_alert_keys("canary_synthetic")
+    s1_b = compute_fake_alert_keys("canary_synthetic")
+    assert s1_a == s1_b, "dedup_key DEVE ser estável para mesmo scraper_id"
+    assert s1_a[0] == "dashboard_fake_test:canary_synthetic"
+    # sha256 hex = 64 chars
+    assert len(s1_a[1]) == 64
+
+
+def test_fake_alert_dedup_key_differs_between_scrapers():
+    from routes.ops_dashboard import compute_fake_alert_keys
+    a = compute_fake_alert_keys("scraper_a")
+    b = compute_fake_alert_keys("scraper_b")
+    assert a[0] != b[0]
+    assert a[1] != b[1]
+
+
+def test_fake_alert_dedup_key_handles_null_scraper_as_global():
+    from routes.ops_dashboard import compute_fake_alert_keys
+    g1 = compute_fake_alert_keys(None)
+    g2 = compute_fake_alert_keys(None)
+    assert g1 == g2
+    assert g1[0] == "dashboard_fake_test:__global__"
+
+
+def test_fake_alert_dedup_key_does_not_use_uuid():
+    """Regressão: scope_key NAO pode conter 'event:' (antigo formato com uuid)."""
+    from routes.ops_dashboard import compute_fake_alert_keys
+    scope, _ = compute_fake_alert_keys("x")
+    assert not scope.startswith("event:")
+    assert "dashboard_fake_test" in scope
