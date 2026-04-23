@@ -16,11 +16,28 @@ from routes.config import config_bp
 from routes.ingest import ingest_bp
 from routes.ingest_review import ingest_review_bp
 from routes.ops import ops_bp
+from routes.ops_dashboard import ops_dashboard_bp
+from utils.observability import init_sentry, init_posthog
 
 
 def create_app():
     flask_app = Flask(__name__)
     flask_app.config.from_object(Config)
+
+    # Flask session requer SECRET_KEY. Data Ops Dashboard usa cookie httponly.
+    # Se OPS_SESSION_SECRET nao setado, usa fallback (apenas local/testes).
+    flask_app.secret_key = (
+        getattr(Config, "OPS_SESSION_SECRET", None)
+        or getattr(Config, "SECRET_KEY", None)
+        or "local-dev-only-not-for-production"
+    )
+
+    # F11.2/F11.3 - observabilidade. Ambas chamadas sao no-op silencioso
+    # se SENTRY_DSN / POSTHOG_API_KEY nao estao setados. Init antes do
+    # CORS e dos blueprints porque Sentry precisa ver as rotas desde o
+    # primeiro request.
+    init_sentry(flask_app)
+    init_posthog()
 
     CORS(flask_app, origins=[
         re.compile(r"http://localhost:\d+"),
@@ -42,6 +59,8 @@ def create_app():
     flask_app.register_blueprint(ingest_review_bp, url_prefix='/api')
     # Winegod Data Ops: sem prefixo /api, endpoints em /ops/*.
     flask_app.register_blueprint(ops_bp)
+    # Dashboard Fase 3 (HTML + UI-API), tambem sem prefixo /api.
+    flask_app.register_blueprint(ops_dashboard_bp)
 
     return flask_app
 

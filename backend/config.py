@@ -88,3 +88,7 @@ class Config:
 
     # Retencao em batches de 10k (REGRA 5 do CLAUDE.md)
     OPS_RETENTION_BATCH_SIZE = int(os.getenv("OPS_RETENTION_BATCH_SIZE", "10000"))
+
+    # Flask session secret para o dashboard /ops (Fase 3).
+    # Em producao, setar via env. Local usa fallback.
+    OPS_SESSION_SECRET = os.getenv("OPS_SESSION_SECRET", "")
