@@ -1,21 +1,7 @@
 import { permanentRedirect } from "next/navigation";
-import { cookies, headers } from "next/headers";
-
-// F7.5 - redirect permanente para rota canonica /legal/...
-async function resolveLegacyLocale(): Promise<string | undefined> {
-  const headerStore = await headers();
-  const headerLocale =
-    headerStore.get("X-NEXT-INTL-LOCALE") ??
-    headerStore.get("x-next-intl-locale");
-  if (headerLocale) return headerLocale;
-  const cookieStore = await cookies();
-  return cookieStore.get("wg_locale_choice")?.value;
-}
+import { getLocale } from "next-intl/server";
+import { buildLegalPath } from "@/lib/legal-routing";
 
 export default async function LegacyTermsPage() {
-  const locale = await resolveLegacyLocale();
-  if (locale === "pt-BR") {
-    permanentRedirect("/legal/BR/pt-BR/terms");
-  }
-  permanentRedirect("/legal/DEFAULT/en-US/terms");
+  permanentRedirect(buildLegalPath(await getLocale(), "terms"));
 }

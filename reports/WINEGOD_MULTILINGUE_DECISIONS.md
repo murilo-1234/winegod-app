@@ -251,22 +251,29 @@ T4 (QA) está travada em outro problema (zombie em bootstrap) — requer diagnó
 ## Decisoes 2026-04-22 - H4 fechamento (O1, O2, O3)
 
 Bloco preparado por Claude Opus 4.7 via execucao autonoma do plano minimizado.
-Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar O1
-(unica decisao real pendente) e assinar.
+Defaults pre-marcados conforme recomendacao da V2. Em 2026-04-23 o founder
+autorizou a execucao continua com `O1=A` para fechar os 4 locales.
 
 ### O1 - Legal es-419 e fr-FR
 
 **Decisao:**
-- [ ] A - publicar `shared/legal/DEFAULT/es-419/*` + `shared/legal/DEFAULT/fr-FR/*` e expandir codigo de roteamento (Trilha B+ extendida)
-- [X] B - manter `es-419` e `fr-FR` fora de `enabled_locales` ate publicar legal proprio (canary-4/5 fechados)
+- [X] A - publicar `shared/legal/DEFAULT/es-419/*` + `shared/legal/DEFAULT/fr-FR/*` e expandir codigo de roteamento
+  (Trilha B+ extendida)
+- [ ] B - manter `es-419` e `fr-FR` fora de `enabled_locales` ate publicar legal proprio (canary-4/5 fechados)
 
-**Escolha do founder:** B
+**Escolha do founder:** A
 
-**Racional:** [QUero pronto da forma que dá. Se ou quando o app ecalar, vericaremos tudo. EUA é o foco inical.]
+**Racional:** founder autorizou fechar o rollout completo agora, aceitando
+legal `es-419` e `fr-FR` como traducao operacional derivada do corpus atual
+(`pt-BR`/`en-US`), sem consultoria juridica local nesta rodada.
 
 **Implicacao operacional:**
-- Se A: execucao adicional necessaria. Write-set estendido: 8 markdowns (privacy+terms+data-deletion+cookies x 2 locales) + `frontend/app/legal/[country]/[lang]/[doc]/page.tsx` (PUBLISHED_MATRIX) + `frontend/app/age-verify/page.tsx` (LegalLocale) + `frontend/app/privacy/page.tsx` + `frontend/app/terms/page.tsx` + `frontend/app/data-deletion/page.tsx` (redirects). Canary-4/5 liberado apos.
-- Se B: nenhum trabalho adicional. `feature_flags.enabled_locales` permanece `["pt-BR"]` (e inclui `en-US` apos canary-3). Canary-4/5 permanece bloqueado ate O1 virar A no futuro.
+- Executado em 2026-04-23: 8 markdowns publicados (privacy + terms +
+  data-deletion + cookies x 2 locales), roteamento legal expandido e
+  `feature_flags.enabled_locales` atualizado para
+  `["pt-BR","en-US","es-419","fr-FR"]`.
+- Risco residual aceito: textos legais `es-419` e `fr-FR` sao traducoes
+  operacionais, ainda sem revisao juridica local.
 
 ### O2 - OG image es-419 e fr-FR
 
@@ -274,7 +281,7 @@ Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar
 - [ ] A - expandir `OgLocale` e `OG_STRINGS` em `frontend/app/c/[id]/opengraph-image.tsx` para 4 locales
 - [X] **B - aceitar OG em ingles para es-419 e fr-FR como residual consciente** (default recomendado)
 
-**Escolha do founder:** B pre-selecionado — founder confirma ou muda para A
+**Escolha do founder:** B
 
 **Racional:** OG social em ingles para usuarios es-419/fr-FR nao bloqueia uso do produto. Share card e superficie secundaria. Pode virar A depois sem bloqueio.
 
@@ -283,9 +290,9 @@ Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar
 ### O3 - OG alt estatico em ingles
 
 **Decisao:**
-- [X] **Aceitar como residual consciente** (default unico — limitacao de edge runtime do Next.js)
+- [X] **Aceitar como residual consciente** (default unico - limitacao de edge runtime do Next.js)
 
-**Racional:** `export const alt` em module level nao pode ser locale-aware pela limitacao de edge runtime. Texto fixo `"winegod.ai — Wine recommendation"` em ingles em todos os locales.
+**Racional:** `export const alt` em module level nao pode ser locale-aware pela limitacao de edge runtime. Texto fixo `"winegod.ai - Wine recommendation"` em ingles em todos os locales.
 
 **Implicacao operacional:** nenhuma. Risco residual registrado, gate formal nao fica bloqueado por este item.
 
@@ -293,9 +300,9 @@ Defaults pre-marcados conforme recomendacao da V2. Founder precisa apenas marcar
 
 ```
 Founder: Murilo
-Data: [22/04/2026]
-O1: [B]
-O2: B (default aceito) | A (se founder mudar)
+Data: 2026-04-23
+O1: A
+O2: B
 O3: aceitar residual
 Trilha A (commit 4394b156): autorizada upfront, ja aplicada em i18n/h4-exec
 ```

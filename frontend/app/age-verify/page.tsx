@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { AgeGate } from "@/components/AgeGate";
 import {
   deriveMarketFromLocale,
   getMarketAgeGate,
   normalizeMarketCountry,
 } from "@/lib/i18n/markets";
+import { buildLegalPath } from "@/lib/legal-routing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("ageGate");
@@ -16,29 +17,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-type LegalLocale = "pt-BR" | "en-US";
-
-function resolveDocLocale(
-  header: string | undefined,
-  cookieLocale: string | undefined,
-): LegalLocale {
-  const v = header ?? cookieLocale;
-  return v === "pt-BR" ? "pt-BR" : "en-US";
-}
-
-function resolveDocHrefs(lang: LegalLocale): {
+function resolveDocHrefs(locale: string): {
   termsHref: string;
   privacyHref: string;
 } {
-  if (lang === "pt-BR") {
-    return {
-      termsHref: "/legal/BR/pt-BR/terms",
-      privacyHref: "/legal/BR/pt-BR/privacy",
-    };
-  }
   return {
-    termsHref: "/legal/DEFAULT/en-US/terms",
-    privacyHref: "/legal/DEFAULT/en-US/privacy",
+    termsHref: buildLegalPath(locale, "terms"),
+    privacyHref: buildLegalPath(locale, "privacy"),
   };
 }
 
@@ -77,10 +62,6 @@ export default async function AgeVerifyPage({
     ""
   ).toUpperCase();
   const cookieLocale = cookieStore.get("wg_locale_choice")?.value;
-  const headerLocale =
-    headerStore.get("X-NEXT-INTL-LOCALE") ??
-    headerStore.get("x-next-intl-locale") ??
-    undefined;
 
   const market = pickMarket(geoCountry || undefined, cookieLocale);
   const policy = getMarketAgeGate(market);
@@ -90,7 +71,7 @@ export default async function AgeVerifyPage({
     redirect(next);
   }
 
-  const docLocale = resolveDocLocale(headerLocale ?? undefined, cookieLocale);
+  const docLocale = await getLocale();
   const { termsHref, privacyHref } = resolveDocHrefs(docLocale);
 
   return (

@@ -9,11 +9,6 @@ jurisdiction: "BR"
 doc: "cookies"
 ---
 
-<!-- F7.5 - draft: arquivo existe no disco mas NAO e publicado nesta rodada
-     pela rota canonica. Acesso a /legal/BR/pt-BR/cookies cai em fallback
-     para /legal/DEFAULT/en-US/cookies com banner. -->
-
-
 ## 1. O que são cookies
 
 Cookies são pequenos arquivos de texto salvos no seu navegador quando você acessa um site. O **winegod.ai** usa um conjunto mínimo de cookies e armazenamento local para que o produto funcione.

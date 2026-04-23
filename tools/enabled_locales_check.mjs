@@ -5,20 +5,21 @@
 // (/api/config/enabled-locales, lida de feature_flags).
 //
 // Uso:
-//   NEXT_PUBLIC_ENABLED_LOCALES='["pt-BR","en-US"]' \
+//   NEXT_PUBLIC_ENABLED_LOCALES='["pt-BR","en-US","es-419","fr-FR"]' \
 //     API_BASE=https://winegod-app.onrender.com \
 //     node tools/enabled_locales_check.mjs
 //
 // Exit 0 => ambas listas batem. Exit 1 => divergencia bloqueante.
 // Defaults:
 //   API_BASE = https://winegod-app.onrender.com
-//   NEXT_PUBLIC_ENABLED_LOCALES = '["pt-BR"]' (ou ENABLED_LOCALES)
+//   NEXT_PUBLIC_ENABLED_LOCALES = '["pt-BR","en-US","es-419","fr-FR"]'
+//     (ou ENABLED_LOCALES)
 
 const API_BASE = process.env.API_BASE || "https://winegod-app.onrender.com";
 const staticRaw =
   process.env.NEXT_PUBLIC_ENABLED_LOCALES ||
   process.env.ENABLED_LOCALES ||
-  '["pt-BR"]';
+  '["pt-BR","en-US","es-419","fr-FR"]';
 
 function parseList(raw) {
   try {

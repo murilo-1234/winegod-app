@@ -7,21 +7,13 @@ import ReactMarkdown from "react-markdown";
 import { getTranslations } from "next-intl/server";
 import { LegalPage } from "@/components/LegalPage";
 import { DeleteAccountSection } from "@/app/data-deletion/DeleteAccountSection";
-
-const ALLOWED_DOCS = ["privacy", "terms", "data-deletion", "cookies"] as const;
-type Doc = (typeof ALLOWED_DOCS)[number];
-
-// F7.0 - matriz enxuta Tier 1: apenas 2 celulas publicadas.
-// Nesta rodada (F7.5 FIX1) BR/pt-BR NAO publica `cookies` — acesso a
-// /legal/BR/pt-BR/cookies cai em fallback para DEFAULT/en-US.
-const PUBLISHED_MATRIX: Record<string, Record<string, readonly Doc[]>> = {
-  BR: {
-    "pt-BR": ["privacy", "terms", "data-deletion"],
-  },
-  DEFAULT: {
-    "en-US": ["privacy", "terms", "data-deletion", "cookies"],
-  },
-};
+import {
+  buildLegalPath,
+  isLegalDoc,
+  isLegalLocale,
+  isPublishedLegalDoc,
+  type LegalDoc,
+} from "@/lib/legal-routing";
 
 const DELETE_PLACEHOLDER = "[[DELETE_ACCOUNT_SECTION]]";
 
@@ -39,20 +31,12 @@ type Frontmatter = {
 type LoadedDoc = {
   country: string;
   lang: string;
-  doc: Doc;
+  doc: LegalDoc;
   data: Frontmatter;
   body: string;
 };
 
-function isAllowedDoc(value: string): value is Doc {
-  return (ALLOWED_DOCS as readonly string[]).includes(value);
-}
-
-function isPublished(country: string, lang: string, doc: Doc): boolean {
-  return PUBLISHED_MATRIX[country]?.[lang]?.includes(doc) ?? false;
-}
-
-function resolveLegalPath(country: string, lang: string, doc: Doc): string {
+function resolveLegalPath(country: string, lang: string, doc: LegalDoc): string {
   // shared/legal/ vive fora do frontend/. Em npm run build local o cwd e
   // frontend/, entao subimos um nivel.
   return path.join(
@@ -66,7 +50,11 @@ function resolveLegalPath(country: string, lang: string, doc: Doc): string {
   );
 }
 
-function loadDoc(country: string, lang: string, doc: Doc): LoadedDoc | null {
+function loadDoc(
+  country: string,
+  lang: string,
+  doc: LegalDoc,
+): LoadedDoc | null {
   try {
     const raw = readFileSync(resolveLegalPath(country, lang, doc), "utf-8");
     const parsed = matter(raw);
@@ -102,7 +90,7 @@ export async function generateMetadata({
   params: Promise<{ country: string; lang: string; doc: string }>;
 }): Promise<Metadata> {
   const { country, lang, doc } = await params;
-  if (!isAllowedDoc(doc)) {
+  if (!isLegalDoc(doc)) {
     return { title: "winegod.ai" };
   }
   const loaded = loadDoc(country, lang, doc);
@@ -147,15 +135,15 @@ export default async function LegalDocPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { country, lang, doc } = await params;
-  if (!isAllowedDoc(doc)) {
+  if (!isLegalDoc(doc)) {
     notFound();
   }
 
-  // F7.5 - 302 fallback para combinacoes nao publicadas.
-  if (!isPublished(country, lang, doc)) {
+  if (!isPublishedLegalDoc(country, lang, doc)) {
     const from = `${country}/${lang}`;
+    const fallbackLocale = isLegalLocale(lang) ? lang : "en-US";
     redirect(
-      `/legal/DEFAULT/en-US/${doc}?fallback_from=${encodeURIComponent(from)}`,
+      `${buildLegalPath(fallbackLocale, doc)}?fallback_from=${encodeURIComponent(from)}`,
     );
   }
 

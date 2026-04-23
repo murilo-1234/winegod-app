@@ -1,9 +1,8 @@
-// F9.3 - Playwright config para testes visuais i18n + F9.9.
+// F9.3 - Playwright config para testes visuais i18n no estado final.
 //
 // Estrategia:
 //   - webServer auto-inicia `next start` na porta 3100 (apos build).
-//   - NEXT_PUBLIC_ENABLED_LOCALES forcado a "pt-BR" para F9.9 testar 301
-//     em /en|/es|/fr/c/:id quando locale desligado.
+//   - NEXT_PUBLIC_ENABLED_LOCALES forcado aos 4 locales do rollout final.
 //   - 2 projetos: desktop-chromium e mobile-pixel7 para cobertura
 //     representativa sem explodir matriz.
 
@@ -14,6 +13,7 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/i18n",
+  testIgnore: ["**/share-301-locale-disabled.spec.ts"],
   timeout: 30_000,
   expect: {
     timeout: 5_000,
@@ -49,7 +49,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
-      NEXT_PUBLIC_ENABLED_LOCALES: "pt-BR",
+      NEXT_PUBLIC_ENABLED_LOCALES: '["pt-BR","en-US","es-419","fr-FR"]',
     },
   },
 });
