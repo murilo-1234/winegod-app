@@ -131,6 +131,28 @@ Both modes:
   - `-Mode backfill_windowed`: progress-through-base cursor.
   Schedule both — incremental for minutes-to-hours cadence, backfill
   continuously until it reports `items=0`.
+- `scripts/data_ops_scheduler/run_vivino_reviews_backfill.ps1` +
+  `run_vivino_reviews_incremental.ps1` are the Windows Task Scheduler wrappers
+  actually installed via `install_vivino_reviews_tasks.ps1` (S4U logon, no
+  interactive session required).
+- `scripts/data_ops_scheduler/run_vivino_reviews_health_check.ps1` runs the
+  read-only health snapshot of this domain (`sdk.plugs.reviews_scores.health`).
+  Exit code: `0` ok/ok_backfill_done, `2` warning (stale cursor),
+  `3` failed (errors / missing state). Does not touch the DB.
+
+## Health check
+
+`sdk.plugs.reviews_scores.health.assess_health` produces an auditable
+snapshot from disk only (state file, latest staging summary, scheduler logs).
+It never opens a DB connection, never mutates checkpoints, and never calls
+apply. It is safe to invoke from any monitoring cadence. The snapshot lists:
+
+- current checkpoint `last_id`, `runs`, `updated_at`, `mode`;
+- sentinel `BACKFILL_DONE` presence;
+- latest staging summary (mode, items, apply payload);
+- latest backfill/incremental scheduler logs with exit codes;
+- classified status: `ok`, `ok_backfill_done`, `warning`, `failed`, with
+  machine-readable `reasons` and `warnings` arrays.
 
 ## Never
 
