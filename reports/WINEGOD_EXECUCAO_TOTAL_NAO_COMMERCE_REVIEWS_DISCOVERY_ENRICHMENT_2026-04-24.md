@@ -229,7 +229,8 @@ NAO alterados (respeitando o escopo "Evite tocar em"):
 - Commits:
   - `85349d05` cherry-pick de `reviews(dominio-final): add health check + manifest coverage + docs`
   - `12131925` cherry-pick de `docs(reviews): pin 23a6d87d SHA in final report`
-  - novo commit desta sessao: ver §9 final
+  - `d208f87d` novo: `non-commerce: discovery + enrichment health, safety net, runbooks`
+- Push: `origin/data-ops/execucao-total-nao-commerce-reviews-discovery-enrichment-20260424` publicado
 
 ## 9. Residual externo / de produto / de contrato
 
