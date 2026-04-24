@@ -76,7 +76,12 @@ Relatorio tecnico completo:
 6. **Branch / commit / push:**
    - Branch: `data-ops/correcao-commerce-operacao-residual-externo-final-20260424`
    - Base: `5dc824a0 docs(data-ops): pin 225f77d5 SHA in final commerce docs`
-   - Commit SHA: a ser pinado logo apos push.
+   - Commit corretivo: `6a682089 fix(data-ops): reapply commerce finding fixes + harden validator full scan`
+   - Push: `origin/data-ops/correcao-commerce-operacao-residual-externo-final-20260424`
+   - Nota: commit duplicado persiste localmente em
+     `data-ops/execucao-total-nao-commerce-reviews-discovery-enrichment-20260424`
+     (sha local `b2ea90c1`) por acidente inicial de checkout. Nao fiz
+     `git reset --hard` (regra). Codex admin avalia.
 
 7. **Nota sobre a branch local `data-ops/execucao-total-reviews-dominio-final-20260424`:**
 

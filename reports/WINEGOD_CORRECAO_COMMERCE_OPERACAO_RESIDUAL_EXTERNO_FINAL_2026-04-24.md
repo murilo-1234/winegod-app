@@ -234,8 +234,16 @@ nao alterei codigo dessas frentes).
 
 - Branch: `data-ops/correcao-commerce-operacao-residual-externo-final-20260424`.
 - Base: `5dc824a0` (HEAD do remote `origin/data-ops/execucao-total-commerce-operacao-residual-externo-final-20260424`).
-- Commit final corretivo: a ser pinado logo apos push.
-- Push: sera feito para `origin` com a mesma branch.
+- Commit final corretivo: `6a682089 fix(data-ops): reapply commerce finding fixes + harden validator full scan`.
+- Remote: push para `origin/data-ops/correcao-commerce-operacao-residual-externo-final-20260424`.
+
+Nota de transparencia:
+- O mesmo conteudo foi aplicado primeiro como `b2ea90c1` na branch local
+  `data-ops/execucao-total-nao-commerce-reviews-discovery-enrichment-20260424`
+  (branch atual da sessao por acidente de checkout). Depois movido via
+  cherry-pick para a branch correta (`6a682089`). O commit duplicado
+  permanece localmente; nao fiz `git reset --hard` por regra. O Codex
+  admin pode decidir limpar antes de push daquela frente.
 
 ## 8. Nota sobre a branch local de reviews
 
