@@ -119,8 +119,8 @@ Baseline antes dos applies desta sessao -> final:
 
 | Objeto | Antes | Depois | Delta |
 | --- | ---: | ---: | ---: |
-| `public.wine_sources` | 3491567 | 3491687 | **+120** (35+65+8+12 = 120 tier1+tier2_br sources_inserted; `amazon_local_legacy_backfill` nao criou sources novos, apenas atualizou) |
-| `public.not_wine_rejections` | 546 | 765 | +219 (10+40+68 = 118 legacy + 15+19+49 = 83 tier1 + 18 tier2_br = 219) |
+| `public.wine_sources` | 3491567 | 3491687 | **+120** (35+65+8+12 = 120 tier1+tier2_br sources_inserted; `amazon_local_legacy_backfill` nao criou sources novos, e `tier2_global_artifact` nao inseriu sources nesta amostra) |
+| `public.not_wine_rejections` | 546 | 771 | +225 (10+40+68 = 118 legacy + 15+19+49 = 83 tier1 + 18 tier2_br + 6 tier2_global_artifact = 225) |
 | `public.ingestion_review_queue` | 10 | 10 | 0 (zero explosao, gate saudavel) |
 | `ops.scraper_runs` | 210 | 220 | +10 (dryruns + applies) |
 | `ops.ingestion_batches` | 215 | 225 | +10 |
@@ -128,8 +128,9 @@ Baseline antes dos applies desta sessao -> final:
 Contagem `public.wines` nao foi medida no final por timeout de 120s em `COUNT(*)` - o volume impede COUNT rapido. Mas os applies reportam explicitamente:
 - tier1_global: 35 + 118 + 217 = **370 wines inserted**
 - tier2_br: **12 wines inserted**
+- tier2_global_artifact: **28 wines inserted**
 - amazon_local_legacy_backfill: 0 inserted (backfill/update)
-- Total inserted estimado: **382 wines novos**
+- Total inserted estimado: **410 wines novos**
 
 ## 8. Evidencias de seguranca
 
@@ -191,6 +192,7 @@ Zero falhas. Zero regressao.
 - Commit da correcao de particoes/matching: `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
 - Commit SHA pin correcao: `00e726b8 docs(data-ops): pin e91a22b3 SHA in correction docs`
 - Commit da rodada finalissima (scheduler canonico + cleanup manifests + relatorio coerente): `5b429f37 fix(data-ops): align scheduler/manifests with canonical tier2_global_artifact`
+- Commit SHA pin final: `217176db docs(data-ops): pin 5b429f37 SHA in final docs`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## 12. O que o Codex admin deve auditar
@@ -206,5 +208,5 @@ Zero falhas. Zero regressao.
 
 ```text
 C:\winegod-app\reports\WINEGOD_GO_LIVE_COMMERCE_RESIDUAL_EXTERNO_E_ARTIFACTS_2026-04-23.md
-C:\winegod-app\CLAUDE_RESPOSTAS_GO_LIVE_COMMERCE_RESIDUAL_EXTERNO_E_ARTIFACTS_2026-04-23.md
+C:\winegod-app\CLAUDE_RESPOSTAS_CORRECAO_FINALISSIMA_GO_LIVE_COMMERCE_AUTOMACAO_DOCS_2026-04-24.md
 ```
