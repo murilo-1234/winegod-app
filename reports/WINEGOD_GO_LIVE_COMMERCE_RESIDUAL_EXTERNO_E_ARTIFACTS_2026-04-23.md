@@ -190,7 +190,7 @@ Zero falhas. Zero regressao.
 - Commit SHA pin go-live: `4f2bab88 docs(data-ops): pin fbd80841 SHA in go-live docs`
 - Commit da correcao de particoes/matching: `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
 - Commit SHA pin correcao: `00e726b8 docs(data-ops): pin e91a22b3 SHA in correction docs`
-- Commit da rodada finalissima (scheduler canonico + cleanup manifests + relatorio coerente): `<preenchido apos commit>`
+- Commit da rodada finalissima (scheduler canonico + cleanup manifests + relatorio coerente): `5b429f37 fix(data-ops): align scheduler/manifests with canonical tier2_global_artifact`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## 12. O que o Codex admin deve auditar

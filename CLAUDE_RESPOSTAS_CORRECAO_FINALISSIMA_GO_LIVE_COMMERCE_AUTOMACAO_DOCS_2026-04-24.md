@@ -59,7 +59,7 @@ Commits desta branch `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-2026
 - `4f2bab88 docs(data-ops): pin fbd80841 SHA in go-live docs`
 - `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
 - `00e726b8 docs(data-ops): pin e91a22b3 SHA in correction docs`
-- `<preenchido apos commit>` - rodada finalissima (scheduler canonico + cleanup manifests + relatorio coerente)
+- `5b429f37 fix(data-ops): align scheduler/manifests with canonical tier2_global_artifact`
 - commit SHA pin final (se necessario).
 
 ## 5. Testes/verificacoes
@@ -72,7 +72,7 @@ Commits desta branch `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-2026
 ## 6. Commit final
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
-- Commit desta correcao finalissima: `<preenchido apos commit>`
+- Commit desta correcao finalissima: `5b429f37 fix(data-ops): align scheduler/manifests with canonical tier2_global_artifact`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## 7. Arquivos a repassar ao Codex admin
