@@ -127,7 +127,7 @@ Dry-run de cada scheduler novo executado com sucesso:
 - Zero force push, zero reset, zero merge em main.
 - Zero secrets no log; `.env` nao foi commitado.
 - Precedencia `mirror_primary > local_legacy_backfill` gravada no contrato `docs/TIER_COMMERCE_CONTRACT.md` e no manifest.
-- Registry coerente: 32 entradas, 3 novas sao `observed` com tags `plug:commerce_dq_v3`.
+- Registry coerente: 32 entradas; as 3 novas refletem estado honesto no pacote atual (`blocked_external_host` para `amazon_mirror_primary`, `observed` para `amazon_local_legacy_backfill`, `observed` no manifest / `blocked_missing_source` em runtime para `winegod_admin_legacy_mixed`), todas com tags `plug:commerce_dq_v3`.
 
 ## 17.7 Metricas de controle
 
@@ -168,6 +168,7 @@ Residual bloqueado por politica ja conhecida:
   - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings anteriores do Codex (contrato no codigo + legacy_mixed restrito + manifest blocked + git trail)
   - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
   - `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report` - correcao minima final: validador aceita `safra=null` e `preco=null` conforme contrato, +5 testes, relatorio principal alinhado ao codigo atual
+  - `559d962d docs(data-ops): pin 0f75ba37 SHA in minimal correction docs`
 - Push remoto: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Diff resumido: 3 manifests novos + 3 shadows novos + 1 scheduler novo + 1 contrato novo + validator novo (artifact_contract.py) + 8 testes novos + exporters/runner atualizados + README atualizado + 2 relatorios + 1 CLAUDE_RESPOSTAS correcao.
 

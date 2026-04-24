@@ -57,7 +57,8 @@ Tanto `reports/WINEGOD_EXECUCAO_TOTAL_FINALIZACAO_COMMERCE_DQ_V3_AMAZON_TIER1_TI
 - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
 - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing`
 - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
-- commit final desta correcao minima (preenchido apos push; ver abaixo).
+- `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report`
+- `559d962d docs(data-ops): pin 0f75ba37 SHA in minimal correction docs`
 
 ## Arquivos alterados nesta rodada
 
@@ -89,6 +90,7 @@ Zero apply produtivo; zero escrita em `public.wines`/`public.wine_sources`.
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - HEAD anterior: `85b38c0a`
 - Commit desta correcao minima: `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report`
+- Commit documental final publicado: `559d962d docs(data-ops): pin 0f75ba37 SHA in minimal correction docs`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Arquivos a repassar ao Codex admin
