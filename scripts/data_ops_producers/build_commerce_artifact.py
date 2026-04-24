@@ -106,6 +106,49 @@ def _build_item(row: dict, *, pipeline_family: str, run_id: str) -> dict:
     }
 
 
+def normalize_host(value: str | None) -> str | None:
+    """Extrai e normaliza o host de uma URL ou dominio bruto.
+
+    Remove protocolo, porta, www. e espacos em branco. Retorna None se
+    nao conseguir derivar host valido.
+    """
+
+    if not value:
+        return None
+    raw = value.strip().lower()
+    if not raw:
+        return None
+    try:
+        parsed = urlparse(raw if "://" in raw else "https://" + raw)
+    except Exception:
+        return None
+    host = (parsed.hostname or "").strip()
+    if not host:
+        return None
+    if host.startswith("www."):
+        host = host[4:]
+    return host
+
+
+def _host_eligible(fonte_host: str | None, loja_hosts: set[str]) -> bool:
+    """Matching por host normalizado com boundary real.
+
+    Aceita igualdade exata OU subdominio legitimo (ex: `shop.amazon.com`
+    bate com `amazon.com`). REJEITA substring interna enganosa como
+    `mazon.com.br` batendo com `amazon.com.br`.
+    """
+
+    if not fonte_host:
+        return False
+    if fonte_host in loja_hosts:
+        return True
+    for loja_host in loja_hosts:
+        # boundary real: precisa terminar em `.<loja_host>` (subdominio)
+        if fonte_host.endswith("." + loja_host):
+            return True
+    return False
+
+
 def _fetch_candidates(
     cur,
     *,
@@ -114,8 +157,17 @@ def _fetch_candidates(
     pais_codigo: str | None,
     limit: int,
 ) -> list[dict]:
+    """Busca candidatos Tier1/Tier2 com matching por host normalizado exato.
+
+    Estrategia para evitar falso positivo de substring:
+    1. Busca elegiveis de `lojas_scraping` (filtrada por metodo + pais).
+    2. Normaliza host de cada loja e guarda em Python set.
+    3. Faz scan paginado em `vinhos_*_fontes` e filtra em Python por
+       `_host_eligible` com boundary real (igualdade ou subdominio).
+    Isso elimina o falso positivo `mazon.com.br` == `amazon.com.br`.
+    """
+
     rows: list[dict] = []
-    per_table = max(10, min(limit, 200))
     remaining = limit
     for source_table in source_tables:
         if remaining <= 0:
@@ -125,17 +177,38 @@ def _fetch_candidates(
             continue
         country_suffix = base.rsplit("_", 1)[-1]
         method_placeholders = ",".join(["%s"] * len(methods))
-        # Join por substring de dominio: ls.url_normalizada (host limpo) deve
-        # aparecer dentro de f.url_original. Rapido em 1.7M rows.
+        # 1. Lojas elegiveis por pais + metodo
+        cur.execute(
+            f"""
+            SELECT nome, url, url_normalizada, metodo_recomendado
+            FROM public.lojas_scraping
+            WHERE metodo_recomendado IN ({method_placeholders})
+              AND url_normalizada IS NOT NULL
+              AND length(url_normalizada) > 3
+              AND pais_codigo = %s
+            """,
+            list(methods) + [country_suffix.upper()],
+        )
+        lojas = cur.fetchall()
+        if not lojas:
+            continue
+        # Normaliza hosts das lojas (host real, sem protocolo/porta/www)
+        host_to_loja: dict[str, dict] = {}
+        for nome, url, url_normalizada, metodo in lojas:
+            for candidate in (url_normalizada, url):
+                h = normalize_host(candidate)
+                if h and h not in host_to_loja:
+                    host_to_loja[h] = {
+                        "nome": nome,
+                        "url": url,
+                        "url_normalizada": url_normalizada,
+                        "metodo": metodo,
+                    }
+        if not host_to_loja:
+            continue
+        loja_hosts = set(host_to_loja.keys())
+        # 2. Scan dos fontes daquele pais, paginado
         sql = f"""
-            WITH elegiveis AS (
-              SELECT url, url_normalizada, nome, metodo_recomendado
-              FROM public.lojas_scraping
-              WHERE metodo_recomendado IN ({method_placeholders})
-                AND url_normalizada IS NOT NULL
-                AND length(url_normalizada) > 3
-                {f"AND pais_codigo = '{country_suffix.upper()}'" if country_suffix else ""}
-            )
             SELECT
               v.id AS vinho_id,
               v.nome,
@@ -149,23 +222,37 @@ def _fetch_candidates(
               f.fonte,
               COALESCE(f.atualizado_em, f.descoberto_em) AS atualizado_em,
               f.descoberto_em,
-              ls.nome AS store_name,
-              ls.url AS loja_url,
-              ls.url_normalizada AS store_domain,
-              ls.metodo_recomendado AS metodo,
               '{source_table}' AS source_table
             FROM public.{source_table} f
-            JOIN elegiveis ls ON f.url_original ILIKE '%%' || ls.url_normalizada || '%%'
             JOIN public.{base} v ON v.id = f.vinho_id
             WHERE f.url_original IS NOT NULL
             ORDER BY f.id DESC
             LIMIT %s
         """
-        cur.execute(sql, list(methods) + [country_suffix, min(per_table, remaining)])
+        # Lemos um multiplo do limit remanescente porque filtramos em Python
+        scan_limit = min(remaining * 10, 5000)
+        cur.execute(sql, [country_suffix, scan_limit])
         columns = [c.name for c in cur.description]
-        fetched = [dict(zip(columns, row)) for row in cur.fetchall()]
-        rows.extend(fetched)
-        remaining -= len(fetched)
+        for db_row in cur.fetchall():
+            if remaining <= 0:
+                break
+            row = dict(zip(columns, db_row))
+            host = normalize_host(row.get("url_original"))
+            if not _host_eligible(host, loja_hosts):
+                continue
+            loja = host_to_loja.get(host)
+            if loja is None:
+                # subdominio legitimo: recupera loja via endswith
+                for loja_host, loja_info in host_to_loja.items():
+                    if host and host.endswith("." + loja_host):
+                        loja = loja_info
+                        break
+            row["store_name"] = (loja or {}).get("nome")
+            row["loja_url"] = (loja or {}).get("url")
+            row["store_domain"] = host
+            row["metodo"] = (loja or {}).get("metodo")
+            rows.append(row)
+            remaining -= 1
     return rows[:limit]
 
 

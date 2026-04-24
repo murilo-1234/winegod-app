@@ -592,6 +592,26 @@ def export_tier2_from_artifact(*, source: str, limit: int, lookup: dict[str, int
     )
 
 
+def export_tier2_global_artifact_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    """Feed unico Tier2 global via artefato padronizado.
+
+    Substitui a ideia de `tier2_chat1..5` como particoes reais: como nao
+    ha criterio tecnico reproduzivel de disjuncao por chat (todos os chats
+    Codex rodam Playwright+IA sobre a mesma pool de lojas), colapsamos
+    para UM artefato global em `reports/data_ops_artifacts/tier2_global/`.
+
+    `tier2_br` continua separado porque tem filtro real por pais.
+    """
+
+    return _export_tier_from_artifact(
+        source_name="tier2_global_artifact",
+        pipeline_family="tier2",
+        limit=limit,
+        lookup=lookup,
+        artifact_dir=REPO_ROOT / "reports" / "data_ops_artifacts" / "tier2_global",
+    )
+
+
 # Stubs mantidos para retrocompatibilidade dos schedulers antigos que ainda
 # apontam para nomes genericos. Nao sao mais o caminho recomendado.
 def export_amazon_mirror_to_dq_stub(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
@@ -706,5 +726,6 @@ EXPORTERS = {
     "amazon_mirror": export_amazon_mirror_to_dq_stub,
     "amazon_mirror_primary": export_amazon_mirror_primary_to_dq,
     "tier1_global": export_tier1_global_to_dq,
+    "tier2_global_artifact": export_tier2_global_artifact_to_dq,
     "winegod_admin_legacy_mixed": export_winegod_admin_legacy_mixed_to_dq,
 }

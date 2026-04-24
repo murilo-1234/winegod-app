@@ -10,8 +10,15 @@ Prompt: `prompts/PROMPT_CLAUDE_EXECUCAO_TOTAL_RESIDUAL_EXTERNO_E_GO_LIVE_COMMERC
 ## 1. Veredito final
 
 ```text
-APROVADO_COM_GO_LIVE_LOCAL_ESCADA_E_RESIDUAL_EXTERNO_ISOLADO
+APROVADO_COM_GO_LIVE_LOCAL_ESCADA_E_RESIDUAL_EXTERNO_ISOLADO_COM_HARDENING
 ```
+
+Atualizado em 2026-04-24 apos rodada corretiva dos 4 findings do Codex admin:
+
+- **Tier2 colapsado**: `tier2_chat1..5` nao tinham particao disjunta reproduzivel - foram colapsados em um unico `tier2_global_artifact` + `tier2_br` (mantido separado porque tem filtro real por pais). Os 5 manifests dos chats permanecem registrados mas com `status_reason` explicito de colapso e deprecated.
+- **Matching endurecido**: producer agora usa `normalize_host` + `_host_eligible` com boundary real. Aceita igualdade exata ou subdominio legitimo (`shop.amazon.com.br`). Rejeita falso positivo `mazon.com.br` vs `amazon.com.br` ou `malamazon.com.br` vs `amazon.com.br`. 12 testes novos em `scripts/data_ops_producers/tests/test_host_matching.py`.
+- **Manifests alinhados**: `commerce_tier1_global`, `commerce_tier2_br` e `commerce_tier2_global_artifact` agora `registry_status: observed` com `status_reason` apontando para o diretorio do artefato. `tier2_chat1..5` permanecem `blocked_contract_missing` honesto.
+- **Trilha Git atualizada** abaixo com SHAs reais desta rodada corretiva.
 
 Todos os producers locais que podiam ser automatizados foram implementados e estao emitindo artefato padronizado que o validador aceita. As fontes com contrato cumprido saltaram de `blocked_*` para `observed` e passaram pela escada de apply controlado. O unico residual real e externo (PC espelho Amazon nao acessivel neste ambiente) permanece isolado e honesto: continua `blocked_external_host` enquanto o operador do PC espelho nao deposita JSONL + summary no diretorio local ja pronto para consumir.
 
@@ -25,12 +32,9 @@ Todos os producers locais que podiam ser automatizados foram implementados e est
 | `amazon_local_legacy_backfill` | backfill historico Amazon | `observed` | exporter legacy + lineage=legacy_local | **escada 50/200/1000 COMPLETA** |
 | `amazon_local` | observer/dryrun | `observed` | exporter legacy | congelado (nao promover como feed primario) |
 | `tier1_global` | feed tier1 | `observed` | artefato `reports/data_ops_artifacts/tier1/*.jsonl` | **escada 50/200/500 COMPLETA** |
-| `tier2_chat1` | feed tier2 | `observed` | artefato `reports/data_ops_artifacts/tier2/chat1/*.jsonl` | dry-run 50 OK (escada NAO promovida nesta sessao) |
-| `tier2_chat2` | feed tier2 | `observed` | idem chat2 | dry-run 50 OK |
-| `tier2_chat3` | feed tier2 | `observed` | idem chat3 | dry-run 50 OK |
-| `tier2_chat4` | feed tier2 | `observed` | idem chat4 | dry-run 50 OK |
-| `tier2_chat5` | feed tier2 | `observed` | idem chat5 | dry-run 50 OK |
-| `tier2_br` | feed tier2 (BR) | `observed` | artefato `reports/data_ops_artifacts/tier2/br/*.jsonl` | **apply 50 OK** (escada ate 200 disponivel para proxima sessao) |
+| `tier2_chat1..5` | DEPRECATED (sem particao disjunta real) | `blocked_contract_missing` | nenhum artefato consumido | colapsados em tier2_global_artifact |
+| `tier2_global_artifact` | feed unico tier2 global | `observed` | artefato `reports/data_ops_artifacts/tier2_global/*.jsonl` | **apply 50 OK (dominio duro)**: 28 inserted + 16 updated + 6 notwine |
+| `tier2_br` | feed tier2 (BR por filtro de pais real) | `observed` | artefato `reports/data_ops_artifacts/tier2/br/*.jsonl` | apply 50 OK (sessao anterior) |
 | `winegod_admin_legacy_mixed` | salvamento legado Tier1/Tier2 misturado | `blocked_missing_source` | exige allowlist `LEGACY_MIXED_ALLOWED_FONTES` | nao executado |
 
 ## 3. O que passou a produzir artefato real nesta sessao
