@@ -27,18 +27,31 @@ function Invoke-Step {
 
 Set-Location $repoRoot
 
+# Fontes commerce canonicas pos-finalizacao 2026-04-24 (dry-run only):
+# - winegod_admin_world: feed local observed (exporter legacy winegod_db)
+# - vinhos_brasil_legacy: feed local observed (exporter legacy vinhos_brasil_db)
+# - amazon_local: observer legado (mantido para diagnostico; nao e feed primario)
+# - amazon_local_legacy_backfill: backfill controlado do historico Amazon
+# - amazon_mirror_primary: feed Amazon oficial (blocked_external_host ate JSONL do PC espelho)
+# - tier1_global: feed Tier1 via artefato padronizado
+# - tier2_global_artifact: feed Tier2 UNICO global via artefato padronizado
+# - tier2_br: Tier2 Brasil por filtro real de pais
+# - winegod_admin_legacy_mixed: allowlist explicita (blocked_missing_source sem env)
+#
+# tier2_chat1..5 foram DEPRECATED e colapsados em tier2_global_artifact (sem
+# particao disjunta reproduzivel). amazon_mirror (stub legado) foi substituido
+# por amazon_mirror_primary. Ver run_commerce_artifact_dryruns.ps1 para o
+# scheduler canonico reduzido focado em fontes por artefato.
 $commerceSources = @(
   'winegod_admin_world',
   'vinhos_brasil_legacy',
   'amazon_local',
-  'amazon_mirror',
+  'amazon_local_legacy_backfill',
+  'amazon_mirror_primary',
   'tier1_global',
-  'tier2_chat1',
-  'tier2_chat2',
-  'tier2_chat3',
-  'tier2_chat4',
-  'tier2_chat5',
-  'tier2_br'
+  'tier2_global_artifact',
+  'tier2_br',
+  'winegod_admin_legacy_mixed'
 )
 
 foreach ($source in $commerceSources) {

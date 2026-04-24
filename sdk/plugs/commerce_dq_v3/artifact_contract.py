@@ -108,6 +108,31 @@ def _load_jsonl(path: Path, limit: int) -> tuple[list[dict], list[str]]:
     return items, notes
 
 
+def _load_jsonl_full(path: Path) -> tuple[list[dict], list[str], int]:
+    """Carrega TODAS as linhas JSONL (sem limite de janela).
+
+    Retorna `(items_validos, notes, total_lines_nao_vazias)`. Linhas invalidas
+    entram em `notes` com `linha_<n>_invalida=<tipo>` e NAO entram em
+    `items_validos`. `total_lines_nao_vazias` conta tudo (valido+invalido)
+    para comparacao com `summary.items_emitted`.
+    """
+
+    items: list[dict] = []
+    notes: list[str] = []
+    non_empty_lines = 0
+    with path.open("r", encoding="utf-8") as fh:
+        for i, line in enumerate(fh, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            non_empty_lines += 1
+            try:
+                items.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                notes.append(f"linha_{i}_invalida={type(exc).__name__}")
+    return items, notes, non_empty_lines
+
+
 def validate_items(items: Iterable[dict], *, expected_family: str | None) -> tuple[bool, list[str]]:
     errors: list[str] = []
     for idx, item in enumerate(items):
@@ -191,6 +216,76 @@ def validate_artifact_dir(
             notes=jsonl_notes,
         )
     notes = jsonl_notes + items_errors + summary_errors
+    return ContractValidation(
+        ok=False,
+        reason="contrato_invalido",
+        items=items,
+        artifact_path=latest,
+        summary_path=summary_path if summary_path.exists() else None,
+        artifact_sha256=real_sha,
+        notes=notes,
+    )
+
+
+def validate_artifact_dir_full(
+    *,
+    artifact_dir: Path,
+    expected_family: str | None,
+) -> ContractValidation:
+    """Validacao FULL: le TODAS as linhas JSONL (sem janela de `item_limit`).
+
+    Diferenca para `validate_artifact_dir`:
+    - nao para na N-esima linha; le e valida tudo;
+    - qualquer linha invalida pos-janela entra em `notes` e reprova o contrato;
+    - qualquer item que nao carregue os 13 campos obrigatorios reprova;
+    - compara `summary.items_emitted` com o total de linhas JSON validas;
+      mismatch vira nota `summary_items_emitted_mismatch=<declarado>_vs_<real>`
+      e reprova o contrato.
+
+    Usada pelo CLI operacional antes de plugar o artefato. Nao e usada pelo
+    runner em dry-run (que prefere janela curta para nao ler JSONL de 2000
+    linhas toda vez).
+    """
+
+    latest = pick_latest_jsonl(artifact_dir)
+    if latest is None:
+        return ContractValidation(
+            ok=False,
+            reason=f"nenhum_artefato_jsonl_em={artifact_dir}",
+        )
+    real_sha = _hash_file(latest)
+    items, jsonl_notes, non_empty_lines = _load_jsonl_full(latest)
+    if not items:
+        return ContractValidation(
+            ok=False,
+            reason="jsonl_sem_itens_validos",
+            artifact_path=latest,
+            artifact_sha256=real_sha,
+            notes=jsonl_notes,
+        )
+    items_ok, items_errors = validate_items(items, expected_family=expected_family)
+    summary_path = _summary_path_for(latest)
+    summary_ok, summary_errors, summary_data = validate_summary(
+        summary_path, expected_family=expected_family, jsonl_path=latest
+    )
+    # Checagem extra de modo full: declared items_emitted vs real non-empty lines.
+    items_emitted_errors: list[str] = []
+    declared = summary_data.get("items_emitted") if summary_data else None
+    if isinstance(declared, int) and declared != non_empty_lines:
+        items_emitted_errors.append(
+            f"summary_items_emitted_mismatch={declared}_vs_{non_empty_lines}"
+        )
+    has_invalid_lines = any("_invalida=" in n for n in jsonl_notes)
+    if items_ok and summary_ok and not items_emitted_errors and not has_invalid_lines:
+        return ContractValidation(
+            ok=True,
+            items=items,
+            artifact_path=latest,
+            summary_path=summary_path,
+            artifact_sha256=real_sha,
+            notes=jsonl_notes + [f"lines_validated={non_empty_lines}"],
+        )
+    notes = jsonl_notes + items_errors + summary_errors + items_emitted_errors
     return ContractValidation(
         ok=False,
         reason="contrato_invalido",

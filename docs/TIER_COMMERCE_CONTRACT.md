@@ -17,17 +17,27 @@ artefato JSONL gravado pela execucao.
 ```
 reports/data_ops_artifacts/amazon_mirror/<YYYYMMDD_HHMMSS>_<run_id>.jsonl
 reports/data_ops_artifacts/tier1/<YYYYMMDD_HHMMSS>_<run_id>.jsonl
-reports/data_ops_artifacts/tier2/<chat>/<YYYYMMDD_HHMMSS>_<run_id>.jsonl
+reports/data_ops_artifacts/tier2_global/<YYYYMMDD_HHMMSS>_<run_id>.jsonl
+reports/data_ops_artifacts/tier2/br/<YYYYMMDD_HHMMSS>_<run_id>.jsonl
 ```
 
-`<chat>` deve ser `chat1`, `chat2`, `chat3`, `chat4`, `chat5` ou `br` (o sufixo
-do `scraper_id` correspondente: `commerce_tier2_chat1` -> `chat1`).
+Semantica Tier2:
+
+- `tier2_global_artifact` e o feed Tier2 global UNICO; consome sempre o JSONL
+  mais recente em `reports/data_ops_artifacts/tier2_global/`.
+- `tier2_br` continua separado porque tem filtro real por pais; consome sempre
+  o JSONL mais recente em `reports/data_ops_artifacts/tier2/br/`.
+- `tier2_chat1..5` sao historicos/DEPRECATED (colapsados em
+  `tier2_global_artifact` por falta de particao disjunta reproduzivel entre
+  chats Codex). Os manifests continuam `blocked_contract_missing` no registry
+  apenas para historico; nao sao particoes reais nem caminhos validos de
+  artefato.
 
 Variaveis de ambiente opcionais:
 
 - `AMAZON_MIRROR_ARTIFACT_DIR`
 - `TIER1_ARTIFACT_DIR`
-- `TIER2_ARTIFACT_DIR`
+- `TIER2_ARTIFACT_DIR` (aplica tanto a `tier2_global/` quanto a `tier2/<pais>/`)
 
 ## Campos obrigatorios por item
 

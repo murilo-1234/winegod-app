@@ -70,18 +70,38 @@ contrato e rejeitado.
 
 ## Validar localmente antes de plugar
 
-Rodar o validator local (nao escreve no banco):
+Rodar o validator local em modo FULL (default; nao escreve no banco):
+
+```powershell
+python scripts\data_ops_producers\validate_commerce_artifact.py `
+  --artifact-dir reports\data_ops_artifacts\amazon_mirror `
+  --expected-family amazon_mirror_primary
+```
+
+Modo full le TODAS as linhas do JSONL, valida os 13 campos de cada item,
+checa summary + SHA-256 e compara `summary.items_emitted` com o total real
+de linhas JSON validas. Ou seja: uma linha invalida 5000 itens depois da
+primeira reprovará o contrato.
+
+Smoke rapido (opcional, so para JSONL muito grande; NAO substitui a
+validacao full antes de plugar):
 
 ```powershell
 python scripts\data_ops_producers\validate_commerce_artifact.py `
   --artifact-dir reports\data_ops_artifacts\amazon_mirror `
   --expected-family amazon_mirror_primary `
-  --item-limit 200
+  --window 50
 ```
 
-- `OK` = contrato OK, pode deixar o scheduler consumir.
-- `FAIL reason=contrato_invalido` = ler `notes:` para ver o que falta.
-- `FAIL reason=artefato_ausente` = nenhum JSONL encontrado.
+Saidas:
+
+- `OK mode=full ...` = contrato OK de ponta a ponta, pode deixar o
+  scheduler consumir.
+- `FAIL mode=full reason=contrato_invalido` = ler `notes:` para ver o
+  que falta (campo obrigatorio, summary, SHA mismatch, linha invalida,
+  `summary_items_emitted_mismatch`).
+- `FAIL mode=full reason=nenhum_artefato_jsonl_em=...` = nenhum JSONL
+  encontrado.
 
 ## Precedencia com `amazon_local`
 

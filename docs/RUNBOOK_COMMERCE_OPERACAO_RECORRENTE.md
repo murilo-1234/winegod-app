@@ -108,13 +108,22 @@ O operador do PC espelho deposita:
 Contrato completo + checklist em
 `reports/data_ops_artifacts/amazon_mirror/README.md`.
 
-Validacao local (nao escreve no banco):
+Validacao local em modo FULL (default; le o JSONL inteiro + confere
+`summary.items_emitted` contra as linhas reais; nao escreve no banco):
+
+```powershell
+python scripts\data_ops_producers\validate_commerce_artifact.py `
+  --artifact-dir reports\data_ops_artifacts\amazon_mirror `
+  --expected-family amazon_mirror_primary
+```
+
+Smoke rapido com janela (opcional, nao substitui o full):
 
 ```powershell
 python scripts\data_ops_producers\validate_commerce_artifact.py `
   --artifact-dir reports\data_ops_artifacts\amazon_mirror `
   --expected-family amazon_mirror_primary `
-  --item-limit 200
+  --window 50
 ```
 
 Sem JSONL: `amazon_mirror_primary` continua `blocked_external_host` honesto.
