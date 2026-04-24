@@ -11,9 +11,11 @@ import pytest
 from sdk.plugs.commerce_dq_v3.artifact_contract import validate_artifact_dir_full
 from sdk.plugs.commerce_dq_v3.artifact_exporters.amazon_mirror import (
     PIPELINE_FAMILY,
+    commit_pending_state,
+    has_pending_state,
     run_export_from_rows,
 )
-from sdk.plugs.commerce_dq_v3.artifact_exporters.base import load_state
+from sdk.plugs.commerce_dq_v3.artifact_exporters.base import STATE_DIR, load_state
 from sdk.plugs.commerce_dq_v3.tests.fixtures.commerce_rows import (
     amazon_mirror_rows,
     duplicate_url_rows,
@@ -97,7 +99,12 @@ def test_artifact_sha_bate(tmp_path: Path) -> None:
 
 
 def test_state_incremental_atualizado(tmp_path: Path) -> None:
-    """Rodar com `update_state=True` atualiza state key customizado."""
+    """Rodar com `update_state=True` grava PENDING state (journal).
+
+    Pos Fase 1 subida-3fases: state vira oficial somente apos commit
+    explicito (apply PASS). Aqui conferimos que o pending foi escrito
+    com o payload esperado e depois promovemos pra validar commit.
+    """
 
     rows = amazon_mirror_rows(4)
     key = "amazon_mirror_test_" + datetime.now(timezone.utc).strftime("%H%M%S%f")
@@ -108,10 +115,21 @@ def test_state_incremental_atualizado(tmp_path: Path) -> None:
         state_source_key=key,
     )
     assert result.ok
+    assert has_pending_state(key), "deveria existir pending apos export"
+    # Oficial ainda nao existe: journal exige commit explicito.
+    assert load_state(key) == {}
+    pending_path = STATE_DIR / f"{key}.pending.json"
+    pending = json.loads(pending_path.read_text(encoding="utf-8"))
+    assert pending.get("last_artifact_sha256") == result.artifact_sha256
+    assert pending.get("last_items_emitted") == result.items_emitted
+    assert "last_captured_at" in pending
+    assert "pending_since" in pending
+    # Commit promove pra oficial e remove pending.
+    commit_pending_state(key)
+    assert not has_pending_state(key)
     state = load_state(key)
     assert state.get("last_artifact_sha256") == result.artifact_sha256
-    assert state.get("last_items_emitted") == result.items_emitted
-    assert "last_captured_at" in state
+    assert "committed_at" in state
 
 
 def test_validator_full_ok(tmp_path: Path) -> None:

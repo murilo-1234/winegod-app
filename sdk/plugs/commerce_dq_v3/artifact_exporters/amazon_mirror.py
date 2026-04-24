@@ -9,11 +9,20 @@ Modos:
 - `incremental`: le so com `captured_at > state.last_captured_at`
   (estado em `reports/data_ops_export_state/amazon_mirror.json`).
 
+State journal (Fase 1, plano subida-3fases-20260424):
+- `run_export` NAO escreve direto em `amazon_mirror.json`;
+- escreve em `amazon_mirror.pending.json`;
+- `commit_pending_state()` promove pending -> oficial apos apply PASS;
+- `abort_pending_state()` move pending -> aborted/<ts>.json em falha;
+- se ja existir pending orfao no inicio de um run novo, aborta com
+  `blocked_state_pending_orfao`.
+
 Respeita REGRA 5 (batches 10k). Read-only no `winegod_db`. Nao aplica.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,12 +30,12 @@ from typing import Iterator
 
 from .base import (
     REPO_ROOT,
+    STATE_DIR,
     BATCH_SIZE,
     ExportRow,
     ExporterResult,
     build_item,
     load_state,
-    save_state,
     write_artifact,
 )
 from ._db import FONTES_BY_FAMILY, connect_readonly, list_country_tables
@@ -48,6 +57,68 @@ class AmazonMirrorConfig:
     batch_size: int = BATCH_SIZE
     dsn: str | None = None
     state_source_key: str = STATE_KEY  # customizavel para testes
+
+
+def _pending_path(state_source_key: str) -> Path:
+    return STATE_DIR / f"{state_source_key}.pending.json"
+
+
+def _official_path(state_source_key: str) -> Path:
+    return STATE_DIR / f"{state_source_key}.json"
+
+
+def _write_pending_state(state_source_key: str, data: dict) -> Path:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    path = _pending_path(state_source_key)
+    payload = dict(data)
+    payload.setdefault("pending_since", datetime.now(timezone.utc).isoformat())
+    path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    return path
+
+
+def has_pending_state(state_source_key: str = STATE_KEY) -> bool:
+    """Retorna True se existe pending state (journal nao-commitado/nao-abortado)."""
+
+    return _pending_path(state_source_key).exists()
+
+
+def commit_pending_state(state_source_key: str = STATE_KEY) -> dict:
+    """Promove pending -> state oficial apos apply PASS."""
+
+    pending_path = _pending_path(state_source_key)
+    official_path = _official_path(state_source_key)
+    if not pending_path.exists():
+        raise FileNotFoundError(f"pending nao existe: {pending_path}")
+    data = json.loads(pending_path.read_text(encoding="utf-8"))
+    data["committed_at"] = datetime.now(timezone.utc).isoformat()
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    official_path.write_text(
+        json.dumps(data, indent=2, default=str), encoding="utf-8"
+    )
+    pending_path.unlink()
+    return data
+
+
+def abort_pending_state(
+    state_source_key: str = STATE_KEY, reason: str = "unknown"
+) -> Path:
+    """Move pending -> aborted/<state_source_key>.aborted_<ts>.json apos apply FAIL."""
+
+    pending_path = _pending_path(state_source_key)
+    if not pending_path.exists():
+        raise FileNotFoundError(f"pending nao existe: {pending_path}")
+    aborted_dir = STATE_DIR / "aborted"
+    aborted_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    aborted_path = aborted_dir / f"{state_source_key}.aborted_{ts}.json"
+    data = json.loads(pending_path.read_text(encoding="utf-8"))
+    data["aborted_at"] = datetime.now(timezone.utc).isoformat()
+    data["abort_reason"] = reason
+    aborted_path.write_text(
+        json.dumps(data, indent=2, default=str), encoding="utf-8"
+    )
+    pending_path.unlink()
+    return aborted_path
 
 
 def _iter_rows(conn, cfg: AmazonMirrorConfig, since: datetime | None) -> Iterator[ExportRow]:
@@ -128,6 +199,18 @@ def _resolve_since(cfg: AmazonMirrorConfig) -> datetime | None:
 
 def run_export(cfg: AmazonMirrorConfig | None = None) -> ExporterResult:
     cfg = cfg or AmazonMirrorConfig()
+    # Guard: pending orfao bloqueia um novo run para nao perder historia.
+    if has_pending_state(cfg.state_source_key):
+        pending = _pending_path(cfg.state_source_key)
+        return ExporterResult(
+            ok=False,
+            reason="blocked_state_pending_orfao",
+            notes=[
+                f"pending_path={pending}",
+                "resolver via scripts/data_ops_producers/amazon_mirror_state.py "
+                "{commit|abort --reason TEXT} antes de rodar novo export",
+            ],
+        )
     since = _resolve_since(cfg)
     started_at = datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
@@ -157,7 +240,7 @@ def run_export(cfg: AmazonMirrorConfig | None = None) -> ExporterResult:
             )
             if result.ok and captured_seen:
                 latest = max(captured_seen)
-                save_state(
+                _write_pending_state(
                     cfg.state_source_key,
                     {
                         "last_captured_at": latest.astimezone(timezone.utc).isoformat(),
@@ -181,7 +264,12 @@ def run_export_from_rows(
     state_source_key: str = STATE_KEY,
     update_state: bool = True,
 ) -> ExporterResult:
-    """Entrada alternativa para testes com fixtures (sem DB)."""
+    """Entrada alternativa para testes com fixtures (sem DB).
+
+    Quando `update_state=True`, grava em `<state_source_key>.pending.json`
+    (mesmo padrao de `run_export`). O chamador e responsavel por commitar
+    ou abortar via `commit_pending_state` / `abort_pending_state`.
+    """
 
     started_at = started_at or datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
@@ -203,7 +291,7 @@ def run_export_from_rows(
     )
     if result.ok and update_state and captured_seen:
         latest = max(captured_seen)
-        save_state(
+        _write_pending_state(
             state_source_key,
             {
                 "last_captured_at": latest.astimezone(timezone.utc).isoformat(),
