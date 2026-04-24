@@ -119,6 +119,19 @@ as envs e executa `--apply`.
 - **NOVO** `reports/WINEGOD_REVIEWS_HEALTH_LATEST.md` (refresh)
 - **NOVO** `reports/WINEGOD_EXECUCAO_TOTAL_DISCOVERY_ENRICHMENT_PRODUCAO_2026-04-24.md` (este)
 
+### 2.5.1 Fix corretivo aplicado no fechamento da frente
+
+- **NOVO** `scripts/wcf_confidence.py` (commit `472b9c63`)
+  Restauracao do helper canonico `confianca(total_reviews)` exigido
+  por `sdk/plugs/reviews_scores/confidence.py` (import via sys.path).
+  O arquivo estava untracked em working trees anteriores e nao havia
+  sido commitado em nenhuma branch, o que quebrava `pytest sdk/plugs
+  sdk/tests sdk/adapters/tests -q` em checkout limpo com
+  `ModuleNotFoundError: wcf_confidence`. Conteudo alinhado aos buckets
+  validados em
+  `sdk/plugs/reviews_scores/tests/test_runner.py::test_confidence_matches_wcf_canonical_scale`
+  (100+ -> 1.0; 50+ -> 0.8; 25+ -> 0.6; 10+ -> 0.4; else 0.2).
+
 ### 2.6 Arquivos preservados via herdeiro (do branch base)
 
 Presentes no branch base `68b4b45e`:
@@ -166,12 +179,17 @@ Breakdown dos +60 novos testes no SDK:
 
 - `test_promotion.py` (12)
 - `test_recipe_generator.py` (9)
-- `test_router.py` (10)
+- `test_router.py` (11)
 - `test_queues.py` (3)
 - `test_not_wine_propagator.py` (6)
 - `test_budget.py` (6)
 - `test_external_adapter.py` (5)
 - `test_gemini_dispatcher.py` (8)
+
+Contagem corrigida em correcao de auditoria (2026-04-24):
+`test_router.py` tem 11 testes (1 caso adicional cobrindo
+`confidence_missing`). Soma real dos novos testes no SDK = 60; total
+da suite = 250 (SDK) + 22 (producers) = 272.
 
 Comando:
 
@@ -181,6 +199,36 @@ python -m pytest scripts/data_ops_producers/tests -q
 ```
 
 ## 5. Outputs dos dry-runs reais
+
+### 5.0 Natureza das evidencias de dry-run (declaracao de limitacao)
+
+Os artefatos JSON/MD dos 3 dry-runs abaixo foram gerados em **workspace
+local** durante a execucao desta frente e **NAO foram versionados** no
+pacote commitado. O pacote commitado preserva apenas:
+
+- o codigo que produz os artefatos (SDK + CLIs + wrappers PS1);
+- os testes deterministicos que provam que o codigo se comporta como
+  declarado (272 passing);
+- o snapshot de health de cada dominio
+  (`reports/WINEGOD_*_HEALTH_LATEST.md`).
+
+Os paths `reports/data_ops_promotion_plans/`,
+`reports/data_ops_dedup/` e `reports/data_ops_enrichment_budget/` estao
+em `.gitignore` (ou simplesmente nao foram `git add`ados, por serem
+outputs operacionais por rodada que mudam todo dia).
+
+**Reproducao deterministica** em checkout limpo (comandos suficientes
+para gerar artefatos equivalentes):
+
+```powershell
+# requer .env com DATABASE_URL (para dedup) populado
+python scripts/data_ops_producers/promote_discovery_stores.py --plan-only --limit 50
+python scripts/data_ops_producers/dedup_stores.py --plan-only
+python scripts/data_ops_producers/enrichment_budget_forecast.py
+```
+
+Como o plan hash do promocao e funcao do input (gates + dominios), a
+mesma amostra produz o mesmo `plan_hash` em qualquer maquina.
 
 ### 5.1 Discovery promotion (plan-only)
 
@@ -194,7 +242,10 @@ nesta fase, pois os candidatos do discovery ainda nao carregam
 `sample_scrape.products_extractable`. Comportamento deterministico e
 auditavel.
 
-Artefato: `reports/data_ops_promotion_plans/20260424_074051_plan.json`
+Artefato gerado em workspace local (nao versionado):
+`reports/data_ops_promotion_plans/20260424_074051_plan.json`.
+Evidencia em checkout limpo: rodar o comando acima regenera um
+`plan.json` com o mesmo `plan_hash` para a mesma amostra.
 
 ### 5.2 Dedup stores (plan-only, base real)
 
@@ -207,7 +258,10 @@ Artefato: `reports/data_ops_promotion_plans/20260424_074051_plan.json`
 - grupos de duplicata exata: 6
 - pares similares (>0.9): 232 (para revisao humana)
 
-Artefato: `reports/data_ops_dedup/stores_dedup_20260424_072817.md`
+Artefato gerado em workspace local (nao versionado):
+`reports/data_ops_dedup/stores_dedup_20260424_072817.md`.
+Evidencia em checkout limpo: rodar o CLI com acesso ao banco real
+regenera um report equivalente.
 
 ### 5.3 Enrichment budget forecast (sobre o ultimo staging)
 
@@ -218,7 +272,12 @@ Artefato: `reports/data_ops_dedup/stores_dedup_20260424_072817.md`
 Rates default conservadores: 0.10 / 0.40 USD por 1M tokens
 (input / output).
 
-Artefato: `reports/data_ops_enrichment_budget/20260424_074052_budget.md`
+Artefato gerado em workspace local (nao versionado):
+`reports/data_ops_enrichment_budget/20260424_074052_budget.md`.
+Evidencia em checkout limpo: o CLI produz um budget de acordo com o
+ultimo staging jsonl presente no diretorio
+`reports/data_ops_plugs_staging/`; sem staging acumulado, retorna
+`items=0 total_cost_usd=0.0000`.
 
 ### 5.4 Discovery + enrichment runners (dry-run)
 
@@ -230,15 +289,27 @@ python -m sdk.plugs.enrichment.runner --source gemini_batch_reports --limit 10 -
 Ambos produziram staging summaries em
 `reports/data_ops_plugs_staging/` sem erros.
 
-### 5.5 Health checks reais
+### 5.5 Health checks reais (snapshots versionados)
+
+Os 3 snapshots foram refrescados na rodada final desta frente e estao
+commitados no branch:
 
 ```
-reviews     -> ok (last_id=2.04M, runs=38+)
-discovery   -> ok (50 arquivos fonte, last summary items=10, known_store_hits=10)
-enrichment  -> ok (artifacts present, summary items=5 ready=5)
+reviews     -> ok (last_id=2.227.129, runs=43, mode=backfill_windowed)
+discovery   -> ok (50 arquivos fonte em C:\natura-automation\,
+                    last summary items=10, known_store_hits=10)
+enrichment  -> ok (state/input/output presentes, enriched_artifact_count=16,
+                    last summary items=10, ready=10, uncertain=0, not_wine=0)
 ```
 
-Artefatos:
+**Numeros ajustados em correcao de auditoria (2026-04-24)**: a versao
+anterior deste relatorio citava `enrichment summary items=5 ready=5`
+(valor do primeiro dry-run da frente). O snapshot comitado no branch
+(`reports/WINEGOD_ENRICHMENT_HEALTH_LATEST.md @ 472b9c63`) reflete o
+REFRESH final com `items=10 ready=10`. Os numeros acima batem com o
+snapshot commitado, que e a evidencia auditavel.
+
+Artefatos (versionados no branch):
 
 - `reports/WINEGOD_REVIEWS_HEALTH_LATEST.md`
 - `reports/WINEGOD_DISCOVERY_HEALTH_LATEST.md`
