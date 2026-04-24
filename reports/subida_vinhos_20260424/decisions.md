@@ -27,6 +27,44 @@ ULTIMA no topo. Cada entrada registra decisao tecnica tomada durante Fase 1/2/3.
     `audit_wine_sources_pre_subida_20260424` serem criados;
   - schtasks Vivino Backfill/Incremental serem desabilitadas.
 
+## 2026-04-24 ~20:00 — Fase 2 piloto AE ABORT
+
+- Smoke Tier1 AE 50: PASS (35 updates + 35 sources, postcheck PASS)
+- Piloto Tier1 AE 2000: ABORT (valid/received=65.2% < 70% threshold)
+  - rejected=0, errors=[], blocked=null, postcheck PASS
+  - 1304 wines updates + 1255 wine_sources novas persistidas em Render
+  - 688 not_wine_rejections corretas (ham/jam/box/salame/camembert)
+  - Causa: dataset AE sujo, NAO bug do pipeline
+- Escalonamento 5k/10k NAO iniciado (regra: piloto ABORT => stop)
+- Concorrencia Vivino Backfill ativa durante teste — sem impacto observado
+- Recomendacao: Codex emite prompt corretivo para piloto FR/IT (paises de
+  vinho puro, not_wine esperado <15%)
+
+## 2026-04-24 ~19:40 — Fase 2 autorizada com ressalva
+
+Prompt: SUBIDA_LOCAL_RENDER_FASE_2_EXECUCAO_SHARDED_20260424
+Decisao Codex: Fase 2 AUTORIZADA com ressalva de concorrencia ativa.
+
+Estado de entrada:
+- `FASE_1_PASS_COM_RESSALVA_CONCORRENCIA` (phase1_execution.md HEAD cb99b1ac)
+- `CONCORRENCIA_STATUS=BLOCKED_CONCURRENCY`
+- Writers bloqueantes ativos (permissao schtasks = Acesso negado):
+  - `WineGod Plug Reviews Vivino Backfill`
+  - `WineGod Plug Reviews Vivino Incremental`
+- Snapshots audit presentes: audit_wines_pre_subida_20260424 (2.513.197 rows),
+  audit_wine_sources_pre_subida_20260424 (3.491.687 rows)
+- shards.csv: 308 linhas, max expected_rows=49984, 0 acima de 50k
+
+Mitigacao operacional Fase 2 (por causa da concorrencia):
+- cap inicial por apply = 5000 itens (nao 50000)
+- cooldown 60s entre shards
+- apply so sobe para 10000 apos 3 shards consecutivos PASS
+- NAO sobe para 50000 enquanto BLOCKED_CONCURRENCY persistir
+- gates rigidos: unresolved_domains > 10% = ABORT; postcheck != PASS = ABORT
+
+Todos os artefatos da Fase 2 (phase2_execution.md, run_manifest.jsonl,
+postchecks/, progress/) vao registrar CONCORRENCIA_STATUS=BLOCKED_CONCURRENCY.
+
 ## 2026-04-24 ~19:15 — Fase 1 finalizacao operacional
 
 - `inventario_subida_vinhos.py` corrigido: TIER1_METHODS expandido (10 metodos),

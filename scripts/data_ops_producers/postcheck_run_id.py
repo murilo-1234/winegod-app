@@ -59,12 +59,12 @@ def run_postcheck(run_id, summary_path, apply_start_iso, output_path):
     with psycopg2.connect(dsn) as conn:
         render_counts["wines_new"] = _fetch_int(
             conn,
-            "SELECT count(*) FROM wines WHERE ingestion_run_id=%s AND created_at >= %s",
+            "SELECT count(*) FROM wines WHERE ingestion_run_id=%s AND descoberto_em >= %s",
             (run_id, apply_start),
         )
         render_counts["wines_updated"] = _fetch_int(
             conn,
-            "SELECT count(*) FROM wines WHERE ingestion_run_id=%s AND created_at < %s",
+            "SELECT count(*) FROM wines WHERE ingestion_run_id=%s AND descoberto_em < %s",
             (run_id, apply_start),
         )
         render_counts["wine_sources_touched"] = _fetch_int(
