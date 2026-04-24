@@ -154,7 +154,7 @@ Residual bloqueado por politica ja conhecida:
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Base: `dd756093` em `data-ops/integracao-restantes-scrapers-total-20260423`
-- Commit desta sessao: `<preenchido apos commit>`
+- Commit desta sessao: `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
 - Push remoto: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Diff resumido: 3 manifests novos + 3 shadows novos + 1 scheduler novo + 1 contrato novo + exporters/runner atualizados + README atualizado + 2 relatorios.
 

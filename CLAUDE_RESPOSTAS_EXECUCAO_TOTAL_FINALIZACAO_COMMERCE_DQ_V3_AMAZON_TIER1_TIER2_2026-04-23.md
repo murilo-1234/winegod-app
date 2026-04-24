@@ -48,7 +48,7 @@ Assim que o artefato aparece no diretorio certo, o scheduler `run_commerce_artif
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Base: `dd756093`
-- Commit: `<preenchido apos commit>`
+- Commit: `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Testes
