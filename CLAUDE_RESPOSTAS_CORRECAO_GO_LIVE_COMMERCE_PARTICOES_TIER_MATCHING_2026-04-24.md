@@ -103,7 +103,7 @@ Zero alteracao em: `plug_reviews_scores`, WCF, `wine_scores`, `discovery_stores`
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - HEAD anterior: `4f2bab88`
-- Commit desta correcao: `<preenchido apos commit>`
+- Commit desta correcao: `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Arquivos a repassar ao Codex admin

@@ -167,7 +167,9 @@ Zero falhas. Zero regressao.
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - HEAD anterior: `54698a08`
-- Commit desta sessao: `fbd80841 feat(data-ops): go-live commerce local ladder with tier producer`
+- Commit do go-live inicial: `fbd80841 feat(data-ops): go-live commerce local ladder with tier producer`
+- Commit SHA pin go-live: `4f2bab88 docs(data-ops): pin fbd80841 SHA in go-live docs`
+- Commit da correcao de particoes/matching: `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## 12. O que o Codex admin deve auditar
