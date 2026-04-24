@@ -27,6 +27,19 @@ ULTIMA no topo. Cada entrada registra decisao tecnica tomada durante Fase 1/2/3.
     `audit_wine_sources_pre_subida_20260424` serem criados;
   - schtasks Vivino Backfill/Incremental serem desabilitadas.
 
+## 2026-04-24 ~19:15 — Fase 1 finalizacao operacional
+
+- `inventario_subida_vinhos.py` corrigido: TIER1_METHODS expandido (10 metodos),
+  _scan_fontes_table substituida por SQL aggregates, score_recalc_queue query
+  corrigida para `processed_at IS NULL`. Resultado: 308 shards, max 49984 rows.
+- Snapshots criados no Render: `audit_wines_pre_subida_20260424` (2.513.197 rows)
+  e `audit_wine_sources_pre_subida_20260424` (3.491.687 rows).
+- Tentativa DISABLE schtasks Vivino Backfill + Incremental: ACESSO NEGADO.
+  Status: BLOCKED_CONCURRENCY. Risco medio documentado.
+- Preflight rerodado: snapshots OK, migration 021 FAIL nao-bloqueante.
+- Status Fase 1: FASE_1_PASS_COM_RESSALVA_CONCORRENCIA.
+  Aguarda decisao Codex sobre BLOCKED_CONCURRENCY antes de Fase 2.
+
 ## 2026-04-24 Fase 1 — setup inicial
 
 - Branch `data-ops/subida-local-render-3fases-20260424` criada a partir de

@@ -25,6 +25,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
 
 import psycopg2
 
@@ -38,6 +39,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 REPORT_DIR = REPO_ROOT / "reports" / "subida_vinhos_20260424"
 
 SHARD_SIZE_DEFAULT = 50_000
+LOCAL_SCAN_BATCH_SIZE = 1_000
+LOCAL_STATEMENT_TIMEOUT_MS = 60_000
+RENDER_STATEMENT_TIMEOUT_MS = 180_000
 
 SOURCES = [
     "tier1_global",
@@ -47,7 +51,11 @@ SOURCES = [
     "amazon_mirror_primary",
 ]
 
-TIER1_METHODS = ["api_shopify", "api_woocommerce", "api_vtex"]
+TIER1_METHODS = [
+    "api_shopify", "api_woocommerce", "api_vtex",
+    "sitemap_html", "sitemap_jsonld", "sitemap_woocommerce", "sitemap_vtex",
+    "sitemap_nuvemshop", "sitemap_prestashop", "sitemap_parse",
+]
 TIER2_METHODS = ["playwright_ia", "playwright"]
 AMAZON_MIRROR_FONTES = ["amazon_playwright"]
 AMAZON_LEGACY_FONTES = ["amazon", "amazon_scraper", "amazon_scrapingdog"]
@@ -152,17 +160,18 @@ def _plan_shards(
 
 
 class _connect_ro:
-    """Context manager read-only com statement_timeout=60000."""
+    """Context manager read-only com statement_timeout configuravel."""
 
-    def __init__(self, dsn: str):
+    def __init__(self, dsn: str, statement_timeout_ms: int = LOCAL_STATEMENT_TIMEOUT_MS):
         self.dsn = dsn
+        self.statement_timeout_ms = int(statement_timeout_ms)
         self.conn = None
 
     def __enter__(self):
         self.conn = psycopg2.connect(self.dsn, connect_timeout=15)
         self.conn.set_session(readonly=True, autocommit=True)
         with self.conn.cursor() as cur:
-            cur.execute("SET statement_timeout TO 60000")
+            cur.execute(f"SET statement_timeout TO {self.statement_timeout_ms}")
         return self.conn
 
     def __exit__(self, exc_type, exc, tb):
@@ -213,6 +222,151 @@ def _list_country_tables(conn) -> list[str]:
 def _table_exists(conn, name: str) -> bool:
     r = _one(conn, "SELECT to_regclass(%s)", (f"public.{name}",))
     return bool(r and r[0])
+
+
+def _table_columns(conn, name: str) -> set[str]:
+    rows = _rows(
+        conn,
+        """
+        SELECT column_name
+          FROM information_schema.columns
+         WHERE table_schema='public'
+           AND table_name=%s
+        """,
+        (name,),
+    )
+    return {str(r[0]) for r in rows}
+
+
+def _normalize_host(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        parsed = urlparse(value if "://" in value else "https://" + value)
+    except Exception:
+        return None
+    host = (parsed.hostname or "").lower().strip()
+    if not host:
+        return None
+    if host.startswith("www."):
+        host = host[4:]
+    return host
+
+
+def _host_eligible(source_host: str | None, eligible_hosts: set[str]) -> bool:
+    if not source_host or not eligible_hosts:
+        return False
+    if source_host in eligible_hosts:
+        return True
+    return any(source_host.endswith("." + host) for host in eligible_hosts)
+
+
+def _gate(status: str, reason: str | None = None, **extra) -> dict:
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
+    payload.update(extra)
+    return payload
+
+
+def _load_loja_hosts_by_country(conn, methods: list[str]) -> dict[str, set[str]]:
+    if not methods:
+        return {}
+    placeholders = ",".join(["%s"] * len(methods))
+    rows = _rows(
+        conn,
+        f"""
+        SELECT COALESCE(pais_codigo, '(null)') AS pais, url, url_normalizada
+          FROM public.lojas_scraping
+         WHERE metodo_recomendado IN ({placeholders})
+           AND (url_normalizada IS NOT NULL OR url IS NOT NULL)
+        """,
+        tuple(methods),
+    )
+    out: dict[str, set[str]] = {}
+    for pais, url, url_norm in rows:
+        cc = str(pais or "(null)").lower()
+        hosts = out.setdefault(cc, set())
+        for candidate in (url_norm, url):
+            host = _normalize_host(candidate)
+            if host:
+                hosts.add(host)
+    return out
+
+
+def _empty_source_scan(fontes_tbl: str) -> dict:
+    return {
+        "source_table": fontes_tbl,
+        "count": 0,
+        "min_fonte_id": None,
+        "max_fonte_id": None,
+    }
+
+
+def _update_scan_stat(stat: dict, fonte_id: int) -> None:
+    stat["count"] += 1
+    if stat["min_fonte_id"] is None or int(fonte_id) < int(stat["min_fonte_id"]):
+        stat["min_fonte_id"] = int(fonte_id)
+    if stat["max_fonte_id"] is None or int(fonte_id) > int(stat["max_fonte_id"]):
+        stat["max_fonte_id"] = int(fonte_id)
+
+
+def _scan_fontes_table(
+    conn,
+    *,
+    country_code: str,
+    fontes_tbl: str,
+    tier1_hosts: set[str],
+    tier2_hosts: set[str],
+    batch_size: int = LOCAL_SCAN_BATCH_SIZE,
+) -> tuple[dict[str, dict], set[str]]:
+    stats = {
+        "tier1_global": _empty_source_scan(fontes_tbl),
+        "tier2_global": _empty_source_scan(fontes_tbl),
+        "tier2_br": _empty_source_scan(fontes_tbl),
+        "amazon_local_legacy_backfill": _empty_source_scan(fontes_tbl),
+        "amazon_mirror_primary": _empty_source_scan(fontes_tbl),
+    }
+    distinct_hosts: set[str] = set()
+    last_id = 0
+    columns = _table_columns(conn, fontes_tbl)
+    host_expr = "host_normalizado" if "host_normalizado" in columns else "NULL::text AS host_normalizado"
+    url_expr = "url_original" if "url_original" in columns else "NULL::text AS url_original"
+    fonte_expr = "fonte" if "fonte" in columns else "NULL::text AS fonte"
+
+    while True:
+        rows = _rows(
+            conn,
+            f"""
+            SELECT id, {host_expr}, {url_expr}, {fonte_expr}
+              FROM public.{fontes_tbl}
+             WHERE id > %s
+             ORDER BY id ASC
+             LIMIT %s
+            """,
+            (last_id, batch_size),
+        )
+        if not rows:
+            break
+        for fonte_id, host_normalizado, url_original, fonte in rows:
+            last_id = int(fonte_id)
+            host = _normalize_host(host_normalizado) or _normalize_host(url_original)
+            if host:
+                distinct_hosts.add(host)
+            if _host_eligible(host, tier1_hosts):
+                _update_scan_stat(stats["tier1_global"], fonte_id)
+            if _host_eligible(host, tier2_hosts):
+                _update_scan_stat(stats["tier2_global"], fonte_id)
+                if country_code == "br":
+                    _update_scan_stat(stats["tier2_br"], fonte_id)
+            if fonte in AMAZON_LEGACY_FONTES:
+                _update_scan_stat(stats["amazon_local_legacy_backfill"], fonte_id)
+            if fonte in AMAZON_MIRROR_FONTES:
+                _update_scan_stat(stats["amazon_mirror_primary"], fonte_id)
+        if len(rows) < batch_size:
+            break
+
+    return stats, distinct_hosts
 
 
 # ---------- local inventory ----------
@@ -292,78 +446,138 @@ def _collect_local(conn) -> dict:
         fontes_by_fonte[cc] = [{"fonte": str(r[0]), "count": int(r[1])} for r in rows]
     out["fontes_by_fonte_top5_paises"] = fontes_by_fonte
 
-    # eligibilidade estimada (tier1 + tier2) por join com lojas_scraping
-    def _elig_count(methods: list[str], only_br: bool = False, fontes_in: list[str] | None = None) -> int:
-        total = 0
-        placeholders = ",".join(["%s"] * len(methods)) if methods else None
-        for item in vinhos_tables:
-            cc = item["tabela"].replace("vinhos_", "")
-            if only_br and cc != "br":
-                continue
-            fontes_tbl = f"vinhos_{cc}_fontes"
-            if not _table_exists(conn, fontes_tbl):
-                continue
-            where_parts: list[str] = []
-            params: list = []
-            if placeholders:
-                where_parts.append(f"ls.metodo_recomendado IN ({placeholders})")
-                params.extend(methods)
-            if fontes_in:
-                fp = ",".join(["%s"] * len(fontes_in))
-                where_parts.append(f"f.fonte IN ({fp})")
-                params.extend(fontes_in)
-            where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
-            sql = f"""
-                SELECT COUNT(*)
-                  FROM public.{fontes_tbl} f
-                  LEFT JOIN public.lojas_scraping ls
-                    ON ls.url_normalizada = f.host_normalizado
-                 {where_sql}
-            """
-            try:
-                total += _scalar(conn, sql, tuple(params))
-            except Exception:
-                # schema variacao: fallback sem join
-                continue
-        return total
+    # Abordagem rapida (plano 3 fases): SQL aggregates em vez de row-scan Python.
+    # Razao: _scan_fontes_table lia TODOS os registros um-a-um (batch=1000) para
+    # fazer host-matching em Python — inviavel em tabelas de milhoes de rows (>5 min).
+    # O exporter ja faz o filtro de elegibilidade na hora do apply. Para o inventario,
+    # precisamos apenas de COUNT/MIN/MAX por tabela pra planejar shards.
+    #
+    # Metodo:
+    # - Tier1/Tier2: COUNT/MIN/MAX de vinhos_{cc}_fontes com lojas Tier1/2 existentes.
+    #   Para tier1_global/tier2_global: usa tabelas onde lojas elegíveis existem
+    #   (via rapido check em lojas_scraping por pais_codigo).
+    #   tier2_br: apenas vinhos_br_fontes.
+    # - Amazon: COUNT/MIN/MAX filtrado por fonte IN (...).
+    # - local_hosts_distinct: count distinto de url_normalizada das lojas Tier1+Tier2.
+    #
+    # NOTA: counts sao UPPER BOUND (inclui linhas nao-elegiveis por host).
+    # O exporter filtra eligibilidade ao rodar; shards cobrem o range completo.
 
-    try:
-        out["tier1_eligible_count_estimate"] = _elig_count(TIER1_METHODS)
-    except Exception:
-        out["tier1_eligible_count_estimate"] = 0
-    try:
-        out["tier2_global_eligible_count_estimate"] = _elig_count(TIER2_METHODS)
-    except Exception:
-        out["tier2_global_eligible_count_estimate"] = 0
-    try:
-        out["tier2_br_eligible_count_estimate"] = _elig_count(TIER2_METHODS, only_br=True)
-    except Exception:
-        out["tier2_br_eligible_count_estimate"] = 0
+    source_scan_stats: dict[str, list[dict]] = {source: [] for source in SOURCES}
 
-    try:
-        out["amazon_legacy_count"] = _elig_count([], fontes_in=AMAZON_LEGACY_FONTES)
-    except Exception:
-        out["amazon_legacy_count"] = 0
-    try:
-        out["amazon_mirror_count"] = _elig_count([], fontes_in=AMAZON_MIRROR_FONTES)
-    except Exception:
-        out["amazon_mirror_count"] = 0
+    # lojas countries for tier1/tier2 (fast query on lojas_scraping)
+    t1_ph = ",".join(["%s"] * len(TIER1_METHODS))
+    t2_ph = ",".join(["%s"] * len(TIER2_METHODS))
+    t1_countries_rows = _rows(conn,
+        f"SELECT DISTINCT LOWER(pais_codigo) FROM public.lojas_scraping "
+        f"WHERE metodo_recomendado IN ({t1_ph}) AND pais_codigo IS NOT NULL",
+        tuple(TIER1_METHODS))
+    t1_countries = {str(r[0]) for r in t1_countries_rows}
+    t2_countries_rows = _rows(conn,
+        f"SELECT DISTINCT LOWER(pais_codigo) FROM public.lojas_scraping "
+        f"WHERE metodo_recomendado IN ({t2_ph}) AND pais_codigo IS NOT NULL",
+        tuple(TIER2_METHODS))
+    t2_countries = {str(r[0]) for r in t2_countries_rows}
 
-    # distinct hosts locais
-    try:
-        distinct_hosts = 0
-        for item in vinhos_tables:
-            cc = item["tabela"].replace("vinhos_", "")
-            fontes_tbl = f"vinhos_{cc}_fontes"
-            if not _table_exists(conn, fontes_tbl):
-                continue
-            distinct_hosts += _scalar(
-                conn,
-                f"SELECT COUNT(DISTINCT host_normalizado) FROM public.{fontes_tbl} WHERE host_normalizado IS NOT NULL",
-            )
-        out["local_hosts_distinct"] = distinct_hosts
-    except Exception:
-        out["local_hosts_distinct"] = 0
+    distinct_urls: set[str] = set()
+    url_norm_rows = _rows(conn,
+        f"SELECT url_normalizada FROM public.lojas_scraping "
+        f"WHERE metodo_recomendado IN ({t1_ph}) AND url_normalizada IS NOT NULL",
+        tuple(TIER1_METHODS))
+    for (u,) in url_norm_rows:
+        if u: distinct_urls.add(str(u))
+    url_norm_rows2 = _rows(conn,
+        f"SELECT url_normalizada FROM public.lojas_scraping "
+        f"WHERE metodo_recomendado IN ({t2_ph}) AND url_normalizada IS NOT NULL",
+        tuple(TIER2_METHODS))
+    for (u,) in url_norm_rows2:
+        if u: distinct_urls.add(str(u))
+    out["local_hosts_distinct"] = len(distinct_urls)
+
+    amazon_legacy_ph = ",".join(["%s"] * len(AMAZON_LEGACY_FONTES))
+    amazon_mirror_ph = ",".join(["%s"] * len(AMAZON_MIRROR_FONTES))
+
+    for item in vinhos_tables:
+        cc = item["tabela"].replace("vinhos_", "")
+        fontes_tbl = f"vinhos_{cc}_fontes"
+        if not _table_exists(conn, fontes_tbl):
+            continue
+        cols = _table_columns(conn, fontes_tbl)
+        if "url_original" not in cols:
+            continue
+
+        # Fast aggregate: COUNT/MIN/MAX for each source category
+        base_sql = f"SELECT COUNT(*), MIN(id), MAX(id) FROM public.{fontes_tbl} WHERE url_original IS NOT NULL"
+
+        def _agg(extra_where: str = "", params: tuple = ()) -> tuple[int, int | None, int | None]:
+            sql = base_sql + (" AND " + extra_where if extra_where else "")
+            row = _one(conn, sql, params)
+            if not row or not row[0]:
+                return 0, None, None
+            return int(row[0] or 0), (int(row[1]) if row[1] is not None else None), (int(row[2]) if row[2] is not None else None)
+
+        # Tier1 global: tables where tier1 lojas exist for this country
+        if cc in t1_countries:
+            cnt, lo, hi = _agg()
+            if cnt > 0:
+                source_scan_stats["tier1_global"].append({
+                    "country": cc, "source_table": fontes_tbl,
+                    "count": cnt, "min_fonte_id": lo, "max_fonte_id": hi,
+                })
+
+        # Tier2 global (excl. br)
+        if cc != "br" and cc in t2_countries:
+            cnt, lo, hi = _agg()
+            if cnt > 0:
+                source_scan_stats["tier2_global"].append({
+                    "country": cc, "source_table": fontes_tbl,
+                    "count": cnt, "min_fonte_id": lo, "max_fonte_id": hi,
+                })
+
+        # Tier2 br
+        if cc == "br" and "br" in t2_countries:
+            cnt, lo, hi = _agg()
+            if cnt > 0:
+                source_scan_stats["tier2_br"].append({
+                    "country": cc, "source_table": fontes_tbl,
+                    "count": cnt, "min_fonte_id": lo, "max_fonte_id": hi,
+                })
+
+        # Amazon legacy
+        if "fonte" in cols:
+            cnt, lo, hi = _agg(f"fonte IN ({amazon_legacy_ph})", tuple(AMAZON_LEGACY_FONTES))
+            if cnt > 0:
+                source_scan_stats["amazon_local_legacy_backfill"].append({
+                    "country": cc, "source_table": fontes_tbl,
+                    "count": cnt, "min_fonte_id": lo, "max_fonte_id": hi,
+                })
+            cnt, lo, hi = _agg(f"fonte IN ({amazon_mirror_ph})", tuple(AMAZON_MIRROR_FONTES))
+            if cnt > 0:
+                source_scan_stats["amazon_mirror_primary"].append({
+                    "country": cc, "source_table": fontes_tbl,
+                    "count": cnt, "min_fonte_id": lo, "max_fonte_id": hi,
+                })
+
+    out["tier1_eligible_count_estimate"] = sum(
+        int(s["count"]) for s in source_scan_stats["tier1_global"]
+    )
+    out["tier2_global_eligible_count_estimate"] = sum(
+        int(s["count"]) for s in source_scan_stats["tier2_global"]
+    )
+    out["tier2_br_eligible_count_estimate"] = sum(
+        int(s["count"]) for s in source_scan_stats["tier2_br"]
+    )
+    out["amazon_legacy_count"] = sum(
+        int(s["count"]) for s in source_scan_stats["amazon_local_legacy_backfill"]
+    )
+    out["amazon_mirror_count"] = sum(
+        int(s["count"]) for s in source_scan_stats["amazon_mirror_primary"]
+    )
+    out["source_scan_stats"] = source_scan_stats
+    out["nota_eligible_counts"] = (
+        "upper_bound: counts incluem todas rows com url_original IS NOT NULL "
+        "no range da fonte; o exporter filtra elegibilidade por host-match na hora do apply"
+    )
 
     return out
 
@@ -373,10 +587,28 @@ def _collect_local(conn) -> dict:
 
 def _collect_render(conn) -> dict:
     out: dict = {}
-    out["wines_total"] = _scalar(conn, "SELECT COUNT(*) FROM public.wines") if _table_exists(conn, "wines") else 0
-    out["wine_sources_total"] = (
-        _scalar(conn, "SELECT COUNT(*) FROM public.wine_sources") if _table_exists(conn, "wine_sources") else 0
-    )
+
+    def _count_or_estimate(table_name: str) -> tuple[int | None, str]:
+        if not _table_exists(conn, table_name):
+            return 0, "missing_table"
+        try:
+            return _scalar(conn, f"SELECT COUNT(*) FROM public.{table_name}"), "exact"
+        except Exception:
+            row = _one(
+                conn,
+                """
+                SELECT GREATEST(0, COALESCE(reltuples, 0))::bigint
+                  FROM pg_class
+                 WHERE oid = %s::regclass
+                """,
+                (f"public.{table_name}",),
+            )
+            if row:
+                return int(row[0] or 0), "estimated_pg_class"
+            return None, "unavailable"
+
+    out["wines_total"], out["wines_total_mode"] = _count_or_estimate("wines")
+    out["wine_sources_total"], out["wine_sources_total_mode"] = _count_or_estimate("wine_sources")
     out["stores_total"] = _scalar(conn, "SELECT COUNT(*) FROM public.stores") if _table_exists(conn, "stores") else 0
 
     if _table_exists(conn, "ingestion_review_queue"):
@@ -388,9 +620,10 @@ def _collect_render(conn) -> dict:
         out["ingestion_review_queue_pending"] = 0
 
     if _table_exists(conn, "score_recalc_queue"):
+        # schema real: nao tem coluna 'status'; pendente = processed_at IS NULL
         out["score_recalc_queue_pending"] = _scalar(
             conn,
-            "SELECT COUNT(*) FROM public.score_recalc_queue WHERE status='pending'",
+            "SELECT COUNT(*) FROM public.score_recalc_queue WHERE processed_at IS NULL",
         )
     else:
         out["score_recalc_queue_pending"] = 0
@@ -440,33 +673,13 @@ def _collect_render(conn) -> dict:
 
 
 def _shards_for_source(
-    conn_local,
+    local_inv: dict,
     source: str,
-    vinhos_tables: list[dict],
     shard_size: int = SHARD_SIZE_DEFAULT,
 ) -> list[dict]:
-    """Para cada country table, calcula total elegivel + min/max(fonte.id) e
-    chama _plan_shards. Retorna linhas prontas para shards.csv."""
+    """Converte stats precomputadas do inventario em linhas de shards.csv."""
 
     out: list[dict] = []
-
-    def _bounds(fontes_tbl: str, extra_sql: str, params: tuple) -> tuple[int, int | None, int | None]:
-        sql = f"""
-            SELECT COUNT(*), MIN(f.id), MAX(f.id)
-              FROM public.{fontes_tbl} f
-              LEFT JOIN public.lojas_scraping ls
-                ON ls.url_normalizada = f.host_normalizado
-             {extra_sql}
-        """
-        try:
-            with conn_local.cursor() as cur:
-                cur.execute(sql, params)
-                row = cur.fetchone()
-            if not row:
-                return 0, None, None
-            return int(row[0] or 0), row[1], row[2]
-        except Exception:
-            return 0, None, None
 
     def _emit(cc: str, total: int, lo: int | None, hi: int | None, source_table: str):
         shards = _plan_shards(total, lo, hi, shard_size=shard_size)
@@ -487,45 +700,17 @@ def _shards_for_source(
                 "apply_run_id": "",
             })
 
-    for item in vinhos_tables:
-        cc = item["tabela"].replace("vinhos_", "")
-        fontes_tbl = f"vinhos_{cc}_fontes"
-        if not _table_exists(conn_local, fontes_tbl):
-            continue
-
-        if source == "tier1_global":
-            ph = ",".join(["%s"] * len(TIER1_METHODS))
-            total, lo, hi = _bounds(
-                fontes_tbl, f"WHERE ls.metodo_recomendado IN ({ph})", tuple(TIER1_METHODS)
-            )
-        elif source == "tier2_global":
-            ph = ",".join(["%s"] * len(TIER2_METHODS))
-            total, lo, hi = _bounds(
-                fontes_tbl, f"WHERE ls.metodo_recomendado IN ({ph})", tuple(TIER2_METHODS)
-            )
-        elif source == "tier2_br":
-            if cc != "br":
-                continue
-            ph = ",".join(["%s"] * len(TIER2_METHODS))
-            total, lo, hi = _bounds(
-                fontes_tbl, f"WHERE ls.metodo_recomendado IN ({ph})", tuple(TIER2_METHODS)
-            )
-        elif source == "amazon_local_legacy_backfill":
-            ph = ",".join(["%s"] * len(AMAZON_LEGACY_FONTES))
-            total, lo, hi = _bounds(
-                fontes_tbl, f"WHERE f.fonte IN ({ph})", tuple(AMAZON_LEGACY_FONTES)
-            )
-        elif source == "amazon_mirror_primary":
-            ph = ",".join(["%s"] * len(AMAZON_MIRROR_FONTES))
-            total, lo, hi = _bounds(
-                fontes_tbl, f"WHERE f.fonte IN ({ph})", tuple(AMAZON_MIRROR_FONTES)
-            )
-        else:
-            continue
-
+    for stat in local_inv.get("source_scan_stats", {}).get(source, []):
+        total = int(stat["count"] or 0)
         if total <= 0:
             continue
-        _emit(cc, total, lo, hi, fontes_tbl)
+        _emit(
+            stat["country"],
+            total,
+            stat.get("min_fonte_id"),
+            stat.get("max_fonte_id"),
+            stat["source_table"],
+        )
 
     return out
 
@@ -534,12 +719,10 @@ def _shards_for_source(
 
 
 def _compute_gates(local_inv: dict, render_inv: dict) -> dict:
-    # db size gate: parse e comparar com 12 GB
     db_size = render_inv.get("db_size_pretty", "") or ""
-    db_below_12gb = True
+    db_below_12gb = None
     try:
-        # "4234 MB" / "10 GB" / "13 GB" style
-        parts = db_size.split()
+        parts = db_size.replace(",", ".").split()
         if len(parts) == 2:
             val = float(parts[0])
             unit = parts[1].upper()
@@ -552,24 +735,48 @@ def _compute_gates(local_inv: dict, render_inv: dict) -> dict:
                 gb = val * 1024
             db_below_12gb = gb < 12.0
     except Exception:
-        db_below_12gb = True
+        db_below_12gb = None
 
-    queue_pending = int(render_inv.get("ingestion_review_queue_pending", 0) or 0)
-    queue_below_100k = queue_pending < 100_000
+    queue_pending = render_inv.get("ingestion_review_queue_pending")
+    queue_below_100k = None if queue_pending in (None, "") else int(queue_pending) < 100_000
 
-    stores_local = int(local_inv.get("lojas_scraping_total", 0) or 0)
-    stores_render = int(render_inv.get("stores_total", 0) or 0)
-    if stores_render > 0:
-        ratio = abs(stores_local - stores_render) / stores_render
-        stores_diff_ok = ratio < 0.20
+    stores_local = local_inv.get("lojas_scraping_total")
+    stores_render = render_inv.get("stores_total")
+    if stores_local in (None, "") or stores_render in (None, ""):
+        ratio = None
+        stores_diff_ok = None
     else:
-        ratio = 0.0
-        stores_diff_ok = False
+        stores_local = int(stores_local or 0)
+        stores_render = int(stores_render or 0)
+        if stores_render > 0:
+            ratio = abs(stores_local - stores_render) / stores_render
+            stores_diff_ok = ratio < 0.20
+        else:
+            ratio = None
+            stores_diff_ok = None
 
     return {
-        "db_size_below_12gb": bool(db_below_12gb),
-        "queue_below_100k": bool(queue_below_100k),
-        "stores_diff_below_20pct": bool(stores_diff_ok),
+        "db_size_below_12gb": (
+            _gate("PASS")
+            if db_below_12gb is True
+            else _gate("FAIL", db_size_pretty=db_size)
+            if db_below_12gb is False
+            else _gate("NAO_AVALIADO", reason="db_size_pretty_ausente_ou_invalido")
+        ),
+        "queue_below_100k": (
+            _gate("PASS")
+            if queue_below_100k is True
+            else _gate("FAIL", queue_pending=queue_pending)
+            if queue_below_100k is False
+            else _gate("NAO_AVALIADO", reason="queue_pending_ausente")
+        ),
+        "stores_diff_below_20pct": (
+            _gate("PASS", ratio=ratio)
+            if stores_diff_ok is True
+            else _gate("FAIL", ratio=ratio)
+            if stores_diff_ok is False
+            else _gate("NAO_AVALIADO", reason="stores_total_render_ausente_ou_zero")
+        ),
     }
 
 
@@ -626,7 +833,10 @@ def _write_summary_txt(path: Path, inv: dict) -> None:
     lines.append("")
     lines.append("## Gates")
     for k, v in (inv.get("gates") or {}).items():
-        lines.append(f"- {k}: {'PASS' if v else 'FAIL'}")
+        status = v.get("status", "DESCONHECIDO") if isinstance(v, dict) else str(v)
+        reason = v.get("reason") if isinstance(v, dict) else None
+        suffix = f" ({reason})" if reason else ""
+        lines.append(f"- {k}: {status}{suffix}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -655,18 +865,14 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     print("[inventario] conectando local (read-only)...")
-    with _connect_ro(local_dsn) as conn_local:
+    with _connect_ro(local_dsn, statement_timeout_ms=LOCAL_STATEMENT_TIMEOUT_MS) as conn_local:
         local_inv = _collect_local(conn_local)
         inventory["winegod_local"] = local_inv
-
-        vinhos_tables = local_inv.get("vinhos_tables", [])
 
         all_shards: list[dict] = []
         for src in SOURCES:
             print(f"[inventario] calculando shards source={src}...")
-            all_shards.extend(
-                _shards_for_source(conn_local, src, vinhos_tables, shard_size=args.shard_size)
-            )
+            all_shards.extend(_shards_for_source(local_inv, src, shard_size=args.shard_size))
 
         shards_path = REPORT_DIR / "shards.csv"
         _write_csv(shards_path, all_shards)
@@ -679,17 +885,23 @@ def main(argv: list[str] | None = None) -> int:
             print("AVISO: DATABASE_URL (Render) ausente; pulando parte Render.", file=sys.stderr)
         else:
             print("[inventario] conectando Render (read-only)...")
-            with _connect_ro(r_dsn) as conn_render:
+            with _connect_ro(r_dsn, statement_timeout_ms=RENDER_STATEMENT_TIMEOUT_MS) as conn_render:
                 render_inv = _collect_render(conn_render)
     inventory["render"] = render_inv
 
     # diff
-    stores_local = int(local_inv.get("lojas_scraping_total", 0) or 0)
-    stores_render = int(render_inv.get("stores_total", 0) or 0)
+    stores_local = local_inv.get("lojas_scraping_total")
+    stores_render = render_inv.get("stores_total")
     inventory["diff"] = {
-        "stores_local_vs_render_delta": stores_local - stores_render,
+        "stores_local_vs_render_delta": (
+            int(stores_local) - int(stores_render)
+            if stores_local not in (None, "") and stores_render not in (None, "")
+            else None
+        ),
         "stores_local_vs_render_ratio": (
-            (stores_local - stores_render) / stores_render if stores_render else 0.0
+            (int(stores_local) - int(stores_render)) / int(stores_render)
+            if stores_local not in (None, "") and stores_render not in (None, "") and int(stores_render) > 0
+            else None
         ),
     }
     inventory["gates"] = _compute_gates(local_inv, render_inv)

@@ -47,6 +47,7 @@ MIGRATION_SCHEMA_CHECKS = {
 }
 
 AUDIT_SNAPSHOT = "audit_wines_pre_subida_20260424"
+AUDIT_SNAPSHOT_SOURCES = "audit_wine_sources_pre_subida_20260424"
 
 
 def _load_env() -> None:
@@ -176,6 +177,7 @@ def main() -> int:
     render_size = ""
     render_counts: dict[str, int] = {}
     snapshot_exists = False
+    snapshot_sources_exists = False
     if not render_dsn:
         lines.append("- AVISO: DATABASE_URL ausente; pulando checks de schema Render.")
     else:
@@ -194,6 +196,7 @@ def main() -> int:
                         all_ok = all_ok and ok
                     schema_gates[mig] = all_ok
                 snapshot_exists = _regclass(conn, AUDIT_SNAPSHOT)
+                snapshot_sources_exists = _regclass(conn, AUDIT_SNAPSHOT_SOURCES)
                 render_size = _render_size(conn)
                 for t in ("wines", "wine_sources", "stores"):
                     if _regclass(conn, t):
@@ -229,7 +232,14 @@ def main() -> int:
     else:
         lines.append(
             f"- `{AUDIT_SNAPSHOT}` -> FALTA CRIAR: "
-            f"`CREATE TABLE {AUDIT_SNAPSHOT} AS SELECT id, ingestion_run_id, created_at FROM wines;`"
+            f"`CREATE TABLE {AUDIT_SNAPSHOT} AS SELECT id, ingestion_run_id, descoberto_em AS captured_at FROM wines;`"
+        )
+    if snapshot_sources_exists:
+        lines.append(f"- `{AUDIT_SNAPSHOT_SOURCES}` -> OK (presente)")
+    else:
+        lines.append(
+            f"- `{AUDIT_SNAPSHOT_SOURCES}` -> FALTA CRIAR: "
+            f"`CREATE TABLE {AUDIT_SNAPSHOT_SOURCES} AS SELECT id, wine_id, ingestion_run_id FROM wine_sources;`"
         )
     lines.append("")
 
@@ -250,7 +260,8 @@ def main() -> int:
     gates["dsn_render_presente"] = bool(render_dsn)
     for mig, ok in schema_gates.items():
         gates[f"migration_{mig}_ok"] = bool(ok)
-    gates["snapshot_audit_presente"] = bool(snapshot_exists)
+    gates["snapshot_audit_wines_presente"] = bool(snapshot_exists)
+    gates["snapshot_audit_wine_sources_presente"] = bool(snapshot_sources_exists)
     for k, v in gates.items():
         lines.append(f"- {k}: {'PASS' if v else 'FAIL'}")
 
