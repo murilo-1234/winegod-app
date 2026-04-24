@@ -110,7 +110,9 @@ Relatorio tecnico completo:
 15. **Branch/commit/push**:
     - Branch: `data-ops/execucao-total-commerce-fechamento-final-20260424`
     - Base: `ab39d816 docs(data-ops): pin 7d617434 SHA in minimal corrective commerce docs`
-    - Commits + SHA: pinados no relatorio final apos push.
+    - Commit consolidado: `f1c10bde feat(commerce): fechamento final - 5 exporters + health + apply wrappers + runbook + triggers`
+    - Push: `origin/data-ops/execucao-total-commerce-fechamento-final-20260424`
+    - Nota: commit consolidado (nao granular por fase) porque checkouts intermitentes durante a sessao levaram alguns commits para branches laterais; em vez de `git reset --hard` para forcar granularidade, preferi unificar honestamente. Ver secao L do relatorio tecnico.
 
 ## Apendice - Arquivos a repassar para o Claude admin
 

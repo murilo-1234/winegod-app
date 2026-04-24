@@ -352,8 +352,17 @@ Nenhuma env default-on. Todas exigem opt-in explicito.
 
 - Branch: `data-ops/execucao-total-commerce-fechamento-final-20260424`
 - Base: `ab39d816 docs(data-ops): pin 7d617434 SHA in minimal corrective commerce docs`
-- Commits: ver secao final apos push. Commits granulares por fase
-  (Fases A, B-F, G, H, I, J, K, L, M, N, P).
+- Commit consolidado: `f1c10bde feat(commerce): fechamento final - 5 exporters + health + apply wrappers + runbook + triggers`
+- Remote: `origin/data-ops/execucao-total-commerce-fechamento-final-20260424`
+
+Nota sobre granularidade: o prompt sugeriu commits por fase. Devido a
+acidentes intermitentes de checkout durante a sessao, o commit final
+ficou consolidado num unico `f1c10bde`. Historico por fase esta no
+relatorio tecnico (este arquivo, secoes 2-16). Branches laterais que
+receberam commits por engano estao documentadas em
+`reports/WINEGOD_COMMERCE_GIT_CLEANUP_2026-04-24.md` (Fase L). Preferi
+commit consolidado honesto a reescrita de historia via
+`git reset --hard`.
 
 ## 18. Proximos passos bloqueados por dependencia externa
 
