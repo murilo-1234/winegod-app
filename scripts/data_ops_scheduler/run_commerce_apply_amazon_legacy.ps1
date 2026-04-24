@@ -62,10 +62,27 @@ foreach ($limit in $Ladder) {
   if ($PauseSeconds -gt 0) { Start-Sleep -Seconds $PauseSeconds }
 }
 
-$doneMarker = @{
-  completed_at = (Get-Date -Format 'o')
-  ladder = $Ladder
-} | ConvertTo-Json -Depth 3
-Set-Content -Path $doneFlag -Value $doneMarker -Encoding UTF8
-Write-Host "==> apply amazon_legacy ladder completa. State: $doneFlag"
+if ($env:COMMERCE_AMAZON_LEGACY_MARK_DONE -eq "1") {
+  $manifestPath = Join-Path $repoRoot 'reports\subida_vinhos_20260424\run_manifest.jsonl'
+  if (-not (Test-Path $manifestPath)) {
+    Write-Host "ABORT: manifest $manifestPath nao existe; nao pode marcar done."
+    exit 6
+  }
+  $legacyShards = Get-Content $manifestPath | ConvertFrom-Json | Where-Object { $_.source -eq 'amazon_local_legacy_backfill' }
+  $allPass = ($legacyShards.Count -gt 0) -and ($legacyShards | ForEach-Object { $_.status } | Where-Object { $_ -ne 'PASS' } | Measure-Object).Count -eq 0
+  if (-not $allPass) {
+    Write-Host "ABORT: nem todos shards legacy estao PASS; nao marcar done."
+    exit 6
+  }
+  $doneMarker = @{
+    completed_at = (Get-Date -Format 'o')
+    marked_by = 'COMMERCE_AMAZON_LEGACY_MARK_DONE=1'
+    manifest_path = $manifestPath
+    shards_count = $legacyShards.Count
+  } | ConvertTo-Json -Depth 3
+  Set-Content -Path $doneFlag -Value $doneMarker -Encoding UTF8
+  Write-Host "==> done marker CRIADO: $doneFlag"
+} else {
+  Write-Host "==> apply legacy ladder completa. Done marker NAO criado (falta COMMERCE_AMAZON_LEGACY_MARK_DONE=1)."
+}
 exit 0
