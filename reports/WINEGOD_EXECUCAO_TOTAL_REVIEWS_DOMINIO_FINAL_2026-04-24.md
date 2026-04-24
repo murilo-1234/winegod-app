@@ -244,6 +244,8 @@ Residuais reais nesta fase:
    estado da branch anterior (`data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`).
    O commit inclui APENAS os arquivos citados em §8 (criados + atualizados).
    Nenhuma outra mudanca pendente do commerce foi arrastada.
+   - SHA do commit: `23a6d87d`
+   - Push: `origin/data-ops/execucao-total-reviews-dominio-final-20260424`
 
 4. **Deploy Render**: nada neste pacote muda o Render. O canal Vivino roda
    localmente (Task Scheduler S4U no `este_pc`), escrevendo diretamente no
