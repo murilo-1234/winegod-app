@@ -14,7 +14,7 @@ from sdk.plugs.common import (
     utc_compact,
     write_jsonl,
 )
-from .exporters import EXPORTERS, export_tier2_to_dq_stub
+from .exporters import EXPORTERS, export_tier2_from_artifact, export_tier2_to_dq_stub
 
 
 MANIFEST_PATH = Path(__file__).resolve().with_name("manifest.yaml")
@@ -66,7 +66,11 @@ def run(source: str, *, limit: int, apply: bool, transport: str) -> int:
     lookup = build_store_lookup()
     exporter = EXPORTERS.get(source)
     if source in TIER2_SOURCES:
-        bundle = export_tier2_to_dq_stub(source=source)
+        # Tenta consumir artefato padronizado; se nao existir, cai no stub
+        # blocked_contract_missing para preservar o comportamento honesto.
+        bundle = export_tier2_from_artifact(source=source, limit=limit, lookup=lookup)
+        if bundle.state != "observed":
+            bundle = export_tier2_to_dq_stub(source=source)
     elif exporter:
         bundle = exporter(limit=limit, lookup=lookup)
     else:

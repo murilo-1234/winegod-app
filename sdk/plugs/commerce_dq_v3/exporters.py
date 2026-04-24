@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 import psycopg2
 
@@ -221,6 +223,158 @@ def export_amazon_local_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBu
     )
 
 
+def export_amazon_local_legacy_backfill_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    """Backfill controlado do historico amazon_local.
+
+    Marca lineage como `legacy_local_backfill` para diferenciar do feed primario
+    do espelho. Nao cria wine_sources paralelo; apenas anota _source_pipeline e
+    _source_dataset para o dashboard reconhecer que a fonte e legado.
+
+    Regras:
+    - ainda consome o mesmo `vinhos_*` + `vinhos_*_fontes` do winegod_db;
+    - filtra por `fonte ILIKE 'amazon%'`;
+    - marca cada item com `_source_pipeline='amazon_local_legacy_backfill'`;
+    - serve para rodar em lotes controlados apos o espelho virar primario;
+    - NAO deve ser promovido a feed recorrente principal.
+    """
+
+    bundle = _collect_winegod_candidates(
+        limit=limit,
+        lookup=lookup,
+        source_filter=lambda fonte: fonte.lower().startswith("amazon"),
+        source_name="amazon_local_legacy_backfill",
+    )
+    for item in bundle.items:
+        item["_source_pipeline"] = "amazon_local_legacy_backfill"
+        item["_source_lineage"] = "legacy_local"
+    bundle.notes.append("lineage=legacy_local_backfill")
+    return bundle
+
+
+def _amazon_mirror_artifact_dir() -> Path:
+    explicit = os.environ.get("AMAZON_MIRROR_ARTIFACT_DIR")
+    if explicit:
+        return Path(explicit)
+    return REPO_ROOT / "reports" / "data_ops_artifacts" / "amazon_mirror"
+
+
+def _load_jsonl_artifact(path: Path, limit: int) -> list[dict]:
+    items: list[dict] = []
+    with path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                items.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+            if len(items) >= limit:
+                break
+    return items
+
+
+def _pick_latest_artifact(base: Path, suffix: str = ".jsonl") -> Path | None:
+    if not base.exists():
+        return None
+    candidates = sorted(
+        (p for p in base.iterdir() if p.is_file() and p.suffix == suffix),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
+def export_amazon_mirror_primary_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    """Feed primario oficial da Amazon, alimentado por artefato do PC espelho.
+
+    Contrato:
+    - um JSONL por execucao do espelho, com campos minimos
+      (pipeline_family, run_id, country, store_name, store_domain,
+       url_original, nome, produtor, safra, preco, moeda, captured_at,
+       source_pointer);
+    - o diretorio padrao e `reports/data_ops_artifacts/amazon_mirror/`
+      (configuravel via `AMAZON_MIRROR_ARTIFACT_DIR`);
+    - o exporter pega o artefato mais recente e aplica lookup de store_id;
+    - se nao houver artefato, retorna `blocked_external_host` com command_hint.
+    """
+
+    base = _amazon_mirror_artifact_dir()
+    latest = _pick_latest_artifact(base)
+    if latest is None:
+        return ExportBundle(
+            source="amazon_mirror_primary",
+            state="blocked_external_host",
+            notes=[
+                "nenhum_artefato_jsonl_em=" + str(base),
+                "host_externo_pc_espelho",
+                "entregar_jsonl_em=reports/data_ops_artifacts/amazon_mirror/",
+            ],
+            command_hint="powershell -File scripts/data_ops_shadow/run_commerce_amazon_mirror_primary_shadow.ps1",
+        )
+
+    raw_items = _load_jsonl_artifact(latest, limit)
+    items: list[dict] = []
+    unresolved: list[str] = []
+    for raw in raw_items:
+        url = raw.get("url_original") or raw.get("url")
+        domain = normalize_domain(url)
+        store_id = resolve_store_id(url, lookup)
+        price = raw.get("preco")
+        item = {
+            "nome": raw.get("nome"),
+            "produtor": raw.get("produtor"),
+            "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
+            "tipo": raw.get("tipo"),
+            "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
+            "regiao": raw.get("regiao"),
+            "sub_regiao": raw.get("sub_regiao"),
+            "uvas": raw.get("uvas"),
+            "ean_gtin": raw.get("ean_gtin") or raw.get("asin"),
+            "imagem_url": raw.get("imagem_url") or raw.get("url_imagem"),
+            "harmonizacao": raw.get("harmonizacao"),
+            "descricao": raw.get("descricao"),
+            "preco_min": float(price) if price is not None else None,
+            "preco_max": float(price) if price is not None else None,
+            "moeda": raw.get("moeda"),
+            "_source_dataset": "amazon_mirror",
+            "_source_pipeline": raw.get("pipeline_family") or "amazon_mirror_primary",
+            "_source_pointer": raw.get("source_pointer") or str(latest.name),
+            "_source_run_id": raw.get("run_id"),
+            "_source_captured_at": raw.get("captured_at"),
+            "_source_domain": domain,
+            "_source_lineage": "primary",
+        }
+        if store_id and url:
+            item["sources"] = [
+                {
+                    "store_id": store_id,
+                    "url": url,
+                    "preco": float(price) if price is not None else None,
+                    "moeda": raw.get("moeda"),
+                    "disponivel": bool(raw.get("disponivel", True)),
+                }
+            ]
+        else:
+            item["sources"] = []
+            if domain:
+                unresolved.append(domain)
+        items.append(item)
+
+    return ExportBundle(
+        source="amazon_mirror_primary",
+        state="observed" if items else "blocked_missing_source",
+        items=items[:limit],
+        unresolved_domains=sorted(set(unresolved))[:50],
+        notes=[
+            f"items_exported={len(items[:limit])}",
+            f"artifact={latest.name}",
+            f"artifact_sha256={hashlib.sha256(latest.read_bytes()).hexdigest()}",
+            "lineage=primary",
+        ],
+    )
+
+
 def export_vinhos_brasil_legacy_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
     load_repo_envs()
     dsn = _vinhos_brasil_dsn()
@@ -307,11 +461,156 @@ def export_amazon_mirror_to_dq_stub(*, limit: int, lookup: dict[str, int]) -> Ex
     )
 
 
+def _tier_artifact_dir(family: str, chat: str | None = None) -> Path:
+    explicit = os.environ.get(f"{family.upper()}_ARTIFACT_DIR")
+    if explicit:
+        return Path(explicit)
+    base = REPO_ROOT / "reports" / "data_ops_artifacts" / family
+    if chat:
+        return base / chat
+    return base
+
+
+def _export_tier_from_artifact(
+    *,
+    source_name: str,
+    pipeline_family: str,
+    limit: int,
+    lookup: dict[str, int],
+    artifact_dir: Path,
+) -> ExportBundle:
+    """Exporter generico para Tier1/Tier2 consumindo artefato padronizado JSONL.
+
+    Contrato minimo por item (ver docs/TIER_COMMERCE_CONTRACT.md):
+      pipeline_family, run_id, country, store_name, store_domain,
+      url_original, nome, produtor, safra, preco, moeda, captured_at,
+      source_pointer
+
+    Retorna `blocked_contract_missing` se o diretorio nao existir ou se o
+    artefato mais recente nao for JSONL valido.
+    """
+
+    latest = _pick_latest_artifact(artifact_dir)
+    if latest is None:
+        return ExportBundle(
+            source=source_name,
+            state="blocked_contract_missing",
+            notes=[
+                f"nenhum_artefato_jsonl_em={artifact_dir}",
+                f"entregar_jsonl_em={artifact_dir}",
+                "contrato=docs/TIER_COMMERCE_CONTRACT.md",
+            ],
+            command_hint=f"powershell -File scripts/data_ops_shadow/run_commerce_{source_name}_shadow.ps1",
+        )
+
+    raw_items = _load_jsonl_artifact(latest, limit)
+    items: list[dict] = []
+    unresolved: list[str] = []
+    for raw in raw_items:
+        if raw.get("pipeline_family") and raw["pipeline_family"] not in (pipeline_family, source_name):
+            continue
+        url = raw.get("url_original") or raw.get("url")
+        domain = normalize_domain(url)
+        store_id = resolve_store_id(url, lookup)
+        price = raw.get("preco")
+        item = {
+            "nome": raw.get("nome"),
+            "produtor": raw.get("produtor"),
+            "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
+            "tipo": raw.get("tipo"),
+            "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
+            "regiao": raw.get("regiao"),
+            "sub_regiao": raw.get("sub_regiao"),
+            "uvas": raw.get("uvas"),
+            "ean_gtin": raw.get("ean_gtin"),
+            "imagem_url": raw.get("imagem_url") or raw.get("url_imagem"),
+            "harmonizacao": raw.get("harmonizacao"),
+            "descricao": raw.get("descricao"),
+            "preco_min": float(price) if price is not None else None,
+            "preco_max": float(price) if price is not None else None,
+            "moeda": raw.get("moeda"),
+            "_source_dataset": source_name,
+            "_source_pipeline": raw.get("pipeline_family") or pipeline_family,
+            "_source_pointer": raw.get("source_pointer") or str(latest.name),
+            "_source_run_id": raw.get("run_id"),
+            "_source_captured_at": raw.get("captured_at"),
+            "_source_domain": domain,
+            "_source_store_name": raw.get("store_name"),
+            "_source_lineage": "primary" if pipeline_family in ("tier1", "tier2") else "mixed",
+        }
+        if store_id and url:
+            item["sources"] = [
+                {
+                    "store_id": store_id,
+                    "url": url,
+                    "preco": float(price) if price is not None else None,
+                    "moeda": raw.get("moeda"),
+                    "disponivel": bool(raw.get("disponivel", True)),
+                }
+            ]
+        else:
+            item["sources"] = []
+            if domain:
+                unresolved.append(domain)
+        items.append(item)
+
+    return ExportBundle(
+        source=source_name,
+        state="observed" if items else "blocked_contract_missing",
+        items=items[:limit],
+        unresolved_domains=sorted(set(unresolved))[:50],
+        notes=[
+            f"items_exported={len(items[:limit])}",
+            f"artifact={latest.name}",
+            f"artifact_sha256={hashlib.sha256(latest.read_bytes()).hexdigest()}",
+            f"pipeline_family={pipeline_family}",
+        ],
+    )
+
+
+def export_tier1_global_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    return _export_tier_from_artifact(
+        source_name="tier1_global",
+        pipeline_family="tier1",
+        limit=limit,
+        lookup=lookup,
+        artifact_dir=_tier_artifact_dir("tier1"),
+    )
+
+
+def export_tier2_from_artifact(*, source: str, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    chat = source.replace("tier2_", "")
+    return _export_tier_from_artifact(
+        source_name=source,
+        pipeline_family="tier2",
+        limit=limit,
+        lookup=lookup,
+        artifact_dir=_tier_artifact_dir("tier2", chat=chat),
+    )
+
+
+# Stubs mantidos para retrocompatibilidade dos schedulers antigos que ainda
+# apontam para nomes genericos. Nao sao mais o caminho recomendado.
+def export_amazon_mirror_to_dq_stub(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    return ExportBundle(
+        source="amazon_mirror",
+        state="blocked_external_host",
+        notes=[
+            "host_externo_sem_acesso_local",
+            "prefira=amazon_mirror_primary_via_artifact",
+        ],
+        command_hint="powershell -File scripts/data_ops_shadow/run_commerce_amazon_mirror_shadow.ps1",
+    )
+
+
 def export_tier1_global_to_dq_stub(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
     return ExportBundle(
         source="tier1_global",
         state="blocked_contract_missing",
-        notes=["persistido_local_nao_isola_tier1_do_restante_do_winegod_admin"],
+        notes=[
+            "persistido_local_nao_isola_tier1_do_restante_do_winegod_admin",
+            "prefira=tier1_global_via_artifact",
+        ],
         command_hint="powershell -File scripts/data_ops_shadow/run_commerce_tier1_global_shadow.ps1",
     )
 
@@ -320,15 +619,43 @@ def export_tier2_to_dq_stub(*, source: str) -> ExportBundle:
     return ExportBundle(
         source=source,
         state="blocked_contract_missing",
-        notes=["saida_por_chat_sem_artefato_local_padronizado"],
+        notes=[
+            "saida_por_chat_sem_artefato_local_padronizado",
+            "prefira=tier2_from_artifact",
+        ],
         command_hint=f"powershell -File scripts/data_ops_shadow/run_commerce_{source}_shadow.ps1",
     )
+
+
+def export_winegod_admin_legacy_mixed_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
+    """Backfill honesto do historico Tier1/Tier2 misturado.
+
+    Quando nao e possivel provar qual linha veio de Tier1 ou Tier2 sem
+    reconstruir metadados, este exporter deixa a lineage explicita como
+    `legacy_mixed`. Aparece no dashboard como fonte separada e nao finge ser
+    Tier1 ou Tier2 puro.
+    """
+
+    bundle = _collect_winegod_candidates(
+        limit=limit,
+        lookup=lookup,
+        source_filter=lambda fonte: not fonte.lower().startswith("amazon"),
+        source_name="winegod_admin_legacy_mixed",
+    )
+    for item in bundle.items:
+        item["_source_pipeline"] = "winegod_admin_legacy_mixed"
+        item["_source_lineage"] = "legacy_mixed"
+    bundle.notes.append("lineage=legacy_mixed")
+    return bundle
 
 
 EXPORTERS = {
     "winegod_admin_world": export_winegod_admin_world_to_dq,
     "vinhos_brasil_legacy": export_vinhos_brasil_legacy_to_dq,
     "amazon_local": export_amazon_local_to_dq,
+    "amazon_local_legacy_backfill": export_amazon_local_legacy_backfill_to_dq,
     "amazon_mirror": export_amazon_mirror_to_dq_stub,
-    "tier1_global": export_tier1_global_to_dq_stub,
+    "amazon_mirror_primary": export_amazon_mirror_primary_to_dq,
+    "tier1_global": export_tier1_global_to_dq,
+    "winegod_admin_legacy_mixed": export_winegod_admin_legacy_mixed_to_dq,
 }

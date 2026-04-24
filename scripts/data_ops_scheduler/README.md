@@ -12,6 +12,21 @@ These scripts prepare the control plane cadence without installing a Windows sch
 - `run_discovery_stores_dryruns.ps1` - dry-run dedicado discovery (agent_discovery)
 - `run_enrichment_dryruns.ps1` - dry-run dedicado enrichment (gemini_batch_reports; sem Gemini pago)
 - `run_plug_reviews_scores_apply.ps1` - apply canonico de vivino_wines_to_ratings (incremental_recent | backfill_windowed)
+- `run_commerce_artifact_dryruns.ps1` - dry-run das fontes commerce baseadas em artefato padronizado: `amazon_mirror_primary`, `tier1_global`, `tier2_*`. Sem artefato = `blocked_contract_missing` honesto.
+
+## Artefatos padronizados de commerce
+
+Contrato: `docs/TIER_COMMERCE_CONTRACT.md`.
+
+Diretorios esperados:
+
+```
+reports/data_ops_artifacts/amazon_mirror/<timestamp>_<run_id>.jsonl
+reports/data_ops_artifacts/tier1/<timestamp>_<run_id>.jsonl
+reports/data_ops_artifacts/tier2/<chat>/<timestamp>_<run_id>.jsonl
+```
+
+Variaveis opcionais: `AMAZON_MIRROR_ARTIFACT_DIR`, `TIER1_ARTIFACT_DIR`, `TIER2_ARTIFACT_DIR`.
 
 ## Behavior
 
