@@ -107,7 +107,7 @@ Zero apply produtivo. Zero escrita em `public.wines`/`public.wine_sources`.
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - HEAD previo: `5b6e3875`
-- Commit fix desta rodada: `<preenchido apos commit>`
+- Commit fix desta rodada: `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Arquivo a repassar para o Codex admin
