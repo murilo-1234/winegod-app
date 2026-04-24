@@ -57,6 +57,11 @@ class AmazonMirrorConfig:
     batch_size: int = BATCH_SIZE
     dsn: str | None = None
     state_source_key: str = STATE_KEY  # customizavel para testes
+    # Sharding (plano 3 fases).
+    source_table_filter: str | None = None
+    min_fonte_id: int | None = None
+    max_fonte_id: int | None = None
+    shard_id: str | None = None
 
 
 def _pending_path(state_source_key: str) -> Path:
@@ -131,6 +136,8 @@ def _iter_rows(conn, cfg: AmazonMirrorConfig, since: datetime | None) -> Iterato
             if cfg.country_filter and cc.upper() not in [c.upper() for c in cfg.country_filter]:
                 continue
             source_table = f"{base}_fontes"
+            if cfg.source_table_filter and source_table != cfg.source_table_filter:
+                continue
             sql = f"""
                 SELECT
                   v.id,
@@ -150,6 +157,12 @@ def _iter_rows(conn, cfg: AmazonMirrorConfig, since: datetime | None) -> Iterato
                   AND f.fonte IN ({placeholders})
             """
             params: list = list(fontes)
+            if cfg.min_fonte_id is not None:
+                sql += " AND f.id >= %s"
+                params.append(cfg.min_fonte_id)
+            if cfg.max_fonte_id is not None:
+                sql += " AND f.id <= %s"
+                params.append(cfg.max_fonte_id)
             if since is not None:
                 sql += " AND COALESCE(f.atualizado_em, f.descoberto_em) > %s"
                 params.append(since)
@@ -199,6 +212,13 @@ def _resolve_since(cfg: AmazonMirrorConfig) -> datetime | None:
 
 def run_export(cfg: AmazonMirrorConfig | None = None) -> ExporterResult:
     cfg = cfg or AmazonMirrorConfig()
+    if cfg.min_fonte_id is not None and cfg.max_fonte_id is not None:
+        if cfg.min_fonte_id > cfg.max_fonte_id:
+            return ExporterResult(
+                ok=False,
+                reason="shard_range_invalid",
+                notes=[f"min_fonte_id={cfg.min_fonte_id} > max_fonte_id={cfg.max_fonte_id}"],
+            )
     # Guard: pending orfao bloqueia um novo run para nao perder historia.
     if has_pending_state(cfg.state_source_key):
         pending = _pending_path(cfg.state_source_key)
@@ -214,6 +234,12 @@ def run_export(cfg: AmazonMirrorConfig | None = None) -> ExporterResult:
     since = _resolve_since(cfg)
     started_at = datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
+    shard_spec = {
+        "shard_id": cfg.shard_id,
+        "source_table": cfg.source_table_filter,
+        "min_fonte_id": cfg.min_fonte_id,
+        "max_fonte_id": cfg.max_fonte_id,
+    } if (cfg.shard_id or cfg.source_table_filter or cfg.min_fonte_id is not None or cfg.max_fonte_id is not None) else None
     try:
         with connect_readonly(cfg.dsn) as conn:
             captured_seen: list[datetime] = []
@@ -237,6 +263,7 @@ def run_export(cfg: AmazonMirrorConfig | None = None) -> ExporterResult:
                 started_at=started_at,
                 input_scope=",".join(cfg.country_filter) if cfg.country_filter else "global",
                 max_items=cfg.max_items,
+                shard_spec=shard_spec,
             )
             if result.ok and captured_seen:
                 latest = max(captured_seen)

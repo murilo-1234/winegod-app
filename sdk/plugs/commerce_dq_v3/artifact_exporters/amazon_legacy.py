@@ -41,6 +41,11 @@ class AmazonLegacyConfig:
     country_filter: list[str] | None = None
     batch_size: int = BATCH_SIZE
     dsn: str | None = None
+    # Sharding (plano 3 fases).
+    source_table_filter: str | None = None
+    min_fonte_id: int | None = None
+    max_fonte_id: int | None = None
+    shard_id: str | None = None
 
 
 def _iter_rows(conn, cfg: AmazonLegacyConfig) -> Iterator[ExportRow]:
@@ -53,6 +58,16 @@ def _iter_rows(conn, cfg: AmazonLegacyConfig) -> Iterator[ExportRow]:
             if cfg.country_filter and cc.upper() not in [c.upper() for c in cfg.country_filter]:
                 continue
             source_table = f"{base}_fontes"
+            if cfg.source_table_filter and source_table != cfg.source_table_filter:
+                continue
+            range_clause = ""
+            range_params: list = []
+            if cfg.min_fonte_id is not None:
+                range_clause += " AND f.id >= %s"
+                range_params.append(cfg.min_fonte_id)
+            if cfg.max_fonte_id is not None:
+                range_clause += " AND f.id <= %s"
+                range_params.append(cfg.max_fonte_id)
             sql = f"""
                 SELECT
                   v.id,
@@ -69,12 +84,12 @@ def _iter_rows(conn, cfg: AmazonLegacyConfig) -> Iterator[ExportRow]:
                 FROM public.{source_table} f
                 JOIN public.{base} v ON v.id = f.vinho_id
                 WHERE f.url_original IS NOT NULL
-                  AND f.fonte IN ({placeholders})
+                  AND f.fonte IN ({placeholders}){range_clause}
                 ORDER BY f.id DESC
             """
             offset = 0
             while True:
-                cur.execute(sql + " LIMIT %s OFFSET %s", fontes + [cfg.batch_size, offset])
+                cur.execute(sql + " LIMIT %s OFFSET %s", fontes + range_params + [cfg.batch_size, offset])
                 rows = cur.fetchall()
                 if not rows:
                     break
@@ -102,8 +117,21 @@ def _iter_rows(conn, cfg: AmazonLegacyConfig) -> Iterator[ExportRow]:
 
 def run_export(cfg: AmazonLegacyConfig | None = None) -> ExporterResult:
     cfg = cfg or AmazonLegacyConfig()
+    if cfg.min_fonte_id is not None and cfg.max_fonte_id is not None:
+        if cfg.min_fonte_id > cfg.max_fonte_id:
+            return ExporterResult(
+                ok=False,
+                reason="shard_range_invalid",
+                notes=[f"min_fonte_id={cfg.min_fonte_id} > max_fonte_id={cfg.max_fonte_id}"],
+            )
     started_at = datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
+    shard_spec = {
+        "shard_id": cfg.shard_id,
+        "source_table": cfg.source_table_filter,
+        "min_fonte_id": cfg.min_fonte_id,
+        "max_fonte_id": cfg.max_fonte_id,
+    } if (cfg.shard_id or cfg.source_table_filter or cfg.min_fonte_id is not None or cfg.max_fonte_id is not None) else None
     try:
         with connect_readonly(cfg.dsn) as conn:
             def items_gen():
@@ -122,6 +150,7 @@ def run_export(cfg: AmazonLegacyConfig | None = None) -> ExporterResult:
                 started_at=started_at,
                 input_scope=",".join(cfg.country_filter) if cfg.country_filter else "global",
                 max_items=cfg.max_items,
+                shard_spec=shard_spec,
             )
     except RuntimeError as exc:
         return ExporterResult(ok=False, reason=f"dsn_missing:{exc}")

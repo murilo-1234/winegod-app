@@ -34,6 +34,11 @@ def main() -> int:
         help="CSV de ISO-2 (ex: us,br,fr). Omitir = todos os paises.",
     )
     parser.add_argument("--batch-size", type=int, default=10000)
+    # Sharding (plano 3 fases):
+    parser.add_argument("--source-table", default=None)
+    parser.add_argument("--min-fonte-id", type=int, default=None)
+    parser.add_argument("--max-fonte-id", type=int, default=None)
+    parser.add_argument("--shard-id", default=None)
     args = parser.parse_args()
 
     country_filter = None
@@ -45,6 +50,10 @@ def main() -> int:
         max_items=args.max_items,
         country_filter=country_filter,
         batch_size=args.batch_size,
+        source_table_filter=args.source_table,
+        min_fonte_id=args.min_fonte_id,
+        max_fonte_id=args.max_fonte_id,
+        shard_id=args.shard_id,
     )
     result = run_export(cfg)
     if result.ok:

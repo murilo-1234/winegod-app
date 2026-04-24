@@ -70,6 +70,11 @@ class Tier1GlobalConfig:
     batch_size: int = BATCH_SIZE
     dsn: str | None = None
     country_code_filter: str | None = None  # alias de country_filter[0] se 1 pais
+    # Sharding (plano 3 fases): permite limitar a 1 tabela-pais e faixa fonte_id.
+    source_table_filter: str | None = None  # ex: "vinhos_us_fontes"
+    min_fonte_id: int | None = None
+    max_fonte_id: int | None = None
+    shard_id: str | None = None  # label pro manifest
 
 
 def _iter_rows(
@@ -87,13 +92,23 @@ def _iter_rows(
                 continue
             if pais_codigo and cc.upper() != pais_codigo.upper():
                 continue
+            source_table = f"{base}_fontes"
+            if cfg.source_table_filter and source_table != cfg.source_table_filter:
+                continue
             host_to_loja = list_lojas_by_method(
                 conn, methods=cfg.methods, pais_codigo=cc.upper()
             )
             if not host_to_loja:
                 continue
             loja_hosts = set(host_to_loja.keys())
-            source_table = f"{base}_fontes"
+            range_clause = ""
+            range_params: list = []
+            if cfg.min_fonte_id is not None:
+                range_clause += " AND f.id >= %s"
+                range_params.append(cfg.min_fonte_id)
+            if cfg.max_fonte_id is not None:
+                range_clause += " AND f.id <= %s"
+                range_params.append(cfg.max_fonte_id)
             sql = f"""
                 SELECT
                   v.id,
@@ -109,12 +124,12 @@ def _iter_rows(
                   f.id
                 FROM public.{source_table} f
                 JOIN public.{base} v ON v.id = f.vinho_id
-                WHERE f.url_original IS NOT NULL
+                WHERE f.url_original IS NOT NULL{range_clause}
                 ORDER BY f.id DESC
             """
             offset = 0
             while True:
-                cur.execute(sql + " LIMIT %s OFFSET %s", [cfg.batch_size, offset])
+                cur.execute(sql + " LIMIT %s OFFSET %s", range_params + [cfg.batch_size, offset])
                 rows = cur.fetchall()
                 if not rows:
                     break
@@ -152,8 +167,21 @@ def _iter_rows(
 
 def run_export(cfg: Tier1GlobalConfig | None = None) -> ExporterResult:
     cfg = cfg or Tier1GlobalConfig()
+    if cfg.min_fonte_id is not None and cfg.max_fonte_id is not None:
+        if cfg.min_fonte_id > cfg.max_fonte_id:
+            return ExporterResult(
+                ok=False,
+                reason="shard_range_invalid",
+                notes=[f"min_fonte_id={cfg.min_fonte_id} > max_fonte_id={cfg.max_fonte_id}"],
+            )
     started_at = datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
+    shard_spec = {
+        "shard_id": cfg.shard_id,
+        "source_table": cfg.source_table_filter,
+        "min_fonte_id": cfg.min_fonte_id,
+        "max_fonte_id": cfg.max_fonte_id,
+    } if (cfg.shard_id or cfg.source_table_filter or cfg.min_fonte_id is not None or cfg.max_fonte_id is not None) else None
     try:
         with connect_readonly(cfg.dsn) as conn:
             # Precheck rapido: existe loja Tier1?
@@ -184,6 +212,7 @@ def run_export(cfg: Tier1GlobalConfig | None = None) -> ExporterResult:
                 started_at=started_at,
                 input_scope=",".join(cfg.country_filter) if cfg.country_filter else "global",
                 max_items=cfg.max_items,
+                shard_spec=shard_spec,
             )
     except RuntimeError as exc:
         return ExporterResult(ok=False, reason=f"dsn_missing:{exc}")

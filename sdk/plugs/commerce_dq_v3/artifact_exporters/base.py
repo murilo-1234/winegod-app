@@ -26,6 +26,9 @@ from urllib.parse import urlparse
 REPO_ROOT = Path(__file__).resolve().parents[4]
 STATE_DIR = REPO_ROOT / "reports" / "data_ops_export_state"
 BATCH_SIZE = 10_000
+# Plano 3 fases (Codex, 2026-04-24): apply por shard capped em 50k itens
+# (REGRA 5 + BULK_INGEST_MAX_ITEMS=50000 em backend/config.py:56).
+MAX_SHARD_ITEMS = 50_000
 
 
 @dataclass
@@ -159,11 +162,24 @@ def write_artifact(
     started_at: datetime,
     input_scope: str = "global",
     max_items: int | None = None,
+    shard_spec: dict | None = None,
 ) -> ExporterResult:
     """Grava JSONL + summary. Dedup por `url_original`. Respeita contrato.
 
     `max_items` limita o numero total de items escritos (piloto / smoke).
+    `shard_spec` e um dict opcional com `shard_id`, `source_table`,
+    `min_fonte_id`, `max_fonte_id` para rastreio anti-reprocessamento.
+
+    Raise ValueError se `max_items > MAX_SHARD_ITEMS` (hard cap do plano
+    3 fases: apply por shard capped em 50000 itens).
     """
+
+    if max_items is not None and max_items > MAX_SHARD_ITEMS:
+        raise ValueError(
+            f"max_items={max_items} excede MAX_SHARD_ITEMS={MAX_SHARD_ITEMS} "
+            "(apply commerce capped em 50k itens por shard; REGRA 5 + "
+            "BULK_INGEST_MAX_ITEMS=50000 em backend/config.py)."
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     seen_urls: set[str] = set()
@@ -215,6 +231,13 @@ def write_artifact(
         "items_emitted": emitted,
         "artifact_sha256": real_sha,
     }
+    if shard_spec:
+        summary["shard_spec"] = {
+            "shard_id": shard_spec.get("shard_id"),
+            "source_table": shard_spec.get("source_table"),
+            "min_fonte_id": shard_spec.get("min_fonte_id"),
+            "max_fonte_id": shard_spec.get("max_fonte_id"),
+        }
     summary_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     return ExporterResult(
         ok=True,

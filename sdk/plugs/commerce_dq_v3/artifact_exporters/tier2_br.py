@@ -53,6 +53,11 @@ class Tier2BrConfig:
     methods: list[str] = field(default_factory=lambda: list(TIER2_METHODS))
     batch_size: int = BATCH_SIZE
     dsn: str | None = None
+    # Sharding (plano 3 fases). source_table_filter default = vinhos_br_fontes.
+    source_table_filter: str | None = None
+    min_fonte_id: int | None = None
+    max_fonte_id: int | None = None
+    shard_id: str | None = None
 
 
 def _iter_rows(conn, cfg: Tier2BrConfig) -> Iterator[ExportRow]:
@@ -61,7 +66,18 @@ def _iter_rows(conn, cfg: Tier2BrConfig) -> Iterator[ExportRow]:
         return
     loja_hosts = set(host_to_loja.keys())
     source_table = f"vinhos_{COUNTRY}_fontes"
+    if cfg.source_table_filter and cfg.source_table_filter != source_table:
+        # Tier2 BR so opera sobre vinhos_br_fontes; shard filter diferente = zero.
+        return
     base = f"vinhos_{COUNTRY}"
+    range_clause = ""
+    range_params: list = []
+    if cfg.min_fonte_id is not None:
+        range_clause += " AND f.id >= %s"
+        range_params.append(cfg.min_fonte_id)
+    if cfg.max_fonte_id is not None:
+        range_clause += " AND f.id <= %s"
+        range_params.append(cfg.max_fonte_id)
     sql = f"""
         SELECT
           v.id,
@@ -77,13 +93,13 @@ def _iter_rows(conn, cfg: Tier2BrConfig) -> Iterator[ExportRow]:
           f.id
         FROM public.{source_table} f
         JOIN public.{base} v ON v.id = f.vinho_id
-        WHERE f.url_original IS NOT NULL
+        WHERE f.url_original IS NOT NULL{range_clause}
         ORDER BY f.id DESC
     """
     offset = 0
     with conn.cursor() as cur:
         while True:
-            cur.execute(sql + " LIMIT %s OFFSET %s", [cfg.batch_size, offset])
+            cur.execute(sql + " LIMIT %s OFFSET %s", range_params + [cfg.batch_size, offset])
             rows = cur.fetchall()
             if not rows:
                 break
@@ -121,8 +137,21 @@ def _iter_rows(conn, cfg: Tier2BrConfig) -> Iterator[ExportRow]:
 
 def run_export(cfg: Tier2BrConfig | None = None) -> ExporterResult:
     cfg = cfg or Tier2BrConfig()
+    if cfg.min_fonte_id is not None and cfg.max_fonte_id is not None:
+        if cfg.min_fonte_id > cfg.max_fonte_id:
+            return ExporterResult(
+                ok=False,
+                reason="shard_range_invalid",
+                notes=[f"min_fonte_id={cfg.min_fonte_id} > max_fonte_id={cfg.max_fonte_id}"],
+            )
     started_at = datetime.now(timezone.utc)
     run_id = f"{SOURCE_LABEL}_{started_at.strftime('%Y%m%d_%H%M%S')}"
+    shard_spec = {
+        "shard_id": cfg.shard_id,
+        "source_table": cfg.source_table_filter or f"vinhos_{COUNTRY}_fontes",
+        "min_fonte_id": cfg.min_fonte_id,
+        "max_fonte_id": cfg.max_fonte_id,
+    } if (cfg.shard_id or cfg.source_table_filter or cfg.min_fonte_id is not None or cfg.max_fonte_id is not None) else None
     try:
         with connect_readonly(cfg.dsn) as conn:
             host_to_loja = list_lojas_by_method(
@@ -150,6 +179,7 @@ def run_export(cfg: Tier2BrConfig | None = None) -> ExporterResult:
                 started_at=started_at,
                 input_scope="br",
                 max_items=cfg.max_items,
+                shard_spec=shard_spec,
             )
     except RuntimeError as exc:
         return ExporterResult(ok=False, reason=f"dsn_missing:{exc}")
