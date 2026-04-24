@@ -54,7 +54,8 @@ Relatorio tecnico completo:
 6. **Branch / commit / push:**
    - Branch: `data-ops/correcao-minima-commerce-readme-validator-20260424`
    - Base: `31a6ac5f docs(data-ops): pin 6a682089 SHA in corrective commerce docs`
-   - Commit SHA: a ser pinado logo apos push.
+   - Commit corretivo: `7d617434 fix(data-ops): commerce README tier2 paths + validator full rejeita items_emitted nao-int`
+   - Push: `origin/data-ops/correcao-minima-commerce-readme-validator-20260424`
 
 7. **Residual externo:** unico - PC espelho precisa depositar JSONL +
    summary em `reports/data_ops_artifacts/amazon_mirror/`. Lado local

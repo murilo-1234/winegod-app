@@ -199,7 +199,8 @@ States commerce:
 - Branch: `data-ops/correcao-minima-commerce-readme-validator-20260424`.
 - Base: `31a6ac5f` (HEAD do remote
   `origin/data-ops/correcao-commerce-operacao-residual-externo-final-20260424`).
-- Commit corretivo: a ser pinado logo abaixo do push.
+- Commit corretivo final: `7d617434 fix(data-ops): commerce README tier2 paths + validator full rejeita items_emitted nao-int`.
+- Remote: push para `origin/data-ops/correcao-minima-commerce-readme-validator-20260424`.
 
 ## 7. Residual externo Amazon mirror
 
