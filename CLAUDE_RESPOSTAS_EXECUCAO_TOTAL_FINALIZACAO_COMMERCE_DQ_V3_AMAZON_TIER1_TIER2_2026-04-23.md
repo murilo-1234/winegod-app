@@ -48,7 +48,10 @@ Assim que o artefato aparece no diretorio certo, o scheduler `run_commerce_artif
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Base: `dd756093`
-- Commit: `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
+- Commits:
+  - `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
+  - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
+  - `<preenchido apos commit fix>` - hardening dos 4 findings do Codex
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Testes

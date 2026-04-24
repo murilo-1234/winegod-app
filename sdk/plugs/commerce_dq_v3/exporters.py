@@ -10,6 +10,7 @@ from typing import Callable, Iterable
 import psycopg2
 
 from sdk.plugs.common import load_repo_envs, normalize_domain, resolve_store_id
+from .artifact_contract import pick_latest_jsonl, validate_artifact_dir
 from .schemas import ExportBundle
 
 
@@ -275,102 +276,130 @@ def _load_jsonl_artifact(path: Path, limit: int) -> list[dict]:
 
 
 def _pick_latest_artifact(base: Path, suffix: str = ".jsonl") -> Path | None:
-    if not base.exists():
-        return None
-    candidates = sorted(
-        (p for p in base.iterdir() if p.is_file() and p.suffix == suffix),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    return candidates[0] if candidates else None
+    # Mantido para compatibilidade externa; a validacao canonica usa
+    # artifact_contract.pick_latest_jsonl + validate_artifact_dir.
+    return pick_latest_jsonl(base) if suffix == ".jsonl" else None
+
+
+def _raw_item_to_commerce_item(raw: dict, *, dataset: str, lineage: str, artifact_name: str, lookup: dict[str, int]) -> tuple[dict, str | None]:
+    url = raw.get("url_original") or raw.get("url")
+    domain = normalize_domain(url)
+    store_id = resolve_store_id(url, lookup)
+    price = raw.get("preco")
+    item = {
+        "nome": raw.get("nome"),
+        "produtor": raw.get("produtor"),
+        "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
+        "tipo": raw.get("tipo"),
+        "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
+        "regiao": raw.get("regiao"),
+        "sub_regiao": raw.get("sub_regiao"),
+        "uvas": raw.get("uvas"),
+        "ean_gtin": raw.get("ean_gtin") or raw.get("asin"),
+        "imagem_url": raw.get("imagem_url") or raw.get("url_imagem"),
+        "harmonizacao": raw.get("harmonizacao"),
+        "descricao": raw.get("descricao"),
+        "preco_min": float(price) if price is not None else None,
+        "preco_max": float(price) if price is not None else None,
+        "moeda": raw.get("moeda"),
+        "_source_dataset": dataset,
+        "_source_pipeline": raw.get("pipeline_family") or dataset,
+        "_source_pointer": raw.get("source_pointer") or artifact_name,
+        "_source_run_id": raw.get("run_id"),
+        "_source_captured_at": raw.get("captured_at"),
+        "_source_store_name": raw.get("store_name"),
+        "_source_domain": domain,
+        "_source_lineage": lineage,
+    }
+    unresolved: str | None = None
+    if store_id and url:
+        item["sources"] = [
+            {
+                "store_id": store_id,
+                "url": url,
+                "preco": float(price) if price is not None else None,
+                "moeda": raw.get("moeda"),
+                "disponivel": bool(raw.get("disponivel", True)),
+            }
+        ]
+    else:
+        item["sources"] = []
+        if domain:
+            unresolved = domain
+    return item, unresolved
 
 
 def export_amazon_mirror_primary_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
     """Feed primario oficial da Amazon, alimentado por artefato do PC espelho.
 
-    Contrato:
-    - um JSONL por execucao do espelho, com campos minimos
-      (pipeline_family, run_id, country, store_name, store_domain,
-       url_original, nome, produtor, safra, preco, moeda, captured_at,
-       source_pointer);
-    - o diretorio padrao e `reports/data_ops_artifacts/amazon_mirror/`
+    Contrato auditado por artifact_contract.validate_artifact_dir:
+    - JSONL mais recente em `reports/data_ops_artifacts/amazon_mirror/`
       (configuravel via `AMAZON_MIRROR_ARTIFACT_DIR`);
-    - o exporter pega o artefato mais recente e aplica lookup de store_id;
-    - se nao houver artefato, retorna `blocked_external_host` com command_hint.
+    - 13 campos obrigatorios por item;
+    - summary `<prefix>_summary.json` com 8 campos + `artifact_sha256`
+      batendo com o JSONL real;
+    - `pipeline_family` dos items deve casar com `amazon_mirror_primary`.
+
+    Estados honestos:
+    - `blocked_external_host` quando nao existe JSONL (espera artefato);
+    - `blocked_contract_missing` quando o contrato ficou invalido.
     """
 
     base = _amazon_mirror_artifact_dir()
-    latest = _pick_latest_artifact(base)
-    if latest is None:
-        return ExportBundle(
-            source="amazon_mirror_primary",
-            state="blocked_external_host",
-            notes=[
-                "nenhum_artefato_jsonl_em=" + str(base),
+    validation = validate_artifact_dir(
+        artifact_dir=base,
+        expected_family="amazon_mirror_primary",
+        item_limit=limit,
+    )
+    if not validation.ok:
+        # sem artefato = bloqueio de host externo; com artefato invalido = contrato
+        if validation.artifact_path is None:
+            state = "blocked_external_host"
+            notes = [
+                validation.reason or "artefato_ausente",
                 "host_externo_pc_espelho",
                 "entregar_jsonl_em=reports/data_ops_artifacts/amazon_mirror/",
-            ],
+            ] + validation.notes
+        else:
+            state = "blocked_contract_missing"
+            notes = [
+                validation.reason or "contrato_invalido",
+                f"artifact={validation.artifact_path.name}",
+                "contrato=docs/TIER_COMMERCE_CONTRACT.md",
+            ] + validation.notes
+        return ExportBundle(
+            source="amazon_mirror_primary",
+            state=state,
+            notes=notes[:20],
             command_hint="powershell -File scripts/data_ops_shadow/run_commerce_amazon_mirror_primary_shadow.ps1",
         )
 
-    raw_items = _load_jsonl_artifact(latest, limit)
+    assert validation.artifact_path is not None
     items: list[dict] = []
     unresolved: list[str] = []
-    for raw in raw_items:
-        url = raw.get("url_original") or raw.get("url")
-        domain = normalize_domain(url)
-        store_id = resolve_store_id(url, lookup)
-        price = raw.get("preco")
-        item = {
-            "nome": raw.get("nome"),
-            "produtor": raw.get("produtor"),
-            "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
-            "tipo": raw.get("tipo"),
-            "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
-            "regiao": raw.get("regiao"),
-            "sub_regiao": raw.get("sub_regiao"),
-            "uvas": raw.get("uvas"),
-            "ean_gtin": raw.get("ean_gtin") or raw.get("asin"),
-            "imagem_url": raw.get("imagem_url") or raw.get("url_imagem"),
-            "harmonizacao": raw.get("harmonizacao"),
-            "descricao": raw.get("descricao"),
-            "preco_min": float(price) if price is not None else None,
-            "preco_max": float(price) if price is not None else None,
-            "moeda": raw.get("moeda"),
-            "_source_dataset": "amazon_mirror",
-            "_source_pipeline": raw.get("pipeline_family") or "amazon_mirror_primary",
-            "_source_pointer": raw.get("source_pointer") or str(latest.name),
-            "_source_run_id": raw.get("run_id"),
-            "_source_captured_at": raw.get("captured_at"),
-            "_source_domain": domain,
-            "_source_lineage": "primary",
-        }
-        if store_id and url:
-            item["sources"] = [
-                {
-                    "store_id": store_id,
-                    "url": url,
-                    "preco": float(price) if price is not None else None,
-                    "moeda": raw.get("moeda"),
-                    "disponivel": bool(raw.get("disponivel", True)),
-                }
-            ]
-        else:
-            item["sources"] = []
-            if domain:
-                unresolved.append(domain)
+    for raw in validation.items:
+        item, unresolved_domain = _raw_item_to_commerce_item(
+            raw,
+            dataset="amazon_mirror",
+            lineage="primary",
+            artifact_name=validation.artifact_path.name,
+            lookup=lookup,
+        )
         items.append(item)
+        if unresolved_domain:
+            unresolved.append(unresolved_domain)
 
     return ExportBundle(
         source="amazon_mirror_primary",
-        state="observed" if items else "blocked_missing_source",
+        state="observed",
         items=items[:limit],
         unresolved_domains=sorted(set(unresolved))[:50],
         notes=[
             f"items_exported={len(items[:limit])}",
-            f"artifact={latest.name}",
-            f"artifact_sha256={hashlib.sha256(latest.read_bytes()).hexdigest()}",
+            f"artifact={validation.artifact_path.name}",
+            f"artifact_sha256={validation.artifact_sha256}",
             "lineage=primary",
+            "contract=ok",
         ],
     )
 
@@ -481,89 +510,63 @@ def _export_tier_from_artifact(
 ) -> ExportBundle:
     """Exporter generico para Tier1/Tier2 consumindo artefato padronizado JSONL.
 
-    Contrato minimo por item (ver docs/TIER_COMMERCE_CONTRACT.md):
-      pipeline_family, run_id, country, store_name, store_domain,
-      url_original, nome, produtor, safra, preco, moeda, captured_at,
-      source_pointer
+    Contrato obrigatorio validado por artifact_contract.validate_artifact_dir
+    (ver docs/TIER_COMMERCE_CONTRACT.md):
+      - 13 campos obrigatorios por item (pipeline_family, run_id, country,
+        store_name, store_domain, url_original, nome, produtor, safra,
+        preco, moeda, captured_at, source_pointer);
+      - `<prefix>_summary.json` com 8 campos + artifact_sha256 batendo;
+      - pipeline_family do item deve casar com `pipeline_family` esperado.
 
-    Retorna `blocked_contract_missing` se o diretorio nao existir ou se o
-    artefato mais recente nao for JSONL valido.
+    Retorna `blocked_contract_missing` honesto se o contrato nao for
+    cumprido (diretorio ausente, JSONL invalido, summary faltando ou SHA
+    mismatch).
     """
 
-    latest = _pick_latest_artifact(artifact_dir)
-    if latest is None:
+    validation = validate_artifact_dir(
+        artifact_dir=artifact_dir,
+        expected_family=pipeline_family,
+        item_limit=limit,
+    )
+    if not validation.ok:
+        notes: list[str] = [validation.reason or "contrato_invalido"]
+        if validation.artifact_path is not None:
+            notes.append(f"artifact={validation.artifact_path.name}")
+        notes.append("contrato=docs/TIER_COMMERCE_CONTRACT.md")
+        notes.extend(validation.notes)
         return ExportBundle(
             source=source_name,
             state="blocked_contract_missing",
-            notes=[
-                f"nenhum_artefato_jsonl_em={artifact_dir}",
-                f"entregar_jsonl_em={artifact_dir}",
-                "contrato=docs/TIER_COMMERCE_CONTRACT.md",
-            ],
+            notes=notes[:20],
             command_hint=f"powershell -File scripts/data_ops_shadow/run_commerce_{source_name}_shadow.ps1",
         )
 
-    raw_items = _load_jsonl_artifact(latest, limit)
+    assert validation.artifact_path is not None
     items: list[dict] = []
     unresolved: list[str] = []
-    for raw in raw_items:
-        if raw.get("pipeline_family") and raw["pipeline_family"] not in (pipeline_family, source_name):
-            continue
-        url = raw.get("url_original") or raw.get("url")
-        domain = normalize_domain(url)
-        store_id = resolve_store_id(url, lookup)
-        price = raw.get("preco")
-        item = {
-            "nome": raw.get("nome"),
-            "produtor": raw.get("produtor"),
-            "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
-            "tipo": raw.get("tipo"),
-            "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
-            "regiao": raw.get("regiao"),
-            "sub_regiao": raw.get("sub_regiao"),
-            "uvas": raw.get("uvas"),
-            "ean_gtin": raw.get("ean_gtin"),
-            "imagem_url": raw.get("imagem_url") or raw.get("url_imagem"),
-            "harmonizacao": raw.get("harmonizacao"),
-            "descricao": raw.get("descricao"),
-            "preco_min": float(price) if price is not None else None,
-            "preco_max": float(price) if price is not None else None,
-            "moeda": raw.get("moeda"),
-            "_source_dataset": source_name,
-            "_source_pipeline": raw.get("pipeline_family") or pipeline_family,
-            "_source_pointer": raw.get("source_pointer") or str(latest.name),
-            "_source_run_id": raw.get("run_id"),
-            "_source_captured_at": raw.get("captured_at"),
-            "_source_domain": domain,
-            "_source_store_name": raw.get("store_name"),
-            "_source_lineage": "primary" if pipeline_family in ("tier1", "tier2") else "mixed",
-        }
-        if store_id and url:
-            item["sources"] = [
-                {
-                    "store_id": store_id,
-                    "url": url,
-                    "preco": float(price) if price is not None else None,
-                    "moeda": raw.get("moeda"),
-                    "disponivel": bool(raw.get("disponivel", True)),
-                }
-            ]
-        else:
-            item["sources"] = []
-            if domain:
-                unresolved.append(domain)
+    for raw in validation.items:
+        item, unresolved_domain = _raw_item_to_commerce_item(
+            raw,
+            dataset=source_name,
+            lineage="primary",
+            artifact_name=validation.artifact_path.name,
+            lookup=lookup,
+        )
         items.append(item)
+        if unresolved_domain:
+            unresolved.append(unresolved_domain)
 
     return ExportBundle(
         source=source_name,
-        state="observed" if items else "blocked_contract_missing",
+        state="observed",
         items=items[:limit],
         unresolved_domains=sorted(set(unresolved))[:50],
         notes=[
             f"items_exported={len(items[:limit])}",
-            f"artifact={latest.name}",
-            f"artifact_sha256={hashlib.sha256(latest.read_bytes()).hexdigest()}",
+            f"artifact={validation.artifact_path.name}",
+            f"artifact_sha256={validation.artifact_sha256}",
             f"pipeline_family={pipeline_family}",
+            "contract=ok",
         ],
     )
 
@@ -627,25 +630,71 @@ def export_tier2_to_dq_stub(*, source: str) -> ExportBundle:
     )
 
 
+def _legacy_mixed_allowed_fontes() -> set[str] | None:
+    raw = os.environ.get("LEGACY_MIXED_ALLOWED_FONTES", "").strip()
+    if not raw:
+        return None
+    return {f.strip().lower() for f in raw.split(",") if f.strip()}
+
+
 def export_winegod_admin_legacy_mixed_to_dq(*, limit: int, lookup: dict[str, int]) -> ExportBundle:
     """Backfill honesto do historico Tier1/Tier2 misturado.
 
-    Quando nao e possivel provar qual linha veio de Tier1 ou Tier2 sem
-    reconstruir metadados, este exporter deixa a lineage explicita como
-    `legacy_mixed`. Aparece no dashboard como fonte separada e nao finge ser
-    Tier1 ou Tier2 puro.
+    **Regra:** por default retorna `blocked_missing_source`.
+
+    O schema atual do `winegod_db` (vinhos_{pais}_fontes + scraping_execucoes)
+    nao oferece FK limpa que prove quais linhas foram Tier1 vs Tier2. A unica
+    coluna com a informacao e `scraping_execucoes.tier`, mas nao ha
+    rastreio direto fonte -> execucao -> tier em cada registro de vinho.
+
+    Em vez de pegar "todo nao-Amazon" (o que se sobrepoe a
+    `winegod_admin_world`), o exporter so aceita itens se o operador declarar
+    explicitamente uma allowlist de `fonte` (nome de loja) via variavel de
+    ambiente:
+
+        LEGACY_MIXED_ALLOWED_FONTES=fonte1,fonte2,fonte3
+
+    Se a allowlist nao estiver declarada: `blocked_missing_source` honesto.
+
+    Se estiver: filtra apenas itens cuja `fonte` estiver na allowlist,
+    marcando `_source_lineage=legacy_mixed` como antes. Isso aparece
+    separado no dashboard e nao finge Tier1/Tier2 puro.
     """
+
+    allowed = _legacy_mixed_allowed_fontes()
+    if not allowed:
+        return ExportBundle(
+            source="winegod_admin_legacy_mixed",
+            state="blocked_missing_source",
+            notes=[
+                "sem_prova_de_legado_misturado_no_schema_atual",
+                "nenhum_fk_entre_vinhos_e_scraping_execucoes.tier",
+                "declare_LEGACY_MIXED_ALLOWED_FONTES_para_habilitar_allowlist",
+                "por_padrao_bloqueado_para_nao_sobrepor_winegod_admin_world",
+            ],
+            command_hint="set LEGACY_MIXED_ALLOWED_FONTES=fonte1,fonte2 before running",
+        )
+
+    def _filter(fonte: str) -> bool:
+        f = (fonte or "").lower()
+        if f.startswith("amazon"):
+            return False
+        return f in allowed
 
     bundle = _collect_winegod_candidates(
         limit=limit,
         lookup=lookup,
-        source_filter=lambda fonte: not fonte.lower().startswith("amazon"),
+        source_filter=_filter,
         source_name="winegod_admin_legacy_mixed",
     )
     for item in bundle.items:
         item["_source_pipeline"] = "winegod_admin_legacy_mixed"
         item["_source_lineage"] = "legacy_mixed"
-    bundle.notes.append("lineage=legacy_mixed")
+    bundle.notes.extend([
+        "lineage=legacy_mixed",
+        f"allowlist_fontes={sorted(allowed)[:10]}",
+        f"allowlist_size={len(allowed)}",
+    ])
     return bundle
 
 
