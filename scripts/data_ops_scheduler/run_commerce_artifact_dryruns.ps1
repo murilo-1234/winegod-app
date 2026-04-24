@@ -2,13 +2,19 @@ param(
   [int]$Limit = 50
 )
 
-# Scheduler dedicado para fontes de artefato:
-#   - amazon_mirror_primary (feed oficial)
-#   - tier1_global (via artefato padronizado)
-#   - tier2_* (via artefato padronizado)
+# Scheduler dedicado para fontes de commerce via artefato padronizado:
+#   - amazon_mirror_primary (feed oficial; residual externo enquanto JSONL nao chega)
+#   - tier1_global (via artefato padronizado em reports/data_ops_artifacts/tier1)
+#   - tier2_global_artifact (feed Tier2 UNICO; substitui os extintos tier2_chat1..5)
+#   - tier2_br (Tier2 filtrado por pais real)
 #
-# NAO roda apply. Apenas dry-run. Fontes sem artefato ainda cairao em
-# blocked_contract_missing ou blocked_external_host, conforme esperado.
+# tier2_chat1..5 foram DEPRECATED e colapsados em tier2_global_artifact
+# (nao tinham particao disjunta reproduzivel). Seus manifests continuam
+# blocked_contract_missing no registry para historico, mas NAO sao rodados
+# por este scheduler.
+#
+# NAO roda apply. Apenas dry-run. Fontes sem artefato caem honestamente em
+# blocked_contract_missing ou blocked_external_host.
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -21,11 +27,7 @@ Set-Location $repoRoot
 $sources = @(
   'amazon_mirror_primary',
   'tier1_global',
-  'tier2_chat1',
-  'tier2_chat2',
-  'tier2_chat3',
-  'tier2_chat4',
-  'tier2_chat5',
+  'tier2_global_artifact',
   'tier2_br'
 )
 

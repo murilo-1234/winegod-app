@@ -12,7 +12,7 @@ These scripts prepare the control plane cadence without installing a Windows sch
 - `run_discovery_stores_dryruns.ps1` - dry-run dedicado discovery (agent_discovery)
 - `run_enrichment_dryruns.ps1` - dry-run dedicado enrichment (gemini_batch_reports; sem Gemini pago)
 - `run_plug_reviews_scores_apply.ps1` - apply canonico de vivino_wines_to_ratings (incremental_recent | backfill_windowed)
-- `run_commerce_artifact_dryruns.ps1` - dry-run das fontes commerce baseadas em artefato padronizado: `amazon_mirror_primary`, `tier1_global`, `tier2_*`. Sem artefato = `blocked_contract_missing` honesto.
+- `run_commerce_artifact_dryruns.ps1` - dry-run das fontes commerce canonicas por artefato padronizado: `amazon_mirror_primary`, `tier1_global`, `tier2_global_artifact` (Tier2 UNICO, substitui os extintos chats 1..5), `tier2_br` (Tier2 filtrado por pais real). Sem artefato = `blocked_contract_missing` honesto.
 
 ## Artefatos padronizados de commerce
 

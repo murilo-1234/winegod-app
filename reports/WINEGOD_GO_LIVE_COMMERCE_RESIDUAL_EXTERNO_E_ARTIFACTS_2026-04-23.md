@@ -43,16 +43,19 @@ Todos os producers locais que podiam ser automatizados foram implementados e est
 
 - `scripts/data_ops_producers/build_commerce_artifact.py`
   - Producer parametrizado: `--pipeline-family`, `--source-label`, `--output-dir`, `--tier-filter`, `--pais-codigo`, `--limit`.
-  - **Evidencia tecnica de tier real**: cruza `lojas_scraping.metodo_recomendado` (`api_shopify`/`api_woocommerce`/`api_vtex`/`sitemap_*` vs `playwright_ia`) com `vinhos_{pais}_fontes.url_original` por substring do dominio. Alinha com `scraper_tier1.py` (APIs/sitemap) vs `scraper_tier2.py` (Playwright+IA).
+  - **Evidencia tecnica de tier real**: cruza `lojas_scraping.metodo_recomendado` (`api_shopify`/`api_woocommerce`/`api_vtex`/`sitemap_*` vs `playwright_ia`) com `vinhos_{pais}_fontes.url_original`. Alinha com `scraper_tier1.py` (APIs/sitemap) vs `scraper_tier2.py` (Playwright+IA).
+  - **Matching por host endurecido**: `normalize_host` + `_host_eligible` Python-side aceitam igualdade exata ou subdominio legitimo (`shop.amazon.com.br` bate com `amazon.com.br`) e rejeitam falso positivo `mazon.com.br` vs `amazon.com.br`. 12 testes em `scripts/data_ops_producers/tests/test_host_matching.py`.
   - Grava JSONL + `<prefix>_summary.json` no contrato `docs/TIER_COMMERCE_CONTRACT.md`.
   - Filtra automaticamente items com `nome`/`produtor`/`store_domain` vazios (respeita obrigatoriedade do contrato).
 
-### Artefatos gerados (todos com `contract=ok` no validator)
+### Artefatos canonicos atuais (todos com `contract=ok` no validator)
 
-- `reports/data_ops_artifacts/tier1/20260424_030408_tier1_global.jsonl` (65 items, tier=api/sitemap)
-- `reports/data_ops_artifacts/tier1/20260424_031903_tier1_global.jsonl` (550 items ampliado)
-- `reports/data_ops_artifacts/tier2/br/20260424_030439_tier2_br.jsonl` (200 items, BR playwright)
-- `reports/data_ops_artifacts/tier2/chat1..5/20260424_030440-45_tier2_chat*.jsonl` (157 items cada, playwright)
+- `reports/data_ops_artifacts/tier1/*.jsonl` + `*_summary.json` - Tier1 global (APIs/sitemap)
+- `reports/data_ops_artifacts/tier2/br/*.jsonl` + `*_summary.json` - Tier2 Brasil (playwright_ia + pais=br)
+- `reports/data_ops_artifacts/tier2_global/*.jsonl` + `*_summary.json` - Tier2 global (feed unico que substituiu os extintos `tier2_chat1..5`)
+- `reports/data_ops_artifacts/amazon_mirror/` (vazio; aguardando JSONL do PC espelho)
+
+**Diretorios antigos removidos** nesta rodada corretiva: `reports/data_ops_artifacts/tier2/chat1..5/` nao existem mais (colapsados em `tier2_global`).
 
 ## 4. O que ainda ficou externo (residual real e isolado)
 
@@ -62,12 +65,15 @@ Nao ha outro residual externo. Todos os Tier1 e Tier2 passaram a produzir artefa
 
 ## 5. Dry-runs executados
 
-Todos os dry-runs de fontes com artefato retornaram `state=observed`:
+Todos os dry-runs das fontes canonicas com artefato retornaram `state=observed`:
 
-- `python -m sdk.plugs.commerce_dq_v3.runner --source tier1_global --limit 50 --dry-run` -> observed, 35 valid
-- idem com `tier2_br` -> observed
-- idem com `tier2_chat1..5` -> observed (via `run_commerce_artifact_dryruns.ps1`)
+- `tier1_global` -> observed (com matching por host endurecido)
+- `tier2_br` -> observed
+- `tier2_global_artifact` (novo feed unico Tier2) -> observed
 - `amazon_local_legacy_backfill` dry-runs 50/200/1000 -> observed em cada degrau
+- `amazon_mirror_primary` -> `blocked_external_host` honesto (sem JSONL do PC espelho)
+
+`tier2_chat1..5` NAO sao mais executados: foram colapsados em `tier2_global_artifact` por nao terem particao disjunta reproduzivel. Permanecem no registry apenas como historico `blocked_contract_missing` deprecated.
 
 ## 6. Applies executados (escada controlada)
 
@@ -98,6 +104,14 @@ Escada 50 -> 200 -> 500 completa. Zero enqueue_review em todos os degraus (gate 
 | 50 (apply) | 50 | 16 | 18 | 12 | 4 | 12 | 4 | 0 | 0 |
 
 Apply 50 OK. Escada maior pode ser liberada na proxima sessao depois de validar o artefato tier2_br novamente.
+
+### `tier2_global_artifact` (novo feed unico Tier2)
+
+| step | received | valid | filtered_notwine | inserted | updated | sources_inserted | sources_updated | enqueue_review | errors |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 50 (apply) | 50 | 44 | 6 | 28 | 16 | 0 | 0 | 0 | 0 |
+
+Apply 50 OK depois do matching endurecido. Zero sources porque os dominios desta amostra nao tinham correspondencia em `public.stores`, o que e aceitavel: os vinhos entraram sem source; o gate de sources rejeitados nao disparou porque nao houve sources invalidas, apenas ausentes.
 
 ## 7. Metricas de controle (deltas observados no banco)
 
@@ -131,21 +145,23 @@ Contagem `public.wines` nao foi medida no final por timeout de 120s em `COUNT(*)
 
 ## 9. Automacao instalada
 
-Ja operacional antes desta sessao:
+Operacional:
 
-- `scripts/data_ops_scheduler/run_commerce_artifact_dryruns.ps1` consome o JSONL mais recente de cada fonte (Amazon mirror + Tier1 + Tier2) - validado com 8/8 fontes OK nesta sessao.
+- `scripts/data_ops_scheduler/run_commerce_artifact_dryruns.ps1` - scheduler canonico atualizado nesta rodada finalissima. Roda dry-run apenas das 4 fontes operacionais de artefato:
+  - `amazon_mirror_primary` (residual externo enquanto sem JSONL)
+  - `tier1_global`
+  - `tier2_global_artifact` (feed unico Tier2; substitui os extintos `tier2_chat1..5`)
+  - `tier2_br`
 - `scripts/data_ops_scheduler/run_all_observers.ps1` - refresh do dashboard.
+- `scripts/data_ops_producers/build_commerce_artifact.py` - producer generico parametrizado com matching por host endurecido.
 
-Novo nesta sessao:
-
-- `scripts/data_ops_producers/build_commerce_artifact.py` - producer generico parametrizado para gerar artefato Tier1/Tier2 a partir do `winegod_db` com evidencia tecnica real de tier.
-
-Operacao recorrente sugerida (toda ativada por Task Scheduler local):
+Operacao recorrente sugerida (via Task Scheduler local):
 
 1. Produzir artefatos (semanal):
    ```powershell
    python scripts/data_ops_producers/build_commerce_artifact.py --pipeline-family tier1 --source-label tier1_global --output-dir reports/data_ops_artifacts/tier1 --tier-filter api_shopify,api_woocommerce,api_vtex,sitemap_html,sitemap_jsonld --limit 2000
-   # repetir para tier2_* com --tier-filter playwright_ia
+   python scripts/data_ops_producers/build_commerce_artifact.py --pipeline-family tier2 --source-label tier2_global_artifact --output-dir reports/data_ops_artifacts/tier2_global --tier-filter playwright_ia --limit 2000
+   python scripts/data_ops_producers/build_commerce_artifact.py --pipeline-family tier2 --source-label tier2_br --output-dir reports/data_ops_artifacts/tier2/br --tier-filter playwright_ia --pais-codigo br --limit 500
    ```
 2. Validar e dry-run (diario):
    ```powershell
@@ -154,11 +170,14 @@ Operacao recorrente sugerida (toda ativada por Task Scheduler local):
 3. Apply controlado (manual ou agendado com threshold):
    ```powershell
    python -m sdk.plugs.commerce_dq_v3.runner --source tier1_global --limit 1000 --apply
+   python -m sdk.plugs.commerce_dq_v3.runner --source tier2_global_artifact --limit 1000 --apply
    ```
 
 ## 10. Testes
 
-- `python -m pytest sdk/plugs -q` -> **41 passed** (validator + runner + exporters)
+Pacote consolidado apos rodada finalissima:
+
+- `python -m pytest sdk/plugs scripts/data_ops_producers/tests -q` -> **53 passed** (41 contract + 12 host matching)
 - `python -m pytest sdk/tests sdk/adapters/tests -q` -> **119 passed**
 
 Zero falhas. Zero regressao.
@@ -170,6 +189,8 @@ Zero falhas. Zero regressao.
 - Commit do go-live inicial: `fbd80841 feat(data-ops): go-live commerce local ladder with tier producer`
 - Commit SHA pin go-live: `4f2bab88 docs(data-ops): pin fbd80841 SHA in go-live docs`
 - Commit da correcao de particoes/matching: `e91a22b3 fix(data-ops): harden tier matching and collapse fake tier2 partitions`
+- Commit SHA pin correcao: `00e726b8 docs(data-ops): pin e91a22b3 SHA in correction docs`
+- Commit da rodada finalissima (scheduler canonico + cleanup manifests + relatorio coerente): `<preenchido apos commit>`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## 12. O que o Codex admin deve auditar
