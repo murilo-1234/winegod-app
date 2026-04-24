@@ -12,7 +12,7 @@ These scripts prepare the control plane cadence without installing a Windows sch
 - `run_discovery_stores_dryruns.ps1` - dry-run dedicado discovery (agent_discovery)
 - `run_enrichment_dryruns.ps1` - dry-run dedicado enrichment (gemini_batch_reports; sem Gemini pago)
 - `run_plug_reviews_scores_apply.ps1` - apply canonico de vivino_wines_to_ratings (incremental_recent | backfill_windowed)
-- `run_commerce_artifact_dryruns.ps1` - dry-run das fontes commerce canonicas por artefato padronizado: `amazon_mirror_primary`, `tier1_global`, `tier2_global_artifact` (Tier2 UNICO, substitui os extintos chats 1..5), `tier2_br` (Tier2 filtrado por pais real). Sem artefato = `blocked_contract_missing` honesto.
+- `run_commerce_artifact_dryruns.ps1` - dry-run das fontes commerce canonicas por artefato padronizado: `amazon_mirror_primary`, `tier1_global`, `tier2_global_artifact` (Tier2 UNICO, substitui os extintos chats 1..5), `tier2_br` (Tier2 filtrado por pais real). Sem artefato: `amazon_mirror_primary` -> `blocked_external_host` honesto (aguardando JSONL do PC espelho); Tier1/Tier2 -> `blocked_contract_missing` honesto.
 
 ## Artefatos padronizados de commerce
 
@@ -23,10 +23,17 @@ Diretorios esperados:
 ```
 reports/data_ops_artifacts/amazon_mirror/<timestamp>_<run_id>.jsonl
 reports/data_ops_artifacts/tier1/<timestamp>_<run_id>.jsonl
-reports/data_ops_artifacts/tier2/<chat>/<timestamp>_<run_id>.jsonl
+reports/data_ops_artifacts/tier2_global/<timestamp>_<run_id>.jsonl
+reports/data_ops_artifacts/tier2/br/<timestamp>_<run_id>.jsonl
 ```
 
-Variaveis opcionais: `AMAZON_MIRROR_ARTIFACT_DIR`, `TIER1_ARTIFACT_DIR`, `TIER2_ARTIFACT_DIR`.
+`tier2_global/` e o feed Tier2 global unico; `tier2/br/` e o Tier2 Brasil
+por filtro real de pais. `tier2/chat1..5/` e historico/deprecated e nao
+deve ser usado (colapsados em `tier2_global_artifact` por falta de particao
+disjunta reproduzivel entre chats Codex).
+
+Variaveis opcionais: `AMAZON_MIRROR_ARTIFACT_DIR`, `TIER1_ARTIFACT_DIR`,
+`TIER2_ARTIFACT_DIR` (aplica tanto a `tier2_global/` quanto a `tier2/<pais>/`).
 
 ## Behavior
 

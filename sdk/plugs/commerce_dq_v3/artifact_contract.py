@@ -238,6 +238,9 @@ def validate_artifact_dir_full(
     - nao para na N-esima linha; le e valida tudo;
     - qualquer linha invalida pos-janela entra em `notes` e reprova o contrato;
     - qualquer item que nao carregue os 13 campos obrigatorios reprova;
+    - `summary.items_emitted` tem de ser `int` (contador numerico). Se vier
+      como string, float, bool ou outro tipo, reprova com
+      `summary_items_emitted_not_int=<repr>`;
     - compara `summary.items_emitted` com o total de linhas JSON validas;
       mismatch vira nota `summary_items_emitted_mismatch=<declarado>_vs_<real>`
       e reprova o contrato.
@@ -269,9 +272,18 @@ def validate_artifact_dir_full(
         summary_path, expected_family=expected_family, jsonl_path=latest
     )
     # Checagem extra de modo full: declared items_emitted vs real non-empty lines.
+    # `bool` e subclasse de `int` em Python, mas nao e um contador valido aqui.
     items_emitted_errors: list[str] = []
     declared = summary_data.get("items_emitted") if summary_data else None
-    if isinstance(declared, int) and declared != non_empty_lines:
+    if declared is None:
+        # `validate_summary` ja reporta `summary_faltando=...items_emitted`;
+        # nao duplicar.
+        pass
+    elif isinstance(declared, bool) or not isinstance(declared, int):
+        items_emitted_errors.append(
+            f"summary_items_emitted_not_int={declared!r}"
+        )
+    elif declared != non_empty_lines:
         items_emitted_errors.append(
             f"summary_items_emitted_mismatch={declared}_vs_{non_empty_lines}"
         )

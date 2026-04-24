@@ -13,8 +13,11 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+_UNSET = object()
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
@@ -50,10 +53,15 @@ def _write_artifact(
     items: list[dict],
     extra_lines: list[str] | None = None,
     family: str = "tier1",
-    declared_items_emitted: int | None = None,
+    declared_items_emitted: Any = _UNSET,
     break_sha: bool = False,
 ) -> Path:
-    """Escreve JSONL + summary no tmp_path. Retorna o diretorio."""
+    """Escreve JSONL + summary no tmp_path. Retorna o diretorio.
+
+    `declared_items_emitted` aceita qualquer valor JSON-serializavel para
+    testar contrato (int correto, int mentiroso, string, float, bool). Se
+    omitido (`_UNSET`), usa o total real de linhas validas.
+    """
 
     artifact_dir = tmp_path / "artifact"
     artifact_dir.mkdir()
@@ -73,9 +81,9 @@ def _write_artifact(
         "host": "este_pc",
         "input_scope": "test",
         "items_emitted": (
-            declared_items_emitted
-            if declared_items_emitted is not None
-            else total_non_empty
+            total_non_empty
+            if declared_items_emitted is _UNSET
+            else declared_items_emitted
         ),
         "artifact_sha256": declared_sha,
     }
@@ -165,3 +173,76 @@ def test_full_artefato_ausente(tmp_path: Path) -> None:
     assert not result.ok
     assert result.artifact_path is None
     assert (result.reason or "").startswith("nenhum_artefato_jsonl_em=")
+
+
+# --- Fix 2: summary.items_emitted tem de ser int (contador numerico). --- #
+
+
+def test_full_rejeita_items_emitted_string(tmp_path: Path) -> None:
+    """items_emitted como string ("10") deve reprovar com nota explicita.
+
+    Motivacao: o contrato operacional espera contador numerico; string
+    passaria pela checagem `isinstance(x, int)` antiga so porque nao era
+    `None`, ignorando o mismatch real.
+    """
+
+    items = [_item(i) for i in range(10)]
+    artifact_dir = _write_artifact(
+        tmp_path,
+        items=items,
+        declared_items_emitted="10",  # tipo errado
+    )
+    result = validate_artifact_dir_full(
+        artifact_dir=artifact_dir, expected_family="tier1"
+    )
+    assert not result.ok
+    assert any("summary_items_emitted_not_int" in n for n in result.notes), result.notes
+
+
+def test_full_rejeita_items_emitted_float(tmp_path: Path) -> None:
+    items = [_item(i) for i in range(5)]
+    artifact_dir = _write_artifact(
+        tmp_path,
+        items=items,
+        declared_items_emitted=5.0,
+    )
+    result = validate_artifact_dir_full(
+        artifact_dir=artifact_dir, expected_family="tier1"
+    )
+    assert not result.ok
+    assert any("summary_items_emitted_not_int" in n for n in result.notes), result.notes
+
+
+def test_full_rejeita_items_emitted_bool(tmp_path: Path) -> None:
+    items = [_item(i) for i in range(1)]
+    artifact_dir = _write_artifact(
+        tmp_path,
+        items=items,
+        declared_items_emitted=True,  # bool e subclasse de int; nao vale como contador
+    )
+    result = validate_artifact_dir_full(
+        artifact_dir=artifact_dir, expected_family="tier1"
+    )
+    assert not result.ok
+    assert any("summary_items_emitted_not_int" in n for n in result.notes), result.notes
+
+
+def test_window_ignora_type_check_de_items_emitted(tmp_path: Path) -> None:
+    """Modo janela nao faz a checagem de items_emitted (so modo full faz).
+
+    Garantia de nao-regressao: runner em dry-run continua usando janela
+    curta e nao deve quebrar por causa do fix 2.
+    """
+
+    items = [_item(i) for i in range(3)]
+    artifact_dir = _write_artifact(
+        tmp_path,
+        items=items,
+        declared_items_emitted="3",  # string; modo janela nao se importa com isso
+    )
+    result = validate_artifact_dir(
+        artifact_dir=artifact_dir, expected_family="tier1", item_limit=50
+    )
+    # items_emitted nao vazio como string passa em validate_summary, e o
+    # modo janela nao faz checagem de tipo. Resultado esperado: contrato OK.
+    assert result.ok, f"esperado OK no modo janela, veio: {result.reason} notes={result.notes}"
