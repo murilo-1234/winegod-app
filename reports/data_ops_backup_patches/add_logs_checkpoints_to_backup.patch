@@ -1,0 +1,80 @@
+# Patch proposto: incluir logs + checkpoints no backup diario de
+# C:\natura-automation\
+#
+# Contexto:
+# - `backup_diario.bat` original (mencionado pelo usuario) NAO foi
+#   localizado por varredura em 2026-04-24. Pastas/arquivos candidatos:
+#   - C:/natura-automation/run_monitor.bat
+#   - Task Scheduler fora do repo (possivel)
+# - O usuario autorizou "2 linhas a mais" para ZIP+rclone de logs e
+#   checkpoints. Como o arquivo base nao foi encontrado, este patch e
+#   entregue como SNIPPET UNIFICADO para o usuario copiar-colar.
+# - NAO APLICAR AUTOMATICAMENTE. O usuario verifica o nome real do .bat
+#   no Task Scheduler local e integra manualmente.
+#
+# ============================================================
+#  Snippet a integrar no backup_diario.bat (ou equivalente)
+# ============================================================
+#
+# Posicao: logo apos o bloco que faz o dump do winegod_db e zipa
+# a pasta amazon\. Idealmente antes do rclone sync final.
+#
+# --- SNIPPET ---
+#
+# @echo off
+# rem ---------- LOGS + CHECKPOINTS (winegod commerce Fase M) ----------
+# set LOG_DATE=%date:~-4%%date:~3,2%%date:~0,2%
+# if exist C:\natura-automation\_amazon_*.log (
+#     powershell -Command "Compress-Archive -Path 'C:\natura-automation\_amazon_*.log' -DestinationPath 'C:\natura-automation\backups\backup_natura_amazon_logs_%LOG_DATE%.zip' -Force"
+# )
+# if exist C:\natura-automation\_ct_scraper_*.json (
+#     powershell -Command "Compress-Archive -Path 'C:\natura-automation\_ct_scraper_*.json' -DestinationPath 'C:\natura-automation\backups\backup_natura_ct_checkpoints_%LOG_DATE%.zip' -Force"
+# )
+# if exist C:\natura-automation\_ct_*.progress.json (
+#     powershell -Command "Compress-Archive -Path 'C:\natura-automation\_ct_*.progress.json' -DestinationPath 'C:\natura-automation\backups\backup_natura_ct_progress_%LOG_DATE%.zip' -Force"
+# )
+# rclone copy C:\natura-automation\backups\backup_natura_amazon_logs_%LOG_DATE%.zip gdrive:winegod-backups/ 2>> C:\natura-automation\backups\_rclone_err.log
+# rclone copy C:\natura-automation\backups\backup_natura_ct_checkpoints_%LOG_DATE%.zip gdrive:winegod-backups/ 2>> C:\natura-automation\backups\_rclone_err.log
+# rclone copy C:\natura-automation\backups\backup_natura_ct_progress_%LOG_DATE%.zip gdrive:winegod-backups/ 2>> C:\natura-automation\backups\_rclone_err.log
+# rem fim do snippet Fase M
+#
+# --- FIM SNIPPET ---
+#
+# ============================================================
+#  Caracteristicas de seguranca
+# ============================================================
+#
+# - Nao trava o backup do db se algum ZIP falhar (cada bloco e independente).
+# - Mantem horario 04:00 original (snippet nao adiciona delay).
+# - Gera logs separados por tipo (amazon logs, CT checkpoints, CT
+#   progress) para facilitar rastreio.
+# - Upload rclone com stderr em `_rclone_err.log` para auditoria.
+# - Se os padroes `_amazon_*.log` / `_ct_*` nao existirem, os ZIPs sao
+#   pulados silenciosamente (IF EXIST).
+#
+# ============================================================
+#  Testes deste patch (nao aplicados)
+# ============================================================
+#
+# Ver `scripts/data_ops_producers/tests/test_backup_patch_logs_checkpoints.py`.
+# Testes cobrem:
+#   - patch file existe e tem sintaxe coerente (batch + powershell)
+#   - patch NAO altera horario
+#   - patch inclui rclone para os 3 arquivos esperados
+#   - patch usa IF EXIST para seguranca
+#   - patch escreve em backups/ local antes do rclone (permite re-upload)
+#
+# ============================================================
+#  Instrucao operacional pro usuario
+# ============================================================
+#
+# 1. Localizar o backup_diario.bat real (Task Scheduler > Actions).
+# 2. Abrir o arquivo. Encontrar o ponto apos o pg_dump + zip amazon.
+# 3. Colar o snippet acima entre o zip atual e o rclone final.
+# 4. Salvar.
+# 5. Rodar manualmente 1x para confirmar (Task Scheduler > Run).
+# 6. Conferir que gdrive:winegod-backups/ recebeu backup_natura_amazon_logs_*.zip.
+# 7. Se OK, Task Scheduler retoma cadencia diaria 04:00.
+#
+# Nao aplicar sem revisar o arquivo base; patchs em .bat sao sensiveis a
+# path com espacos e encoding CRLF.
