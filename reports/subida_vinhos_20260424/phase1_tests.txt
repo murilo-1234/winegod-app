@@ -1,0 +1,88 @@
+# Testes Fase 1 — campanha subida_vinhos_20260424
+
+Data: 2026-04-24
+Branch: data-ops/subida-local-render-3fases-20260424
+
+## Execucao das suites (cada uma isolada por conta de name collision entre tests/)
+
+### sdk/plugs/commerce_dq_v3/
+```
+python -m pytest sdk/plugs/commerce_dq_v3/ -q
+114 passed in 5.42s
+```
+
+Inclui:
+- 102 testes pre-existentes (commerce_dq_v3, artifact_exporters, etc)
+- 12 testes novos em `artifact_exporters/tests/test_sharding.py`:
+  - test_max_shard_items_hard_cap_raises
+  - test_max_shard_items_exactly_50k_ok
+  - test_shard_spec_included_in_summary
+  - test_shard_spec_absent_when_not_sharded
+  - test_tier1_shard_range_invalid_min_gt_max
+  - test_tier2_global_shard_range_invalid
+  - test_tier2_br_shard_range_invalid
+  - test_amazon_legacy_shard_range_invalid
+  - test_amazon_mirror_shard_range_invalid
+  - test_tier1_config_accepts_new_fields
+  - test_all_configs_have_sharding_fields
+  - test_bulk_ingest_does_not_import_new_wines  (regra absoluta plano 3 fases)
+- 4 testes adicionais em `artifact_exporters/tests/test_amazon_mirror_state_journal.py`
+- 1 teste adaptado em `sdk/plugs/commerce_dq_v3/tests/test_exporter_amazon_mirror.py`
+
+### scripts/data_ops_producers/tests/
+```
+python -m pytest scripts/data_ops_producers/tests/ -q
+63 passed in 19.38s
+```
+
+Inclui:
+- 46 testes pre-existentes
+- 9 testes novos em `test_postcheck_tooling.py` (postcheck_run_id, append_run_manifest, hash_artifact)
+- 8 testes novos em `test_inventario_shards.py` (`_plan_shards` puro sem DB)
+
+### scripts/data_ops_scheduler/tests/
+```
+python -m pytest scripts/data_ops_scheduler/tests/ -q
+13 passed in 0.76s
+```
+
+Inclui:
+- 4 testes em `test_amazon_legacy_marker.py` (wrapper done marker gated)
+- 9 testes em `test_apply_shard_wrapper.py` (limite 50k, env gate, validator/runner order, anti-reprocessamento, manifest append)
+
+## Total agregado
+
+```
+114 + 63 + 13 = 190 testes PASS, 0 FAIL
+```
+
+Zero regressao em testes pre-existentes. Suite commerce_dq_v3 teve evolucao
+102 -> 114 (+12 sharding).
+
+## Gate regra absoluta plano 3 fases
+
+Teste `test_bulk_ingest_does_not_import_new_wines` verifica (via leitura
+textual do fonte):
+- `backend/services/bulk_ingest.py` NAO tem `from services.new_wines`;
+- NAO tem `from backend.services.new_wines`;
+- NAO tem `enrich_items_v3`;
+- NAO tem `_classify_candidates_v3`.
+
+Se qualquer patch futuro acoplar bulk_ingest a enrichment_v3, esse teste
+falha e o plano 3 fases fica automaticamente invalido — e Codex emite
+prompt corretivo antes de qualquer apply.
+
+## Risco residual conhecido
+
+Ao rodar `pytest sdk/plugs/commerce_dq_v3/ scripts/data_ops_producers/tests/
+scripts/data_ops_scheduler/tests/` em um unico comando, colide:
+```
+ERROR sdk\test_amazon_legacy_marker.py
+ERROR sdk\test_apply_shard_wrapper.py
+```
+
+Causa: 3 diretorios `tests/` em namespaces diferentes, sem conftest.py
+dedicado nem pyproject `rootdir` config. Cada suite roda perfeitamente
+isolada. Correcao futura: adicionar `__init__.py` vazios em cada
+`tests/` + `pyproject.toml` com `[tool.pytest.ini_options] testpaths`.
+Nao bloqueia Fase 1; afeta apenas comando agregado.
