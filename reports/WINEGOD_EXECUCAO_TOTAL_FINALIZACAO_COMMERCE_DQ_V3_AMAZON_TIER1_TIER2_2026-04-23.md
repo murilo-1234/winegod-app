@@ -167,7 +167,7 @@ Residual bloqueado por politica ja conhecida:
   - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
   - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings anteriores do Codex (contrato no codigo + legacy_mixed restrito + manifest blocked + git trail)
   - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
-  - `<preenchido apos commit minimo>` - correcao minima final: validador aceita `safra=null` e `preco=null` conforme contrato, +5 testes, relatorio principal alinhado ao codigo atual
+  - `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report` - correcao minima final: validador aceita `safra=null` e `preco=null` conforme contrato, +5 testes, relatorio principal alinhado ao codigo atual
 - Push remoto: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Diff resumido: 3 manifests novos + 3 shadows novos + 1 scheduler novo + 1 contrato novo + validator novo (artifact_contract.py) + 8 testes novos + exporters/runner atualizados + README atualizado + 2 relatorios + 1 CLAUDE_RESPOSTAS correcao.
 

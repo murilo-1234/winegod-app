@@ -88,7 +88,7 @@ Zero apply produtivo; zero escrita em `public.wines`/`public.wine_sources`.
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - HEAD anterior: `85b38c0a`
-- Commit desta correcao minima: `<preenchido apos commit>`
+- Commit desta correcao minima: `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report`
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Arquivos a repassar ao Codex admin

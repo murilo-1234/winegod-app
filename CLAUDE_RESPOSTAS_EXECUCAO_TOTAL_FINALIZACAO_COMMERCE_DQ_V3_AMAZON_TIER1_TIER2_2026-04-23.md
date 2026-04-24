@@ -53,7 +53,7 @@ Assim que o artefato aparece no diretorio certo, o scheduler `run_commerce_artif
   - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
   - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings
   - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
-  - `<preenchido apos commit minimo>` - correcao minima final (nullability safra/preco + alinhamento do relatorio)
+  - `0f75ba37 fix(data-ops): accept null safra/preco per contract and align final report` - correcao minima final (nullability safra/preco + alinhamento do relatorio)
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Testes
