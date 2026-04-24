@@ -46,8 +46,17 @@ Conforme Secao 6.1 do plano Codex:
 | 8 | Testes | 190 PASS / 0 FAIL |
 | 9 | Preflight | EXECUTADO; 2 gates FAIL (migration 021, snapshot audit) |
 
-Implementacao 9/9. Validacao operacional: preflight parcial (FAIL
-gates), inventario parcial (Render timeout), shards.csv vazio.
+9/9 entregas de codigo previstas na Fase 1 foram implementadas
+(sharding, wrappers, scripts tooling, testes, docs).
+
+A passagem operacional da Fase 1 continua INCOMPLETA:
+- preflight tem 2 gates em FAIL (migration 021, snapshot audit);
+- inventario Render nao foi coletado (statement_timeout);
+- shards.csv esta vazio (0 linhas);
+- concorrencia nao foi serializada (2 writers Render ativos).
+
+Nenhuma dessas 4 pendencias e uma entrega de codigo; sao validacoes
+operacionais que ficaram abertas. Portanto `FASE_1_PASS` nao se aplica.
 
 ## 2. Commits gerados (sem push)
 
@@ -200,9 +209,18 @@ Render na chamada `--skip-render`:
 - queue_pending = None
 
 Gates inventario (chamada --skip-render):
-- db_size_below_12gb: PASS (valor None, gate passa na ausencia)
-- queue_below_100k: PASS (valor None, gate passa na ausencia)
-- stores_diff_below_20pct: FAIL (Render data ausente, diff calculo nao definido)
+- db_size_below_12gb: NAO_AVALIADO (valor Render = None; dado real
+  nao foi coletado porque a chamada completa caiu em
+  statement_timeout e a chamada --skip-render nao consulta Render)
+- queue_below_100k: NAO_AVALIADO (mesmo motivo)
+- stores_diff_below_20pct: NAO_AVALIADO (Render data ausente; diff
+  nao calculavel)
+
+Nota: o preflight real coletou `db_size_pretty = 8426 MB` e
+`ingestion_review_queue_pending = 10`, mas esses numeros vem de uma
+execucao independente do inventario e nao sao suficientes para
+declarar PASS dos gates deste bloco — o inventario propriamente dito
+continua sem coleta Render para ser auditavel.
 
 ### 5.4 Leitura tecnica dos dados
 
@@ -248,32 +266,35 @@ altera/deleta existentes.
 
 ## 7. Concorrencia — estado operacional atual
 
-Com base no preflight:
+Com base no preflight, classifico cada writer em 2 eixos separados:
 
-| Writer | Status schtasks | Acao Fase 1 | Estado operacional |
+- `scheduler_status`: estado reportado pelo `schtasks /Query`
+- `blocking_relevance`: se bloqueia (ou nao) a Fase 2 de commerce apply
+
+| Writer | scheduler_status | blocking_relevance | Destino Render? |
 |---|---|---|---|
-| `\BackupVivino08h` | Pronto | nenhuma | NOT_PAUSED (dump local; nao escreve em Render) |
-| `\BackupVivino14h` | Pronto | nenhuma | NOT_PAUSED (idem) |
-| `\BackupVivino22h` | Pronto | nenhuma | NOT_PAUSED (idem) |
-| `\WineGod Plug Reviews Vivino Backfill` | Pronto | nenhuma | NOT_PAUSED (escreve em Render) |
-| `\WineGod Plug Reviews Vivino Incremental` | Pronto | nenhuma | NOT_PAUSED (escreve em Render) |
-
-Classificacao por impacto em commerce apply:
-
-- `BackupVivino*`: backup local do `winegod_db`. Nao escreve Render.
-  Classificar `NOT_APPLICABLE` para concorrencia com commerce apply.
-- `WineGod Plug Reviews Vivino Backfill` / `Incremental`: escrevem em
-  Render (`wines`, `wine_scores`, eventuais queues). Classificar
-  `NOT_PAUSED`. Se a Fase 2 for disparada com estes writers ativos,
-  haveria concorrencia.
+| `\BackupVivino08h` | Pronto | NOT_APPLICABLE | Nao (dump local) |
+| `\BackupVivino14h` | Pronto | NOT_APPLICABLE | Nao (dump local) |
+| `\BackupVivino22h` | Pronto | NOT_APPLICABLE | Nao (dump local) |
+| `\WineGod Plug Reviews Vivino Backfill` | Pronto | BLOCKING_NOT_PAUSED | Sim (escreve `wines`, `wine_scores`, queues) |
+| `\WineGod Plug Reviews Vivino Incremental` | Pronto | BLOCKING_NOT_PAUSED | Sim (idem) |
 
 Resultado consolidado para Fase 2:
 
 ```
-CONCORRENCIA_STATUS = NOT_PAUSED
-WRITERS_ATIVOS = [WineGod_Vivino_Backfill, WineGod_Vivino_Incremental]
-WRITERS_IRRELEVANTES = [BackupVivino08h, BackupVivino14h, BackupVivino22h]
+CONCORRENCIA_STATUS = BLOCKING_NOT_PAUSED
+WRITERS_BLOQUEANTES_ATIVOS = [
+  WineGod Plug Reviews Vivino Backfill,
+  WineGod Plug Reviews Vivino Incremental
+]
+WRITERS_NAO_APLICAVEIS = [
+  BackupVivino08h, BackupVivino14h, BackupVivino22h
+]
 ```
+
+`scheduler_status = Pronto` dos jobs `BackupVivino*` nao vira PASS de
+concorrencia automaticamente — eles nao entram no calculo porque nao
+escrevem no Render. Por isso a coluna separada `blocking_relevance`.
 
 Acao tecnica do proximo passo: desabilitar schtasks dos 2 writers
 ativos antes do primeiro apply de Fase 2; reabilitar apos fechamento
@@ -311,7 +332,7 @@ Estado real (evidencia ou pendencia):
 | Amazon legacy done marker corrigido | env + manifest PASS enforcado | PASS (enforce em codigo + teste) |
 | Amazon mirror state protegido | pending/commit/abort + teste | PASS (enforce em codigo + teste) |
 | preflight.md confirma DSNs/schema/backup | preflight gerado; migration 021 FAIL + snapshot audit FAIL | INCOMPLETO (2 gates preflight em FAIL) |
-| inventory.json confirma volume real | inventory gerado; chamada completa falhou (Render timeout); elegibilidade local = 0 em todas as 5 sources | INCOMPLETO (Render nao coletado; shards vazio) |
+| inventory.json confirma volume real | inventory gerado; chamada completa falhou (Render timeout); elegibilidade local = 0 em todas as 5 sources; gates `db_size_below_12gb`, `queue_below_100k`, `stores_diff_below_20pct` marcados `NAO_AVALIADO` por valor Render None | INCOMPLETO (Render nao coletado; shards vazio) |
 | bulk_ingest continua sem Gemini | teste `test_bulk_ingest_does_not_import_new_wines` PASS | PASS |
 
 Resumo:
