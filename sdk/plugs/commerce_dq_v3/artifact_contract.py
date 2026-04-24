@@ -39,6 +39,11 @@ ITEM_REQUIRED_FIELDS: tuple[str, ...] = (
     "source_pointer",
 )
 
+# Campos que precisam estar presentes mas PODEM ter valor null
+# (docs/TIER_COMMERCE_CONTRACT.md: "safra (pode ser null)",
+#  "preco (pode ser null)").
+ITEM_NULLABLE_FIELDS: frozenset[str] = frozenset({"safra", "preco"})
+
 SUMMARY_REQUIRED_FIELDS: tuple[str, ...] = (
     "run_id",
     "pipeline_family",
@@ -106,7 +111,19 @@ def _load_jsonl(path: Path, limit: int) -> tuple[list[dict], list[str]]:
 def validate_items(items: Iterable[dict], *, expected_family: str | None) -> tuple[bool, list[str]]:
     errors: list[str] = []
     for idx, item in enumerate(items):
-        missing = [f for f in ITEM_REQUIRED_FIELDS if item.get(f) in (None, "")]
+        missing: list[str] = []
+        for field_name in ITEM_REQUIRED_FIELDS:
+            # Todos os campos devem ESTAR PRESENTES (chave existir).
+            if field_name not in item:
+                missing.append(field_name)
+                continue
+            value = item[field_name]
+            # Campos nullable podem ter valor None/null.
+            if field_name in ITEM_NULLABLE_FIELDS:
+                continue
+            # Campos nao-nullable nao podem ser None nem string vazia.
+            if value is None or value == "":
+                missing.append(field_name)
         if missing:
             errors.append(f"item_{idx}_faltando={','.join(missing)}")
             continue

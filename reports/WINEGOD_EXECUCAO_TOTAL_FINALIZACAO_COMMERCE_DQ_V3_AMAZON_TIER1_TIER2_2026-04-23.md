@@ -21,12 +21,12 @@ Todos os caminhos tecnicos foram implementados localmente e testados em dry-run.
 | --- | --- | --- | --- | --- |
 | `winegod_admin_world` | feed local ja validado | sim | `observed` (apply escada ja aplicado em sessao anterior) | 1 |
 | `vinhos_brasil_legacy` | feed local ja validado | sim | `observed` (apply 50 OK; 200 gated) | 2 |
-| `amazon_mirror_primary` | **feed recorrente oficial Amazon** | sim (via artefato JSONL) | `observed` se houver artefato, senao `blocked_external_host` (atual) | 3 |
-| `amazon_local_legacy_backfill` | backfill historico Amazon, lineage=`legacy_local` | sim | `observed` (items=10 dry-run OK) | 4 |
+| `amazon_mirror_primary` | **feed recorrente oficial Amazon** | sim (via artefato JSONL) | `blocked_external_host` enquanto JSONL + summary nao chegam; manifest registra `registry_status: blocked_external_host` explicito; passa a `observed` apenas quando o contrato for cumprido | 3 |
+| `amazon_local_legacy_backfill` | backfill historico Amazon, lineage=`legacy_local` | sim | `observed` (smoke com 10 items, 7 valid / 3 not_wine) | 4 |
 | `amazon_local` | observer/dry-run, **congelado como feed primario** | sim | `observed` (preservado, nao promover como feed principal) | - |
-| `tier1_global` | feed futuro via artefato padronizado | sim (via artefato JSONL) | `blocked_contract_missing` ate artefato chegar | 5 |
-| `tier2_chat1..5` + `tier2_br` | feeds futuros via artefato padronizado | sim (via artefato JSONL) | `blocked_contract_missing` ate artefato chegar | 6 |
-| `winegod_admin_legacy_mixed` | salvamento honesto do legado misturado, lineage=`legacy_mixed` | sim | `observed` (items=10 dry-run OK) | - |
+| `tier1_global` | feed futuro via artefato padronizado | sim (via artefato JSONL) | `blocked_contract_missing` ate artefato + summary chegarem e validarem contrato | 5 |
+| `tier2_chat1..5` + `tier2_br` | feeds futuros via artefato padronizado | sim (via artefato JSONL) | `blocked_contract_missing` ate artefato + summary chegarem e validarem contrato | 6 |
+| `winegod_admin_legacy_mixed` | salvamento honesto do legado misturado, lineage=`legacy_mixed` | sim | **`blocked_missing_source` por default** (sem allowlist); so vira `observed` quando `LEGACY_MIXED_ALLOWED_FONTES` for declarado explicitamente | - |
 
 ## 17.3 O que foi realmente implementado
 
@@ -36,7 +36,7 @@ Todos os caminhos tecnicos foram implementados localmente e testados em dry-run.
 - `export_amazon_local_legacy_backfill_to_dq` - mesma leitura do `amazon_local` mas com `_source_pipeline='amazon_local_legacy_backfill'` e `_source_lineage='legacy_local'`.
 - `export_tier1_global_to_dq` - loader de JSONL padronizado Tier1 a partir de `reports/data_ops_artifacts/tier1/`. Sem artefato = `blocked_contract_missing` explicito.
 - `export_tier2_from_artifact` - mesma ideia para `tier2_chat1..5` e `tier2_br`, por chat, em `reports/data_ops_artifacts/tier2/<chat>/`.
-- `export_winegod_admin_legacy_mixed_to_dq` - salvamento honesto do legado Tier1/Tier2 misturado com `_source_lineage='legacy_mixed'`; aparece separado no dashboard.
+- `export_winegod_admin_legacy_mixed_to_dq` - salvamento honesto do legado Tier1/Tier2 misturado com `_source_lineage='legacy_mixed'`. **Default: `blocked_missing_source`** porque o schema atual nao tem FK que prove Tier1 vs Tier2 por vinho. So libera items quando a variavel `LEGACY_MIXED_ALLOWED_FONTES=fonte1,fonte2,...` for declarada explicitamente (allowlist). Isso garante que o exporter nao sobrepoe `winegod_admin_world`.
 - Stubs antigos (`export_amazon_mirror_to_dq_stub`, `export_tier1_global_to_dq_stub`, `export_tier2_to_dq_stub`) mantidos para compatibilidade com schedulers antigos e como fallback honesto quando o artefato nao existe.
 
 ### Runner atualizado (`sdk/plugs/commerce_dq_v3/runner.py`)
@@ -54,11 +54,19 @@ Todos os caminhos tecnicos foram implementados localmente e testados em dry-run.
 
 ### Manifests novos (3 entradas no registry)
 
-- `sdk/adapters/manifests/commerce_amazon_mirror_primary.yaml`
-- `sdk/adapters/manifests/commerce_amazon_local_legacy_backfill.yaml`
-- `sdk/adapters/manifests/commerce_winegod_admin_legacy_mixed.yaml`
+- `sdk/adapters/manifests/commerce_amazon_mirror_primary.yaml` - `registry_status: blocked_external_host` (aguardando JSONL; nao da falso verde)
+- `sdk/adapters/manifests/commerce_amazon_local_legacy_backfill.yaml` - `registry_status: observed`
+- `sdk/adapters/manifests/commerce_winegod_admin_legacy_mixed.yaml` - `registry_status: observed` no manifest; comportamento default do exporter e `blocked_missing_source` ate allowlist ser declarada
 
 Apos `sync_registry_from_manifests.py --apply`, `ops.scraper_registry` passou de 29 para 32 entradas.
+
+Apos a rodada de hardening e esta correcao minima, status real registrado em `ops.scraper_registry`:
+
+- `commerce_amazon_mirror`: `blocked_external_host`
+- `commerce_amazon_mirror_primary`: `blocked_external_host` (aguardando JSONL + summary.json)
+- `commerce_amazon_local`: `observed`
+- `commerce_amazon_local_legacy_backfill`: `observed`
+- `commerce_winegod_admin_legacy_mixed`: `observed` no manifest, mas comportamento por default em runtime e `blocked_missing_source` (sem allowlist)
 
 ### Shadow wrappers novos
 
@@ -103,7 +111,7 @@ Delta observado:
 | `amazon_local` | - | - | - | - | - | congelado; observer continua |
 | `tier1_global` | limit=20 (`blocked_contract_missing`) | - | - | - | - | aguardando artefato JSONL Tier1 |
 | `tier2_chat1..5` + `tier2_br` | limit=20 cada (`blocked_contract_missing`) | - | - | - | - | aguardando artefato JSONL Tier2 |
-| `winegod_admin_legacy_mixed` | limit=10 (`observed`, 7 valid/3 notwine) | - | - | - | - | salvamento honesto; nao promovido |
+| `winegod_admin_legacy_mixed` | limit=10 `blocked_missing_source` (default sem allowlist) | - | - | - | - | nao promovido; allowlist opcional via `LEGACY_MIXED_ALLOWED_FONTES` |
 
 Dry-run de cada scheduler novo executado com sucesso:
 
@@ -131,7 +139,7 @@ Dry-runs desta sessao (pequenos; sem apply):
 | `tier1_global` | 20 | blocked_contract_missing | 0 | 0 | 0 | 0 | 0 | 0 |
 | `tier2_chat1..5`, `tier2_br` | 20 cada | blocked_contract_missing | 0 | 0 | 0 | 0 | 0 | 0 |
 | `amazon_local_legacy_backfill` | 10 | observed | 10 | 7 | 3 | - | - | - |
-| `winegod_admin_legacy_mixed` | 10 | observed | 10 | 7 | 3 | - | - | - |
+| `winegod_admin_legacy_mixed` | 10 | blocked_missing_source (default sem allowlist) | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Nenhum delta de `orphan_sources` por este executor; nenhuma explosao de `duplicates_in_input` ou `not_wine_rejections`.
 
@@ -154,17 +162,25 @@ Residual bloqueado por politica ja conhecida:
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Base: `dd756093` em `data-ops/integracao-restantes-scrapers-total-20260423`
-- Commits desta sessao:
+- Commits desta sessao (ordem cronologica):
   - `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
   - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
-  - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings Codex (contrato no codigo + legacy_mixed restrito + manifest blocked + git trail)
+  - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings anteriores do Codex (contrato no codigo + legacy_mixed restrito + manifest blocked + git trail)
+  - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
+  - `<preenchido apos commit minimo>` - correcao minima final: validador aceita `safra=null` e `preco=null` conforme contrato, +5 testes, relatorio principal alinhado ao codigo atual
 - Push remoto: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Diff resumido: 3 manifests novos + 3 shadows novos + 1 scheduler novo + 1 contrato novo + validator novo (artifact_contract.py) + 8 testes novos + exporters/runner atualizados + README atualizado + 2 relatorios + 1 CLAUDE_RESPOSTAS correcao.
 
-## Apendice A - Testes
+## Apendice A - Testes (pacote atual corrigido)
 
-- `python -m pytest sdk/plugs -q` -> 28 passed
-- `python -m pytest sdk/tests sdk/adapters/tests -q` -> 119 passed
+- `python -m pytest sdk/plugs/commerce_dq_v3/tests/test_artifact_contract.py -q` -> **13 passed** (8 do hardening inicial + 5 desta correcao minima cobrindo nullability de `safra`/`preco`)
+- `python -m pytest sdk/plugs -q` -> **41 passed** (antes 36 na rodada anterior; +5 novos testes)
+- `python -m pytest sdk/tests sdk/adapters/tests -q` -> **119 passed**
+
+Smokes dry-run confirmando comportamento corrigido:
+
+- `winegod_admin_legacy_mixed --dry-run` -> `blocked_missing_source` (allowlist vazia)
+- `amazon_mirror_primary --dry-run` -> `blocked_external_host` (sem JSONL + summary)
 
 ## Apendice B - Arquivo a repassar para o Codex admin
 

@@ -147,3 +147,63 @@ def test_summary_wrong_family_fails(tmp_path: Path):
     )
     assert result.ok is False
     assert any("summary_pipeline_family" in n for n in result.notes)
+
+
+def test_safra_null_is_accepted(tmp_path: Path):
+    _write_artifact(tmp_path, [_item(safra=None)], _summary())
+    result = validate_artifact_dir(
+        artifact_dir=tmp_path,
+        expected_family="amazon_mirror_primary",
+        item_limit=10,
+    )
+    assert result.ok is True
+    assert result.items[0]["safra"] is None
+
+
+def test_preco_null_is_accepted(tmp_path: Path):
+    _write_artifact(tmp_path, [_item(preco=None)], _summary())
+    result = validate_artifact_dir(
+        artifact_dir=tmp_path,
+        expected_family="amazon_mirror_primary",
+        item_limit=10,
+    )
+    assert result.ok is True
+    assert result.items[0]["preco"] is None
+
+
+def test_missing_safra_key_fails(tmp_path: Path):
+    bad = _item()
+    del bad["safra"]
+    _write_artifact(tmp_path, [bad], _summary())
+    result = validate_artifact_dir(
+        artifact_dir=tmp_path,
+        expected_family="amazon_mirror_primary",
+        item_limit=10,
+    )
+    assert result.ok is False
+    assert any("safra" in n for n in result.notes)
+
+
+def test_missing_preco_key_fails(tmp_path: Path):
+    bad = _item()
+    del bad["preco"]
+    _write_artifact(tmp_path, [bad], _summary())
+    result = validate_artifact_dir(
+        artifact_dir=tmp_path,
+        expected_family="amazon_mirror_primary",
+        item_limit=10,
+    )
+    assert result.ok is False
+    assert any("preco" in n for n in result.notes)
+
+
+def test_non_nullable_null_fails(tmp_path: Path):
+    # `moeda` NAO e nullable pelo contrato; null aqui deve reprovar.
+    _write_artifact(tmp_path, [_item(moeda=None)], _summary())
+    result = validate_artifact_dir(
+        artifact_dir=tmp_path,
+        expected_family="amazon_mirror_primary",
+        item_limit=10,
+    )
+    assert result.ok is False
+    assert any("moeda" in n for n in result.notes)

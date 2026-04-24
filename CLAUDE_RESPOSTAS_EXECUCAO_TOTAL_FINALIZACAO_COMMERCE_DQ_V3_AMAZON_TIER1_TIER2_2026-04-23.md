@@ -48,10 +48,12 @@ Assim que o artefato aparece no diretorio certo, o scheduler `run_commerce_artif
 
 - Branch: `data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 - Base: `dd756093`
-- Commits:
+- Commits (ordem cronologica):
   - `fcfd866c feat(data-ops): finalize commerce routing for amazon tier1 and tier2`
   - `5b6e3875 docs(data-ops): pin fcfd866c SHA in final commerce report`
-  - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings do Codex
+  - `c81072dd fix(data-ops): harden commerce artifact contract and legacy routing` - hardening dos 4 findings
+  - `85b38c0a docs(data-ops): pin c81072dd SHA in correction docs`
+  - `<preenchido apos commit minimo>` - correcao minima final (nullability safra/preco + alinhamento do relatorio)
 - Remote: `origin/data-ops/finalizacao-commerce-dqv3-amazon-tier1-tier2-20260423`
 
 ## Testes
