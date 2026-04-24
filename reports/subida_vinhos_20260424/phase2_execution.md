@@ -1,15 +1,33 @@
 # Fase 2 — Execucao Sharded (subida_vinhos_20260424)
 
-Data: 2026-04-24
+Data: 2026-04-24 (atualizado 22:15 UTC apos rodada FR corretiva)
 Branch: `data-ops/subida-local-render-3fases-20260424`
-Prompt: `SUBIDA_LOCAL_RENDER_FASE_2_EXECUCAO_SHARDED_20260424`
+Prompts: `SUBIDA_LOCAL_RENDER_FASE_2_EXECUCAO_SHARDED_20260424` + `SUBIDA_LOCAL_RENDER_FASE_2_PILOTO_FR_CORRETIVO_20260424`
 Plano: `reports/WINEGOD_CODEX_PLANO_FINAL_EXECUCAO_3_FASES_SUBIDA_LOCAL_RENDER_2026-04-24.md`
 
 ## Status geral
 
 ```
-FASE_2_PILOTO_ABORT — AGUARDANDO_PROMPT_CORRETIVO_CODEX
+FASE_2_PILOTO_FR_PASS + SHARD_FR_5K_ABORT — AGUARDANDO_PROMPT_CORRETIVO_CODEX
 ```
+
+Resumo:
+- Smoke AE 50: PASS
+- Piloto AE 2000: ABORT (dataset AE sujo, 34% not_wine)
+- Piloto FR 2000: **PASS** (89.2% valid, 1652 wines novas)
+- Shard FR 5000 range 2: **ABORT** (68.2% valid; range 53070+ mais sujo que 1..53069)
+
+Impacto Render cumulativo desta Fase 2:
+- +4990 wines NOVAS (1652 FR piloto + 3338 FR 5k + 0 AE — AE so updates)
+- +5036 wine_sources novas
+- +1771 not_wine_rejections (688 AE + 48 FR piloto + 1020 FR 5k + 15 AE smoke)
+- 1524 wines UPDATES adicionais (35 AE smoke + 1304 AE pilot + 132 FR pilot + 73 FR 5k - overlap)
+
+Padrao tecnico observado: o gate `valid/received < 70%` e sensivel a
+**heterogeneidade de range dentro do mesmo pais**. FR range 1-53069
+passa com 89.2%, range 53070-106138 falha com 68.2% — mesmo pais,
+mesma familia Tier1. Sugere reavaliar gate de fonte sujeita a ranges
+heterogeneos ou amostragem random.
 
 Resumo:
 - Smoke Tier1 AE 50: **PASS**

@@ -27,6 +27,29 @@ ULTIMA no topo. Cada entrada registra decisao tecnica tomada durante Fase 1/2/3.
     `audit_wine_sources_pre_subida_20260424` serem criados;
   - schtasks Vivino Backfill/Incremental serem desabilitadas.
 
+## 2026-04-24 ~22:10 — Fase 2 piloto FR PASS + shard FR 5k ABORT
+
+Prompt: SUBIDA_LOCAL_RENDER_FASE_2_PILOTO_FR_CORRETIVO_20260424
+
+- Piloto Tier1 FR 2000 range 1..53069: PASS
+  - valid=89.2% (1784/2000), 1652 wines NOVAS + 132 updates, 1672 sources novas
+  - 48 not_wine (2.4%), 0 rejected, 0 unresolved, errors=[]
+  - Postcheck PASS perfeito (counts batem)
+  - Duracao 12min 57s
+- Shard adicional FR 5000 range 53070..106138: ABORT
+  - valid=68.2% (3411/5000) abaixo de 70% threshold
+  - 3338 wines NOVAS + 73 updates + 3364 sources novas PERSISTIDAS em Render
+  - 1020 not_wine (20.4%) vs 2.4% do piloto — ranges FR sao heterogeneos
+  - Pipeline funcionou corretamente (rejected=0, errors=[], postcheck PASS)
+  - Duracao 28min 56s (concorrencia Vivino ativa, sem erros observados)
+- Delta Render nesta sessao corretiva:
+  - +4990 wines NOVAS (1652 FR piloto + 3338 FR 5k)
+  - +5036 wine_sources novas
+  - +1068 not_wine_rejections
+- Padrao tecnico: ranges diferentes do mesmo pais FR tem taxa de not_wine
+  muito diferente. Sugestao: reclassificar gate valid/received por fonte
+  conhecida, ou rodar amostragem random em vez de range sequencial.
+
 ## 2026-04-24 ~20:00 — Fase 2 piloto AE ABORT
 
 - Smoke Tier1 AE 50: PASS (35 updates + 35 sources, postcheck PASS)
