@@ -1,275 +1,367 @@
 # Fase 2 — Execucao Sharded (subida_vinhos_20260424)
 
-Data: 2026-04-24 (atualizado 22:15 UTC apos rodada FR corretiva)
+Data: 2026-04-24 (atualizado 22:30 UTC apos rodada FR corretiva)
 Branch: `data-ops/subida-local-render-3fases-20260424`
-Prompts: `SUBIDA_LOCAL_RENDER_FASE_2_EXECUCAO_SHARDED_20260424` + `SUBIDA_LOCAL_RENDER_FASE_2_PILOTO_FR_CORRETIVO_20260424`
-Plano: `reports/WINEGOD_CODEX_PLANO_FINAL_EXECUCAO_3_FASES_SUBIDA_LOCAL_RENDER_2026-04-24.md`
+Prompts executados nesta fase:
+- `SUBIDA_LOCAL_RENDER_FASE_2_EXECUCAO_SHARDED_20260424`
+- `SUBIDA_LOCAL_RENDER_FASE_2_PILOTO_FR_CORRETIVO_20260424`
+Plano mestre: `reports/WINEGOD_CODEX_PLANO_FINAL_EXECUCAO_3_FASES_SUBIDA_LOCAL_RENDER_2026-04-24.md`
 
 ## Status geral
 
 ```
-FASE_2_PILOTO_FR_PASS + SHARD_FR_5K_ABORT — AGUARDANDO_PROMPT_CORRETIVO_CODEX
+FASE_2_PILOTO_FR_PASS + SHARD_FR_5K_ABORT
 ```
 
-Resumo:
-- Smoke AE 50: PASS
-- Piloto AE 2000: ABORT (dataset AE sujo, 34% not_wine)
-- Piloto FR 2000: **PASS** (89.2% valid, 1652 wines novas)
-- Shard FR 5000 range 2: **ABORT** (68.2% valid; range 53070+ mais sujo que 1..53069)
+Nao seguir automaticamente para Fase 3. Nao retomar AE. Codex deve
+emitir prompt corretivo de heterogeneidade por range (Tier1/FR) antes
+de qualquer propagacao.
 
-Impacto Render cumulativo desta Fase 2:
-- +4990 wines NOVAS (1652 FR piloto + 3338 FR 5k + 0 AE — AE so updates)
-- +5036 wine_sources novas
-- +1771 not_wine_rejections (688 AE + 48 FR piloto + 1020 FR 5k + 15 AE smoke)
-- 1524 wines UPDATES adicionais (35 AE smoke + 1304 AE pilot + 132 FR pilot + 73 FR 5k - overlap)
+## 1. Sumario das 4 execucoes reais (run_manifest.jsonl)
 
-Padrao tecnico observado: o gate `valid/received < 70%` e sensivel a
-**heterogeneidade de range dentro do mesmo pais**. FR range 1-53069
-passa com 89.2%, range 53070-106138 falha com 68.2% — mesmo pais,
-mesma familia Tier1. Sugere reavaliar gate de fonte sujeita a ranges
-heterogeneos ou amostragem random.
+| # | Shard | Pais | Range | N | Status | valid/recv | Inserts | Updates | Sources ins | Sources upd | Not_wine |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | tier1_global__ae__0000_smoke50 | ae | 1..42369 | 50 | **PASS** | 0.700 | 0 | 35 | 0 | 35 | 15 |
+| 2 | tier1_global__ae__0000_pilot2k | ae | 1..42369 | 2000 | **ABORT** | 0.652 | 0 | 1304 | 1255 | 49 | 688 |
+| 3 | tier1_global__fr__0000_pilot2k | fr | 1..53069 | 2000 | **PASS** | 0.892 | 1652 | 132 | 1672 | 112 | 48 |
+| 4 | tier1_global__fr__0001_shard5k | fr | 53070..106138 | 5000 | **ABORT** | 0.682 | 3338 | 73 | 3364 | 47 | 1020 |
+| | **TOTAIS** | | | 9050 | 2 PASS + 2 ABORT | 6534 valid | **4990** | **1544** | **6291** | **243** | 1771 |
 
-Resumo:
-- Smoke Tier1 AE 50: **PASS**
-- Piloto Tier1 AE 2000: **ABORT** (gate valid/received 65.2% < 70%)
-- Pipeline funcionou tecnicamente; abort e por caracteristica do dataset AE
-  (34% de not_wine: ham, jam, box, salame, camembert, bouquet), nao por bug.
-- Concorrencia: `BLOCKED_CONCURRENCY` (Vivino Backfill Em execucao) ativa
-  durante toda a execucao — sem impacto observado em latencia/erros.
+Observacao: linhas com `status=ABORT` ainda tiveram `postcheck=PASS`
+e persistiram dados no Render — o ABORT do plano e por gate
+`valid/received < 0.70`, nao por falha de ingestao.
 
-Nao se prossegue para producao Tier1. Codex decide: trocar pais do piloto
-(FR/IT/ES) ou outro ajuste.
-
-## 1. Precondicoes revalidadas
+## 2. Precondicoes revalidadas (confirmadas antes de cada etapa)
 
 - `phase1_execution.md`: `FASE_1_PASS_COM_RESSALVA_CONCORRENCIA` ✓
 - `shards.csv`: 308 linhas, max expected_rows=49984, 0 > 50k ✓
-- `audit_wines_pre_subida_20260424` (2.513.197 rows): presente ✓
-- `audit_wine_sources_pre_subida_20260424` (3.491.687 rows): presente ✓
-- `decisions.md`: atualizado com CONCORRENCIA_STATUS=BLOCKED_CONCURRENCY + mitigacao operacional
+- `audit_wines_pre_subida_20260424`: 2.513.197 rows ✓
+- `audit_wine_sources_pre_subida_20260424`: 3.491.687 rows ✓
+- `decisions.md`: BLOCKED_CONCURRENCY + mitigacao operacional registrados
 - Writers bloqueantes: `WineGod Plug Reviews Vivino Backfill` (Em execucao),
   `WineGod Plug Reviews Vivino Incremental` (Pronto) — sem permissao para DISABLE
 
-## 2. Smoke Tier1 — shard `tier1_global__ae__0000_smoke50`
+## 3. Smoke Tier1 AE 50 (`tier1_global__ae__0000_smoke50`)
 
 | Campo | Valor |
 |---|---|
 | source | tier1_global |
 | country | ae |
 | source_table | vinhos_ae_fontes |
-| min_fonte_id | 1 |
-| max_fonte_id | 42369 |
+| range f.id | 1..42369 |
 | expected_rows | 50 |
 | artifact_sha256 | cfe6b620af250f81b571fcc98f59e43c586eefd124cbe69fca8f134941535fe9 |
 | apply_run_id | plug_commerce_dq_v3_tier1_global_20260424_193327 |
-| started_at | 2026-04-24T19:33:21Z |
-| finished_at | 2026-04-24T19:34:55Z |
+| started_at → finished_at | 2026-04-24T19:33:21Z → 19:34:55Z |
 
 Etapas:
-1. export Tier1 AE max-items=50 → 50 items emitted, sha `cfe6b620af25`
-2. validator FULL: OK mode=full items_validados=50
-3. dry-run 50 via runner (TIER1_ARTIFACT_DIR apontando shard): 35 valid, 15 filtered_notwine, 0 errors, blocked null
-4. apply 50: 35 updated + 35 sources_updated, 0 errors
-5. postcheck: **PASS** (wines_updated=35 casa com summary, sources=35, not_wine=15, run_log=1)
-6. append run_manifest.jsonl: status=PASS
+1. export max-items=50 → 50 items
+2. validator FULL: OK
+3. dry-run 50: 35 valid, 15 filtered_notwine
+4. apply 50: 0 inserted + 35 updated + 35 sources_updated
+5. postcheck: **PASS** (1 run_log, 35 wines_updated, 35 sources touched, 15 not_wine)
+6. manifest: **PASS**
 
-Metricas:
-- received: 50
-- valid: 35 (70%)
-- filtered_notwine_count: 15 (30% — WARN, nao ABORT)
-- rejected_count: 0
-- inserted: 0, updated: 35
-- sources_inserted: 0, sources_updated: 35
-- would_enqueue_review: 0
-- unresolved_domains: 0 (nao aparece em notes)
-- errors: []
-- blocked: null
+Gates aplicados: errors=[], blocked=null, valid/received=70% (borderline, nao ABORT), rejected_count=0, unresolved_domains=0.
 
-Decisao: **PASS** (nenhum gate ABORT acionado em N=50).
-
-## 3. Piloto Tier1 — shard `tier1_global__ae__0000_pilot2k`
+## 4. Piloto Tier1 AE 2000 (`tier1_global__ae__0000_pilot2k`)
 
 | Campo | Valor |
 |---|---|
 | source | tier1_global |
 | country | ae |
 | source_table | vinhos_ae_fontes |
-| min_fonte_id | 1 |
-| max_fonte_id | 42369 |
+| range f.id | 1..42369 |
 | expected_rows | 2000 |
 | artifact_sha256 | 55287e3062e97d0c7ba40d3d99e94d7b27bf70a64d10c5a25b8ea4a5c4c6e2a0 |
 | apply_run_id | plug_commerce_dq_v3_tier1_global_20260424_194629 |
-| started_at | 2026-04-24T19:46:29Z |
-| finished_at | 2026-04-24T19:58:44Z |
-
-Etapas:
-1. export Tier1 AE max-items=2000 → 2000 items emitted, sha `55287e3062e9`
-2. validator FULL: OK mode=full items_validados=2000 lines_validated=2000
-3. apply 2000: 1304 updated + 1255 sources_inserted + 49 sources_updated, 0 errors, blocked null
-4. postcheck: **PASS** (todos os counts batem perfeitamente)
-5. append run_manifest.jsonl: status=ABORT
-
-Metricas reais Render:
-- wines_updated: 1304 (confirmado via postcheck)
-- wine_sources_touched: 1304
-- not_wine_rejections: 688 (inseridas na tabela not_wine_rejections)
-- ingestion_review_queue: 0
-- ingestion_run_log: 1
+| started_at → finished_at | 2026-04-24T19:46:29Z → 19:58:44Z (12m 15s) |
 
 Metricas pipeline:
-- received: 2000
-- valid: 1304 (**65.2%** — abaixo de 70% = ABORT)
-- filtered_notwine_count: 688 (**34.4%**)
-- rejected_count: 0
-- inserted: 0 (todos 1304 ja existiam no Render via Vivino)
-- updated: 1304
-- sources_inserted: 1255 (URLs novas do AE)
-- sources_updated: 49
-- would_enqueue_review: 0
-- unresolved_domains: 0 (todos hosts AE resolveram para stores Render)
-- errors: []
-- blocked: null
-- batches: 1
+- received=2000, valid=1304 (**65.2%**), filtered_notwine=688 (34.4%)
+- rejected=0, errors=[], blocked=null
+- inserted=0, updated=1304 (todos ja existiam via Vivino)
+- sources_inserted=1255, sources_updated=49
 
-Analise:
-- Pipeline funcionou corretamente: rejected=0, errors=[], postcheck PASS.
-- 1304 wines atualizadas + 1255 wine_sources novas persistidas no Render.
-- Causa do ABORT: dataset AE tem 34% de not_wine (produtos nao-vinho como
-  ham, jam, box, salame, camembert, bouquet detectados pelo wine_filter).
-  Isso e caracteristica da fonte AE, nao bug do pipeline.
+Postcheck (Render real vs summary):
+- wines_new=0 ✓  wines_updated=1304 ✓  sources_touched=1304 ✓
+- not_wine_rejections=688 ✓  review_queue=0 ✓  run_log=1 ✓
+- status: **PASS** (counts batem perfeitamente)
 
-Aplicacao dos gates (Secao 8.2 plano):
+Gates aplicados:
+- valid/received=0.652 < 0.70 → **ABORT** (causa ABORT)
+- filtered_notwine_ratio=0.344 (dataset AE sujo: ham/jam/salame/camembert/box)
+- demais gates PASS
 
-| Gate | Threshold | Valor | Status |
-|---|---|---|---|
-| errors == [] | obrigatorio | [] | PASS |
-| blocked IS NULL | obrigatorio | null | PASS |
-| valid / received >= 0.85 | PASS | 0.652 | **ABORT (<0.70)** |
-| filtered_notwine_count / received <= baseline | depende fonte | 0.344 | WARN (nao e ABORT direto) |
-| rejected_count / received <= 0.15 | ABORT >0.15 | 0 | PASS |
-| would_enqueue_review / valid <= 0.03 | PASS | 0 | PASS |
-| sources_rejected_count / sources_in_input <= 0.02 | PASS | 0 | PASS |
-| unresolved_domains_count / received <= 0.02 | PASS | 0 | PASS |
-| payload <= 50000 | PASS | 2000 | PASS |
-| artifact_sha256 nao PASS previamente | obrigatorio | OK | PASS |
+Decisao: **ABORT** — dataset AE nao representativo; Codex redirecionou para FR.
 
-Decisao: **ABORT** (1 gate ABORT acionado: valid/received 0.652 < 0.70).
+## 5. Piloto Tier1 FR 2000 (`tier1_global__fr__0000_pilot2k`)
 
-Regra do prompt: "Se piloto ABORT: nao prosseguir para producao; prompt
-corretivo obrigatorio."
+| Campo | Valor |
+|---|---|
+| source | tier1_global |
+| country | fr |
+| source_table | vinhos_fr_fontes |
+| range f.id | 1..53069 |
+| expected_rows | 2000 |
+| artifact_sha256 | 979faa13e2ef |
+| apply_run_id | plug_commerce_dq_v3_tier1_global_20260424_212710 |
+| started_at → finished_at | 2026-04-24T21:27:05Z → 21:40:02Z (12m 57s) |
 
-## 4. Escalonamento: NAO INICIADO
+Metricas pipeline:
+- received=2000, valid=1784 (**89.2%**), filtered_notwine=48 (2.4%)
+- rejected=0, errors=[], blocked=null
+- **inserted=1652** (wines novas), updated=132
+- sources_inserted=1672, sources_updated=112
 
-Conforme ABORT do piloto, nao foi aplicado nenhum shard de 5000 nem 10000.
+Postcheck (Render real vs summary):
+- wines_new=1652 ✓  wines_updated=132 ✓  sources_touched=1784 ✓
+- not_wine_rejections=48 ✓  review_queue=0 ✓  run_log=1 ✓
+- status: **PASS** (counts batem perfeitamente)
 
-Pipeline de escalada previsto era:
-- 5000 com BLOCKED_CONCURRENCY
-- 10000 apos 3 shards consecutivos PASS
-- NAO 50000 enquanto BLOCKED_CONCURRENCY persistir
+Gates aplicados:
+- valid/received=0.892 >= 0.85 → **PASS**
+- rejected_count/received=0, would_enqueue_review/valid=0, sources_rejected/sources=0,
+  unresolved_domains/received=0, payload<=5000, sha sem PASS previo — **todos PASS**
 
-## 5. Concorrencia — impacto observado
+Decisao: **PASS** — liberado para shard adicional de 5000 (regra corretiva Codex).
 
-- `WineGod Plug Reviews Vivino Backfill`: Em execucao durante todo o teste
+## 6. Shard Tier1 FR 5000 range 2 (`tier1_global__fr__0001_shard5k`)
+
+| Campo | Valor |
+|---|---|
+| source | tier1_global |
+| country | fr |
+| source_table | vinhos_fr_fontes |
+| range f.id | 53070..106138 |
+| expected_rows | 5000 |
+| artifact_sha256 | 6a39cc3cc14a |
+| apply_run_id | plug_commerce_dq_v3_tier1_global_20260424_214152 |
+| started_at → finished_at | 2026-04-24T21:41:48Z → 22:10:44Z (28m 56s) |
+
+Metricas pipeline:
+- received=5000, valid=3411 (**68.2%**), filtered_notwine=1020 (**20.4%**)
+- rejected=0, errors=[], blocked=null
+- **inserted=3338** (wines novas), updated=73
+- sources_inserted=3364, sources_updated=47
+
+Postcheck (Render real vs summary):
+- wines_new=3338 ✓  wines_updated=73 ✓  sources_touched=3411 ✓
+- not_wine_rejections=1020 ✓  review_queue=0 ✓  run_log=1 ✓
+- status: **PASS** (counts batem perfeitamente)
+
+Gates aplicados:
+- valid/received=0.682 < 0.70 → **ABORT**
+- filtered_notwine_ratio=0.204 (8x maior que no piloto FR range 1..53069)
+- rejected=0, errors=[], postcheck=PASS — pipeline ok
+- unresolved_domains=0, payload<=5000, sha sem PASS previo
+
+Decisao: **ABORT** — nao propagar para 10k. Regra estrita: 1 shard adicional
+pos-piloto deu ABORT => stop.
+
+## 7. Escalonamento real executado
+
+Sequencia efetivamente rodada:
+
+```
+Smoke AE 50     → PASS     (valid 70%, n limitado)
+Piloto AE 2000  → ABORT    (valid 65.2%, AE sujo)
+    [redirecionamento Codex para FR]
+Piloto FR 2000  → PASS     (valid 89.2%, FR range 1 limpo)
+Shard FR 5000   → ABORT    (valid 68.2%, FR range 2 sujo)
+    [parada: regra estrita pos-piloto + 1 shard ABORT]
+```
+
+Caps respeitados:
+- Piloto: 2000 (cap maximo do piloto)
+- Shard pos-piloto: 5000 (cap BLOCKED_CONCURRENCY, nao subiu para 10k)
+- Nunca excedeu 5000 com concorrencia ativa
+- Cooldown 60s aplicado entre etapas
+
+## 8. Artefatos gerados
+
+### Artifacts JSONL + summaries
+```
+reports/data_ops_artifacts/shards_fase2/
+├── tier1_ae_0000_smoke/
+│   ├── 20260424_193208_tier1_global.jsonl (50)
+│   └── 20260424_193208_tier1_global_summary.json
+├── tier1_ae_0000_pilot2k/
+│   ├── 20260424_193527_tier1_global.jsonl (2000)
+│   └── 20260424_193527_tier1_global_summary.json
+├── tier1_fr_0000_pilot2k/
+│   ├── 20260424_212626_tier1_global.jsonl (2000)
+│   └── 20260424_212626_tier1_global_summary.json
+└── tier1_fr_0001_shard5k/
+    ├── 20260424_214127_tier1_global.jsonl (5000)
+    └── 20260424_214127_tier1_global_summary.json
+```
+
+### Runner summaries
+```
+reports/data_ops_plugs_staging/
+├── 20260424_193236_commerce_tier1_global_summary.md  (AE smoke dry-run)
+├── 20260424_193327_commerce_tier1_global_summary.md  (AE smoke apply)
+├── 20260424_194629_commerce_tier1_global_summary.md  (AE pilot apply)
+├── 20260424_212710_commerce_tier1_global_summary.md  (FR pilot apply)
+└── 20260424_214152_commerce_tier1_global_summary.md  (FR 5k apply)
+```
+
+### Postchecks
+```
+reports/subida_vinhos_20260424/postchecks/
+├── tier1_ae_0000_smoke50.json      (PASS)
+├── tier1_ae_0000_pilot2k.json       (PASS)
+├── tier1_fr_0000_pilot2k.json       (PASS)
+└── tier1_fr_0001_shard5k.json       (PASS)
+```
+
+### Progress
+```
+reports/subida_vinhos_20260424/progress/
+├── tier1_fr_0000_pilot2k_start.txt  2026-04-24T21:27:05Z
+├── tier1_fr_0000_pilot2k_end.txt    2026-04-24T21:40:02Z
+├── tier1_fr_0001_shard5k_start.txt  2026-04-24T21:41:48Z
+└── tier1_fr_0001_shard5k_end.txt    2026-04-24T22:10:44Z
+```
+
+### Manifest
+```
+reports/subida_vinhos_20260424/run_manifest.jsonl
+  linha 1: AE smoke50 PASS
+  linha 2: AE pilot2k ABORT
+  linha 3: FR pilot2k PASS
+  linha 4: FR shard5k ABORT
+```
+
+## 9. Impacto Render observado — contas consolidadas
+
+Somas diretas dos 4 registros do `run_manifest.jsonl`:
+
+| Metrica | AE smoke50 | AE pilot2k | FR pilot2k | FR shard5k | **TOTAL** |
+|---|---:|---:|---:|---:|---:|
+| received | 50 | 2000 | 2000 | 5000 | **9050** |
+| valid | 35 | 1304 | 1784 | 3411 | **6534** |
+| inserted (wines novas) | 0 | 0 | 1652 | 3338 | **4990** |
+| updated (wines existentes tocadas) | 35 | 1304 | 132 | 73 | **1544** |
+| sources_inserted (wine_sources novas) | 0 | 1255 | 1672 | 3364 | **6291** |
+| sources_updated (wine_sources tocadas) | 35 | 49 | 112 | 47 | **243** |
+| filtered_notwine_count | 15 | 688 | 48 | 1020 | **1771** |
+| rejected_count | 0 | 0 | 0 | 0 | **0** |
+| unresolved_domains | 0 | 0 | 0 | 0 | **0** |
+
+Delta consolidado no Render pos-Fase 2:
+- **+4990 wines** (INSERTs reais; todos vinhos previamente ausentes)
+- **1544 wines** tocadas por UPDATE (nao-destrutivo — atualizam `ingestion_run_id`)
+- **+6291 wine_sources** novas (URLs de lojas Tier1 persistidas)
+- **243 wine_sources** atualizadas (preco/moeda/ingestion_run_id atualizados)
+- **+1771 not_wine_rejections** (tabela auxiliar de telemetria de filtro)
+- **0 deletes** (REGRA 2 respeitada)
+- **0 unresolved_domains** em todos os shards — mitigacao stores_diff confirmada
+
+## 10. Concorrencia observada
+
+- `BLOCKED_CONCURRENCY` permaneceu ativo durante toda a Fase 2
+- `WineGod Plug Reviews Vivino Backfill`: Em execucao
 - `WineGod Plug Reviews Vivino Incremental`: Pronto
 
-Impacto observado nos 2 applies (50 e 2000):
-- Nenhum erro de conexao Render
-- Nenhum timeout no apply
-- Latencia apply 50: ~1.5 minutos (inclui dry-run + apply + postcheck)
-- Latencia apply 2000: ~12 minutos
-- postcheck no Render: normal, queries retornaram em <5s
+Impacto empirico medido nos 4 applies:
+- 0 erros de conexao Render em nenhum dos 5 runs (smoke + pilot + pilot + shard + dry-run)
+- 0 BLOCKED_QUEUE_EXPLOSION
+- Latencia apply por 1k items: ~6min (AE pilot 2k em 12m 15s; FR pilot 2k em 12m 57s; FR 5k em 28m 56s)
+- Latencia postcheck Render: <5s em todos os casos
 
-A concorrencia Vivino nao impactou este piloto. Risco segue registrado mas
-empiricamente nao materializado em N=2050 itens.
+Risco teorico nao materializou em N=9050 items. Seguro manter
+BLOCKED_CONCURRENCY enquanto Codex nao autorizar outro caminho.
 
-## 6. Artefatos gerados
+## 11. Descoberta tecnica principal — heterogeneidade intra-pais por range
 
-```
-reports/data_ops_artifacts/shards_fase2/tier1_ae_0000_smoke/
-  20260424_193208_tier1_global.jsonl (50 items)
-  20260424_193208_tier1_global_summary.json
+Pipeline comportou-se **identicamente** em todos os shards (rejected=0,
+errors=[], blocked=null, postcheck=PASS). O que varia e a composicao
+da FONTE por faixa de `f.id`:
 
-reports/data_ops_artifacts/shards_fase2/tier1_ae_0000_pilot2k/
-  20260424_193527_tier1_global.jsonl (2000 items)
-  20260424_193527_tier1_global_summary.json
+| Pais | Range f.id | N | filtered_notwine_ratio | valid_ratio | Gate |
+|---|---|---|---|---|---|
+| AE | 1..42369 | 2000 | 34.4% | 65.2% | ABORT |
+| FR | 1..53069 | 2000 | 2.4% | 89.2% | PASS |
+| FR | 53070..106138 | 5000 | 20.4% | 68.2% | ABORT |
 
-reports/data_ops_plugs_staging/
-  20260424_193236_commerce_tier1_global_summary.md (dry-run 50)
-  20260424_193327_commerce_tier1_global_summary.md (apply 50)
-  20260424_194629_commerce_tier1_global_summary.md (apply 2000)
+Interpretacao tecnica:
+- **Nao e bug do pipeline** (postcheck PASS em todos, inserts persistidos).
+- **Nao e problema do gate** (gate 70% e razoavel; foi acionado corretamente).
+- **E caracteristica do dataset** (`vinhos_{cc}_fontes` foi scrapado ao longo do tempo; ranges diferentes de `f.id` correspondem a campanhas de scraping diferentes, com composicoes heterogeneas de produto — ranges antigos limpos, ranges novos incluindo mais lixo).
 
-reports/subida_vinhos_20260424/postchecks/
-  tier1_ae_0000_smoke50.json (PASS)
-  tier1_ae_0000_pilot2k.json (PASS)
+Implicacao: shardar sequencialmente por `f.id` garante determinismo e
+anti-duplicacao, mas nao garante homogeneidade estatistica. Para
+propagacao em escala e necessario ou (a) aceitar a heterogeneidade
+via ajuste de gate, (b) resharding por granularidade menor, (c)
+amostragem que exponha o perfil da fonte antes de escalar.
 
-reports/subida_vinhos_20260424/run_manifest.jsonl
-  linha 1: smoke50 PASS
-  linha 2: pilot2k ABORT
-```
-
-## 7. Impacto Render observado
-
-Delta confirmado por postcheck:
-- `wines` atualizadas por esta Fase 2: 35 (smoke) + 1304 (piloto) = **1339 wines tocadas**
-- `wine_sources` tocadas: 35 (smoke) + 1304 (piloto) = **1339 sources tocadas**
-  - destas, 1255 sao INSERTS novos (URLs novas no Render vindas de AE Tier1)
-- `not_wine_rejections` inseridas: 15 + 688 = **703 novas rejeicoes** registradas
-- `ingestion_run_log` entries: 2 (1 smoke + 1 piloto)
-- `ingestion_review_queue`: sem crescimento
-- nao houve inserts novos em `wines` (todos 1339 ja existiam via Vivino)
-
-REGRA 2 respeitada: 0 deletes, 0 alteracoes destrutivas. Apenas UPDATEs e
-INSERTs em tabelas de dados e de telemetria.
-
-## 8. Riscos e proximos passos propostos
-
-### Risco principal
-
-O piloto AE nao e representativo do volume principal. Os paises com mais
-rows em `shards.csv` sao (pela distribuicao 308 shards):
-- ar: 23 shards Tier1
-- br: varios (so em Tier2 BR)
-- us, fr, it, es, pt: outros grandes
-
-Piloto ideal seria FR ou IT (paises de vinho puro). Taxa de not_wine
-deveria ser <15% nesses paises, comparado a 34% no AE.
-
-### Proposta de prompt corretivo Codex
+## 12. Status final da Fase 2
 
 ```
-PROMPT: SUBIDA_LOCAL_RENDER_FASE_2_PILOTO_FR_CORRETIVO_20260424
-
-Motivo: piloto AE deu ABORT por valid/received=65.2% devido a dataset
-sujo (34% not_wine). Pipeline funcionou corretamente; 1304 updates + 1255
-sources novas foram persistidas no Render com sucesso.
-
-Acao corretiva:
-1. Selecionar piloto Tier1 FR (Franca, pais de vinho puro, not_wine
-   esperado < 15%).
-2. Shard: buscar em shards.csv o primeiro tier1_global__fr__NNNN.
-3. Executar:
-   - export max-items=2000 do shard FR
-   - validator FULL
-   - apply 2000 com COMMERCE_APPLY_AUTHORIZED_TIER1_GLOBAL=1
-   - postcheck por run_id
-   - append manifest
-4. Gates identicos a Secao 8.2 (valid/received >= 85% para PASS).
-5. Se piloto FR PASS: escalar para 5000 (BLOCKED_CONCURRENCY cap);
-   3 PASS consecutivos -> subir para 10000.
-6. Se piloto FR ABORT: investigar wine_filter FR + amostra rejeitada
-   antes de tentar outro pais.
-
-Manter:
-- CONCORRENCIA_STATUS=BLOCKED_CONCURRENCY
-- Cap 5000/10000 durante concorrencia
-- Sem reapply de sha PASS
-- Postcheck obrigatorio
+FASE_2_PILOTO_FR_PASS + SHARD_FR_5K_ABORT
 ```
 
-Alternativas que Codex pode considerar:
-- A) Piloto em IT (Italia) em vez de FR
-- B) Seguir com piloto AE mas reclassificar 65% como WARN se rejected=0
-  e postcheck PASS (flexibilizar gate de valid/received para fontes
-  sujas conhecidas)
-- C) Ajustar shards.csv para excluir AE e outros paises com alta taxa
-  de not_wine, priorizando produtores puros
+Nao autorizado:
+- abrir Fase 3
+- retomar AE
+- propagar Tier1 producao
+- subir para 10k ou 50k
+
+Autorizado em proximo prompt corretivo:
+- ajuste de gate operacional (WARN vs ABORT quando pipeline OK mas not_wine alto)
+- resharding menor de Tier1 FR ranges > 53069
+- amostragem preliminar antes de apply em ranges nao-visitados
+
+## 13. Proximo passo proposto ao Codex
+
+```
+PROMPT: SUBIDA_LOCAL_RENDER_FASE_2_HETEROGENEIDADE_RANGE_TIER1_FR_20260424
+
+Estado de entrada:
+- FASE_2_PILOTO_FR_PASS + SHARD_FR_5K_ABORT
+- Piloto FR (range 1..53069): PASS (not_wine 2.4%, valid 89.2%)
+- Shard FR (range 53070..106138): ABORT (not_wine 20.4%, valid 68.2%)
+- Pipeline funciona identicamente em ambos; heterogeneidade e da fonte.
+
+Objetivo:
+Decidir estrategia contra heterogeneidade intra-pais antes de propagar
+Tier1 para producao. Sem escalar, sem retomar AE, sem Fase 3.
+
+Execucao obrigatoria (antes de qualquer apply novo):
+
+1. Rodar amostragem de perfil em 3 ranges adicionais FR do shards.csv
+   em modo EXPORT-ONLY (sem apply):
+   - tier1_global__fr__0002 (range 106139..159205), N=500 sample
+   - tier1_global__fr__0005 (meio), N=500
+   - tier1_global__fr__NNNN (ultimo), N=500
+   Medir filtered_notwine_ratio projetado (via validator + pre_ingest_filter
+   dry-run) sem inserir no Render.
+
+2. Produzir `reports/subida_vinhos_20260424/fr_range_profile.md` com:
+   - tabela ranges vs not_wine_ratio esperado
+   - decisao: quais ranges aceitaveis (not_wine < 15%) vs quais precisam
+     resharding ou tratamento especial
+
+3. Baseado no profile, escolher UMA de 3 estrategias:
+   A. Gate operacional flexivel: valid/received <70% vira WARN quando
+      rejected=0, errors=[], blocked=null, postcheck=PASS, delta_render>0.
+      Documentar o ajuste em decisions.md.
+   B. Reshardar Tier1 FR em sub-shards de 10k com profile antes do apply.
+   C. Filtro dinamico de range: excluir ranges com not_wine projetado > 15%.
+
+4. Aplicar apenas 1 shard adicional em FR range ainda nao apresentado,
+   tamanho <= 5000, com estrategia escolhida em (3) aplicada. Registrar
+   como evidencia de eficacia da estrategia.
+
+5. Se esse shard passar, responder FASE_2_RETORNOU_AO_TRILHO_HETEROGENEIDADE.
+   Se nao passar, parar e propor PROMPT de engenharia de dataset.
+
+Regras absolutas:
+- sem Gemini, sem items_final_inserted, sem reapply de sha PASS
+- sem delete destrutivo, validator FULL antes de apply, postcheck por run_id
+- cap <=5000 com BLOCKED_CONCURRENCY
+- nenhum shard > 50000
+- sem gate humano
+```
