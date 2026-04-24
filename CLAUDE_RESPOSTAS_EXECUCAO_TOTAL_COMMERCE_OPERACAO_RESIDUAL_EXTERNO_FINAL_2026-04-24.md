@@ -93,7 +93,9 @@ Relatorio tecnico completo:
 10. **Branch/commit:**
     - Branch: `data-ops/execucao-total-commerce-operacao-residual-externo-final-20260424`
     - Base: `f7b13d60 docs(data-ops): finalize go-live audit docs`
-    - Commit SHA: a ser pinado logo apos push (ver ultima secao do relatorio tecnico).
+    - Commit final: `225f77d5 feat(data-ops): commerce runbook + amazon_mirror README + artifact validator CLI`
+    - Remote: `origin/data-ops/execucao-total-commerce-operacao-residual-externo-final-20260424` (push OK)
+    - Nota: commit duplicado persiste localmente em `data-ops/execucao-total-reviews-dominio-final-20260424` (sha local `1c081730`) por acidente inicial de checkout. Nao fiz `git reset --hard` (regra). Codex admin avalia se limpa a branch de reviews local antes de push.
 
 ## Apendice - Arquivo a repassar para o Codex admin
 

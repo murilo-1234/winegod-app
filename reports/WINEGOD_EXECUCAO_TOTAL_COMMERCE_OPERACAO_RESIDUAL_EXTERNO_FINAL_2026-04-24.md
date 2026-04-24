@@ -251,7 +251,18 @@ no relatorio mas nao persistidas em arquivo:
 
 - Base: `f7b13d60 docs(data-ops): finalize go-live audit docs`.
 - Branch desta execucao: `data-ops/execucao-total-commerce-operacao-residual-externo-final-20260424`.
-- Commit: a ser pinado logo abaixo do push.
+- Commit final (em cima de `f7b13d60`): `225f77d5 feat(data-ops): commerce runbook + amazon_mirror README + artifact validator CLI`.
+- Remote: `origin/data-ops/execucao-total-commerce-operacao-residual-externo-final-20260424` (push OK).
+
+Nota de transparencia:
+- O mesmo conteudo foi aplicado primeiro como `1c081730` na branch local
+  `data-ops/execucao-total-reviews-dominio-final-20260424` (branch onde
+  a sessao iniciou, por acidente de checkout). Depois movido via
+  cherry-pick para a branch correta (`225f77d5`). O commit duplicado
+  permanece localmente em `data-ops/execucao-total-reviews-dominio-final-20260424`
+  para preservar integridade historica; nao executei `git reset --hard`
+  por regra. O Codex admin pode decidir limpar a branch de reviews local
+  antes de qualquer push daquela frente.
 
 ## 11. Bloqueios externos remanescentes
 
