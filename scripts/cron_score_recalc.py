@@ -32,6 +32,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     sys.exit("ERROR: DATABASE_URL environment variable is required.")
 
+# Keepalives anti SSL-closed em queries longas (sweep diario).
+KEEPALIVE_KWARGS = {
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 5,
+}
+
 # Advisory lock IDs (arbitrary unique integers, stable across runs)
 LOCK_QUEUE = 73001
 LOCK_SWEEP = 73002
@@ -67,7 +75,7 @@ def main():
     args = parser.parse_args()
 
     t0 = time.time()
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL, **KEEPALIVE_KWARGS)
 
     lock_id = LOCK_SWEEP if args.sweep else LOCK_QUEUE
     mode = "sweep" if args.sweep else "queue"

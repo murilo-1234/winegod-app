@@ -36,6 +36,20 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     sys.exit("ERROR: DATABASE_URL environment variable is required.")
 
+# Keepalive params para evitar SSL connection closed em queries longas no Render.
+# idle=30s antes do primeiro keepalive; interval=10s entre keepalives; count=5 retries.
+KEEPALIVE_KWARGS = {
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 5,
+}
+
+
+def _connect():
+    """psycopg2.connect com keepalives habilitados (anti-SSL-closed em sweep)."""
+    return psycopg2.connect(DATABASE_URL, **KEEPALIVE_KWARGS)
+
 # --- Controle de fanout de peers por reason da fila ---
 # Quando upload WCF em bulk mode enfileira via trigger, nao queremos que
 # cada wine recalc dispare peers (evita avalanche na score_recalc_queue).
@@ -139,39 +153,53 @@ def weighted_median(prices, weights):
 # ------------------------------------------------------------------
 
 def build_peer_index(cur, bucket_lookup_fn=None):
-    """Build in-memory peer index for all wines with price + nota."""
-    cur.execute("""
-        SELECT pais, nota_wcf, vivino_rating, nota_wcf_sample_size,
-               vivino_reviews, preco_min, moeda,
-               tipo, regiao, sub_regiao, produtor, confianca_nota
-        FROM wines
-        WHERE preco_min > 0 AND moeda IS NOT NULL
-          AND (nota_wcf IS NOT NULL OR (vivino_rating IS NOT NULL AND vivino_rating > 0))
-    """)
-    country_peers = {}
-    country_notas = {}
-    all_prices = []
-    country_prices = {}
+    """Build in-memory peer index for all wines with price + nota.
 
-    for (pais, nw, vr, ss, vr_reviews, pm, mo,
-         tipo, regiao, sub_regiao, produtor, confianca_nota) in cur:
-        wine_dict = {
-            "nota_wcf": nw, "vivino_rating": vr,
-            "nota_wcf_sample_size": ss, "vivino_reviews": vr_reviews,
-            "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
-            "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
-        }
-        nb = compute_nota_base(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
-        pu = converter_para_usd(pm, mo)
-        if nb is None or pu is None or pu <= 0:
-            continue
-        key = pais or "__unknown__"
-        if key not in country_peers:
-            country_peers[key] = []
-            country_prices[key] = []
-        country_peers[key].append((nb, pu))
-        country_prices[key].append(pu)
-        all_prices.append(pu)
+    Usa cursor server-side (named cursor + itersize) para streamar 1M+ linhas
+    sem materializar tudo no client e sem manter conexao idle por minutos.
+    """
+    # Server-side cursor: precisa de connection propria (nao podemos usar `cur`
+    # passado se ja estiver com transacao aberta).
+    conn_read = _connect()
+    try:
+        srv = conn_read.cursor(name="peer_index_cursor")
+        srv.itersize = 5000
+        srv.execute("""
+            SELECT pais, nota_wcf, vivino_rating, nota_wcf_sample_size,
+                   vivino_reviews, preco_min, moeda,
+                   tipo, regiao, sub_regiao, produtor, confianca_nota
+            FROM wines
+            WHERE preco_min > 0 AND moeda IS NOT NULL
+              AND (nota_wcf IS NOT NULL OR (vivino_rating IS NOT NULL AND vivino_rating > 0))
+        """)
+        country_peers = {}
+        country_notas = {}
+        all_prices = []
+        country_prices = {}
+
+        for (pais, nw, vr, ss, vr_reviews, pm, mo,
+             tipo, regiao, sub_regiao, produtor, confianca_nota) in srv:
+            wine_dict = {
+                "nota_wcf": nw, "vivino_rating": vr,
+                "nota_wcf_sample_size": ss, "vivino_reviews": vr_reviews,
+                "pais": pais, "regiao": regiao, "sub_regiao": sub_regiao,
+                "tipo": tipo, "produtor": produtor, "confianca_nota": confianca_nota,
+            }
+            nb = compute_nota_base(wine_dict, bucket_lookup_fn=bucket_lookup_fn)
+            pu = converter_para_usd(pm, mo)
+            if nb is None or pu is None or pu <= 0:
+                continue
+            key = pais or "__unknown__"
+            if key not in country_peers:
+                country_peers[key] = []
+                country_prices[key] = []
+            country_peers[key].append((nb, pu))
+            country_prices[key].append(pu)
+            all_prices.append(pu)
+
+        srv.close()
+    finally:
+        conn_read.close()
 
     for key in country_peers:
         country_peers[key].sort(key=lambda x: x[0])
@@ -566,7 +594,7 @@ def sweep_all_with_price(conn, commit_every=500):
     capilaridade = dict(cur.fetchall())
 
     # Server-side cursor to avoid loading all IDs in memory
-    conn_read = psycopg2.connect(DATABASE_URL)
+    conn_read = _connect()
     srv = conn_read.cursor(name="sweep_cursor")
     srv.itersize = 5000
     srv.execute("""
@@ -620,7 +648,7 @@ def main():
                         help="Max processing time in seconds (default 300)")
     args = parser.parse_args()
 
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = _connect()
 
     if args.sweep:
         sweep_all_with_price(conn)
