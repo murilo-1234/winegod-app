@@ -37,8 +37,9 @@ export function WelcomeScreen({ onSuggestionClick, userName, chatInputSlot }: We
     const now = new Date();
     const period = resolvePeriod(now.getHours());
     const weekday = resolveWeekday(now.getDay());
-    const resolved = userName
-      ? t(`greeting.${period}.named`, { weekday, name: userName })
+    const firstName = userName?.trim().split(/\s+/)[0];
+    const resolved = firstName
+      ? t(`greeting.${period}.named`, { weekday, name: firstName })
       : t(`greeting.${period}.guest`, { weekday });
     setGreeting(resolved);
   }, [userName, t]);
