@@ -27,6 +27,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import { type AppLocale, defaultLocale, isAppLocale } from "@/i18n/routing";
 
@@ -117,6 +118,7 @@ export function LocaleProvider({
   const seedCurrency = normalizeCurrency(initialCurrencyOverride);
   const seedGeo = normalizeOptionalGeoCountry(initialGeoCountry);
 
+  const router = useRouter();
   const [uiLocale, setUiLocaleState] = useState<AppLocale>(seedLocale);
   const [marketCountry, setMarketCountryState] = useState<MarketCountry>(
     seedMarket,
@@ -141,10 +143,12 @@ export function LocaleProvider({
 
   const setUiLocale = useCallback((locale: AppLocale) => {
     if (!isAppLocale(locale)) return;
+    let changed = false;
     setUiLocaleState((prev) => {
       // F11.4 - emite `locale_switch` ao setar manualmente um locale
       // diferente do atual. Evita emitir em re-seed do mesmo valor.
       if (prev !== locale) {
+        changed = true;
         posthogCapture("locale_switch", {
           from_locale: prev,
           to_locale: locale,
@@ -153,7 +157,13 @@ export function LocaleProvider({
       return locale;
     });
     writeLocaleCookie(locale);
-  }, []);
+    // As messages do NextIntlClientProvider sao resolvidas no SSR via
+    // cookie wg_locale_choice. Sem refresh, a UI continua no idioma anterior
+    // ate a proxima navegacao top-level.
+    if (changed) {
+      router.refresh();
+    }
+  }, [router]);
 
   const setMarketCountry = useCallback((country: MarketCountry) => {
     setMarketCountryState(normalizeMarketCountry(country));
