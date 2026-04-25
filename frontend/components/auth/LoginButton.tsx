@@ -36,7 +36,7 @@ export function LoginButton({ compact = false }: LoginButtonProps) {
           <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-wine-surface border border-wine-border shadow-lg z-50 p-2 flex flex-col gap-1">
             <ProviderButton provider="google" />
             <ProviderButton provider="facebook" />
-            <ProviderButton provider="apple" />
+            {/* <ProviderButton provider="apple" /> */}{/* DESATIVADO 2026-04-25 — reativar quando Apple Developer ($99/ano) estiver pago */}
             <ProviderButton provider="microsoft" />
           </div>
         )}
@@ -48,7 +48,7 @@ export function LoginButton({ compact = false }: LoginButtonProps) {
     <div className="flex flex-col gap-2 w-full">
       <ProviderButton provider="google" />
       <ProviderButton provider="facebook" />
-      <ProviderButton provider="apple" />
+      {/* <ProviderButton provider="apple" /> */}{/* DESATIVADO 2026-04-25 — reativar quando Apple Developer ($99/ano) estiver pago */}
       <ProviderButton provider="microsoft" />
     </div>
   );
