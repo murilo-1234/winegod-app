@@ -38,6 +38,15 @@ MIN_CONFIDENCE = 0.75
 
 _COUNTRY_NAMES = None  # Removido — usar _central_iso_to_name de utils.country_names
 
+def _normalize_style_key(s: str) -> str:
+    """Normaliza chave: lowercase + remove acentos. 'Rosé' -> 'rose'."""
+    import unicodedata
+    return "".join(
+        c for c in unicodedata.normalize("NFD", str(s).strip().lower())
+        if unicodedata.category(c) != "Mn"
+    )
+
+
 _STYLE_MAP = {
     "tinto": "tinto",
     "red": "tinto",
@@ -473,7 +482,7 @@ def _clean_country_code(value):
 def _clean_style(value):
     if not value:
         return None
-    return _STYLE_MAP.get(str(value).strip().lower())
+    return _STYLE_MAP.get(_normalize_style_key(value))
 
 
 def _clean_vintage(value):
