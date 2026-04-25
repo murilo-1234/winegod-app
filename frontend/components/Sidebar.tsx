@@ -29,6 +29,15 @@ interface SidebarProps {
 const ICON_SIZE = 20;
 const STROKE = 1.5;
 
+// Ordem de exibicao dos botoes de idioma no sidebar. PT vai por ultimo
+// para o site parecer "originalmente em ingles".
+const LOCALE_DISPLAY_ORDER: readonly string[] = [
+  "en-US",
+  "es-419",
+  "fr-FR",
+  "pt-BR",
+];
+
 // F2.9d - Seletor minimo de idioma. Aparece so no sidebar expandido.
 // Consome useEnabledLocales() (kill switch F1.8) e useLocaleContext()
 // (F2.9a: setUiLocale ja persiste wg_locale_choice + timestamp).
@@ -40,13 +49,20 @@ function LocaleSelector() {
   if (isLoading) return null;
   if (!enabledLocales || enabledLocales.length <= 1) return null;
 
+  const orderedLocales = [...enabledLocales].sort((a, b) => {
+    const ia = LOCALE_DISPLAY_ORDER.indexOf(a);
+    const ib = LOCALE_DISPLAY_ORDER.indexOf(b);
+    return (ia === -1 ? Number.MAX_SAFE_INTEGER : ia) -
+      (ib === -1 ? Number.MAX_SAFE_INTEGER : ib);
+  });
+
   return (
     <div className="px-3 py-2" role="group" aria-label={t("languageHeader")}>
       <p className="text-xs font-medium text-wine-muted uppercase tracking-wider mb-2">
         {t("languageHeader")}
       </p>
       <div className="flex flex-wrap gap-1">
-        {enabledLocales.map((loc) => {
+        {orderedLocales.map((loc) => {
           const typed = loc as AppLocale;
           const label = t(`locales.${typed}.label`);
           const title = t(`locales.${typed}.title`);
