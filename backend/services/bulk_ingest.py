@@ -202,6 +202,10 @@ def _validate_source(raw: Any) -> tuple[dict | None, str | None]:
         return None, "url_too_long"
 
     preco = _to_float(raw.get("preco"))
+    if preco is None:
+        return None, "preco_missing"
+    if preco <= 0:
+        return None, "preco_invalid"
     preco_anterior = _to_float(raw.get("preco_anterior"))
     moeda = _clean(raw.get("moeda"))
 

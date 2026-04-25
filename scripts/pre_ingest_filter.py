@@ -56,6 +56,7 @@ DATE_TH_RE = re.compile(r"\b\d+(?:st|nd|rd|th)\b", re.I)
 CASE_NUM_RE1 = re.compile(r"\b(?:case|caisse)\s*(?:of|with|,|:)?\s*\(?\s*(\d+)\b", re.I)
 CASE_NUM_RE2 = re.compile(r"\b(\d+)\s*[-x×]?\s*(?:bottles?|btls?|bot)?\s*[-x×]?\s*\b(?:case|caisse)\b", re.I)
 CASE_BASE = re.compile(r"\b(?:case|caisse)\b", re.I)
+SUSPICIOUS_CHARS_RE = re.compile(r'[@#$%^*_+=~|\\<>{}\[\]?!"]')
 
 WINE_VOLUMES = {
     "750ml", "750 ml",
@@ -84,6 +85,11 @@ def should_skip_wine(nome: str, produtor: str = "") -> tuple[bool, str | None]:
     """
     if not nome or len(nome.strip()) < 3:
         return True, "nome_vazio_ou_curto"
+
+    # 0. Caractere suspeito (leetspeak / adulteracao / lixo de scraping)
+    m = SUSPICIOUS_CHARS_RE.search(nome + " " + (produtor or ""))
+    if m:
+        return True, f"caractere_suspeito={m.group(0)}"
 
     # 1. wine_filter (regex multilingua + produtor, fonte = catalogo 2026-04-15)
     combined = " ".join(part for part in (nome, produtor) if part)
