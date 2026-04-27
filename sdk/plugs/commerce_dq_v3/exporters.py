@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -11,6 +11,7 @@ import psycopg2
 
 from sdk.plugs.common import load_repo_envs, normalize_domain, resolve_store_id
 from .artifact_contract import pick_latest_jsonl, validate_artifact_dir
+from .normalizers import normalize_wine_type
 from .schemas import ExportBundle
 
 
@@ -93,7 +94,7 @@ def _make_item(
         "nome": nome,
         "produtor": produtor,
         "safra": str(safra) if safra else None,
-        "tipo": tipo,
+        "tipo": normalize_wine_type(tipo),
         "pais": (pais or "").lower() or None,
         "regiao": regiao,
         "sub_regiao": sub_regiao,
@@ -290,7 +291,7 @@ def _raw_item_to_commerce_item(raw: dict, *, dataset: str, lineage: str, artifac
         "nome": raw.get("nome"),
         "produtor": raw.get("produtor"),
         "safra": str(raw.get("safra")) if raw.get("safra") is not None else None,
-        "tipo": raw.get("tipo"),
+        "tipo": normalize_wine_type(raw.get("tipo")),
         "pais": (raw.get("country") or raw.get("pais") or "").lower() or None,
         "regiao": raw.get("regiao"),
         "sub_regiao": raw.get("sub_regiao"),
@@ -365,7 +366,7 @@ def export_amazon_mirror_primary_to_dq(*, limit: int, lookup: dict[str, int]) ->
             notes = [
                 validation.reason or "contrato_invalido",
                 f"artifact={validation.artifact_path.name}",
-                "contrato=docs/TIER_COMMERCE_CONTRACT.md",
+                "contrato=docs/COMMERCE_PLUG_CONTRACT.md",
             ] + validation.notes
         return ExportBundle(
             source="amazon_mirror_primary",
@@ -435,7 +436,7 @@ def export_vinhos_brasil_legacy_to_dq(*, limit: int, lookup: dict[str, int]) -> 
                     "nome": legacy.get("nome"),
                     "produtor": legacy.get("produtor"),
                     "safra": legacy.get("safra"),
-                    "tipo": legacy.get("tipo"),
+                    "tipo": normalize_wine_type(legacy.get("tipo")),
                     "pais": legacy.get("pais"),
                     "regiao": legacy.get("regiao"),
                     "sub_regiao": legacy.get("sub_regiao"),
@@ -511,7 +512,7 @@ def _export_tier_from_artifact(
     """Exporter generico para Tier1/Tier2 consumindo artefato padronizado JSONL.
 
     Contrato obrigatorio validado por artifact_contract.validate_artifact_dir
-    (ver docs/TIER_COMMERCE_CONTRACT.md):
+    (ver docs/COMMERCE_PLUG_CONTRACT.md):
       - 13 campos obrigatorios por item (pipeline_family, run_id, country,
         store_name, store_domain, url_original, nome, produtor, safra,
         preco, moeda, captured_at, source_pointer);
@@ -532,7 +533,7 @@ def _export_tier_from_artifact(
         notes: list[str] = [validation.reason or "contrato_invalido"]
         if validation.artifact_path is not None:
             notes.append(f"artifact={validation.artifact_path.name}")
-        notes.append("contrato=docs/TIER_COMMERCE_CONTRACT.md")
+        notes.append("contrato=docs/COMMERCE_PLUG_CONTRACT.md")
         notes.extend(validation.notes)
         return ExportBundle(
             source=source_name,
@@ -729,3 +730,4 @@ EXPORTERS = {
     "tier2_global_artifact": export_tier2_global_artifact_to_dq,
     "winegod_admin_legacy_mixed": export_winegod_admin_legacy_mixed_to_dq,
 }
+
